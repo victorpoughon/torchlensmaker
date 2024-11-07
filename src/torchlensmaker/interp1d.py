@@ -1,6 +1,8 @@
 import torch
 
 def interp1d(X, Y, newX):
+    "torch version of np.interp"
+
     assert X.ndim == Y.ndim == 1
 
     # find intervals
