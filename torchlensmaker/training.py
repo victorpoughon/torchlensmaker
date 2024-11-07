@@ -99,8 +99,8 @@ def render(optics, num_rays, force_uniform_source=True):
     
     # Forward model, using hook for rendering
     loss = optics.forward(num_rays, hook=forward_hook)
-            
-    
+
+
     plt.gca().set_title(f"")
     plt.gca().set_aspect("equal")
     plt.show()
@@ -118,7 +118,7 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
 
     fig, ax = plt.subplots()
 
-    #torch.autograd.detect_anomaly(True)
+    # torch.autograd.detect_anomaly(True)
 
     parameters_record = [
         torch.zeros((num_iter, p.shape[0]))

@@ -5,6 +5,8 @@ import torch.nn as nn
 from .raytracing import normed
 import numpy as np
 
+from .interp1d import interp1d
+
 
 class Parabola:
     """
@@ -187,11 +189,7 @@ class Line:
         Y = -a / b * X - c / b
         return torch.stack([X, Y], dim=-1)
 
-    def normal(self, point):
-        coefficients = self.coefficients()
-        return normed(coefficients[:2])
-
-    def normal_batch(self, points):
+    def normal(self, points):
         coefficients = self.coefficients()
         return torch.tile(normed(coefficients[:2]), (points.shape[0], 1))
 
@@ -231,7 +229,7 @@ class Line:
     
     def collide(self, lines):
         points = self.intersect_batch(lines)
-        normals = self.normal_batch(points)
+        normals = self.normal(points)
         return points, normals
 
 
@@ -240,83 +238,124 @@ class PiecewiseLine:
     Piecewise line starting at an implicit 0,0
     """
 
-    @classmethod
-    def from_edges(cls, radius, num_edges):
-        delta = radius / num_edges # width of an edge
-        x = np.linspace(delta, radius, num_edges, dtype=np.float32)
-        y = np.linspace(0., -5.0, num_edges+1)[1:]
+    def init_new(self, lens_radius, init):
+
+        # Default zero init
+        if init is None:
+            X = torch.linspace(0., lens_radius, steps=2)[1:]
+            Y = torch.zeros(1)
+
+        else:
+            X, Y = map(torch.as_tensor, init)
+
+            if X[0] == 0.:
+                raise ValueError("First point of PiecewiseLine is implicit, got X[0] = 0")
         
-        return cls(x, y)
+        assert X.shape == Y.shape, (X.shape, Y.shape)
 
-    def __init__(self, x, y):
+        self.X = X
+        self.params = {
+            "Y": nn.Parameter(Y)
+        }
+    
+    def init_share(self, share, scale):
+        self.params = {}
+    
+    def __init__(self, lens_radius: float, init=None, share=None, scale=1.0):
         super().__init__()
+        self.lens_radius = lens_radius
 
-        assert(y.shape[0] == x.shape[0])
-
-        if x[0] == 0.:
-            raise ValueError("First point of PiecewiseLine is implicit, got x[0] = 0")
-
-        self.coefficients = torch.as_tensor(y)
-        self.x = torch.as_tensor(x)
-        self.radius = self.x[-1]
+        if share is not None:
+            self.init_share(share, scale)
+        else:
+            self.init_new(lens_radius, init)
+        
+        self.lens_radius = lens_radius
+        self._share = share
+        self._scale = scale
+    
+    def parameters(self):
+        return self.params
     
     def domain(self):
-        return torch.tensor([-self.radius, self.radius])
+        return torch.tensor([-self.lens_radius, self.lens_radius])
     
     def evaluate(self, X):
-        Y = self.apply(X)
-        return torch.stack([X, Y], dim=-1)
-        
-    def XY(self):
-        X = torch.concatenate((torch.flip(-self.x, dims=[0]), torch.tensor([0.]), self.x))
-        Y = torch.concatenate((torch.flip(self.coefficients, dims=[0]), torch.tensor([0.]), self.coefficients))
-        XY = torch.column_stack((X, Y))
-        return XY
+        cX, cY = self.coefficients()
+        Y = interp1d(cX, cY, X)
 
-    def apply(self, X):
-        # TODO implement this in pure torch
-        XY = self.XY()
-        ynew = np.interp(X.numpy(), XY[:, 0].detach().numpy(), XY[:, 1].detach().numpy())
-        return torch.tensor(ynew)
+        return torch.stack([X, Y], dim=-1)
+    
+    def coefficients(self):
+        if self._share is None:
+            param_X = self.X
+            param_Y = self.params["Y"]
+        else:
+            param_X = self._share.X
+            param_Y = self._share.params["Y"]
+
+        X = torch.concatenate((torch.flip(-param_X, dims=[0]), torch.zeros(1), param_X)).contiguous()
+        Y = torch.concatenate((torch.flip(param_Y, dims=[0]), torch.zeros(1), param_Y))
+
+        assert X.numel() == Y.numel()
+
+        return X, Y
 
     def edge_of_point(self, Px):
         """
         Given a point X coordinate,
         (or a list of points X coordinates)
         return the index of the edge the point falls into
+        TODO deprecate, replace by searchsorted()
         """
 
-        XY = self.XY()
-        Ax = XY[:-1, 0]
-        Bx = XY[1:, 0]
+        X, _ = self.coefficients()
+        Ax = X[:-1]
+        Bx = X[1:]
         within = torch.logical_or(
-            torch.logical_and(Ax < Px, Px < Bx),
-            torch.logical_and(Bx < Px, Px < Ax)
+            torch.logical_and(Ax <= Px, Px < Bx),
+            torch.logical_and(Bx <= Px, Px < Ax)
         ).to(dtype=int) # int to enable using argmax which doesn't support Bool
         if within.sum() == 0:
+            raise RuntimeError("point none")
             return None
         else:
             return torch.argmax(within)
 
-    def normal(self, point):
-        # merge with intersect function for efficiency? intersect_normal()?
 
-        XY = self.XY()
-        collision_index = self.edge_of_point(point[0])
+    def interval_index(self, xs):
+        """
+        Given X coordinates of points: xs
+        Return the index of the edge the point falls into
+        """
+
+        X, Y = self.coefficients()
+        
+        # find intervals
+        indices = torch.searchsorted(X, xs.contiguous())
+
+        # special case for newX == X[0]
+        indices = torch.where(xs == X[0], 1, indices)
+
+        # -1 here because we want the start of the interval
+        return indices - 1
+    
+    
+    def normal(self, xs):
+        cX, cY = self.coefficients()
+        XY = torch.column_stack((cX, cY))
         edges_coefficients = line_coefficients(XY[:-1, :], XY[1:, :])
-        return Line(edges_coefficients[collision_index], self.radius).normal(point)
+        
+        indices = self.interval_index(xs)
+        normals = torch.nn.functional.normalize(edges_coefficients[:, :2], dim=1)
 
-    def normal_batch(self, points):
-        # TODO batch
-        normals = torch.zeros((points.shape[0], 2))
-        for i, point in enumerate(points):
-            normals[i, :] = self.normal(point)
-        return normals
+        return normals[indices]
 
     def intersect_one(self, line):
-        XY = self.XY()
+        X, Y = self.coefficients()
+        XY = torch.column_stack((X, Y))
         edges_coefficients = line_coefficients(XY[:-1, :], XY[1:, :])
-        L = [Line(coefficients, self.radius).intersect_batch(line.expand(1, -1)) for coefficients in edges_coefficients]
+        L = [Line(self.lens_radius, coefficients).intersect_batch(line.expand(1, -1)) for coefficients in edges_coefficients]
         intersection_points = torch.vstack(L)
 
         # True iff the intersection point is inside its corresponding edge segment
@@ -348,7 +387,7 @@ class PiecewiseLine:
         """
 
         points = self.intersect_batch(lines)
-        normals = self.normal_batch(points)
+        normals = self.normal(points[:, 0])
         return points, normals
 
 
