@@ -3,8 +3,7 @@ import numpy as np
 from math import pi
 
 
-def normed(v):
-    return v / torch.linalg.norm(v)
+from torchlensmaker.shapes.common import normed
 
 
 def normal_vector(A, B):

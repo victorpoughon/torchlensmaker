@@ -127,7 +127,6 @@ class RefractiveSurface(nn.Module):
         
         # A surface always has two opposite normals, so keep the one pointing against the ray
         # i.e. the normal such that dot(normal, ray) < 0
-        # surface_normals = self.surface.normal_batch(collision_points)
         dot = torch.sum(surface_normals * rays_vectors, dim=1)
         collision_normals = torch.where((dot > 0).unsqueeze(1).expand(-1, 2), -surface_normals, surface_normals)
 

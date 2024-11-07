@@ -7,7 +7,7 @@ import build123d as bd
 from .optics import Lens, OpticalStack
 from ocp_vscode import show
 
-from .shapes import Parabola, Line
+from torchlensmaker.shapes.common import Parabola, Line
 
 def tuplelist(arr):
     "Numpy array to list of tuples"
