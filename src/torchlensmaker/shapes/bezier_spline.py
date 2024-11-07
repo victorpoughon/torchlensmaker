@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
 
+from torchlensmaker.shapes import BaseShape
 from torchlensmaker.shapes.common import mirror_points, intersect_newton
 
-class BezierSpline:
+class BezierSpline(BaseShape):
     """
     Cubic Bezier Spline with constraints to represent a lens surface:
         - Symmetry around the Y axis
