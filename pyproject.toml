@@ -21,13 +21,19 @@ dependencies = [
   "ipywidgets==8.1.5"
 ]
 
+[project.urls]
+Homepage = "https://github.com/fouronnes/torchlensmaker"
+Issues = "https://github.com/fouronnes/torchlensmaker/issues"
+
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
+package-dir = {"" = "src"}
 packages = ["torchlensmaker"]
 
-[project.urls]
-Homepage = "https://github.com/fouronnes/torchlensmaker"
-Issues = "https://github.com/fouronnes/torchlensmaker/issues"
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]
