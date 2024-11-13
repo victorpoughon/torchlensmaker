@@ -12,13 +12,14 @@ classifiers = [
     "Programming Language :: Python :: 3",
 ]
 dependencies = [
-  "torch==2.4.1",
-  "matplotlib==3.9.2",
-  "jupyterlab==4.3.0",
-  "build123d==0.7.0",
-  "nbmake==1.5.4",
-  "pytest==8.3.3",
-  "ipywidgets==8.1.5"
+  "torch~=2.4.1",
+  "build123d~=0.7.0",
+
+  "matplotlib~=3.9.2",
+  "notebook >= 7",
+  
+  "nbmake~=1.5.4",
+  "pytest~=8.3.3",
 ]
 
 [project.urls]

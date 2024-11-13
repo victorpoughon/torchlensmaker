@@ -5,9 +5,12 @@ from os.path import join
 import build123d as bd
 
 from .optics import Lens, OpticalStack
-from ocp_vscode import show
 
-from torchlensmaker.shapes.common import Parabola, Line
+from torchlensmaker.shapes import (
+    CircularArc,
+    Line,
+    Parabola,
+)
 
 def tuplelist(arr):
     "Numpy array to list of tuples"
@@ -36,23 +39,31 @@ def sketch_parabola(parabola, offset):
     ])
 
 
-def surface_to_sketch(surface, offset):
+def sketch_circular_arc(arc, offset):
+    arc_radius = arc.coefficients().detach().item()
+    x = arc.lens_radius
+    y = arc.evaluate(arc.domain()[0])[0][1].item()
+
+    return bd.RadiusArc((-x, y + offset), (x, y + offset), arc_radius)
+
+
+def shape_to_sketch(surface, offset):
     # Dynamic dispatch for dummies
     try:
         return {
             Parabola: sketch_parabola,
             Line: sketch_line,
+            CircularArc: sketch_circular_arc,
         }[type(surface)](surface, offset)
     except KeyError:
-        print(f"Error: unsupported shape type {type(surface)}")
-        raise
+        raise RuntimeError(f"Unsupported shape type {type(surface)}")
 
 
 def lens_to_part(lens: Lens):
 
     gap_size = lens.thickness()[0].item()
-    curve1 = surface_to_sketch(lens.surface1.surface, 0.0)
-    curve2 = surface_to_sketch(lens.surface2.surface, gap_size)
+    curve1 = shape_to_sketch(lens.surface1.surface, 0.0)
+    curve2 = shape_to_sketch(lens.surface2.surface, gap_size)
 
     edge = bd.Polyline([
         curve1 @ 1,
