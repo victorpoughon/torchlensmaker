@@ -79,7 +79,7 @@ class PiecewiseLine:
         Given a point X coordinate,
         (or a list of points X coordinates)
         return the index of the edge the point falls into
-        TODO deprecate, replace by searchsorted()
+        TODO deprecate, replace by interval_index()
         """
 
         X, _ = self.coefficients()

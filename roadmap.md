@@ -2,16 +2,16 @@
 
 ## Higher prio
 
-* clean up shapes code
-* implement proper PiecewiseLine.intersect_batch
-
 * review / clean up optics.py
 * move everything to absolute space to simplify rendering code
 
-
 * handle rays not colliding better
+* handle surfaces colliding each other better
 * cleanup regression term / prior support
 * Imaging applications
+
+* VariableGap
+* ReflectiveSurface
 
 ## Rendering
 
@@ -22,7 +22,7 @@
 
 ## Lower prio
 
-
-* resample between profile shapes
+* improve piecewiseline: implement proper intersect_batch
+* convert / resample between profile shapes
 * faster example notebooks, improve convergence
 * port pulaski code to new lib¶

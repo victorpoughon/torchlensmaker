@@ -1,11 +1,9 @@
 import torch
 import torch.nn as nn
-import numpy as np
 
-from collections import UserList
 from enum import Enum
 
-from .raytracing import (
+from torchlensmaker.raytracing import (
     super_refraction,
     ray_point_squared_distance,
     position_on_ray,
