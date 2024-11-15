@@ -64,10 +64,13 @@ def render_module(ax, current_gap, module, inputs, outputs, surface_color):
         if inputs is not None and outputs is not None:
             rays_origins, rays_vectors = inputs
             t = -rays_origins[:, 1]/rays_vectors[:, 1]
+            t = 1.3*t
             end_x = rays_origins[:, 0] + t*rays_vectors[:, 0]
+            end_y = rays_origins[:, 1] + t*rays_vectors[:, 1] + current_gap
             A = (rays_origins + torch.tensor([0., current_gap]))
-            B = torch.column_stack((end_x, torch.zeros_like(end_x) + current_gap))
+            B = torch.column_stack((end_x, end_y))
             render_rays(ax, A, B)
+
 
 def render(optics, num_rays, force_uniform_source=True):
     
@@ -97,8 +100,11 @@ def render(optics, num_rays, force_uniform_source=True):
         if force_uniform_source and isinstance(module, ParallelBeamRandom):
             return ParallelBeamUniform(module.radius).forward(inputs)
     
-    # Forward model, using hook for rendering
-    loss = optics.forward(num_rays, hook=forward_hook)
+    try:
+        # Forward model, using hook for rendering
+        loss = optics.forward(num_rays, hook=forward_hook)
+    except RuntimeError as e:
+        print("Error calling forward on model", e)
 
 
     plt.gca().set_title(f"")

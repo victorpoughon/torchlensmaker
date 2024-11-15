@@ -2,6 +2,14 @@
 
 ## Higher prio
 
+*  more tests:
+    lens maker equation
+    focal loss for concave lens (i.e. negative ray position)
+    setup a stack, call forward, check loss value
+    check loss is differentiable, and gradient is finite
+    render a stack visualy (no opmitization)
+
+
 * review / clean up optics.py
 * move everything to absolute space to simplify rendering code
 
@@ -9,6 +17,7 @@
 * handle surfaces colliding each other better
 * cleanup regression term / prior support
 * Imaging applications
+    * Image formation with a thin lens, equation
 
 * VariableGap
 * ReflectiveSurface
