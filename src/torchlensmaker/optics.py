@@ -16,27 +16,29 @@ def loss_nonpositive(parameters, scale=1):
 
 
 class FocalPointLoss(nn.Module):
-    def __init__(self):
+    def __init__(self, pos):
         super().__init__()
+        self.pos = torch.as_tensor(pos)
 
     def forward(self, rays, hook=None):
         ray_origins, ray_vectors = rays
         num_rays = ray_origins.shape[0]
-        sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, torch.zeros((2))).sum()
+        sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, self.pos).sum()
         return sum_squared / num_rays
 
 
 class ParallelBeamUniform(nn.Module):
-    def __init__(self, radius):
+    def __init__(self, width, pos):
         super().__init__()
-        self.radius = radius
+        self.width = width
+        self.pos = torch.as_tensor(pos)
 
     def forward(self, num_rays, hook=None):
-        margin = 0.1
-        rays_x = torch.linspace(-self.radius + margin, self.radius - margin, num_rays)
+        margin = 0.1 # TODO
+        rays_x = torch.linspace(-self.width + margin, self.width - margin, num_rays)
         rays_y = torch.zeros(num_rays)
-        rays_origins = torch.column_stack((rays_x, rays_y))
         
+        rays_origins = torch.column_stack((rays_x , rays_y )) + self.pos
         rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
 
         return (rays_origins, rays_vectors)
@@ -72,15 +74,12 @@ class FixedGap(nn.Module):
         )
 
 
-Anchor = Enum('Anchor', ['Center', 'Edge'])
-
 class RefractiveSurface(nn.Module):
-    def __init__(self, surface, n, anchors=(Anchor.Center, Anchor.Center)):
+    def __init__(self, surface, n):
         super().__init__()
 
         self.surface = surface
         self.n1, self.n2 = n
-        self.anchors = anchors
 
         # Register surface parameters
         for name, param in surface.parameters().items():
@@ -91,11 +90,6 @@ class RefractiveSurface(nn.Module):
     def forward(self, rays, hook=None):
         rays_origins, rays_vectors = rays
         num_rays = rays_origins.shape[0]
-
-        # Translate rays to surface origin using the front anchor
-        anchor_edge_offset = self.surface.evaluate(self.surface.domain()[1:])[0][1]
-        if self.anchors[0] == Anchor.Edge:
-            rays_origins = rays_origins + torch.tensor([0.0, anchor_edge_offset])
 
         collision_all_refracted = torch.zeros((num_rays, 2))
 
@@ -148,10 +142,6 @@ class RefractiveSurface(nn.Module):
                 
 
             collision_all_refracted[index_ray, :] = refracted_ray
-        
-        # Translate rays to the back anchor
-        if self.anchors[1] == Anchor.Edge:
-            collision_points = collision_points - torch.tensor([0.0, anchor_edge_offset])
 
         return (collision_points, collision_all_refracted)
 

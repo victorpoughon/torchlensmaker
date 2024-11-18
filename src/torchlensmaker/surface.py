@@ -24,6 +24,9 @@ class Surface:
         if not anchor in self.valid_anchors:
             raise ValueError(f"Invalid anchor value '{self.anchor}', must be one of {self.valid_anchors}")
 
+    def parameters(self):
+        return self.shape.parameters()
+
     def domain(self):
         return self.shape.domain()
 

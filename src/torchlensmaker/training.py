@@ -15,7 +15,6 @@ from .optics import (
     RefractiveSurface,
     OpticalStack,
     Lens,
-    Anchor,
 )
 
 

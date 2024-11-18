@@ -1,5 +1,4 @@
 from torchlensmaker.optics import (
-    Anchor,
     FixedGap,
     FocalPointLoss,
     Lens,
@@ -30,9 +29,12 @@ from torchlensmaker.surface import (
     Surface,
 )
 
+from torchlensmaker.render_plt import (
+    render_plt
+)
+
 __all__ = [
     # Optics
-    "Anchor",
     "FixedGap",
     "FocalPointLoss",
     "Lens",
@@ -57,4 +59,7 @@ __all__ = [
 
     # Export 3D
     "lens_to_part",
+
+    # Rendering
+    "render_plt",
 ]

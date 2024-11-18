@@ -9,6 +9,9 @@ class BaseShape:
 
     def __init__(self):
         pass
+    
+    def parameters(self):
+        raise NotImplementedError
 
     def domain(self):
         raise NotImplementedError
@@ -16,7 +19,8 @@ class BaseShape:
     def evaluate(self, ts):
         raise NotImplementedError
     
-    # derivative
+    def derivative(self):
+        raise NotImplementedError
     
     def normal(self, ts):
         raise NotImplementedError
