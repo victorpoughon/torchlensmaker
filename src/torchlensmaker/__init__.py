@@ -26,6 +26,10 @@ from torchlensmaker.export3d import (
     lens_to_part,
 )
 
+from torchlensmaker.surface import (
+    Surface,
+)
+
 __all__ = [
     # Optics
     "Anchor",
@@ -43,6 +47,9 @@ __all__ = [
     "Line",
     "Parabola",
     "PiecewiseLine",
+
+    # Surface
+    "Surface",
 
     # Training
     "render",
