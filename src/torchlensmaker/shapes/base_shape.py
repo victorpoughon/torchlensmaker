@@ -3,7 +3,8 @@
 
 class BaseShape:
     """
-    Base class for lens surface profile shapes
+    Base class for parametric 2D shapes,
+    used to represent the surface profile of a lens.
     """
 
     def __init__(self):
@@ -15,8 +16,10 @@ class BaseShape:
     def evaluate(self, ts):
         raise NotImplementedError
     
+    # derivative
+    
     def normal(self, ts):
         raise NotImplementedError
 
-    def collide(self, ts):
+    def collide(self, lines):
         raise NotImplementedError

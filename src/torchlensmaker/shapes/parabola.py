@@ -44,7 +44,7 @@ class Parabola:
         return torch.stack([x, y], dim=-1)
 
     def domain(self):
-        "Return the stard and end points"
+        "Return the start and end points"
 
         r = self.lens_radius
         return torch.tensor([-r, r])
@@ -70,6 +70,9 @@ class Parabola:
         Returns:
             Tensor (N, 2) - intersection points for each line
         """
+        
+        # TODO change to work with all line orientations (parametric line?)
+
         # Ensure input is a tensor
         lines = torch.as_tensor(lines)  
         
