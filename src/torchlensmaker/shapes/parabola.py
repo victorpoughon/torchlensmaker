@@ -9,33 +9,49 @@ class Parabola:
     Parabola of the form y = ax^2
     """
 
-    def share(self, scale=1.0):
-        return type(self)(self.lens_radius, init=None, share=self, scale=scale)
+    def clone(self, scale=1.):
+        return type(self)(share=self, scale=scale)
+    
+    def flip(self):
+        return self.clone(-1.)
 
-    def __init__(self, lens_radius, init=None, share=None, scale=1.0):
-        super().__init__()
-        self.lens_radius = lens_radius
+    def init_normal(self, width, a):
+        self._width = width
+        self._a = torch.as_tensor(a)
 
-        if init is not None and share is None:
-            init = torch.atleast_1d(torch. as_tensor(init))
-            param = nn.Parameter(init)
-            self.params = {"a": param}
-        elif init is None and share is not None:
-            assert isinstance(share, Parabola)
-            self.params = {}
+        assert self._a.ndim == 0
 
-        self.scale = scale
+    def init_share(self, share, scale):
+        assert isinstance(share, type(self))
+        self._width = share._width
         self._share = share
+        self._scale = scale
+
+    def __init__(self,
+                 width=None,
+                 a=None,
+                 share=None,
+                 scale=None):
+        super().__init__()
+
+        if width is not None and a is not None:
+            self.init_normal(width, a)
+        elif share is not None and scale is not None:
+            self.init_share(share, scale)
+        else:
+            raise RuntimeError("invalid shape arguments")
     
     def coefficients(self):
-        # Scaled coefficients for parameter sharing
-        if self._share is None:
-            return self.params["a"]
+        if not hasattr(self, "_share"):
+            return self._a
         else:
-            return self._share.params["a"] * self.scale
+            return self._share.coefficients() * self._scale
     
     def parameters(self):
-        return self.params
+        if hasattr(self, "_a") and isinstance(self._a, nn.Parameter):
+            return {"a": self._a}
+        else:
+            return {}
 
     def evaluate(self, x):
         x = torch.atleast_1d(torch.as_tensor(x))
@@ -46,12 +62,12 @@ class Parabola:
     def domain(self):
         "Return the start and end points"
 
-        r = self.lens_radius
+        r = self._width
         return torch.tensor([-r, r])
 
     def normal(self, xs):
         # Compute the normal vectors
-        normals = torch.stack([-2*self.coefficients()[0]*xs, 
+        normals = torch.stack([-2*self.coefficients()*xs, 
                                torch.ones_like(xs)], dim=1)
         
         # Normalize the vectors

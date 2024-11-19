@@ -27,10 +27,10 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
 
     # torch.autograd.detect_anomaly(True)
 
-    parameters_record = [
-        torch.zeros((num_iter, p.shape[0]))
-        for p in optics.parameters()
-    ]
+    parameters_record = {
+        n: []
+        for n, _ in optics.named_parameters()
+    }
 
     loss_record = torch.zeros(num_iter)
 
@@ -48,8 +48,8 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
         loss.backward()
 
         # Record parameter values
-        for j, param in enumerate(optics.parameters()):
-            parameters_record[j][i, :] = param.detach()
+        for n, param in optics.named_parameters():
+            parameters_record[n].append(param.detach().clone())
 
         grad = get_all_gradients(optics)
         if torch.isnan(grad).any():
@@ -74,9 +74,13 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
     fig, (ax1, ax2) = plt.subplots(2, 1)
     epoch_range = np.arange(0, num_iter)
     ax2.plot(epoch_range, loss_record.detach())
-    for j, param in enumerate(optics.parameters()):
-        ax1.plot(epoch_range, parameters_record[j].detach(), label=str(j))
+    for n, param in optics.named_parameters():
+        if parameters_record[n][0].dim() == 0:
+            print(parameters_record[n])
+            data = torch.stack(parameters_record[n]).detach().numpy()
+            ax1.plot(epoch_range, data, label=n)
     ax1.set_title("parameter")
+    ax1.legend()
     ax2.set_title("loss")
     plt.show()
 
