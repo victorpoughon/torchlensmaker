@@ -6,8 +6,8 @@ class Surface:
     A surface places a shape in absolute 2D space
     
     The surface class wraps a shape with:
-        - 'pos' position, the position of the shape in 2D space
-        - 'anchor' that tells which point of the shape is attached to its anchor in 2D space
+        * 'pos': an absolute position in 2D space
+        * 'anchor': relative position on the shape that attaches to the absolute position
 
     Valid anchors are:
         * 'origin' (default): origin (0,0) of the shape
@@ -18,6 +18,7 @@ class Surface:
 
     def __init__(self, shape, pos, anchor="origin"):
         self.shape = shape
+        
         self.pos = torch.as_tensor(pos)
         self.anchor = anchor
 
@@ -30,22 +31,30 @@ class Surface:
     def domain(self):
         return self.shape.domain()
 
-    def relative_anchor(self):
-        if self.anchor == "origin":
+    def anchor_offset(self, anchor):
+        "Relative position of the given anchor"
+
+        if anchor == "origin":
             return torch.tensor([0., 0.])
 
-        elif self.anchor == "extent":
+        elif anchor == "extent":
             # Assuming the shape is symmetric, get the extend along the Y axis
             off = self.shape.evaluate(self.shape.domain()[1:])[0][1]
             return torch.tensor([0., off])
 
         else:
-            raise ValueError(f"Invalid anchor value '{self.anchor}'")
+            raise ValueError(f"Invalid anchor value '{anchor}'")
+    
+    def at(self, anchor):
+        "Absolute position of the given shape anchor"
+
+        # get absolute pos of origin point, then add relative position of given anchor
+        return self.to_abs() + self.anchor_offset(anchor)
 
     def to_abs(self):
         "The offset that needs to be added to a relative point to convert it to absolute space"
 
-        return self.pos - self.relative_anchor()
+        return self.pos - self.anchor_offset(self.anchor)
 
     def evaluate(self, ts):
         "Convert the inner shape evaluate() to absolute space"

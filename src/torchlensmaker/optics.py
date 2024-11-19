@@ -66,11 +66,6 @@ class RefractiveSurface(nn.Module):
         self.surface = surface
         self.n1, self.n2 = n
 
-        # Register surface parameters
-        for name, param in surface.parameters().items():
-            if isinstance(param, nn.Parameter):
-                self.register_parameter(name, param)
-
     
     def forward(self, rays, hook=None):
         rays_origins, rays_vectors = rays

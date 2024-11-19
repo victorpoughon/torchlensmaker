@@ -25,8 +25,10 @@ def render_surface(ax, surface, color):
     # Render optical surface
     t = torch.linspace(*surface.domain(), 1000)
     points = surface.evaluate(t).detach().numpy()
-
     ax.plot(points[:, 0], points[:, 1], color=color)
+
+    # Render surface anchor
+    ax.plot(surface.pos[0], surface.pos[1], "+", color="grey")
     
 
 def render_element(ax, element):
@@ -39,15 +41,16 @@ def render_element(ax, element):
         ax.plot(element.pos[0], element.pos[1], marker="+", markersize=5.0, color="red")
 
 
-def render_all_rays(ax, optics, num_rays):
+def render_all(ax, optics, num_rays):
 
-    # To render rays, call forward() on the model
-    # with a hook that catches rays at all steps
-    # and render input rays of each step
+    # To render, call forward() on the model
+    # with a hook that catches input and outputs
+    # and renders them at each step
 
     def forward_hook(module, inputs, outputs):
         # For surfaces, render rays collision to collision
         if isinstance(module, RefractiveSurface):
+            render_element(ax, module)
             if inputs is not None and outputs is not None:
                 rays_origins, _ = inputs
                 rays_ends, _ = outputs
@@ -55,6 +58,7 @@ def render_all_rays(ax, optics, num_rays):
 
         # For focal point loss, render rays up to a bit after the focal point
         elif isinstance(module, FocalPointLoss):
+            render_element(ax, module)
             if inputs is not None and outputs is not None:
                 rays_origins, rays_vectors = inputs
                 t = (module.pos[1] -rays_origins[:, 1])/rays_vectors[:, 1]
@@ -76,13 +80,8 @@ def render_plt(optics, num_rays, force_uniform_source=True):
     fig, ax = plt.subplots(figsize=(12, 8))
 
     # TODO implement force_uniform_source
-
-    # Render elements
-    for element in optics.stack:
-        render_element(ax, element)
     
-    # Render rays
-    render_all_rays(ax, optics, num_rays)
+    render_all(ax, optics, num_rays)
 
 
     plt.gca().set_title(f"")
