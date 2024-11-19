@@ -59,21 +59,6 @@ class ParallelBeamRandom(nn.Module):
         return (rays_origins, rays_vectors)
 
 
-class FixedGap(nn.Module):
-    "A fixed gap between two optical elements"
-
-    def __init__(self, origin):
-        super().__init__()
-        self.origin = origin
-    
-    def forward(self, rays, hook=None):
-        rays_origins, rays_vectors = rays
-        return (
-            rays_origins - torch.tensor([0.0, self.origin]),
-            rays_vectors
-        )
-
-
 class RefractiveSurface(nn.Module):
     def __init__(self, surface, n):
         super().__init__()

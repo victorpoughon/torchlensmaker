@@ -19,21 +19,21 @@ def render_rays(ax, rays_origins, rays_ends):
     print("rays aperture", np.max(A[:, 0]) - np.min(A[:, 0]))
 
 
-def render_surface(ax, surface):
+def render_surface(ax, surface, color):
     "Render surface to axes"
 
     # Render optical surface
     t = torch.linspace(*surface.domain(), 1000)
     points = surface.evaluate(t).detach().numpy()
 
-    ax.plot(points[:, 0], points[:, 1], color="steelblue")
+    ax.plot(points[:, 0], points[:, 1], color=color)
     
 
 def render_element(ax, element):
     "Render optical element to axes"
 
     if isinstance(element, RefractiveSurface):
-        render_surface(ax, element.surface)
+        render_surface(ax, element.surface, color="steelblue")
     
     elif isinstance(element, FocalPointLoss):
         ax.plot(element.pos[0], element.pos[1], marker="+", markersize=5.0, color="red")
@@ -79,7 +79,6 @@ def render_plt(optics, num_rays, force_uniform_source=True):
 
     # Render elements
     for element in optics.stack:
-        print(element)
         render_element(ax, element)
     
     # Render rays

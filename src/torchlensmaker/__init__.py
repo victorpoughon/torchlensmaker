@@ -1,5 +1,4 @@
 from torchlensmaker.optics import (
-    FixedGap,
     FocalPointLoss,
     Lens,
     OpticalStack,
@@ -18,7 +17,6 @@ from torchlensmaker.shapes import (
 
 from torchlensmaker.training import (
     optimize,
-    render,
 )
 
 from torchlensmaker.export3d import (
@@ -35,7 +33,6 @@ from torchlensmaker.render_plt import (
 
 __all__ = [
     # Optics
-    "FixedGap",
     "FocalPointLoss",
     "Lens",
     "OpticalStack",
@@ -54,7 +51,6 @@ __all__ = [
     "Surface",
 
     # Training
-    "render",
     "optimize",
 
     # Export 3D
