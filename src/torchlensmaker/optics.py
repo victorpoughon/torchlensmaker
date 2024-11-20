@@ -49,7 +49,7 @@ class ParallelBeamUniform(nn.Module):
         return ((rays_origins, rays_vectors), target)
 
 
-class FixedGap(nn.Module):
+class Gap(nn.Module):
     def __init__(self, offset):
         super().__init__()
         self.offset = offset
@@ -57,6 +57,16 @@ class FixedGap(nn.Module):
     def forward(self, inputs):
         rays, target = inputs
         return (rays, target + self.offset)
+
+
+class GapX(nn.Module):
+    def __init__(self, offset_x):
+        super().__init__()
+        self.offset_x = offset_x
+    
+    def forward(self, inputs):
+        rays, target = inputs
+        return (rays, target + torch.stack((self.offset_x, torch.tensor(0.))))
 
 
 class ParallelBeamRandom(nn.Module):
@@ -75,19 +85,21 @@ class ParallelBeamRandom(nn.Module):
 
 
 class RefractiveSurface(nn.Module):
-    def __init__(self, shape, n):
+    def __init__(self, shape, n, scale=1., anchors=("origin", "origin")):
         super().__init__()
 
         self.shape = shape
         self.n1, self.n2 = n
+        self.scale = scale
+        self.anchors = anchors
 
     
     def forward(self, inputs):
         ((rays_origins, rays_vectors), target) = inputs
         num_rays = rays_origins.shape[0]
 
-        self.surface = Surface(self.shape, pos=target)
-         # could be not stored and rebuilt in the rendering code using target and shape
+        # could be not stored and rebuilt in the rendering code using target and shape
+        self.surface = Surface(self.shape, pos=target, scale=self.scale, anchor=self.anchors[0])
 
         collision_all_refracted = torch.zeros((num_rays, 2))
 
@@ -107,12 +119,6 @@ class RefractiveSurface(nn.Module):
             print("warning: some ts <=0")
         if True and not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
             print("!! Some ts <= 0")
-            print("ts", ts)
-            print("surface coeffs", self.surface.coefficients)
-            print("rays_origins", rays_origins)
-            print("rays_vectors", rays_vectors)
-            print("collision_points", collision_points)
-            print("lines", lines)
             raise RuntimeError("negative collisions")
         
         # A surface always has two opposite normals, so keep the one pointing against the ray
@@ -141,7 +147,7 @@ class RefractiveSurface(nn.Module):
 
             collision_all_refracted[index_ray, :] = refracted_ray
 
-        return ((collision_points, collision_all_refracted), target)
+        return ((collision_points, collision_all_refracted), self.surface.at(self.anchors[1]))
 
 
 

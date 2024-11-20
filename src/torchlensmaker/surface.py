@@ -1,6 +1,15 @@
 import torch
 
 
+def scale_lines(lines, scale):
+    a, b, c = lines[:, 0], lines[:, 1], lines[:, 2]
+    return torch.column_stack((
+        a * scale[1],
+        b * scale[0],
+        c * scale[0] * scale[1],
+    ))
+
+
 class Surface:
     """
     A surface places a shape in absolute 2D space
@@ -16,10 +25,11 @@ class Surface:
 
     valid_anchors = ["origin", "extent"]
 
-    def __init__(self, shape, pos, anchor="origin"):
+    def __init__(self, shape, pos, scale=1., anchor="origin"):
         self.shape = shape
         
         self.pos = torch.as_tensor(pos)
+        self.scale = torch.stack((torch.tensor(1.), torch.as_tensor(scale)))
         self.anchor = anchor
 
         if not anchor in self.valid_anchors:
@@ -39,8 +49,8 @@ class Surface:
 
         elif anchor == "extent":
             # Assuming the shape is symmetric, get the extend along the Y axis
-            off = self.shape.evaluate(self.shape.domain()[1:])[0][1]
-            return torch.tensor([0., off])
+            off = self.shape.evaluate(self.shape.domain()[1:])[0] * self.scale
+            return torch.tensor([0., off[1]])
 
         else:
             raise ValueError(f"Invalid anchor value '{anchor}'")
@@ -58,11 +68,11 @@ class Surface:
 
     def evaluate(self, ts):
         "Convert the inner shape evaluate() to absolute space"
-        relative_points = self.shape.evaluate(ts)
+        relative_points = self.shape.evaluate(ts) * self.scale
         return relative_points + self.to_abs()
 
     def normal(self, ts):
-        return self.shape.normal(ts)
+        return self.shape.normal(ts) * self.scale
 
     def collide(self, absolute_lines):
         "Collide with lines expressed in absolute space"
@@ -74,8 +84,15 @@ class Surface:
         new_c = c + a*P[0] + b*P[1]
         relative_lines = torch.column_stack((a, b, new_c))
 
+        # Apply inverse scale
+        relative_lines = scale_lines(relative_lines, 1. / self.scale)
+
         # Collide
         relative_points, normals = self.shape.collide(relative_lines)
+
+        # Apply scale
+        relative_points = relative_points * self.scale
+        normals = normals * self.scale
 
         # Convert relative points back to absolute space
         return relative_points + P, normals

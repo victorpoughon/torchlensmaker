@@ -38,7 +38,8 @@ def render_element(ax, element):
         render_surface(ax, element.surface, color="steelblue")
     
     elif isinstance(element, FocalPointLoss):
-        ax.plot(element.pos[0], element.pos[1], marker="+", markersize=5.0, color="red")
+        pos = element.pos.detach().numpy()
+        ax.plot(pos[0], pos[1], marker="+", markersize=5.0, color="red")
 
 
 def render_all(ax, optics, num_rays):
@@ -48,12 +49,10 @@ def render_all(ax, optics, num_rays):
     # and renders them at each step
 
     def forward_hook(module, inputs, outputs):
-        print("Forward hook on", module)
         # For surfaces, render rays collision to collision
         if isinstance(module, RefractiveSurface):
             render_element(ax, module)
             if inputs is not None and outputs is not None:
-                print(inputs)
                 (rays_origins, _), _ = inputs[0]
                 (rays_ends, _), _ = outputs
                 render_rays(ax, rays_origins, rays_ends)
@@ -73,7 +72,6 @@ def render_all(ax, optics, num_rays):
         # Register hooks on all modules
         handles = []
         for module in optics.modules():
-            print("registering on ", module)
             handles.append(
                 module.register_forward_hook(forward_hook)
             )
