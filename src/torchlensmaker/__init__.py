@@ -3,6 +3,7 @@ from torchlensmaker.optics import (
     Lens,
     Gap,
     GapX,
+    GapY,
     ParallelBeamRandom,
     ParallelBeamUniform,
     RefractiveSurface,
@@ -32,6 +33,8 @@ from torchlensmaker.render_plt import (
     render_plt
 )
 
+from torchlensmaker.module import Module
+
 __all__ = [
     # Optics
     "FocalPointLoss",
@@ -39,7 +42,9 @@ __all__ = [
     "ParallelBeamRandom",
     "ParallelBeamUniform",
     "RefractiveSurface",
-    "FixedGap",
+    #"Gap",
+    #"GapX",
+    #"GapY",
 
     # Shapes
     "BezierSpline",
@@ -59,4 +64,6 @@ __all__ = [
 
     # Rendering
     "render_plt",
+
+    "Module",
 ]

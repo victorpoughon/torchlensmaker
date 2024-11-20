@@ -17,6 +17,7 @@ class Surface:
     The surface class wraps a shape with:
         * 'pos': an absolute position in 2D space
         * 'anchor': relative position on the shape that attaches to the absolute position
+        * 'scale': an optional scale parameter (typically use -1 to mirror)
 
     Valid anchors are:
         * 'origin' (default): origin (0,0) of the shape
@@ -29,7 +30,7 @@ class Surface:
         self.shape = shape
         
         self.pos = torch.as_tensor(pos)
-        self.scale = torch.stack((torch.tensor(1.), torch.as_tensor(scale)))
+        self.scale = torch.stack((torch.tensor(1.), torch.as_tensor(scale, dtype=torch.float32)))
         self.anchor = anchor
 
         if not anchor in self.valid_anchors:

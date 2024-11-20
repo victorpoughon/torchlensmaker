@@ -59,10 +59,20 @@ class Gap(nn.Module):
         return (rays, target + self.offset)
 
 
+class GapY(nn.Module):
+    def __init__(self, offset_y):
+        super().__init__()
+        self.offset_y = torch.as_tensor(offset_y)
+    
+    def forward(self, inputs):
+        rays, target = inputs
+        return (rays, target + torch.stack((torch.tensor(0.), self.offset_y)))
+
+
 class GapX(nn.Module):
     def __init__(self, offset_x):
         super().__init__()
-        self.offset_x = offset_x
+        self.offset_x = torch.as_tensor(offset_x)
     
     def forward(self, inputs):
         rays, target = inputs
