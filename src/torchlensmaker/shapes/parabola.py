@@ -2,51 +2,23 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.shapes.common import normed
+from torchlensmaker.shapes import BaseShape
 
-
-class Parabola:
+class Parabola(BaseShape):
     """
     Parabola of the form y = ax^2
     """
 
-    def clone(self, scale=1.):
-        return type(self)(share=self, scale=scale)
-    
-    def flip(self):
-        return self.clone(-1.)
-
-    def init_normal(self, width, a):
+    def __init__(self, width, a):
+        super().__init__()
         self._width = width
         self._a = torch.as_tensor(a)
 
         assert self._a.ndim == 0
-
-    def init_share(self, share, scale):
-        assert isinstance(share, type(self))
-        self._width = share._width
-        self._share = share
-        self._scale = scale
-
-    def __init__(self,
-                 width=None,
-                 a=None,
-                 share=None,
-                 scale=None):
-        super().__init__()
-
-        if width is not None and a is not None:
-            self.init_normal(width, a)
-        elif share is not None and scale is not None:
-            self.init_share(share, scale)
-        else:
-            raise RuntimeError("invalid shape arguments")
     
     def coefficients(self):
-        if not hasattr(self, "_share"):
-            return self._a
-        else:
-            return self._share.coefficients() * self._scale
-    
+        return self._a
+
     def parameters(self):
         if hasattr(self, "_a") and isinstance(self._a, nn.Parameter):
             return {"a": self._a}

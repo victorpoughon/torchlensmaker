@@ -49,6 +49,23 @@ class ParallelBeamUniform(nn.Module):
         return ((rays_origins, rays_vectors), target)
 
 
+class ParallelBeamRandom(nn.Module):
+    def __init__(self, width):
+        super().__init__()
+        self.width = width
+
+    def forward(self, inputs):
+        num_rays, target = inputs
+    
+        rays_x = -self.width + 2*self.width * torch.rand(size=(num_rays,))
+        rays_y = torch.zeros(num_rays,)
+        rays_origins = torch.column_stack((rays_x, rays_y))
+
+        rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
+
+        return ((rays_origins, rays_vectors), target)
+    
+
 class Gap(nn.Module):
     def __init__(self, offset):
         super().__init__()
@@ -77,21 +94,6 @@ class GapX(nn.Module):
     def forward(self, inputs):
         rays, target = inputs
         return (rays, target + torch.stack((self.offset_x, torch.tensor(0.))))
-
-
-class ParallelBeamRandom(nn.Module):
-    def __init__(self, radius):
-        super().__init__()
-        self.radius = radius
-
-    def forward(self, num_rays, hook=None):
-        rays_x = -self.radius + 2*self.radius * torch.rand(size=(num_rays,))
-        rays_y = torch.zeros(num_rays,)
-        rays_origins = torch.column_stack((rays_x, rays_y))
-
-        rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
-
-        return (rays_origins, rays_vectors)
 
 
 class RefractiveSurface(nn.Module):

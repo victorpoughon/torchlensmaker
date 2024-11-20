@@ -1,6 +1,3 @@
-
-
-
 class BaseShape:
     """
     Base class for parametric 2D shapes,
@@ -11,6 +8,7 @@ class BaseShape:
         pass
     
     def parameters(self):
+        "Dictionary of name -> nn.Parameter"
         raise NotImplementedError
 
     def domain(self):

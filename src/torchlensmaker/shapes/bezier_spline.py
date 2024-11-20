@@ -26,69 +26,39 @@ class BezierSpline(BaseShape):
         if not isinstance(parabola, Parabola):
             raise RuntimeError(f"expected type Parabola, got {type(parabola)}")
     
+        # TODO
         # P1: 0, 0
         # P2: w/2, 0
         # P3: w, aw^2
-        return 
-    
-    @classmethod
-    def share(cls, other, scale=1.0):
-        if not isinstance(other, BezierSpline):
-            raise RuntimeError(f"expected type BezierSpline, got {type(other)}")
-        
-        return cls(other.radius, init=None, share=other, scale=scale)
-    
-    def parameters(self):
-        return self.params
-        
-    def init_share(self, share, scale):
-        self.params = {}
-        self.num_intervals = share.num_intervals
+        return
 
-    def init_new(self, width, init):
-
-        # Default zero init
-        if init is None:
-            Y = torch.tensor([0.0])
-            CX = torch.tensor([0.3*width, 1.3*width])
-            CY = torch.tensor([0.0])
-        else:
-            Y, CX, CY = map(torch.as_tensor, init)
-        
+    def __init__(self, width, init):
+        Y, CX, CY = map(torch.as_tensor, init)
+    
         assert Y.shape[0] + 1 == CX.shape[0] == CY.shape[0] + 1
 
         self.radius = width
         self.num_intervals = Y.shape[0]
 
         self.params = {
-            "Y": nn.Parameter(Y),
-            "CX": nn.Parameter(CX),
-            "CY": nn.Parameter(CY),
+            "Y": Y,
+            "CX": CX,
+            "CY": CY,
         }
 
-    def __init__(self, width, init=None, share=None, scale=1.0):
-        """
-        Create a new surface, either from 
-        """
-        
-        if share is not None:
-            self.init_share(share, scale)
-        else:
-            self.init_new(width, init)
-        self.radius = width
-        self.share = share
-        self.scale = scale
+    def parameters(self):
+        return {
+            n: v
+            for n, v in self.params.items()
+            if isinstance(v, nn.Parameter)
+        }
     
     def coefficients(self):
         # Knots: X fixed on linspace, first Y fixed at zero
-        if self.share is None:
-            param_Y = self.params["Y"]
-            param_CX = self.params["CX"]
-            param_CY = self.params["CY"]
-        else:
-            param_Y = self.share.params["Y"] * self.scale
-            param_CX = self.share.params["CX"]
-            param_CY = self.share.params["CY"] * self.scale
+
+        param_Y = self.params["Y"]
+        param_CX = self.params["CX"]
+        param_CY = self.params["CY"]
 
         X = torch.linspace(0.0, self.radius, self.num_intervals + 1)
         Y = torch.cat((torch.zeros(1), param_Y))

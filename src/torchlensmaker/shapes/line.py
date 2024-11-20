@@ -2,40 +2,28 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.shapes.common import normed
+from torchlensmaker.shapes import BaseShape
 
 
-class Line:
+class Line(BaseShape):
 
-    def __init__(self, lens_radius, init=None, share=None, scale=1.0, optimize=True):
-        if init is not None and share is None:
-            init = torch.as_tensor(init)
-            assert init.shape == (3,)
-            if optimize:
-                self.params = {
-                    "abc": nn.Parameter(init)
-                }
-            else:
-                self.params = {
-                    "abc": init
-                }
-        else:
-            raise NotImplementedError("")
-
-        self.lens_radius = lens_radius
-        self._share = share
-        self._scale = scale
+    def __init__(self, width, abc):
+        abc = torch.as_tensor(abc)
+        assert abc.shape == (3,)
+        self._abc = abc
+        self.width = width
     
     def parameters(self):
-        return self.params
+        if isinstance(self._abc, nn.Parameter):
+            return {"abc": self._abc}
+        else:
+            return {}
     
     def coefficients(self):
-        if self._share is None:
-            return self.params["abc"]
-        else:
-            raise NotImplementedError("")
+        return self._abc
     
     def domain(self):
-        return torch.tensor([-self.lens_radius, self.lens_radius])
+        return torch.tensor([-self.width, self.width])
 
     def evaluate(self, X):
         X = torch.atleast_1d(torch.as_tensor(X))

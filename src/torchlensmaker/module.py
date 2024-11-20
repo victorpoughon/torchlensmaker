@@ -23,7 +23,7 @@ class Module(nn.Module):
             return super().__getattr__(name)
     
     def __setattr__(self, name: str, value):
-        if isinstance(value, tlm.Parabola):
+        if isinstance(value, tlm.BaseShape):
             for parameter_name, parameter in value.parameters().items():
                 self.register_parameter(name + "_" + parameter_name, parameter)
             self.__dict__["_shapes"][name] = value

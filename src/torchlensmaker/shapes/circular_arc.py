@@ -4,14 +4,15 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.shapes.common import intersect_newton
+from torchlensmaker.shapes import BaseShape
 
 
-class CircularArc:
+class CircularArc(BaseShape):
     """
     An arc of circle
 
     Parameters:
-        lens_radius: radius of the lens
+        width: typically radius of the lens
         arc_radius: radius of curvature of the surface profile
 
         The sign of the radius indicates the direction of the center of curvature.
@@ -20,43 +21,34 @@ class CircularArc:
         cross over zero and change sign.
     """
 
-    def share(self, scale=1.0):
-        return type(self)(self.lens_radius, init=None, share=self, scale=scale)
+    def __init__(self, width, arc_radius):
+        assert torch.abs(torch.as_tensor(arc_radius)) >= width
 
-    def __init__(self, lens_radius, init=None, share=None, scale=1.0):
-
-        if init is not None and share is None:
-            arc_radius = torch.atleast_1d(torch.as_tensor(init))
-            assert torch.abs(arc_radius) >= lens_radius
-            self.params = {
-                "K": nn.Parameter(1./arc_radius)
-            }
-        elif init is None and share is not None:
-            assert isinstance(share, CircularArc)
-            self.params = {}
+        if isinstance(arc_radius, nn.Parameter):
+            self._K = nn.Parameter(torch.tensor(1./arc_radius.item()))
+        else:
+            self._K = torch.as_tensor(1./arc_radius)
         
-        self.lens_radius = lens_radius
-        self._share = share
-        self._scale = scale
+        self.width = width
 
     def parameters(self):
-        return self.params
+        if isinstance(self._K, nn.Parameter):
+            return {"K": self._K}
+        else:
+            return {}
 
     def coefficients(self):
-        if self._share is None:
-            K = self.params["K"]
-        else:
-            K = self._share.params["K"]
+        K = self._K
         
         # Special case to avoid div by zero
         if torch.abs(K) < 1e-8:
             return torch.sign(K) * 1e8
         else:
-            return 1. / K * self._scale
+            return 1. / K
 
     def domain(self):
         R = self.coefficients()
-        a = math.acos(self.lens_radius / torch.abs(R))
+        a = math.acos(self.width / torch.abs(R))
         if R > 0:
             return a, math.pi - a
         else:

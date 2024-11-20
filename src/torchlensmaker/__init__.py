@@ -10,6 +10,7 @@ from torchlensmaker.optics import (
 )
 
 from torchlensmaker.shapes import (
+    BaseShape,
     BezierSpline,
     CircularArc,
     Line,
