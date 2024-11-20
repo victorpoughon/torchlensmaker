@@ -4,7 +4,7 @@ from os.path import join
 
 import build123d as bd
 
-from .optics import Lens, OpticalStack
+from .optics import Lens
 
 from torchlensmaker.shapes import (
     CircularArc,
@@ -95,7 +95,7 @@ def export_lens(lens: Lens, folder_path):
     # np.save(filepath, data)
 
 
-def export3d(optics: OpticalStack, folder_path):
+def export3d(optics, folder_path):
     "Export polygons of lenses in the the optical stack"
 
     for j, element in enumerate(optics):

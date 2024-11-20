@@ -10,38 +10,53 @@ from torchlensmaker.raytracing import (
     rays_to_coefficients
 )
 
+from torchlensmaker.surface import Surface
+
 
 def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
 
 
 class FocalPointLoss(nn.Module):
-    def __init__(self, pos):
+    def __init__(self):
         super().__init__()
-        self.pos = torch.as_tensor(pos)
+        self.pos = None
 
-    def forward(self, rays, hook=None):
-        ray_origins, ray_vectors = rays
+    def forward(self, inputs):
+
+        (ray_origins, ray_vectors), target = inputs
+        self.pos = target # store for rendering
         num_rays = ray_origins.shape[0]
-        sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, self.pos).sum()
+        sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, target).sum()
         return sum_squared / num_rays
 
 
 class ParallelBeamUniform(nn.Module):
-    def __init__(self, width, pos):
+    def __init__(self, width):
         super().__init__()
         self.width = width
-        self.pos = torch.as_tensor(pos)
 
-    def forward(self, num_rays, hook=None):
+    def forward(self, inputs):
+        num_rays, target = inputs
+
         margin = 0.1 # TODO
         rays_x = torch.linspace(-self.width + margin, self.width - margin, num_rays)
         rays_y = torch.zeros(num_rays)
         
-        rays_origins = torch.column_stack((rays_x , rays_y )) + self.pos
+        rays_origins = target + torch.column_stack((rays_x , rays_y ))
         rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
 
-        return (rays_origins, rays_vectors)
+        return ((rays_origins, rays_vectors), target)
+
+
+class FixedGap(nn.Module):
+    def __init__(self, offset):
+        super().__init__()
+        self.offset = offset
+    
+    def forward(self, inputs):
+        rays, target = inputs
+        return (rays, target + self.offset)
 
 
 class ParallelBeamRandom(nn.Module):
@@ -60,16 +75,19 @@ class ParallelBeamRandom(nn.Module):
 
 
 class RefractiveSurface(nn.Module):
-    def __init__(self, surface, n):
+    def __init__(self, shape, n):
         super().__init__()
 
-        self.surface = surface
+        self.shape = shape
         self.n1, self.n2 = n
 
     
-    def forward(self, rays, hook=None):
-        rays_origins, rays_vectors = rays
+    def forward(self, inputs):
+        ((rays_origins, rays_vectors), target) = inputs
         num_rays = rays_origins.shape[0]
+
+        self.surface = Surface(self.shape, pos=target)
+         # could be not stored and rebuilt in the rendering code using target and shape
 
         collision_all_refracted = torch.zeros((num_rays, 2))
 
@@ -123,7 +141,7 @@ class RefractiveSurface(nn.Module):
 
             collision_all_refracted[index_ray, :] = refracted_ray
 
-        return (collision_points, collision_all_refracted)
+        return ((collision_points, collision_all_refracted), target)
 
 
 

@@ -53,15 +53,16 @@ def render_all(ax, optics, num_rays):
         if isinstance(module, RefractiveSurface):
             render_element(ax, module)
             if inputs is not None and outputs is not None:
-                rays_origins, _ = inputs
-                rays_ends, _ = outputs
+                print(inputs)
+                (rays_origins, _), _ = inputs[0]
+                (rays_ends, _), _ = outputs
                 render_rays(ax, rays_origins, rays_ends)
 
         # For focal point loss, render rays up to a bit after the focal point
         elif isinstance(module, FocalPointLoss):
             render_element(ax, module)
             if inputs is not None and outputs is not None:
-                rays_origins, rays_vectors = inputs
+                (rays_origins, rays_vectors), _ = inputs[0]
                 t = (module.pos[1] -rays_origins[:, 1])/rays_vectors[:, 1]
                 t = 1.3*t
                 end_x = rays_origins[:, 0] + t*rays_vectors[:, 0]
@@ -89,13 +90,13 @@ def render_all(ax, optics, num_rays):
 
 
 
-def render_plt(optics, num_rays, force_uniform_source=True):
+def render_plt(optics, inputs, force_uniform_source=True):
     
     fig, ax = plt.subplots(figsize=(12, 8))
 
     # TODO implement force_uniform_source
     
-    render_all(ax, optics, num_rays)
+    render_all(ax, optics, inputs)
 
 
     plt.gca().set_title(f"")

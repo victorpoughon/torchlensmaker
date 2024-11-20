@@ -20,7 +20,7 @@ def get_all_gradients(model):
     return torch.cat(grads)
 
 
-def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=None):
+def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None):
     viridis = plt.get_cmap('viridis')
 
     fig, ax = plt.subplots()
@@ -39,7 +39,7 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
     for i in range(num_iter):
     
         optimizer.zero_grad()
-        loss = optics(num_rays)# + optics.lens.regularization()  # TODO refactor this into custom sequence
+        loss = optics(inputs)# + optics.lens.regularization()  # TODO refactor this into custom sequence
 
         if regularization is not None:
             loss += regularization(optics)

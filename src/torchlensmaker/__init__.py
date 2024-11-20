@@ -1,7 +1,7 @@
 from torchlensmaker.optics import (
     FocalPointLoss,
     Lens,
-    OpticalStack,
+    FixedGap,
     ParallelBeamRandom,
     ParallelBeamUniform,
     RefractiveSurface,
@@ -35,10 +35,10 @@ __all__ = [
     # Optics
     "FocalPointLoss",
     "Lens",
-    "OpticalStack",
     "ParallelBeamRandom",
     "ParallelBeamUniform",
     "RefractiveSurface",
+    "FixedGap",
 
     # Shapes
     "BezierSpline",
