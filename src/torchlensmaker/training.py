@@ -39,7 +39,7 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
     for i in range(num_iter):
     
         optimizer.zero_grad()
-        loss = optics.forward(num_rays)# + optics.lens.regularization()  # TODO refactor this into custom sequence
+        loss = optics(num_rays)# + optics.lens.regularization()  # TODO refactor this into custom sequence
 
         if regularization is not None:
             loss += regularization(optics)
@@ -76,7 +76,6 @@ def optimize(optics, optimizer, num_rays, num_iter, nshow=20, regularization=Non
     ax2.plot(epoch_range, loss_record.detach())
     for n, param in optics.named_parameters():
         if parameters_record[n][0].dim() == 0:
-            print(parameters_record[n])
             data = torch.stack(parameters_record[n]).detach().numpy()
             ax1.plot(epoch_range, data, label=n)
     ax1.set_title("parameter")

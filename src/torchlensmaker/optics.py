@@ -127,31 +127,7 @@ class RefractiveSurface(nn.Module):
 
 
 
-class OpticalStack(nn.Module):
-    def __init__(self, stack):
-        super().__init__()
-        self.stack = stack
-        for i, module in enumerate(self.stack):
-            self.add_module(str(i), module)
-    
-    def modules(self):
-        return self.stack
-
-    def forward(self, rays, hook=None):
-        inputs = rays
-        
-        for optical_element in self.modules():
-            output = optical_element.forward(inputs, hook)
-            if hook:
-                override = hook(optical_element, inputs, output)
-                if override is not None:
-                    output = override
-            inputs = output
-
-        return output
-
-
-class Lens(OpticalStack):
+class Lens:
     def __init__(self, surface1, gap, surface2):
         super().__init__([surface1, gap, surface2])
         self.surface1 = surface1

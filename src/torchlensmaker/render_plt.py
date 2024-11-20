@@ -28,7 +28,7 @@ def render_surface(ax, surface, color):
     ax.plot(points[:, 0], points[:, 1], color=color)
 
     # Render surface anchor
-    ax.plot(surface.pos[0], surface.pos[1], "+", color="grey")
+    ax.plot(surface.pos[0].detach(), surface.pos[1].detach(), "+", color="grey")
     
 
 def render_element(ax, element):
@@ -48,6 +48,7 @@ def render_all(ax, optics, num_rays):
     # and renders them at each step
 
     def forward_hook(module, inputs, outputs):
+        print("Forward hook on", module)
         # For surfaces, render rays collision to collision
         if isinstance(module, RefractiveSurface):
             render_element(ax, module)
@@ -68,8 +69,21 @@ def render_all(ax, optics, num_rays):
                 render_rays(ax, rays_origins, torch.column_stack((end_x, end_y)))
 
     try:
-        # Forward model, using hook for rendering
-        loss = optics.forward(num_rays, hook=forward_hook)
+        # Register hooks on all modules
+        handles = []
+        for module in optics.modules():
+            print("registering on ", module)
+            handles.append(
+                module.register_forward_hook(forward_hook)
+            )
+
+        # Call the forward model, this will call the hooks
+        loss = optics(num_rays)
+
+        # Remove all hooks
+        for h in handles:
+            h.remove()
+
     except RuntimeError as e:
         print("Error calling forward on model", e)
 
