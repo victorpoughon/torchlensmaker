@@ -23,7 +23,7 @@ class Line(BaseShape):
         return self._abc
     
     def domain(self):
-        return torch.tensor([-self.width, self.width])
+        return torch.tensor([-self.width / 2, self.width / 2])
 
     def evaluate(self, X):
         X = torch.atleast_1d(torch.as_tensor(X))

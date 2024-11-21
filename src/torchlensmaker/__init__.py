@@ -37,4 +37,5 @@ from torchlensmaker.module import Module
 
 from torchlensmaker.lenses import (
     SymmetricLens,
+    PlanoLens,
 )

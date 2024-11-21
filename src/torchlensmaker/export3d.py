@@ -14,7 +14,7 @@ def tuplelist(arr):
 
 def sketch_line(line: tlm.Line):
     a, b, c = line.coefficients().detach().numpy().tolist()
-    r = line.width
+    r = line.width / 2
 
     return bd.Polyline([
         (-r, (-c + a*r) / b),
