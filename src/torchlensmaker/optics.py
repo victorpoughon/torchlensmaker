@@ -40,7 +40,7 @@ class ParallelBeamUniform(nn.Module):
         num_rays, target = inputs
 
         margin = 0.1 # TODO
-        rays_x = torch.linspace(-self.width + margin, self.width - margin, num_rays)
+        rays_x = torch.linspace(-self.width/2 + margin, self.width/2 - margin, num_rays)
         rays_y = torch.zeros(num_rays)
         
         rays_origins = target + torch.column_stack((rays_x , rays_y ))
@@ -57,7 +57,7 @@ class ParallelBeamRandom(nn.Module):
     def forward(self, inputs):
         num_rays, target = inputs
     
-        rays_x = -self.width + 2*self.width * torch.rand(size=(num_rays,))
+        rays_x = -self.width / 2 + self.width * torch.rand(size=(num_rays,))
         rays_y = torch.zeros(num_rays,)
         rays_origins = torch.column_stack((rays_x, rays_y))
 
@@ -160,39 +160,3 @@ class RefractiveSurface(nn.Module):
             collision_all_refracted[index_ray, :] = refracted_ray
 
         return ((collision_points, collision_all_refracted), self.surface.at(self.anchors[1]))
-
-
-
-class Lens:
-    def __init__(self, surface1, gap, surface2):
-        super().__init__()
-        self.surface1 = surface1
-        self.gap = gap
-        self.surface2 = surface2
-    
-    def thickness(self, r):
-        "Return the lens total thickness at distance r from the center"
-        pass
-    
-    def thickness(self):
-        y1 = self.surface1.surface.evaluate(self.surface1.surface.domain())[1, 1]
-        y2 = self.surface2.surface.evaluate(self.surface2.surface.domain())[1, 1]
-
-        thickness_at_center = torch.as_tensor(self.gap.origin)
-        if self.surface1.anchors[1] == Anchor.Edge:
-            thickness_at_center += y1
-        if self.surface2.anchors[0] == Anchor.Edge:
-            thickness_at_center -= y2
-        
-        thickness_at_radius = torch.as_tensor(self.gap.origin)
-        if self.surface1.anchors[1] == Anchor.Center:
-            thickness_at_radius -= y1
-        if self.surface2.anchors[0] == Anchor.Center:
-            thickness_at_radius += y2
-
-        thickness_at_radius = thickness_at_center - y1 + y2
-
-        return thickness_at_center, thickness_at_radius
-
-    
-

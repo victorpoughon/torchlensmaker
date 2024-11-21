@@ -7,10 +7,15 @@
 * sharing shapes between surfaces
 * using free parameters (offset along x)
 * real optical systems
+* custom lens with manually making refractive surfaces
 
 * Optimizing a lens thickness
 * Optimizing a lens shape
 * Optimizing multiple things: lens shape, thickness, distance between lenses
+
+* Avoiding surface collisions during optimization
+* Avoiding non colliding rays during optimization
+* Regularization
 
 ## absolute space refactor:
 

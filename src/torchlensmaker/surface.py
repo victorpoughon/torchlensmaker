@@ -17,7 +17,7 @@ class Surface:
     The surface class wraps a shape with:
         * 'pos': an absolute position in 2D space
         * 'anchor': relative position on the shape that attaches to the absolute position
-        * 'scale': an optional scale parameter (typically use -1 to mirror)
+        * 'scale': an optional scale parameter (typically -1 to mirror)
 
     Valid anchors are:
         * 'origin' (default): origin (0,0) of the shape
@@ -35,6 +35,9 @@ class Surface:
 
         if not anchor in self.valid_anchors:
             raise ValueError(f"Invalid anchor value '{self.anchor}', must be one of {self.valid_anchors}")
+
+    def coefficients(self):
+        return self.shape.coefficients()
 
     def parameters(self):
         return self.shape.parameters()

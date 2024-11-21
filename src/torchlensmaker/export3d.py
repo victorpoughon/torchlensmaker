@@ -4,13 +4,7 @@ from os.path import join
 
 import build123d as bd
 
-from .optics import Lens
-
-from torchlensmaker.shapes import (
-    CircularArc,
-    Line,
-    Parabola,
-)
+import torchlensmaker as tlm
 
 def tuplelist(arr):
     "Numpy array to list of tuples"
@@ -18,81 +12,70 @@ def tuplelist(arr):
     return [tuple(e) for e in arr]
 
 
-def sketch_line(line, offset):
+def sketch_line(line: tlm.Line):
     a, b, c = line.coefficients().detach().numpy().tolist()
     r = line.width
 
     return bd.Polyline([
-        (-r, (-c + a*r) / b + offset),
-        (r, (-c - a*r) / b + offset),
+        (-r, (-c + a*r) / b),
+        (r, (-c - a*r) / b),
     ])
 
 
-def sketch_parabola(parabola, offset):
+def sketch_parabola(parabola: tlm.Parabola):
     a = parabola.coefficients().detach().numpy()
-    r = parabola.width
+    r = parabola.width / 2
 
     return bd.Bezier([
-        (-r, a*r**2 + offset),
-        (0, -a*r**2 + offset),
-        (r, a*r**2 + offset),
+        (-r, a*r**2),
+        (0, -a*r**2),
+        (r, a*r**2),
     ])
 
 
-def sketch_circular_arc(arc: CircularArc, offset):
+def sketch_circular_arc(arc: tlm.CircularArc):
     arc_radius = arc.coefficients().detach().item()
-    x = arc.width
-    y = arc.evaluate(arc.domain()[0]).detach()[1]
+    x, y = arc.evaluate(arc.domain()[0]).detach().tolist()
 
-    return bd.RadiusArc((-x, y + offset), (x, y + offset), arc_radius)
+    if arc_radius > 0:
+        return bd.RadiusArc((-x, y), (x, y), arc_radius)
+    else:
+        return bd.RadiusArc((x, y), (-x, y), arc_radius)
 
 
-def shape_to_sketch(surface, offset):
-    # Dynamic dispatch for dummies
+def shape_to_sketch(shape):
     try:
         return {
-            Parabola: sketch_parabola,
-            Line: sketch_line,
-            CircularArc: sketch_circular_arc,
-        }[type(surface)](surface, offset)
+            tlm.Parabola: sketch_parabola,
+            tlm.Line: sketch_line,
+            tlm.CircularArc: sketch_circular_arc,
+        }[type(shape)](shape)
     except KeyError:
-        raise RuntimeError(f"Unsupported shape type {type(surface)}")
+        raise RuntimeError(f"Unsupported shape type {type(shape)}")
 
 
-def lens_to_part(surface1, gap, surface2):
+def surface_to_sketch(surface):
+    sketch = shape_to_sketch(surface.shape)
+    scale = (*surface.scale.detach().tolist(), 1.)
+    return bd.scale(sketch, scale)
 
-    gap_size = lens.thickness()[0].item()
-    curve1 = shape_to_sketch(surface1.surface, 0.0)
-    curve2 = shape_to_sketch(surface2.surface, gap_size)
+
+def lens_to_part(lens):
+    inner_thickness = lens.inner_thickness().detach().item()
+    curve1 = surface_to_sketch(lens.surface1.surface)
+    curve2 = bd.Pos(0., inner_thickness) * surface_to_sketch(lens.surface2.surface)
 
     edge = bd.Polyline([
         curve1 @ 1,
         curve2 @ 1,
     ])
 
-    # Close the edges
+    # Close the edges, revolve around the Y axis
     face = bd.make_face([curve1, edge, curve2])
     face = bd.split(face, bisect_by=bd.Plane.YZ)
-
     part = bd.revolve(face, bd.Axis.Y)
 
     return part
-    
-
-def export_lens(lens: Lens, folder_path):
-    surface1 = lens[0].surface.XY()
-    gap_size = lens[1].origin
-    surface2 = lens[2].surface.XY()
-
-    print(surface1)
-    print(gap_size)
-    print(surface2)
-    # profile = element.profile
-    # # Interleave A and B to make polygon
-    # X, Y = element.profile.XY()
-    # data = np.column_stack((X, Y))
-    # filepath = join(folder_path, f"lens{str(j)}.npy")
-    # np.save(filepath, data)
 
 
 def export3d(optics, folder_path):
@@ -104,4 +87,3 @@ def export3d(optics, folder_path):
             part = lens_to_part(element)
             bd.export_step(part, path)
             yield part
-    

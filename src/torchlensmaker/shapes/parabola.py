@@ -35,7 +35,7 @@ class Parabola(BaseShape):
     def domain(self):
         "Return the start and end points"
 
-        r = self.width
+        r = self.width / 2
         return torch.tensor([-r, r])
 
     def normal(self, xs):

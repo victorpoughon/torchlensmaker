@@ -1,6 +1,5 @@
 from torchlensmaker.optics import (
     FocalPointLoss,
-    Lens,
     Gap,
     GapX,
     GapY,

@@ -12,7 +12,7 @@ class CircularArc(BaseShape):
     An arc of circle
 
     Parameters:
-        width: typically radius of the lens
+        width: typically diameter of the lens
         arc_radius: radius of curvature of the surface profile
 
         The sign of the radius indicates the direction of the center of curvature.
@@ -22,7 +22,7 @@ class CircularArc(BaseShape):
     """
 
     def __init__(self, width, arc_radius):
-        assert torch.abs(torch.as_tensor(arc_radius)) >= width
+        assert torch.abs(torch.as_tensor(arc_radius)) >= width / 2
 
         if isinstance(arc_radius, nn.Parameter):
             self._K = nn.Parameter(torch.tensor(1./arc_radius.item()))
@@ -48,7 +48,7 @@ class CircularArc(BaseShape):
 
     def domain(self):
         R = self.coefficients()
-        a = math.acos(self.width / torch.abs(R))
+        a = math.acos(self.width / (2*torch.abs(R)))
         if R > 0:
             return a, math.pi - a
         else:
