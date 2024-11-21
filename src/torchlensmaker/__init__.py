@@ -36,35 +36,6 @@ from torchlensmaker.render_plt import (
 
 from torchlensmaker.module import Module
 
-__all__ = [
-    # Optics
-    "FocalPointLoss",
-    "Lens",
-    "ParallelBeamRandom",
-    "ParallelBeamUniform",
-    "RefractiveSurface",
-    #"Gap",
-    #"GapX",
-    #"GapY",
-
-    # Shapes
-    "BezierSpline",
-    "CircularArc",
-    "Line",
-    "Parabola",
-    "PiecewiseLine",
-
-    # Surface
-    "Surface",
-
-    # Training
-    "optimize",
-
-    # Export 3D
-    "lens_to_part",
-
-    # Rendering
-    "render_plt",
-
-    "Module",
-]
+from torchlensmaker.lenses import (
+    SymmetricLens,
+)

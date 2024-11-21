@@ -1,6 +1,31 @@
 # Torchlensmaker roadmap and TODOs
 
+## Example notebooks ideas
+
+* anchors
+* lens inner vs outer thickness
+* sharing shapes between surfaces
+* using free parameters (offset along x)
+* real optical systems
+
+* Optimizing a lens thickness
+* Optimizing a lens shape
+* Optimizing multiple things: lens shape, thickness, distance between lenses
+
+## absolute space refactor:
+
+* update all shapes to new share / init way
+* rework all examples / tests
+* absolute positioning on X
+
+* per parameter learning rate adapted to its scale
+
+* think about non colliding rays (currently sometimes clamped / sometimes extrapolated)
+* think about negative collisions
+
+
 ## Higher prio
+
 
 *  more tests:
     lens maker equation

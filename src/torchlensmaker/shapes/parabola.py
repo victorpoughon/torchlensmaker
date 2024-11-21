@@ -4,6 +4,7 @@ import torch.nn as nn
 from torchlensmaker.shapes.common import normed
 from torchlensmaker.shapes import BaseShape
 
+
 class Parabola(BaseShape):
     """
     Parabola of the form y = ax^2
@@ -11,7 +12,7 @@ class Parabola(BaseShape):
 
     def __init__(self, width, a):
         super().__init__()
-        self._width = width
+        self.width = width
         self._a = torch.as_tensor(a)
 
         assert self._a.ndim == 0
@@ -34,7 +35,7 @@ class Parabola(BaseShape):
     def domain(self):
         "Return the start and end points"
 
-        r = self._width
+        r = self.width
         return torch.tensor([-r, r])
 
     def normal(self, xs):

@@ -20,7 +20,7 @@ def tuplelist(arr):
 
 def sketch_line(line, offset):
     a, b, c = line.coefficients().detach().numpy().tolist()
-    r = line.lens_radius
+    r = line.width
 
     return bd.Polyline([
         (-r, (-c + a*r) / b + offset),
@@ -29,8 +29,8 @@ def sketch_line(line, offset):
 
 
 def sketch_parabola(parabola, offset):
-    a = parabola.coefficients()[0].detach().numpy()
-    r = parabola.lens_radius
+    a = parabola.coefficients().detach().numpy()
+    r = parabola.width
 
     return bd.Bezier([
         (-r, a*r**2 + offset),
@@ -39,10 +39,10 @@ def sketch_parabola(parabola, offset):
     ])
 
 
-def sketch_circular_arc(arc, offset):
+def sketch_circular_arc(arc: CircularArc, offset):
     arc_radius = arc.coefficients().detach().item()
-    x = arc.lens_radius
-    y = arc.evaluate(arc.domain()[0])[0][1].item()
+    x = arc.width
+    y = arc.evaluate(arc.domain()[0]).detach()[1]
 
     return bd.RadiusArc((-x, y + offset), (x, y + offset), arc_radius)
 
@@ -59,11 +59,11 @@ def shape_to_sketch(surface, offset):
         raise RuntimeError(f"Unsupported shape type {type(surface)}")
 
 
-def lens_to_part(lens: Lens):
+def lens_to_part(surface1, gap, surface2):
 
     gap_size = lens.thickness()[0].item()
-    curve1 = shape_to_sketch(lens.surface1.surface, 0.0)
-    curve2 = shape_to_sketch(lens.surface2.surface, gap_size)
+    curve1 = shape_to_sketch(surface1.surface, 0.0)
+    curve2 = shape_to_sketch(surface2.surface, gap_size)
 
     edge = bd.Polyline([
         curve1 @ 1,

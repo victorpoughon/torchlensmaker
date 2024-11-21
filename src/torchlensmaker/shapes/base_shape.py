@@ -7,6 +7,9 @@ class BaseShape:
     def __init__(self):
         pass
     
+    def coefficients(self):
+        raise NotImplementedError
+
     def parameters(self):
         "Dictionary of name -> nn.Parameter"
         raise NotImplementedError

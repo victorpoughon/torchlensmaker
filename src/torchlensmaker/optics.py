@@ -69,7 +69,7 @@ class ParallelBeamRandom(nn.Module):
 class Gap(nn.Module):
     def __init__(self, offset):
         super().__init__()
-        self.offset = offset
+        self.offset = torch.as_tensor(offset)
     
     def forward(self, inputs):
         rays, target = inputs
@@ -165,7 +165,7 @@ class RefractiveSurface(nn.Module):
 
 class Lens:
     def __init__(self, surface1, gap, surface2):
-        super().__init__([surface1, gap, surface2])
+        super().__init__()
         self.surface1 = surface1
         self.gap = gap
         self.surface2 = surface2
@@ -195,3 +195,4 @@ class Lens:
         return thickness_at_center, thickness_at_radius
 
     
+
