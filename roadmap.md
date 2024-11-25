@@ -3,10 +3,14 @@
 ## Pairing ideas
 
 * Fix piecewise line
+* Fix bezier spline
 * Add tests for refraction functions
-* Test raytracing.py and batch raytracing functions
+* Add tests for raytracing.py and batch raytracing functions
 * Implement reflection
 * Implement rotation in Surface()
+* per parameter learning rate adapted to parameter scale scale
+    * example: one parabola coefficient, one distance
+
 
 ## New example notebooks ideas
 
@@ -31,10 +35,7 @@
 * Avoiding "negative collisions" during optimization
 * Regularization
 
-## Small TODOs
-
-* Get all notebooks working
-* per parameter learning rate adapted to its scale
+* Image and objet
 
 
 ## Rays not collisind with surface
