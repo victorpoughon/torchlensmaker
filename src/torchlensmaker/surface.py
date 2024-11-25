@@ -54,7 +54,8 @@ class Surface:
         elif anchor == "extent":
             # Assuming the shape is symmetric, get the extend along the Y axis
             off = self.shape.evaluate(self.shape.domain()[1:])[0] * self.scale
-            return torch.tensor([0., off[1]])
+            #return torch.tensor([0., off[1]])  #### stack instead to preserve grad??
+            return torch.stack((torch.tensor(0.), off[1]))
 
         else:
             raise ValueError(f"Invalid anchor value '{anchor}'")

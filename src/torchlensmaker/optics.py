@@ -25,7 +25,7 @@ class FocalPointLoss(nn.Module):
     def forward(self, inputs):
 
         (ray_origins, ray_vectors), target = inputs
-        self.pos = target # store for rendering
+        self.pos = target # store for rendering, TODO don't
         num_rays = ray_origins.shape[0]
         sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, target).sum()
         return sum_squared / num_rays
@@ -105,44 +105,50 @@ class RefractiveSurface(nn.Module):
         self.scale = scale
         self.anchors = anchors
 
+        # Technically, surface and pos are outputs of the computation done in forward(),
+        # and should rather be returned and passed along the module stack.
+        # But to preserve their location in the module tree and to enable nicer, semantic access to them
+        # from rendering or optimization code, we store them in the module itself here.
+        # That way, code can access them with syntax such as optics.lens1.surface1,
+        # rather than output_surfaces[4].
+        # But, they are only populated after an evaluation of the complete model.
+        self.surface = None
+        self.pos = None
+
     
     def forward(self, inputs):
         ((rays_origins, rays_vectors), target) = inputs
         num_rays = rays_origins.shape[0]
 
-        # could be not stored and rebuilt in the rendering code using target and shape
+        self.pos = target
         self.surface = Surface(self.shape, pos=target, scale=self.scale, anchor=self.anchors[0])
 
         collision_all_refracted = torch.zeros((num_rays, 2))
 
-        # Get all rays intersections points with the surface and the normal vectors
+        # For all rays, find the intersection with the surface and the normal vector at the intersection
         lines = rays_to_coefficients(rays_origins, rays_vectors)
         collision_points, surface_normals = self.surface.collide(lines)
 
-        if not torch.all(torch.isfinite(collision_points)):
-            print(self.surface.coefficients)
-            print("lines", lines)
-            print("colision points", collision_points)
-            raise RuntimeError("nan detected in collision_points!")
+        # Verify no weirdness in the data
+        assert torch.all(torch.isfinite(collision_points))
+        assert torch.all(torch.isfinite(surface_normals))
 
         # Make sure collisions are in front of rays
-        ts = position_on_ray(rays_origins, rays_vectors, collision_points)
-        if torch.any(ts <= 0):
-            print("warning: some ts <=0")
-        if True and not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
-            print("!! Some ts <= 0")
-            raise RuntimeError("negative collisions")
+        if False:
+            ts = position_on_ray(rays_origins, rays_vectors, collision_points)
+            if torch.any(ts <= 0):
+                print("warning: some ts <=0")
+            if not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
+                print("!! Some ts <= 0")
+                raise RuntimeError("negative collisions")
         
         # A surface always has two opposite normals, so keep the one pointing against the ray
         # i.e. the normal such that dot(normal, ray) < 0
         dot = torch.sum(surface_normals * rays_vectors, dim=1)
         collision_normals = torch.where((dot > 0).unsqueeze(1).expand(-1, 2), -surface_normals, surface_normals)
 
-        if torch.any(torch.isnan(collision_normals)):
-            print("lines", lines)
-            print("colision points", collision_points)
-            print("normals", collision_normals)
-            raise RuntimeError("nan detected in collision_normals!")
+        # Verify no weirdness again
+        assert torch.all(torch.isfinite(collision_normals))
         
         # TODO batch refraction functions
         for index_ray in range(num_rays):

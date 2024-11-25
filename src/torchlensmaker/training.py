@@ -37,14 +37,15 @@ def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None)
     show_every = math.ceil(num_iter / nshow)
    
     for i in range(num_iter):
-    
+
         optimizer.zero_grad()
+    
         loss = optics(inputs)# + optics.lens.regularization()  # TODO refactor this into custom sequence
 
         if regularization is not None:
-            loss += regularization(optics)
+            loss = loss + regularization(optics)
 
-        loss_record[i] = loss
+        loss_record[i] = loss.detach()
         loss.backward()
 
         # Record parameter values
@@ -64,7 +65,7 @@ def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None)
             print(f"{iter_str} {L_str}")
             for mod in optics.modules():
                 
-                if isinstance(mod, RefractiveSurface):
+                if isinstance(mod, RefractiveSurface) and mod.surface is not None:
                     render_surface(ax, mod.surface, color=viridis(i / num_iter))
 
     plt.gca().set_aspect("equal")
