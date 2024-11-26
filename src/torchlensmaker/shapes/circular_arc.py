@@ -15,7 +15,9 @@ class CircularArc(BaseShape):
         width: typically diameter of the lens
         arc_radius: radius of curvature of the surface profile
 
-        The sign of the radius indicates the direction of the center of curvature.
+        The sign of the radius indicates the direction of the center of curvature:
+        * radius > 0: the arc bends towards the positive Y axis
+        * radius < 0: the arc bens towards the negative Y axis
 
         The internal parameter is curvature = 1/radius, to allow optimization to
         cross over zero and change sign.
@@ -49,7 +51,7 @@ class CircularArc(BaseShape):
     def domain(self):
         R = self.coefficients()
         a = math.acos(self.width / (2*torch.abs(R)))
-        if R > 0:
+        if R < 0:
             return a, math.pi - a
         else:
             return -math.pi + a, -a
@@ -58,7 +60,7 @@ class CircularArc(BaseShape):
         ts = torch.as_tensor(ts)
         R = self.coefficients()
         X = torch.abs(R)*torch.cos(ts)
-        Y = torch.abs(R)*torch.sin(ts) - R
+        Y = torch.abs(R)*torch.sin(ts) + R
         return torch.stack((X, Y), dim=-1)
 
     def derivative(self, ts):

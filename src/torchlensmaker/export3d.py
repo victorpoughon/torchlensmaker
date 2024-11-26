@@ -65,10 +65,14 @@ def lens_to_part(lens):
     curve1 = surface_to_sketch(lens.surface1.surface)
     curve2 = bd.Pos(0., inner_thickness) * surface_to_sketch(lens.surface2.surface)
 
-    edge = bd.Polyline([
-        curve1 @ 1,
-        curve2 @ 1,
-    ])
+    # Find the "right most" point on the curve
+    # i.e. extremity with the highest X value
+    # This can be either sides depending on how the surface is parametrized
+    v1 = curve1.vertices().sort_by(bd.Axis.X)[-1]
+    v2 = curve2.vertices().sort_by(bd.Axis.X)[-1]
+
+    # Connect them to form the lens edge
+    edge = bd.Polyline([v1, v2])
 
     # Close the edges, revolve around the Y axis
     face = bd.make_face([curve1, edge, curve2])
