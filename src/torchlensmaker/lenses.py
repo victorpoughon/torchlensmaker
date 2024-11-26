@@ -41,10 +41,27 @@ class GenericLens(tlm.Module):
         return
 
 
+class AsymmetricLens(GenericLens):
+    """
+    A lens made of two refractive surfaces with different shapes.
+    """
+    
+    def __init__(self, shape1, shape2, n, inner_thickness=None, outer_thickness=None):
+        super().__init__()
+        self.shape1, self.shape2 = shape1, shape2
+
+        thickness, anchors = lens_thickness_gap(inner_thickness, outer_thickness)
+
+        self.surface1 = tlm.RefractiveSurface(self.shape1, n, anchors=anchors)
+        self.gap = tlm.GapY(thickness)
+        self.surface2 = tlm.RefractiveSurface(self.shape2, tuple(reversed(n)), anchors=tuple(reversed(anchors)))
+
+        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+
 
 class SymmetricLens(GenericLens):
     """
-    A lens made of two symmetrical refractive surfaces of the same shape.
+    A lens made of two symmetrical refractive surfaces of the same shape mirrored.
     """
     
     def __init__(self, shape, n, inner_thickness=None, outer_thickness=None):
@@ -70,6 +87,8 @@ class PlanoLens(GenericLens):
     * reverse = False (default):  The curved side is the first surface
     * reverse = True:             The curved side is the second surface
     """
+
+    # TODO make this an asymmetriclens?
 
     def __init__(self, shape, n, inner_thickness=None, outer_thickness=None, reverse=False):
         super().__init__()

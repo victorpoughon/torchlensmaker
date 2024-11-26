@@ -36,6 +36,7 @@ from torchlensmaker.render_plt import (
 from torchlensmaker.module import Module
 
 from torchlensmaker.lenses import (
+    AsymmetricLens,
     SymmetricLens,
     PlanoLens,
 )
