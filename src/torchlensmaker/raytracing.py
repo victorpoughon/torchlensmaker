@@ -140,10 +140,8 @@ def super_refraction(incident_ray, normal, n1, n2):
     normal: unit vector normal to the surface
     n1, n2: indices of refraction
     
-    Returns: (v, fake_ray)
-    v: unit vector of the refracted ray
-    fake_ray: None if the incident angle is less than the critical angle
-              The fake
+    Returns:
+        v: unit vector of the refracted ray
     """
 
     # Compute angles
@@ -180,7 +178,7 @@ def super_refraction(incident_ray, normal, n1, n2):
         # Flip the normal vector and use fake_R for super refraction
         R_refracted = refraction(fake_R, -normal, n1, n2)
 
-    return R_refracted, fake_R
+    return R_refracted
 
 
 def rays_to_coefficients(points, directions):

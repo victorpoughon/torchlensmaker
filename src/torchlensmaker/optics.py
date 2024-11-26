@@ -155,7 +155,7 @@ class RefractiveSurface(nn.Module):
             # Refraction of rays
             #refracted_ray, fake_ray = clamped_refraction(rays_vectors[index_ray], collision_normal, self.n, 1.0), None
             try:
-                refracted_ray, fake_ray = super_refraction(rays_vectors[index_ray], collision_normals[index_ray], self.n1, self.n2)
+                refracted_ray = super_refraction(rays_vectors[index_ray], collision_normals[index_ray], self.n1, self.n2)
             except Exception as err:
                 print("rays", rays_vectors[index_ray], collision_normals[index_ray])
                 print("surface coeffs", self.surface.coefficients)
