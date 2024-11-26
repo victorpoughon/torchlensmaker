@@ -4,9 +4,12 @@
 
 * Fix piecewise line
 * Fix bezier spline
+
 * Add tests for raytracing.py and batch raytracing functions
 * Implement reflection
+
 * Implement rotation in Surface()
+
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
