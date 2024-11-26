@@ -9,7 +9,7 @@ from .optics import (
     RefractiveSurface,
 )
 
-from torchlensmaker.render_plt import render_surface
+from torchlensmaker.render_plt import draw_surface_module
 
 
 def get_all_gradients(model):
@@ -66,7 +66,7 @@ def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None)
             for mod in optics.modules():
                 
                 if isinstance(mod, RefractiveSurface) and mod.surface is not None:
-                    render_surface(ax, mod.surface, color=viridis(i / num_iter))
+                    draw_surface_module(ax, mod.surface, color=viridis(i / num_iter))
 
     plt.gca().set_aspect("equal")
     plt.show()

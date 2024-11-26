@@ -4,11 +4,10 @@
 
 * Fix piecewise line
 * Fix bezier spline
-* Add tests for refraction functions
 * Add tests for raytracing.py and batch raytracing functions
 * Implement reflection
 * Implement rotation in Surface()
-* per parameter learning rate adapted to parameter scale scale
+* per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
 
@@ -35,15 +34,16 @@
 * Avoiding "negative collisions" during optimization
 * Regularization
 
-* Image and objet
+* Image and object
 
 
-## Rays not collisind with surface
+## Rays not colliding with surface
 
 Support different modes:
 * Error: immediately error if a ray doesn't collide with surface
 * extrapolate: extrapolate the surface if possible
 * clamp: clamp to collision to the nearest point
+* drop: drop the ray from the data
 
 
 ## Negative collisions, aka surfaces collisions
@@ -57,12 +57,12 @@ Support different modes:
 
 *  more tests:
     lens maker equation
-    focal loss for concave lens (i.e. negative ray position)
     setup a stack, call forward, check loss value aginst expected
     check loss is differentiable, and gradient is finite
 
 * review / clean up optics.py
 * cleanup regression term / prior support
+
 * Imaging applications
     * Image formation with a thin lens, equation 1/u - 1/v = 1/f
 
@@ -79,7 +79,28 @@ Support different modes:
 
 ## Lower prio
 
+* make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
 * improve piecewiseline: implement proper intersect_batch
 * convert / resample between profile shapes
 * faster example notebooks, improve convergence
 * port pulaski code to new lib
+
+
+## Make the principal axis X
+
+* Surface() flips about the Y=X axis, by swapping coordinates
+* Principal axis is now the X axis
+
+tlm.Offset  :  X, Y offset
+tlm.Gap     :  X only offset (principal axis)
+tlm.Shift   :  Y only offset (secondary axis)
+tlm.AbsolutePosition : Absolute positioning, ignore previous stack positioning
+
+Relative placers can be fixed or use nn.Parameter.
+
+With clever internal reparametrization or regularization, can implement optimizable gaps with ranges.
+e.g.:
+- offset with maximum radial distance
+- gap/shift with min/max
+
+Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
