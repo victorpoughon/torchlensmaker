@@ -110,7 +110,7 @@ def refraction(ray, normal, n1, n2):
     """
 
     R_perp = n1/n2 * (ray + (-ray.dot(normal))*normal)
-    R_para = -torch.sqrt(1- R_perp.dot(R_perp)) * normal
+    R_para = -torch.sqrt(1 - R_perp.dot(R_perp)) * normal
     return normed(R_perp + R_para)
 
 
@@ -154,8 +154,6 @@ def super_refraction(incident_ray, normal, n1, n2):
     sin_theta_i = torch.sqrt(1 - cos_theta_i**2)
     sin_theta_i = torch.clamp(sin_theta_i, -1.0, 1.0)
 
-    fake_R = None
-
     if n1/n2 * sin_theta_i < 1.0:
         # Normal refraction
         # TODO optim possible here by not recomputing cos_theta_i in refract
@@ -179,6 +177,104 @@ def super_refraction(incident_ray, normal, n1, n2):
         R_refracted = refraction(fake_R, -normal, n1, n2)
 
     return R_refracted
+
+
+def refraction_batched(ray, normal, n1, n2):
+    """
+    Batched vector-based 2D Snell's law.
+
+    Incident rays beyond the critical angle will refract as 'nan'.
+
+    Args:
+        ray: unit vectors of the incident rays, shape (B, 2)
+        normal: unit vectors normal to the surface, shape (B, 2)
+        n1: index of refraction of the incident medium (float)
+        n2: index of refraction of the refracted medium (float)
+    
+    Returns:
+        unit vectors of the refracted rays, shape (B, 2)
+    """
+
+    # Compute dot product for the batch, aka cosine of the incident angle
+    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
+
+    # Compute R_perp
+    R_perp = n1/n2 * (ray + cos_theta_i * normal)
+
+    # Compute R_para
+    R_para = -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
+
+    # Combine R_perp and R_para and normalize the result
+    R = R_perp + R_para
+    return R / torch.norm(R, dim=1, keepdim=True)
+
+
+def refraction_batched_clamp(ray, normal, n1, n2):
+    """
+    Batched vector-based 2D Snell's law, "clamp" variation.
+
+    Modified version of the base refraction function to clamp the incident angle
+    at the critical angle. Incident rays beyond the critical angle will all
+    refract at 90°.
+
+    Args:
+        ray: unit vectors of the incident rays, shape (B, 2)
+        normal: unit vectors normal to the surface, shape (B, 2)
+        n1: index of refraction of the incident medium (float)
+        n2: index of refraction of the refracted medium (float)
+    
+    Returns:
+        unit vectors of the refracted rays, shape (B, 2)
+    """
+
+    # Compute dot product for the batch, aka cosine of the incident angle
+    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
+
+    # Compute R_perp
+    R_perp = n1/n2 * (ray + cos_theta_i * normal)
+
+    # Compute R_para
+    radicand = torch.clamp(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0., max=None)
+    R_para = -torch.sqrt(radicand) * normal
+
+    # Combine R_perp and R_para and normalize the result
+    R = R_perp + R_para
+    return R / torch.norm(R, dim=1, keepdim=True)
+
+
+def refraction_batched_drop(ray, normal, n1, n2):
+    """
+    Batched vector-based 2D Snell's law, "drop" variation.
+
+    Modified version of the base refraction function to drop incident rays that
+    are beyond the critical angle. Incident rays beyond the critical angle will
+    not be refracted. Thus the output tensor doesn't necesarily have the same
+    same as the input tensors.
+
+    Args:
+        ray: unit vectors of the incident rays, shape (B, 2)
+        normal: unit vectors normal to the surface, shape (B, 2)
+        n1: index of refraction of the incident medium (float)
+        n2: index of refraction of the refracted medium (float)
+    
+    Returns:
+        unit vectors of the refracted rays, shape (C, 2)
+    """
+
+    # Compute dot product for the batch, aka cosine of the incident angle
+    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
+
+    # Compute R_perp
+    R_perp = n1/n2 * (ray + cos_theta_i * normal)
+
+    # Compute R_para
+    radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
+    valid = (radicand >= 0.0).squeeze()
+    R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
+
+    # Combine R_perp and R_para and normalize the result
+    R = R_perp[valid, :] + R_para
+    return R / torch.norm(R, dim=1, keepdim=True)
 
 
 def rays_to_coefficients(points, directions):
