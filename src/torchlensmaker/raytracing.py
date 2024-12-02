@@ -6,32 +6,6 @@ from math import pi
 from torchlensmaker.shapes.common import normed
 
 
-def normal_vector(A, B):
-    """
-    Normal vector to (A,B) segment line.
-    Returns the one that's in the direction that's 90° rotated from the AB vector.
-    The other normal is the opposite.
-    """
-    # Calculate the direction vector from A to B
-    direction = B - A
-    
-    # Rotate the direction vector by 90 degrees to get the normal vector
-    normal = torch.stack([-direction[..., 1], direction[..., 0]], dim=-1)
-    
-    # Normalize
-    normal = normal / torch.norm(normal, dim=-1, keepdim=True)
-    
-    return normal
-
-
-def signed_angle(a, b):
-    "Signed angle between 2D vectors a and b"
-
-    Y = torch.det(torch.stack([a, b], dim=0))
-    X = torch.dot(a, b)
-    return torch.arctan2(Y, X)
-
-
 def ray_point_squared_distance(ray_origin, ray_vector, point):
     """
     Squared distance from a point to rays
@@ -72,190 +46,47 @@ def rot2d(v, theta):
     return m.dot(v.T).T
 
 
-def rot2d_torch(v, theta):
+def reflection(rays, normals):
     """
-    Rotate 2D vector(s) v by angle theta (in radians).
-    
-    Args:
-    v: torch.Tensor of shape (2,) or (N, 2) where N is the number of vectors
-    theta: rotation angle in radians (scalar or torch.Tensor)
-    
-    Returns:
-    Rotated vector(s) with the same shape as input v
-    """
-    cos_theta = torch.cos(theta)
-    sin_theta = torch.sin(theta)
-    
-    rotation_matrix = torch.tensor([
-        [cos_theta, -sin_theta],
-        [sin_theta, cos_theta]
-    ], dtype=v.dtype, device=v.device)
-    
-    # Handle both single vector and batch of vectors
-    if v.dim() == 1:
-        return rotation_matrix @ v
-    else:
-        return v @ rotation_matrix.T
-
-
-def refraction(ray, normal, n1, n2):
-    """
-    Vector based Snell's law
-
-    ray: unit vector of the incident ray
-    normal: unit vector normal to the surface
-    n1, n2: indices of refraction
-    
-    Returns: unit vector of the refracted ray
-    """
-
-    R_perp = n1/n2 * (ray + (-ray.dot(normal))*normal)
-    R_para = -torch.sqrt(1 - R_perp.dot(R_perp)) * normal
-    return normed(R_perp + R_para)
-
-
-def clamped_refraction(ray, normal, n1, n2):
-    """
-    Like refraction, but clamps the incident angle at the critical angle
-
-    ray: unit vector of the incident ray
-    normal: unit vector normal to the surface
-    n1, n2: indices of refraction
-    
-    Returns: unit vector of the refracted ray
-    """
-
-    R_perp = n1/n2 * (ray + (-ray.dot(normal))*normal)
-    radicand = torch.clamp(1- R_perp.dot(R_perp), min=0.0, max=None)
-    R_para = -torch.sqrt(radicand) * normal
-    return normed(R_perp + R_para)
-
-
-def super_refraction(incident_ray, normal, n1, n2):
-    """
-    Continuous extension of Snell's law to allow optimization
-    beyond the critical angle.
-
-    ray: unit vector of the incident ray
-    normal: unit vector normal to the surface
-    n1, n2: indices of refraction
-    
-    Returns:
-        v: unit vector of the refracted ray
-    """
-
-    # Compute angles
-    # For numerical stability clamp to [-1, 1]
-    # sometimes, the two input vectors are not exactly unit length,
-    # so cosine can go slightly over 1.0 if they are well aligned
-    cos_theta_i = -torch.dot(incident_ray, normal)
-    cos_theta_i = torch.clamp(cos_theta_i, -1.0, 1.0)
-    
-    sin_theta_i = torch.sqrt(1 - cos_theta_i**2)
-    sin_theta_i = torch.clamp(sin_theta_i, -1.0, 1.0)
-
-    if n1/n2 * sin_theta_i < 1.0:
-        # Normal refraction
-        # TODO optim possible here by not recomputing cos_theta_i in refract
-        R_refracted = refraction(incident_ray, normal, n1, n2)
-    else:
-        # Signed incident angle
-        theta_i = signed_angle(-normal, incident_ray)
-        assert(torch.allclose(torch.abs(theta_i), torch.arcsin(sin_theta_i)))
-        
-        # Super refraction
-        # Rotate the normal to make the fake incident ray
-        C = np.arcsin(n2/n1)
-        
-        super_refract_forward_rotation = pi + torch.arccos(cos_theta_i) - 2*C
-        super_refract_rotation = torch.where(theta_i > 0,
-            super_refract_forward_rotation, -super_refract_forward_rotation)
-
-        fake_R = rot2d_torch(-normal, super_refract_rotation)
-        
-        # Flip the normal vector and use fake_R for super refraction
-        R_refracted = refraction(fake_R, -normal, n1, n2)
-
-    return R_refracted
-
-
-def refraction_batched(ray, normal, n1, n2):
-    """
-    Batched vector-based 2D Snell's law.
-
-    Incident rays beyond the critical angle will refract as 'nan'.
+    Vector based reflection.
 
     Args:
         ray: unit vectors of the incident rays, shape (B, 2)
         normal: unit vectors normal to the surface, shape (B, 2)
-        n1: index of refraction of the incident medium (float)
-        n2: index of refraction of the refracted medium (float)
-    
+
     Returns:
-        unit vectors of the refracted rays, shape (B, 2)
+        vectors of the reflected vector with shape (B, 2)
     """
 
-    # Compute dot product for the batch, aka cosine of the incident angle
-    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
-
-    # Compute R_perp
-    R_perp = n1/n2 * (ray + cos_theta_i * normal)
-
-    # Compute R_para
-    R_para = -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
-
-    # Combine R_perp and R_para and normalize the result
-    R = R_perp + R_para
+    dot_product = torch.sum(rays * normals, dim=1, keepdim=True)
+    R = rays - 2 * dot_product * normals
     return R / torch.norm(R, dim=1, keepdim=True)
 
 
-def refraction_batched_clamp(ray, normal, n1, n2):
+def refraction(ray, normal, n1, n2, critical_angle='drop'):
     """
-    Batched vector-based 2D Snell's law, "clamp" variation.
-
-    Modified version of the base refraction function to clamp the incident angle
-    at the critical angle. Incident rays beyond the critical angle will all
-    refract at 90°.
-
-    Args:
-        ray: unit vectors of the incident rays, shape (B, 2)
-        normal: unit vectors normal to the surface, shape (B, 2)
-        n1: index of refraction of the incident medium (float)
-        n2: index of refraction of the refracted medium (float)
+    Vector based refraction (Snell's law).
     
-    Returns:
-        unit vectors of the refracted rays, shape (B, 2)
-    """
+    The 'critical_angle' argument specifies how incident rays beyond the
+    critical angle are handled:
+    
+        * 'nan': Incident rays beyond the critical angle will refract
+          as nan values. The returned tensor always has the same shape as the
+          input tensors.
 
-    # Compute dot product for the batch, aka cosine of the incident angle
-    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
+        * 'clamp': Incident rays beyond the critical angle all refract at 90°.
+          The returned tensor always has the same shape as the input tensors.
 
-    # Compute R_perp
-    R_perp = n1/n2 * (ray + cos_theta_i * normal)
-
-    # Compute R_para
-    radicand = torch.clamp(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0., max=None)
-    R_para = -torch.sqrt(radicand) * normal
-
-    # Combine R_perp and R_para and normalize the result
-    R = R_perp + R_para
-    return R / torch.norm(R, dim=1, keepdim=True)
-
-
-def refraction_batched_drop(ray, normal, n1, n2):
-    """
-    Batched vector-based 2D Snell's law, "drop" variation.
-
-    Modified version of the base refraction function to drop incident rays that
-    are beyond the critical angle. Incident rays beyond the critical angle will
-    not be refracted. Thus the output tensor doesn't necesarily have the same
-    same as the input tensors.
+        * 'drop' (default): Incident rays beyond the critical angle will not be
+          refracted. The returned tensor doesn't necesarily have the same shape
+          as the input tensors.
 
     Args:
         ray: unit vectors of the incident rays, shape (B, 2)
         normal: unit vectors normal to the surface, shape (B, 2)
         n1: index of refraction of the incident medium (float)
         n2: index of refraction of the refracted medium (float)
+        critical_angle: one of 'nan', 'clamp', 'drop' (default: 'nan')
     
     Returns:
         unit vectors of the refracted rays, shape (C, 2)
@@ -264,26 +95,38 @@ def refraction_batched_drop(ray, normal, n1, n2):
     # Compute dot product for the batch, aka cosine of the incident angle
     cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
 
-    # Compute R_perp
+    # Compute R_perp and R_para, depending on critical angle options
     R_perp = n1/n2 * (ray + cos_theta_i * normal)
 
-    # Compute R_para
-    radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
-    valid = (radicand >= 0.0).squeeze()
-    R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
+    if critical_angle == 'nan':
+        R_para = -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
+    
+    elif critical_angle == 'clamp':
+        radicand = torch.clamp(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0., max=None)
+        R_para = -torch.sqrt(radicand) * normal
+    
+    elif critical_angle == 'drop':
+        radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
+        valid = (radicand >= 0.0).squeeze()
+        R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
+        R_perp = R_perp[valid, :]
+    
+    else:
+        raise ValueError(f"critical_angle must be one of 'nan', 'clamp', 'drop'. Got {repr(critical_angle)}.")
 
     # Combine R_perp and R_para and normalize the result
-    R = R_perp[valid, :] + R_para
+    R = R_perp + R_para
     return R / torch.norm(R, dim=1, keepdim=True)
 
 
 def rays_to_coefficients(points, directions):
     """
-    Convert rays represented by points and direction vectors to coefficients of a line.
+    Convert rays represented by points and direction vectors to coefficients of
+    a line in the form ax+by+c=0.
     
     Args:
-        points: torch.Tensor (N, 2) - points on the lines
-        directions: torch.Tensor (N, 2) - unit direction vectors
+        points: torch.Tensor (N, 2) - points on the lines directions:
+        torch.Tensor (N, 2) - unit direction vectors
     
     Returns:
         torch.Tensor (N, 3) - line coefficients [a, b, c] for ax + by + c = 0
@@ -302,8 +145,8 @@ def rays_to_coefficients(points, directions):
 
 def position_on_ray(rays_origins, rays_vectors, points):
     """
-    Compute t such that points = rays_origins + t rays_vectors
-    points are assumed to be on the rays
+    Compute t such that points = rays_origins + t * rays_vectors.
+    Points are assumed to be on the rays
     """
 
     # Only pitfall here is to not divide by zero

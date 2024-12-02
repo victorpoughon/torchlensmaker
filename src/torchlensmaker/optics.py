@@ -4,7 +4,7 @@ import torch.nn as nn
 from enum import Enum
 
 from torchlensmaker.raytracing import (
-    super_refraction,
+    refraction,
     ray_point_squared_distance,
     position_on_ray,
     rays_to_coefficients
@@ -150,19 +150,7 @@ class RefractiveSurface(nn.Module):
         # Verify no weirdness again
         assert torch.all(torch.isfinite(collision_normals))
         
-        # TODO batch refraction functions
-        for index_ray in range(num_rays):
-            # Refraction of rays
-            #refracted_ray, fake_ray = clamped_refraction(rays_vectors[index_ray], collision_normal, self.n, 1.0), None
-            try:
-                refracted_ray = super_refraction(rays_vectors[index_ray], collision_normals[index_ray], self.n1, self.n2)
-            except Exception as err:
-                print("rays", rays_vectors[index_ray], collision_normals[index_ray])
-                print("surface coeffs", self.surface.coefficients)
-                print("n1 n2", self.n1, self.n2)
-                raise err
-                
-
-            collision_all_refracted[index_ray, :] = refracted_ray
+        # Refract rays
+        collision_all_refracted = refraction(rays_vectors, collision_normals, self.n1, self.n2, critical_angle='clamp')
 
         return ((collision_points, collision_all_refracted), self.surface.at(self.anchors[1]))

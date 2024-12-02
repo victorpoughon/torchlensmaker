@@ -38,6 +38,7 @@
 * Regularization
 
 * Image and object
+* ray diagrams
 
 
 ## Rays not colliding with surface
