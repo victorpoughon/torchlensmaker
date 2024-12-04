@@ -38,13 +38,8 @@ class Line(BaseShape):
         # Assume no horizontal lines, i.e. a != 0
         a, b, c = lines[:, 0], lines[:, 1], lines[:, 2]
 
-        X = - c / a
-        Y = torch.zeros_like(X)
-
-        return torch.stack([X, Y], dim=-1)
+        return -c / a
 
     
     def collide(self, lines):
-        points = self.intersect_batch(lines)
-        normals = self.normal(points)
-        return points, normals
+        return self.intersect_batch(lines)

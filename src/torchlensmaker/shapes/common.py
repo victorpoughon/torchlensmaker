@@ -86,12 +86,16 @@ def intersect_newton(surface, lines):
             tn = newton_iteration(surface, lines, tn)
 
             # Clamp to the domain
+            # A newton iteration step can lead to a value outside the domain
+            # if the solution is outside the domain or if it's close to outide
+            # Clamp here so that we remain valid while iterations are not completed
             tn = torch.clamp(tn, *surface.domain())
 
     # One Newton iteration for backwards
     tn = newton_iteration(surface, lines, tn)
-    # TODO, use this clamp to check for no collision?
-    tn = torch.clamp(tn, *surface.domain())
+
+    # The solution can now be outside of the domain
+    # which means 'no solution'
     
     return tn
       

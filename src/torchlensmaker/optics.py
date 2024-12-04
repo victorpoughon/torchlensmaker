@@ -129,7 +129,8 @@ class OpticalSurface(nn.Module):
 
         # For all rays, find the intersection with the surface and the normal vector at the intersection
         lines = rays_to_coefficients(rays_origins, rays_vectors)
-        collision_points, surface_normals = self.surface.collide(lines)
+        ts = self.surface.collide(lines)
+        collision_points, surface_normals = self.surface.evaluate(ts), self.surface.normal(ts)
 
         # Verify no weirdness in the data
         assert torch.all(torch.isfinite(collision_points))

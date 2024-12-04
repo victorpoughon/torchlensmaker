@@ -92,11 +92,7 @@ class Parabola(BaseShape):
             2*c / denom2,
         )
 
-        y = A*torch.pow(x, 2)
+        return x
 
-        return torch.stack((x, y), dim=1)
-    
     def collide(self, lines):
-        points = self.intersect_batch(lines)
-        normals = self.normal(points[:, 0])
-        return points, normals
+        return self.intersect_batch(lines)

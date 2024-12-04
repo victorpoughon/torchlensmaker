@@ -81,5 +81,4 @@ class CircularArc(BaseShape):
         return torch.full(size, math.pi/2)
     
     def collide(self, lines):
-        tn = intersect_newton(self, lines)
-        return self.evaluate(tn), self.normal(tn)
+        return intersect_newton(self, lines)

@@ -266,6 +266,5 @@ class BezierSpline(BaseShape):
         return torch.zeros(size)
     
     def collide(self, lines):
-        tn = intersect_newton(self, lines)
-        return self.evaluate(tn), self.normal(tn)
+        return intersect_newton(self, lines)
 

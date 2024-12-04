@@ -101,11 +101,4 @@ class Surface:
         relative_lines = scale_lines(relative_lines, 1. / self.scale)
 
         # Collide
-        relative_points, normals = self.shape.collide(relative_lines)
-
-        # Apply scale
-        relative_points = relative_points * self.scale
-        normals = normals * self.scale
-
-        # Convert relative points back to absolute space
-        return relative_points + P, normals
+        return self.shape.collide(relative_lines)
