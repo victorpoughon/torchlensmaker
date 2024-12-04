@@ -36,27 +36,7 @@
 * Image and object
 * ray diagrams
 
-
-## Rays not colliding with surface
-
-Support different modes:
-* Error: immediately error if a ray doesn't collide with surface
-* extrapolate: extrapolate the surface if possible
-* clamp: clamp to collision to the nearest point
-* drop: drop the ray from the data
-
-
-## Negative collisions, aka surfaces collisions
-
-* Remove detection in RefractiveSurface (negative ts is nominal)
-* Add collisions points / rays origins / rays vectors accumulator lists to data pipe
-* Add ts computation function to be used as regression terms during optimization
-
-
-## Higher prio
-
-* review / clean up optics.py
-* ReflectiveSurface
+## Various stuff, higher prio
 
 * Horizontal / left to right ray diagrams
 
@@ -72,14 +52,10 @@ Support different modes:
 
 * Review and document sign convention
 
-## Rendering
+* Constraints on parameters
+* Custom Regularization (ex: lens outer thickness of plano + biconvex example)
 
-* Replace matplotlib with custom svg, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
-* Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
-* EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
-* OR use stock build123d viewer, customize it
-
-## Lower prio
+## Various stuff, lower prio
 
 * make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
 * improve piecewiseline: implement proper intersect_batch
@@ -88,7 +64,29 @@ Support different modes:
 * port pulaski code to new lib
 * multiple configuration support (a new data dimension?) zoom lenses, etc.
 * diffuse reflection
+* aperture and fstp
 
+## Rays not colliding with surface
+
+Support different modes:
+* Error: immediately error if a ray doesn't collide with surface
+* extrapolate: extrapolate the surface if possible
+* clamp: clamp to collision to the nearest point
+* drop: drop the ray from the data
+
+## Negative collisions, aka surfaces collisions
+
+* Remove / make optional detection in OpticalSurface (negative ts is nominal)
+* Add collisions points / rays origins / rays vectors accumulator lists to data pipe
+* Add ts computation function to be used as regression terms during optimization
+
+
+## Rendering
+
+* Replace matplotlib with custom svg, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
+* Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
+* EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
+* OR use stock build123d viewer, customize it
 
 ## Make the principal axis X
 

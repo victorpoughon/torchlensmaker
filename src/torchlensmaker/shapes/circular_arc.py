@@ -23,13 +23,13 @@ class CircularArc(BaseShape):
         cross over zero and change sign.
     """
 
-    def __init__(self, width, arc_radius):
-        assert torch.abs(torch.as_tensor(arc_radius)) >= width / 2
+    def __init__(self, width, r):
+        assert torch.abs(torch.as_tensor(r)) >= width / 2
 
-        if isinstance(arc_radius, nn.Parameter):
-            self._K = nn.Parameter(torch.tensor(1./arc_radius.item()))
+        if isinstance(r, nn.Parameter):
+            self._K = nn.Parameter(torch.tensor(1./r.item()))
         else:
-            self._K = torch.as_tensor(1./arc_radius)
+            self._K = torch.as_tensor(1./r)
         
         self.width = width
 
