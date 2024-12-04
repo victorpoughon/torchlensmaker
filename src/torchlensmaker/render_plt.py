@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-from torchlensmaker.optics import RefractiveSurface, FocalPointLoss
+from torchlensmaker.optics import OpticalSurface, FocalPointLoss
 
 
 def draw_rays(ax, rays_origins, rays_ends):
@@ -57,7 +57,7 @@ def draw_focal_rays(ax, module, inputs, outputs):
 def render_element_module(ax, element):
     "Render optical element to axes"
 
-    if isinstance(element, RefractiveSurface):
+    if isinstance(element, OpticalSurface):
         draw_surface_module(ax, element.surface, color="steelblue")
     
     elif isinstance(element, FocalPointLoss):
@@ -67,7 +67,7 @@ def render_element_module(ax, element):
 
 def render_element_rays(ax, module, inputs, outputs):
     # For surfaces, render input rays until the collision
-    if isinstance(module, RefractiveSurface):
+    if isinstance(module, OpticalSurface):
         draw_surface_rays(ax, module, inputs, outputs)
 
     # For focal point loss, render rays up to a bit after the focal point

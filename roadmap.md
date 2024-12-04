@@ -4,12 +4,8 @@
 
 * Fix piecewise line
 * Fix bezier spline
-
 * Add tests for raytracing.py and batch raytracing functions
-* Implement reflection
-
 * Implement rotation in Surface()
-
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
@@ -59,18 +55,20 @@ Support different modes:
 
 ## Higher prio
 
+* review / clean up optics.py
+* ReflectiveSurface
+
+* Horizontal / left to right ray diagrams
+
 *  more tests:
     lens maker equation
     setup a stack, call forward, check loss value aginst expected
     check loss is differentiable, and gradient is finite
 
-* review / clean up optics.py
 * cleanup regression term / prior support
 
 * Imaging applications
     * Image formation with a thin lens, equation 1/u - 1/v = 1/f
-
-* ReflectiveSurface
 
 * Review and document sign convention
 
@@ -88,6 +86,8 @@ Support different modes:
 * convert / resample between profile shapes
 * faster example notebooks, improve convergence
 * port pulaski code to new lib
+* multiple configuration support (a new data dimension?) zoom lenses, etc.
+* diffuse reflection
 
 
 ## Make the principal axis X

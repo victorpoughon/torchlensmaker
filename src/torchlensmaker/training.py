@@ -6,7 +6,7 @@ from os.path import join
 import matplotlib.pyplot as plt
 
 from .optics import (
-    RefractiveSurface,
+    OpticalSurface,
 )
 
 from torchlensmaker.render_plt import draw_surface_module
@@ -65,7 +65,7 @@ def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None)
             print(f"{iter_str} {L_str}")
             for mod in optics.modules():
                 
-                if isinstance(mod, RefractiveSurface) and mod.surface is not None:
+                if isinstance(mod, OpticalSurface) and mod.surface is not None:
                     draw_surface_module(ax, mod.surface, color=viridis(i / num_iter))
 
     plt.gca().set_aspect("equal")

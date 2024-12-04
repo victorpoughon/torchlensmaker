@@ -5,6 +5,7 @@ from enum import Enum
 
 from torchlensmaker.raytracing import (
     refraction,
+    reflection,
     ray_point_squared_distance,
     position_on_ray,
     rays_to_coefficients
@@ -96,12 +97,15 @@ class GapX(nn.Module):
         return (rays, target + torch.stack((self.offset_x, torch.tensor(0.))))
 
 
-class RefractiveSurface(nn.Module):
-    def __init__(self, shape, n, scale=1., anchors=("origin", "origin")):
+class OpticalSurface(nn.Module):
+    """
+    Common base class for ReflectiveSurface and RefractiveSurface
+    """
+
+    def __init__(self, shape, scale=1., anchors=("origin", "origin")):
         super().__init__()
 
         self.shape = shape
-        self.n1, self.n2 = n
         self.scale = scale
         self.anchors = anchors
 
@@ -122,8 +126,6 @@ class RefractiveSurface(nn.Module):
 
         self.pos = target
         self.surface = Surface(self.shape, pos=target, scale=self.scale, anchor=self.anchors[0])
-
-        collision_all_refracted = torch.zeros((num_rays, 2))
 
         # For all rays, find the intersection with the surface and the normal vector at the intersection
         lines = rays_to_coefficients(rays_origins, rays_vectors)
@@ -150,7 +152,25 @@ class RefractiveSurface(nn.Module):
         # Verify no weirdness again
         assert torch.all(torch.isfinite(collision_normals))
         
-        # Refract rays
-        collision_all_refracted = refraction(rays_vectors, collision_normals, self.n1, self.n2, critical_angle='clamp')
+        # Refract or reflect rays based on the derived class implementation
+        output_rays = self.optical_function(rays_vectors, collision_normals)
 
-        return ((collision_points, collision_all_refracted), self.surface.at(self.anchors[1]))
+        return ((collision_points, output_rays), self.surface.at(self.anchors[1]))
+
+
+class ReflectiveSurface(OpticalSurface):
+    def __init__(self, shape, scale=1., anchors=("origin", "origin")):
+        super().__init__(shape, scale, anchors)
+        
+
+    def optical_function(self, rays, normals):
+        return reflection(rays, normals)
+        
+
+class RefractiveSurface(OpticalSurface):
+    def __init__(self, shape, n, scale=1., anchors=("origin", "origin")):
+        super().__init__(shape, scale, anchors)
+        self.n1, self.n2 = n
+        
+    def optical_function(self, rays, normals):
+        return refraction(rays, normals, self.n1, self.n2, critical_angle='clamp')

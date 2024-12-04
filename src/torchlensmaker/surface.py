@@ -12,12 +12,20 @@ def scale_lines(lines, scale):
 
 class Surface:
     """
-    A surface places a shape in absolute 2D space
+    A surface places a shape in absolute 2D space.
+
+    Shapes are defined in a local 2D coordinate system where the origin (0,0) is
+    the center point of the shape. In this relative reference frame, the travel direction of light rays
+    is assumed to be along the positive Y axis.
+
+    A surface (this class), takes a shape and places it in absolute 2D space by applying:
+    * A scale factor (SX, SY) along both axes. Typically (1, -1) is used to make symmetric lenses
+    * A translation to a point in absolute space
     
     The surface class wraps a shape with:
         * 'pos': an absolute position in 2D space
         * 'anchor': relative position on the shape that attaches to the absolute position
-        * 'scale': an optional scale parameter (typically -1 to mirror)
+        * 'scale': an optional scale parameter
 
     Valid anchors are:
         * 'origin' (default): origin (0,0) of the shape
