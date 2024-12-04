@@ -95,7 +95,7 @@ class PlanoLens(GenericLens):
         self.shape = shape
 
         thickness, anchors = lens_thickness_gap(inner_thickness, outer_thickness)
-        line = tlm.Line(shape.width, [0.0, 1.0, 0.0])# y=0 line
+        line = tlm.Line(shape.width)
 
         if not reverse:
             self.surface1 = tlm.RefractiveSurface(self.shape, n, anchors=anchors)
