@@ -13,7 +13,7 @@ def draw_rays(ax, rays_origins, rays_ends):
         ax.plot([a[0], b[0]], [a[1], b[1]], color="orange", linewidth=1.0, zorder=0)
 
         # draw rays origins
-        ax.scatter(a[0], a[1], marker="x", color="lightgrey")
+        # ax.scatter(a[0], a[1], marker="x", color="lightgrey")
     
     print("rays aperture", np.max(A[:, 0]) - np.min(A[:, 0]))
 

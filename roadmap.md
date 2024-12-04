@@ -4,16 +4,11 @@
 
 * Fix piecewise line
 * Fix bezier spline
-* Add tests for raytracing.py and batch raytracing functions
-* Implement rotation in Surface()
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
 
 ## New example notebooks ideas
-
-* Simpler version of pulaski stack: 
-    * Two lenses: plano and symmetric, two different shapes but regularize for equal inner thickness or equal param
 
 * anchors demo
 * lens inner vs outer thickness
@@ -53,7 +48,7 @@
 * Review and document sign convention
 
 * Constraints on parameters
-* Custom Regularization (ex: lens outer thickness of plano + biconvex example)
+* Regularization API
 
 ## Various stuff, lower prio
 
@@ -64,7 +59,8 @@
 * port pulaski code to new lib
 * multiple configuration support (a new data dimension?) zoom lenses, etc.
 * diffuse reflection
-* aperture and fstp
+* Aperture
+* chromatic aberation, wavelength support
 
 ## Rays not colliding with surface
 
@@ -95,8 +91,7 @@ Support different modes:
 
 tlm.Offset  :  X, Y offset
 tlm.Gap     :  X only offset (principal axis)
-tlm.Shift   :  Y only offset (secondary axis)
-tlm.AbsolutePosition : Absolute positioning, ignore previous stack positioning
+tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
 
 Relative placers can be fixed or use nn.Parameter.
 

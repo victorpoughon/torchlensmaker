@@ -45,11 +45,11 @@ def mirror_points(A, B):
     ])
 
 
-
-
-
-
 def newton_iteration(surface, lines, tn):
+    """
+    One iteration of Newton's method
+    """
+    
     # Compute value and derivative
     a, b, c = lines[:, 0], lines[:, 1], lines[:, 2]
     points = surface.evaluate(tn)
