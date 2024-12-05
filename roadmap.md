@@ -64,11 +64,21 @@
 
 ## Rays not colliding with surface
 
-Support different modes:
-* Error: immediately error if a ray doesn't collide with surface
-* extrapolate: extrapolate the surface if possible
-* clamp: clamp to collision to the nearest point
-* drop: drop the ray from the data
+1. intersect_newton: detect non colliding rays by returning outside of domain T values
+2. OpticalSurface: add error_on_no_collision option, by default drop
+3. OpticalSurface: add error_on_negative_collision, by default allow
+4. Factor shape.collide() default impl in BaseShape
+    Surface provides override to add transform
+
+add debug option to see number of rays at each stage
+
+## Aperture
+
+collide with a vertical line shape
+drop non colliding rays
+transmit colliding rays
+
+simplify line shape: only vertical line?
 
 ## Negative collisions, aka surfaces collisions
 
