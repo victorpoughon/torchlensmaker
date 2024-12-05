@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from .optics import (
     OpticalSurface,
     default_input,
+    focal_point_loss,
 )
 
 from torchlensmaker.render_plt import draw_surface_module
@@ -41,10 +42,14 @@ def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
 
         optimizer.zero_grad()
     
-        loss = optics(default_input)# + optics.lens.regularization()  # TODO refactor this into custom sequence
+        output = optics(default_input)
+
+        # TODO for now we just assume last element is the focal point
+        loss = focal_point_loss(output)
 
         if regularization is not None:
             loss = loss + regularization(optics)
+
 
         loss_record[i] = loss.detach()
         loss.backward()

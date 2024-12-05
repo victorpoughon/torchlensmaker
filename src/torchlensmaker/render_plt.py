@@ -93,7 +93,7 @@ def render_all(ax, optics):
             )
 
         # Call the forward model, this will call the hooks
-        loss = optics(default_input)
+        _ = optics(default_input)
 
         # Remove all hooks
         for h in handles:

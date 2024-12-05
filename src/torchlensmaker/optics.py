@@ -18,21 +18,28 @@ from torchlensmaker.surface import Surface
 def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
 
+
 default_input = ((torch.tensor([]), torch.tensor([])), torch.zeros(2))
 
 
+
+def focal_point_loss(inputs):
+    (ray_origins, ray_vectors), target = inputs
+    num_rays = ray_origins.shape[0]
+    sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, target).sum()
+    return sum_squared / num_rays
+
+
+# TODO remove this or rename to FocalPoint
 class FocalPointLoss(nn.Module):
     def __init__(self):
         super().__init__()
         self.pos = None
 
     def forward(self, inputs):
-
         (ray_origins, ray_vectors), target = inputs
         self.pos = target # store for rendering, TODO don't
-        num_rays = ray_origins.shape[0]
-        sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, target).sum()
-        return sum_squared / num_rays
+        return inputs
 
 
 class ParallelBeamUniform(nn.Module):
