@@ -62,7 +62,7 @@ def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
         if torch.isnan(grad).any():
             print("ERROR: nan in grad", grad)
             raise RuntimeError("nan in gradient, check your torch.where() =)")
-        
+
         optimizer.step()
         
         if i % show_every == 0:

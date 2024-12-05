@@ -52,6 +52,7 @@
 
 ## Various stuff, lower prio
 
+* tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
 * make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
 * improve piecewiseline: implement proper intersect_batch
 * convert / resample between profile shapes
@@ -75,11 +76,9 @@ custom execution context instead of nn.Sequential, to provide full output of dat
 
 ## Aperture
 
-collide with a vertical line shape
+collide with a line shape
 drop non colliding rays
 transmit colliding rays
-
-simplify line shape: only vertical line?
 
 ## Negative collisions, aka surfaces collisions
 
@@ -97,14 +96,9 @@ simplify line shape: only vertical line?
 
 ## Make the principal axis X
 
-* Surface() flips about the Y=X axis, by swapping coordinates
-* Principal axis is now the X axis
+Option 1: Surface() also flips about the Y=X axis, swapping coordinates
+Option 2: Update all shapes axes
 
-tlm.Offset  :  X, Y offset
-tlm.Gap     :  X only offset (principal axis)
-tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
-
-Relative placers can be fixed or use nn.Parameter.
 
 With clever internal reparametrization or regularization, can implement optimizable gaps with ranges.
 e.g.:

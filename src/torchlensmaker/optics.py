@@ -113,10 +113,11 @@ class ParallelBeamRandom(nn.Module):
 class Gap(nn.Module):
     def __init__(self, offset_y):
         super().__init__()
-        self.offset = torch.stack((torch.tensor(0.), torch.as_tensor(offset_y)))
+        self.offset = offset_y
     
     def forward(self, inputs: OpticalData):
-        new_target = inputs.target + self.offset
+        offset = torch.stack((torch.tensor(0.), torch.as_tensor(self.offset)))
+        new_target = inputs.target + offset
         return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, None, inputs)
 
 
