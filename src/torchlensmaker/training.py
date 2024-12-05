@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 
 from .optics import (
     OpticalSurface,
+    default_input,
 )
 
 from torchlensmaker.render_plt import draw_surface_module
@@ -20,7 +21,7 @@ def get_all_gradients(model):
     return torch.cat(grads)
 
 
-def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None):
+def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
     viridis = plt.get_cmap('viridis')
 
     fig, ax = plt.subplots()
@@ -40,7 +41,7 @@ def optimize(optics, optimizer, inputs, num_iter, nshow=20, regularization=None)
 
         optimizer.zero_grad()
     
-        loss = optics(inputs)# + optics.lens.regularization()  # TODO refactor this into custom sequence
+        loss = optics(default_input)# + optics.lens.regularization()  # TODO refactor this into custom sequence
 
         if regularization is not None:
             loss = loss + regularization(optics)

@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-from torchlensmaker.optics import OpticalSurface, FocalPointLoss
+from torchlensmaker.optics import OpticalSurface, FocalPointLoss, default_input
 
 
 def draw_rays(ax, rays_origins, rays_ends):
@@ -74,7 +74,7 @@ def render_element_rays(ax, module, inputs, outputs):
     elif isinstance(module, FocalPointLoss):
         draw_focal_rays(ax, module, inputs, outputs)
 
-def render_all(ax, optics, num_rays):
+def render_all(ax, optics):
 
     # To render, call forward() on the model
     # with a hook that catches input and outputs
@@ -93,7 +93,7 @@ def render_all(ax, optics, num_rays):
             )
 
         # Call the forward model, this will call the hooks
-        loss = optics(num_rays)
+        loss = optics(default_input)
 
         # Remove all hooks
         for h in handles:
@@ -104,13 +104,13 @@ def render_all(ax, optics, num_rays):
 
 
 
-def render_plt(optics, inputs, force_uniform_source=True):
+def render_plt(optics, force_uniform_source=True):
     
     fig, ax = plt.subplots(figsize=(12, 8))
 
     # TODO implement force_uniform_source
     
-    render_all(ax, optics, inputs)
+    render_all(ax, optics)
 
 
     plt.gca().set_title(f"")

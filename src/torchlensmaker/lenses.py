@@ -53,7 +53,7 @@ class AsymmetricLens(GenericLens):
         thickness, anchors = lens_thickness_gap(inner_thickness, outer_thickness)
 
         self.surface1 = tlm.RefractiveSurface(self.shape1, n, anchors=anchors)
-        self.gap = tlm.GapY(thickness)
+        self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(self.shape2, tuple(reversed(n)), anchors=tuple(reversed(anchors)))
 
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
@@ -71,7 +71,7 @@ class SymmetricLens(GenericLens):
         thickness, anchors = lens_thickness_gap(inner_thickness, outer_thickness)
 
         self.surface1 = tlm.RefractiveSurface(self.shape, n, anchors=anchors)
-        self.gap = tlm.GapY(thickness)
+        self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(self.shape, tuple(reversed(n)), scale=-1., anchors=tuple(reversed(anchors)))
 
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
@@ -99,11 +99,11 @@ class PlanoLens(GenericLens):
 
         if not reverse:
             self.surface1 = tlm.RefractiveSurface(self.shape, n, anchors=anchors)
-            self.gap = tlm.GapY(thickness)
+            self.gap = tlm.Gap(thickness)
             self.surface2 = tlm.RefractiveSurface(line, tuple(reversed(n)))
         else:
             self.surface1 = tlm.RefractiveSurface(line, n)
-            self.gap = tlm.GapY(thickness)
+            self.gap = tlm.Gap(thickness)
             self.surface2 = tlm.RefractiveSurface(self.shape, tuple(reversed(n)), scale=-1, anchors=tuple(reversed(anchors)))
         
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)

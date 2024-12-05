@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
 
-from enum import Enum
+from typing import Optional
+from dataclasses import dataclass
 
 from torchlensmaker.raytracing import (
     refraction,
@@ -16,6 +17,8 @@ from torchlensmaker.surface import Surface
 
 def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
+
+default_input = ((torch.tensor([]), torch.tensor([])), torch.zeros(2))
 
 
 class FocalPointLoss(nn.Module):
@@ -33,51 +36,43 @@ class FocalPointLoss(nn.Module):
 
 
 class ParallelBeamUniform(nn.Module):
-    def __init__(self, width):
+    def __init__(self, width, num_rays):
         super().__init__()
         self.width = width
+        self.num_rays = num_rays
 
     def forward(self, inputs):
-        num_rays, target = inputs
+        (_, target) = inputs
 
         margin = 0.1 # TODO
-        rays_x = torch.linspace(-self.width/2 + margin, self.width/2 - margin, num_rays)
-        rays_y = torch.zeros(num_rays)
+        rays_x = torch.linspace(-self.width/2 + margin, self.width/2 - margin, self.num_rays)
+        rays_y = torch.zeros(self.num_rays)
         
         rays_origins = target + torch.column_stack((rays_x , rays_y ))
-        rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
+        rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
 
         return ((rays_origins, rays_vectors), target)
 
 
 class ParallelBeamRandom(nn.Module):
-    def __init__(self, width):
+    def __init__(self, width, num_rays):
         super().__init__()
         self.width = width
+        self.num_rays = num_rays
 
     def forward(self, inputs):
-        num_rays, target = inputs
+        (_, target) = inputs
     
-        rays_x = -self.width / 2 + self.width * torch.rand(size=(num_rays,))
-        rays_y = torch.zeros(num_rays,)
+        rays_x = -self.width / 2 + self.width * torch.rand(size=(self.num_rays,))
+        rays_y = torch.zeros(self.num_rays,)
         rays_origins = torch.column_stack((rays_x, rays_y))
 
-        rays_vectors = torch.tile(torch.tensor([0., 1.]), (num_rays, 1))
+        rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
 
         return ((rays_origins, rays_vectors), target)
-    
+
 
 class Gap(nn.Module):
-    def __init__(self, offset):
-        super().__init__()
-        self.offset = torch.as_tensor(offset)
-    
-    def forward(self, inputs):
-        rays, target = inputs
-        return (rays, target + self.offset)
-
-
-class GapY(nn.Module):
     def __init__(self, offset_y):
         super().__init__()
         self.offset_y = torch.as_tensor(offset_y)
@@ -85,16 +80,6 @@ class GapY(nn.Module):
     def forward(self, inputs):
         rays, target = inputs
         return (rays, target + torch.stack((torch.tensor(0.), self.offset_y)))
-
-
-class GapX(nn.Module):
-    def __init__(self, offset_x):
-        super().__init__()
-        self.offset_x = torch.as_tensor(offset_x)
-    
-    def forward(self, inputs):
-        rays, target = inputs
-        return (rays, target + torch.stack((self.offset_x, torch.tensor(0.))))
 
 
 class OpticalSurface(nn.Module):
@@ -129,8 +114,20 @@ class OpticalSurface(nn.Module):
 
         # For all rays, find the intersection with the surface and the normal vector at the intersection
         lines = rays_to_coefficients(rays_origins, rays_vectors)
-        ts = self.surface.collide(lines)
-        collision_points, surface_normals = self.surface.evaluate(ts), self.surface.normal(ts)
+        sols = self.surface.collide(lines)
+
+        # Detect solutions outside the surface domain
+        valid = torch.logical_and(sols <= self.surface.domain()[1], sols >= self.surface.domain()[0])
+        if False and torch.sum(~valid) > 0:
+            raise RuntimeError("Some rays do not collide with the surface")
+
+        # Filter data to keep only colliding rays
+        sols = sols[valid]
+        rays_origins = rays_origins[valid]
+        rays_vectors = rays_vectors[valid]
+
+        # Evaluate collision points and normals
+        collision_points, surface_normals = self.surface.evaluate(sols), self.surface.normal(sols)
 
         # Verify no weirdness in the data
         assert torch.all(torch.isfinite(collision_points))
