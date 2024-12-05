@@ -25,7 +25,7 @@ class Line(BaseShape):
         return torch.stack([X, Y], dim=-1)
 
     def normal(self, points):
-        return torch.tile(torch.tensor([1., 0.]), (points.shape[0], 1))
+        return torch.tile(torch.tensor([0., 1.]), (points.shape[0], 1))
 
     def intersect_batch(self, lines):
         """
