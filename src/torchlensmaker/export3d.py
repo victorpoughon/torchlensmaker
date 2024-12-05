@@ -54,16 +54,11 @@ def shape_to_sketch(shape):
         raise RuntimeError(f"Unsupported shape type {type(shape)}")
 
 
-def surface_to_sketch(surface):
-    sketch = shape_to_sketch(surface.shape)
-    scale = (*surface.scale.detach().tolist(), 1.)
-    return bd.scale(sketch, scale)
-
-
 def lens_to_part(lens):
     inner_thickness = lens.inner_thickness().detach().item()
-    curve1 = surface_to_sketch(lens.surface1.surface)
-    curve2 = bd.Pos(0., inner_thickness) * surface_to_sketch(lens.surface2.surface)
+    
+    curve1 = bd.scale(shape_to_sketch(lens.surface1.shape), (1., lens.surface1.scale, 1.))
+    curve2 = bd.Pos(0., inner_thickness) * bd.scale(shape_to_sketch(lens.surface2.shape), (1., lens.surface2.scale, 1.))
 
     # Find the "right most" point on the curve
     # i.e. extremity with the highest X value

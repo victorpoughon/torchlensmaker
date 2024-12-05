@@ -19,14 +19,50 @@ def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
 
 
-default_input = ((torch.tensor([]), torch.tensor([])), torch.zeros(2))
+@dataclass
+class OpticalData:
+    """
+    Holder class for the data that's passed between optical elements
+    """
+
+    # Tensor of shape (N, 2)
+    # Rays origins points
+    rays_origins: torch.Tensor
+
+    # Tensor of shape (N, 2)
+    # Rays unit vectors
+    rays_vectors: torch.Tensor
+
+    # Tensor of shape (2,)
+    # Position of the next optical element
+    target: torch.Tensor
+
+    # None or tlm.Surface
+    # Surface object of the previous optical element
+    surface: Optional[Surface]
+
+    # None or Tensor of shape (N,)
+    # Mask array indicating which rays from the previous data in the optical
+    # stack were blocked by the previous optical element
+    blocked: Optional[torch.Tensor]
+
+    # None or OpticalData
+    # Input data to the previous optical element
+    previous: Optional['OpticalData']
 
 
+default_input = OpticalData(
+    rays_origins = torch.tensor([[]]),
+    rays_vectors = torch.tensor([[]]),
+    target = torch.zeros(2),
+    surface = None,
+    blocked = None,
+    previous = None,
+)
 
-def focal_point_loss(inputs):
-    (ray_origins, ray_vectors), target = inputs
-    num_rays = ray_origins.shape[0]
-    sum_squared = ray_point_squared_distance(ray_origins, ray_vectors, target).sum()
+def focal_point_loss(data: OpticalData):
+    num_rays = data.rays_origins.shape[0]
+    sum_squared = ray_point_squared_distance(data.rays_origins, data.rays_vectors, data.target).sum()
     return sum_squared / num_rays
 
 
@@ -36,9 +72,8 @@ class FocalPointLoss(nn.Module):
         super().__init__()
         self.pos = None
 
-    def forward(self, inputs):
-        (ray_origins, ray_vectors), target = inputs
-        self.pos = target # store for rendering, TODO don't
+    def forward(self, inputs: OpticalData):
+        self.pos = inputs.target # store for rendering, TODO don't
         return inputs
 
 
@@ -48,17 +83,15 @@ class ParallelBeamUniform(nn.Module):
         self.width = width
         self.num_rays = num_rays
 
-    def forward(self, inputs):
-        (_, target) = inputs
-
+    def forward(self, inputs: OpticalData):
         margin = 0.1 # TODO
         rays_x = torch.linspace(-self.width/2 + margin, self.width/2 - margin, self.num_rays)
         rays_y = torch.zeros(self.num_rays)
         
-        rays_origins = target + torch.column_stack((rays_x , rays_y ))
+        rays_origins = inputs.target + torch.column_stack((rays_x , rays_y ))
         rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
 
-        return ((rays_origins, rays_vectors), target)
+        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
 
 
 class ParallelBeamRandom(nn.Module):
@@ -67,26 +100,24 @@ class ParallelBeamRandom(nn.Module):
         self.width = width
         self.num_rays = num_rays
 
-    def forward(self, inputs):
-        (_, target) = inputs
-    
+    def forward(self, inputs: OpticalData):
         rays_x = -self.width / 2 + self.width * torch.rand(size=(self.num_rays,))
         rays_y = torch.zeros(self.num_rays,)
         rays_origins = torch.column_stack((rays_x, rays_y))
 
         rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
 
-        return ((rays_origins, rays_vectors), target)
+        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
 
 
 class Gap(nn.Module):
     def __init__(self, offset_y):
         super().__init__()
-        self.offset_y = torch.as_tensor(offset_y)
+        self.offset = torch.stack((torch.tensor(0.), torch.as_tensor(offset_y)))
     
-    def forward(self, inputs):
-        rays, target = inputs
-        return (rays, target + torch.stack((torch.tensor(0.), self.offset_y)))
+    def forward(self, inputs: OpticalData):
+        new_target = inputs.target + self.offset
+        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, None, inputs)
 
 
 class OpticalSurface(nn.Module):
@@ -101,66 +132,62 @@ class OpticalSurface(nn.Module):
         self.scale = scale
         self.anchors = anchors
 
-        # Technically, surface and pos are outputs of the computation done in forward(),
-        # and should rather be returned and passed along the module stack.
-        # But to preserve their location in the module tree and to enable nicer, semantic access to them
-        # from rendering or optimization code, we store them in the module itself here.
-        # That way, code can access them with syntax such as optics.lens1.surface1,
-        # rather than output_surfaces[4].
-        # But, they are only populated after an evaluation of the complete model.
-        self.surface = None
-        self.pos = None
-
+    def surface(self, pos):
+        return Surface(self.shape, pos=pos, scale=self.scale, anchor=self.anchors[0])
     
-    def forward(self, inputs):
-        ((rays_origins, rays_vectors), target) = inputs
-        num_rays = rays_origins.shape[0]
+    def forward(self, inputs: OpticalData):
+        surface = self.surface(inputs.target)
 
-        self.pos = target
-        self.surface = Surface(self.shape, pos=target, scale=self.scale, anchor=self.anchors[0])
+        # special case for zero rays, TODO remove this and make sure the inner code works with B=0
+        if inputs.rays_origins.numel() == 0:
+            collision_points = torch.empty((0, 0))
+            output_rays = torch.empty((0, 0))
+            blocked = None
+        else:
+            # For all rays, find the intersection with the surface and the normal vector at the intersection
+            lines = rays_to_coefficients(inputs.rays_origins, inputs.rays_vectors)
+            sols = surface.collide(lines)
 
-        # For all rays, find the intersection with the surface and the normal vector at the intersection
-        lines = rays_to_coefficients(rays_origins, rays_vectors)
-        sols = self.surface.collide(lines)
+            # Detect solutions outside the surface domain
+            valid = torch.logical_and(sols <= surface.domain()[1], sols >= surface.domain()[0])
+            if False and torch.sum(~valid) > 0:
+                raise RuntimeError("Some rays do not collide with the surface")
 
-        # Detect solutions outside the surface domain
-        valid = torch.logical_and(sols <= self.surface.domain()[1], sols >= self.surface.domain()[0])
-        if False and torch.sum(~valid) > 0:
-            raise RuntimeError("Some rays do not collide with the surface")
+            # Filter data to keep only colliding rays
+            sols = sols[valid]
+            rays_origins = inputs.rays_origins[valid]
+            rays_vectors = inputs.rays_vectors[valid]
+            blocked = ~valid
 
-        # Filter data to keep only colliding rays
-        sols = sols[valid]
-        rays_origins = rays_origins[valid]
-        rays_vectors = rays_vectors[valid]
+            # Evaluate collision points and normals
+            collision_points, surface_normals = surface.evaluate(sols), surface.normal(sols)
 
-        # Evaluate collision points and normals
-        collision_points, surface_normals = self.surface.evaluate(sols), self.surface.normal(sols)
+            # Verify no weirdness in the data
+            assert torch.all(torch.isfinite(collision_points))
+            assert torch.all(torch.isfinite(surface_normals))
 
-        # Verify no weirdness in the data
-        assert torch.all(torch.isfinite(collision_points))
-        assert torch.all(torch.isfinite(surface_normals))
+            # Make sure collisions are in front of rays
+            if False:
+                ts = position_on_ray(rays_origins, rays_vectors, collision_points)
+                if torch.any(ts <= 0):
+                    print("warning: some ts <=0")
+                if not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
+                    print("!! Some ts <= 0")
+                    raise RuntimeError("negative collisions")
+            
+            # A surface always has two opposite normals, so keep the one pointing against the ray
+            # i.e. the normal such that dot(normal, ray) < 0
+            dot = torch.sum(surface_normals * rays_vectors, dim=1)
+            collision_normals = torch.where((dot > 0).unsqueeze(1).expand(-1, 2), -surface_normals, surface_normals)
 
-        # Make sure collisions are in front of rays
-        if False:
-            ts = position_on_ray(rays_origins, rays_vectors, collision_points)
-            if torch.any(ts <= 0):
-                print("warning: some ts <=0")
-            if not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
-                print("!! Some ts <= 0")
-                raise RuntimeError("negative collisions")
-        
-        # A surface always has two opposite normals, so keep the one pointing against the ray
-        # i.e. the normal such that dot(normal, ray) < 0
-        dot = torch.sum(surface_normals * rays_vectors, dim=1)
-        collision_normals = torch.where((dot > 0).unsqueeze(1).expand(-1, 2), -surface_normals, surface_normals)
+            # Verify no weirdness again
+            assert torch.all(torch.isfinite(collision_normals))
+            
+            # Refract or reflect rays based on the derived class implementation
+            output_rays = self.optical_function(rays_vectors, collision_normals)
 
-        # Verify no weirdness again
-        assert torch.all(torch.isfinite(collision_normals))
-        
-        # Refract or reflect rays based on the derived class implementation
-        output_rays = self.optical_function(rays_vectors, collision_normals)
-
-        return ((collision_points, output_rays), self.surface.at(self.anchors[1]))
+        new_target = surface.at(self.anchors[1])
+        return OpticalData(collision_points, output_rays, new_target, surface, blocked, inputs)
 
 
 class ReflectiveSurface(OpticalSurface):

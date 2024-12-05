@@ -69,10 +69,10 @@ def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
             iter_str = f"[{i:>3}/{num_iter}]"
             L_str = f"L= {loss.item():>6.3f} | grad norm= {torch.linalg.norm(grad)}"
             print(f"{iter_str} {L_str}")
-            for mod in optics.modules():
-                
-                if isinstance(mod, OpticalSurface) and mod.surface is not None:
-                    draw_surface_module(ax, mod.surface, color=viridis(i / num_iter))
+            
+            #for mod in optics.modules():   
+                #if isinstance(mod, OpticalSurface) and mod.surface is not None:
+                #    draw_surface_module(ax, mod.surface, color=viridis(i / num_iter))
 
     plt.gca().set_aspect("equal")
     plt.show()

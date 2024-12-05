@@ -70,7 +70,8 @@
 4. Factor shape.collide() default impl in BaseShape
     Surface provides override to add transform
 
-add debug option to see number of rays at each stage
+add debug option to see number of rays at each stage, aperture of beam at each stage
+custom execution context instead of nn.Sequential, to provide full output of data at each stage, and remove need for data.previous chain, and for forwark hooks
 
 ## Aperture
 

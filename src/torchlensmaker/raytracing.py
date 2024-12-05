@@ -132,6 +132,11 @@ def rays_to_coefficients(points, directions):
         torch.Tensor (N, 3) - line coefficients [a, b, c] for ax + by + c = 0
     """
     
+    assert points.numel() == directions.numel()
+
+    if points.numel() == 0:
+        return torch.tensor([[]])
+
     # Extract x and y components
     x, y = points[:, 0], points[:, 1]
     dx, dy = directions[:, 0], directions[:, 1]
