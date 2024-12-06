@@ -3,69 +3,65 @@ import torch.nn as nn
 
 from torchlensmaker.interp1d import interp1d
 from torchlensmaker.shapes.common import line_coefficients
-from torchlensmaker.shapes import Line
+from torchlensmaker.shapes import BaseShape
 
 
-class PiecewiseLine:
+def line_lines_intersection(coefficients, lines):
+        """
+        Intersect the line coefficients = a,b,c
+        with multiple lines where lines is a tensor of shape (N, 3) 
+        representing N lines in the form [a, b, c] coefficients.
+        """
+        # Ensure lines is a tensor
+        lines = torch.as_tensor(lines)
+        
+        # Extract coefficients
+        a1, b1, c1 = coefficients
+        a2, b2, c2 = lines[:, 0], lines[:, 1], lines[:, 2]
+        
+        # Compute determinant
+        det = a1 * b2 - a2 * b1
+        
+        # Prepare the result tensor
+        result = torch.zeros((lines.shape[0], 2), dtype=torch.float32)
+        
+        # Compute intersection points where det != 0
+        valid = torch.abs(det) >= 1e-8
+        x = torch.zeros_like(det)
+        y = torch.zeros_like(det)
+        
+        x[valid] = (b1 * c2[valid] - b2[valid] * c1) / det[valid]
+        y[valid] = (c1 * a2[valid] - c2[valid] * a1) / det[valid]
+        
+        result[:, 0] = x
+        result[:, 1] = y
+        
+        # Set intersection to [inf, inf] where lines are parallel
+        result[~valid] = float('inf')
+        
+        return result
+
+
+class PiecewiseLine(BaseShape):
     """
     Piecewise line starting at an implicit 0,0
     """
 
-    def init_new(self, lens_radius, init):
-
-        # Default zero init
-        if init is None:
-            X = torch.linspace(0., lens_radius, steps=2)[1:]
-            Y = torch.zeros(1)
-
-        else:
-            X, Y = map(torch.as_tensor, init)
-
-            if X[0] == 0.:
-                raise ValueError("First point of PiecewiseLine is implicit, got X[0] = 0")
-        
-        assert X.shape == Y.shape, (X.shape, Y.shape)
-
-        self.X = X
-        self.params = {
-            "Y": nn.Parameter(Y)
-        }
     
-    def init_share(self, share, scale):
-        self.params = {}
-    
-    def __init__(self, lens_radius: float, init=None, share=None, scale=1.0):
+    def __init__(self, width: float, Y):
+        """
+        Y is height of each point
+        first 0 is implicit
+        """
+
         super().__init__()
-        self.lens_radius = lens_radius
-
-        if share is not None:
-            self.init_share(share, scale)
-        else:
-            self.init_new(lens_radius, init)
-        
-        self.lens_radius = lens_radius
-        self._share = share
-        self._scale = scale
-    
-    def parameters(self):
-        return self.params
-    
-    def domain(self):
-        return torch.tensor([-self.lens_radius, self.lens_radius])
-    
-    def evaluate(self, X):
-        cX, cY = self.coefficients()
-        Y = interp1d(cX, cY, X)
-
-        return torch.stack([X, Y], dim=-1)
+        self.width = width
+        self._Y = torch.as_tensor(Y)
     
     def coefficients(self):
-        if self._share is None:
-            param_X = self.X
-            param_Y = self.params["Y"]
-        else:
-            param_X = self._share.X
-            param_Y = self._share.params["Y"]
+        N = self._Y.shape[0]
+        param_X = torch.linspace(0., self.width/2, steps=N+1)[1:]
+        param_Y = self._Y
 
         X = torch.concatenate((torch.flip(-param_X, dims=[0]), torch.zeros(1), param_X)).contiguous()
         Y = torch.concatenate((torch.flip(param_Y, dims=[0]), torch.zeros(1), param_Y))
@@ -74,27 +70,19 @@ class PiecewiseLine:
 
         return X, Y
 
-    def edge_of_point(self, Px):
-        """
-        Given a point X coordinate,
-        (or a list of points X coordinates)
-        return the index of the edge the point falls into
-        TODO deprecate, replace by interval_index()
-        """
-
-        X, _ = self.coefficients()
-        Ax = X[:-1]
-        Bx = X[1:]
-        within = torch.logical_or(
-            torch.logical_and(Ax <= Px, Px < Bx),
-            torch.logical_and(Bx <= Px, Px < Ax)
-        ).to(dtype=int) # int to enable using argmax which doesn't support Bool
-        if within.sum() == 0:
-            raise RuntimeError("point none")
-            return None
+    def parameters(self):
+        if isinstance(self._Y, nn.Parameter):
+            return {"Y": self._Y}
         else:
-            return torch.argmax(within)
-
+            return {}
+    
+    def domain(self):
+        return torch.tensor([-self.width/2, self.width/2])
+    
+    def evaluate(self, X):
+        cX, cY = self.coefficients()
+        Y = interp1d(cX, cY, X)
+        return torch.stack([X, Y], dim=-1)
 
     def interval_index(self, xs):
         """
@@ -112,8 +100,7 @@ class PiecewiseLine:
 
         # -1 here because we want the start of the interval
         return indices - 1
-    
-    
+        
     def normal(self, xs):
         cX, cY = self.coefficients()
         XY = torch.column_stack((cX, cY))
@@ -124,41 +111,29 @@ class PiecewiseLine:
 
         return normals[indices]
 
-    def intersect_one(self, line):
+
+    def intersect_batch(self, lines):
         X, Y = self.coefficients()
         XY = torch.column_stack((X, Y))
         edges_coefficients = line_coefficients(XY[:-1, :], XY[1:, :])
-        L = [Line(self.lens_radius, coefficients).intersect_batch(line.expand(1, -1)) for coefficients in edges_coefficients]
-        intersection_points = torch.vstack(L)
+        
+        # default value out of domain
+        default = self.domain()[0] * 1.1
+        collisions = torch.full((lines.shape[0],), default)
 
-        # True iff the intersection point is inside its corresponding edge segment
-        Px = intersection_points[:, 0]    
-        collision_index = self.edge_of_point(Px)
-        
-        return intersection_points[collision_index]
+        # collide each segment with all rays
+        for i, coefficients in enumerate(edges_coefficients):
+            
+            # collisions with this segment's full line
+            col = line_lines_intersection(coefficients, lines)[:, 0]
 
-    def intersect_batch(self, lines):
-        
-        # TODO proper batch
-        intersection_points = torch.zeros((lines.shape[0], 2))
-        for i, line in enumerate(lines):
-            intersection_points[i, :] = self.intersect_one(line)
-        
-        return intersection_points
+            # store the collisions that fall within the current segement
+            index = self.interval_index(col)
+            mask = index == i
+            collisions[mask] = col[mask]
+
+        return collisions
 
     def collide(self, lines):
-        """
-        Collide the surface profile with lines.
-        Returns collision points and normal unit vectors
-        (arbitrarily oriented in either of the two possible directions)
+        return self.intersect_batch(lines)
 
-        Args:
-            lines: tensor (N, 3) - lines coefficients [a, b, c]
-
-        Returns:
-            points (N, 2), normals (N, 2)
-        """
-
-        points = self.intersect_batch(lines)
-        normals = self.normal(points[:, 0])
-        return points, normals

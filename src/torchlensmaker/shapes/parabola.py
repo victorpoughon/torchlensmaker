@@ -21,7 +21,7 @@ class Parabola(BaseShape):
         return self._a
 
     def parameters(self):
-        if hasattr(self, "_a") and isinstance(self._a, nn.Parameter):
+        if isinstance(self._a, nn.Parameter):
             return {"a": self._a}
         else:
             return {}

@@ -32,33 +32,33 @@ class BezierSpline(BaseShape):
         # P3: w, aw^2
         return
 
-    def __init__(self, width, init):
-        Y, CX, CY = map(torch.as_tensor, init)
+    def __init__(self, width, Y, CX, CY):
+        Y, CX, CY = map(torch.as_tensor, [Y, CX, CY])
     
         assert Y.shape[0] + 1 == CX.shape[0] == CY.shape[0] + 1
 
-        self.radius = width
+        self.radius = width/2
         self.num_intervals = Y.shape[0]
 
-        self.params = {
-            "Y": Y,
-            "CX": CX,
-            "CY": CY,
-        }
+        self._Y = Y
+        self._CX = CX
+        self._CY = CY
 
     def parameters(self):
-        return {
-            n: v
-            for n, v in self.params.items()
-            if isinstance(v, nn.Parameter)
+        all = {
+            "Y": self._Y,
+            "CX": self._CX,
+            "CY": self._CY,
         }
+
+        return {n: p for n,p in all.items() if isinstance(p, nn.Parameter)}
     
     def coefficients(self):
         # Knots: X fixed on linspace, first Y fixed at zero
 
-        param_Y = self.params["Y"]
-        param_CX = self.params["CX"]
-        param_CY = self.params["CY"]
+        param_Y = self._Y
+        param_CX = self._CX
+        param_CY = self._CY
 
         X = torch.linspace(0.0, self.radius, self.num_intervals + 1)
         Y = torch.cat((torch.zeros(1), param_Y))
@@ -222,7 +222,7 @@ class BezierSpline(BaseShape):
             new_CX[2*i+2] = next_interval_ctrl_point[0]
             new_CY[2*i+2] = next_interval_ctrl_point[1]
 
-        return BezierSpline(self.radius, init=(new_Y[1:], new_CX, new_CY[1:]))
+        return BezierSpline(self.radius*2, new_Y[1:], new_CX, new_CY[1:])
 
     def wiggle(self, cx, cy, y):
         _, Y, CX, CY = self.coefficients()
@@ -231,7 +231,7 @@ class BezierSpline(BaseShape):
         new_CX = CX + cx*torch.randn_like(CX)
         new_CY = CY + cy*torch.randn_like(CY)
 
-        return BezierSpline(self.radius, init=(new_Y[1:], new_CX, new_CY[1:]))
+        return BezierSpline(self.radius*2, new_Y[1:], new_CX, new_CY[1:])
 
     def derivative(self, ts):
         "Evaluate the derivative at given parametric locations"

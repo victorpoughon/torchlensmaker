@@ -48,6 +48,8 @@
 
 * Regularization API
 
+* fix surface drawing during optimization
+
 ## Various stuff, lower prio
 
 * tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
@@ -60,6 +62,7 @@
 * diffuse reflection
 * Aperture
 * chromatic aberation, wavelength support
+* better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
 
 ## Rays not colliding with surface
 
@@ -105,3 +108,7 @@ e.g.:
 Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
 
 * Horizontal / left to right ray diagrams
+
+## Export 3D
+
+* 3d export for bezier spline
