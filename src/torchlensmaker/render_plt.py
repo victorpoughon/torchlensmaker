@@ -2,7 +2,7 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-from torchlensmaker.optics import OpticalSurface, FocalPointLoss, default_input
+from torchlensmaker.optics import OpticalSurface, FocalPointLoss, Aperture, default_input
 
 
 def draw_rays(ax, rays_origins, rays_ends, color):
@@ -29,6 +29,17 @@ def draw_surface_module(ax, surface, color):
 
     # Render surface anchor
     ax.plot(surface.pos[0].detach(), surface.pos[1].detach(), "+", color="grey")
+
+
+def draw_aperture(ax, aperture, position, color):
+    "Render aperture to axes"
+
+    inner, outer = aperture.inner_width, aperture.outer_width
+
+    X = np.array([inner/2, outer/2])
+    Y = np.array([position[1], position[1]])
+    ax.plot(X, Y, color=color)
+    ax.plot(-X, Y, color=color)
     
 
 def draw_surface_rays(ax, module, inputs, outputs):
@@ -79,6 +90,9 @@ def render_element_module(ax, element, inputs, outputs):
 
     if isinstance(element, OpticalSurface):
         draw_surface_module(ax, outputs.surface, color="steelblue")
+
+    elif isinstance(element, Aperture):
+        draw_aperture(ax, element, inputs.target.detach(), color="black")
     
     elif isinstance(element, FocalPointLoss):
         pos = inputs.target.detach().numpy()
@@ -88,6 +102,9 @@ def render_element_module(ax, element, inputs, outputs):
 def render_element_rays(ax, module, inputs, outputs):
     # For surfaces, render input rays until the collision
     if isinstance(module, OpticalSurface):
+        draw_surface_rays(ax, module, inputs, outputs)
+    
+    elif isinstance(module, Aperture):
         draw_surface_rays(ax, module, inputs, outputs)
 
     # For focal point loss, render rays up to a bit after the focal point

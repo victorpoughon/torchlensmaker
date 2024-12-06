@@ -13,6 +13,7 @@ from torchlensmaker.raytracing import (
 )
 
 from torchlensmaker.surface import Surface
+from torchlensmaker.shapes import Line
 
 
 def loss_nonpositive(parameters, scale=1):
@@ -120,6 +121,36 @@ class Gap(nn.Module):
         new_target = inputs.target + offset
         return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, None, inputs)
 
+
+class Aperture(nn.Module):
+    def __init__(self, inner_width, outer_width):
+        super().__init__()
+        self.inner_width = inner_width
+        self.outer_width = outer_width
+        self.shape = Line(inner_width)
+    
+    def forward(self, inputs: OpticalData):
+        surface = Surface(self.shape, pos=inputs.target)
+
+        # TODO factor common collision code with OpticalSurface
+        # For all rays, find the intersection with the surface and the normal vector at the intersection
+        lines = rays_to_coefficients(inputs.rays_origins, inputs.rays_vectors)
+        sols = surface.collide(lines)
+
+        # Detect solutions outside the surface domain
+        valid = torch.logical_and(sols <= surface.domain()[1], sols >= surface.domain()[0])
+        
+        # Filter data to keep only colliding rays
+        sols = sols[valid]
+        rays_origins = inputs.rays_origins[valid]
+        rays_vectors = inputs.rays_vectors[valid]
+        blocked = ~valid
+
+        collision_points = surface.evaluate(sols)
+
+        return OpticalData(collision_points, rays_vectors, inputs.target, surface, blocked, inputs)
+
+        
 
 class OpticalSurface(nn.Module):
     """

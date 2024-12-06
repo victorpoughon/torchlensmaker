@@ -5,6 +5,7 @@ from torchlensmaker.optics import (
     ParallelBeamUniform,
     RefractiveSurface,
     ReflectiveSurface,
+    Aperture,
 )
 
 from torchlensmaker.shapes import (

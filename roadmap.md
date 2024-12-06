@@ -7,7 +7,6 @@
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
-
 ## New example notebooks ideas
 
 * anchors demo
@@ -33,8 +32,6 @@
 
 ## Various stuff, higher prio
 
-* Horizontal / left to right ray diagrams
-
 *  more tests:
     lens maker equation
     setup a stack, call forward, check loss value aginst expected
@@ -48,6 +45,7 @@
 * Review and document sign convention
 
 * Constraints on parameters
+
 * Regularization API
 
 ## Various stuff, lower prio
@@ -65,27 +63,27 @@
 
 ## Rays not colliding with surface
 
-1. intersect_newton: detect non colliding rays by returning outside of domain T values
 2. OpticalSurface: add error_on_no_collision option, by default drop
 3. OpticalSurface: add error_on_negative_collision, by default allow
 4. Factor shape.collide() default impl in BaseShape
     Surface provides override to add transform
 
-add debug option to see number of rays at each stage, aperture of beam at each stage
-custom execution context instead of nn.Sequential, to provide full output of data at each stage, and remove need for data.previous chain, and for forwark hooks
+## Custom execution context
 
-## Aperture
+custom execution context instead of nn.Sequential
+an execution returns the full (data, elements) chain
 
-collide with a line shape
-drop non colliding rays
-transmit colliding rays
+* provide full output of data at each stage
+* remove need for data.previous chain
+* remove for forwark hooks
+* add option to see number of rays at each stage
+* add option to see aperture of beam at each stage
 
 ## Negative collisions, aka surfaces collisions
 
 * Remove / make optional detection in OpticalSurface (negative ts is nominal)
 * Add collisions points / rays origins / rays vectors accumulator lists to data pipe
 * Add ts computation function to be used as regression terms during optimization
-
 
 ## Rendering
 
@@ -99,10 +97,11 @@ transmit colliding rays
 Option 1: Surface() also flips about the Y=X axis, swapping coordinates
 Option 2: Update all shapes axes
 
-
 With clever internal reparametrization or regularization, can implement optimizable gaps with ranges.
 e.g.:
 - offset with maximum radial distance
 - gap/shift with min/max
 
 Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
+
+* Horizontal / left to right ray diagrams
