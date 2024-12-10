@@ -75,53 +75,19 @@ class FocalPointLoss(nn.Module):
         self.pos = None
 
     def forward(self, inputs: OpticalData):
-        self.pos = inputs.target # store for rendering, TODO don't
         return inputs
 
 
-class ParallelBeamUniform(nn.Module):
-    def __init__(self, width, num_rays):
-        super().__init__()
-        self.width = width
-        self.num_rays = num_rays
-
-    def forward(self, inputs: OpticalData):
-        margin = 0.1 # TODO
-        rays_x = torch.linspace(-self.width/2 + margin, self.width/2 - margin, self.num_rays)
-        rays_y = torch.zeros(self.num_rays)
-        
-        rays_origins = inputs.target + torch.column_stack((rays_x , rays_y ))
-        rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
-
-        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
-
-
-class ParallelBeamRandom(nn.Module):
-    def __init__(self, width, num_rays):
-        super().__init__()
-        self.width = width
-        self.num_rays = num_rays
-
-    def forward(self, inputs: OpticalData):
-        rays_x = -self.width / 2 + self.width * torch.rand(size=(self.num_rays,))
-        rays_y = torch.zeros(self.num_rays,)
-        rays_origins = torch.column_stack((rays_x, rays_y))
-
-        rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
-
-        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
-
-
 class PointSource(nn.Module):
-    def __init__(self, height, beam_angle):
+    def __init__(self, beam_angle, height=0):
         """
         height: height of the point source above the principal axis
         beam_angle: total angle of the emitted beam of rays (in degrees)
         """
 
         super().__init__()
-        self.height = height
         self.beam_angle = torch.deg2rad(torch.as_tensor(beam_angle, dtype=torch.float32))
+        self.height = torch.as_tensor(height, dtype=torch.float32)
         self.num_rays = 10
 
     def forward(self, inputs: OpticalData):
@@ -134,15 +100,15 @@ class PointSource(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    def __init__(self, angle, beam_diameter):
+    def __init__(self, beam_diameter, angle=0):
         """
-        angle: angle of indidence with respect to the principal axis (in degrees)
         beam_diameter: diameter of the beam of parallel light rays
+        angle: angle of indidence with respect to the principal axis (in degrees)
         """
 
         super().__init__()
+        self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float32)
         self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
-        self.beam_diameter = beam_diameter
         self.num_rays = 10
 
     def forward(self, inputs: OpticalData):

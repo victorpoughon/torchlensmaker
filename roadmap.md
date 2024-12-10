@@ -152,7 +152,7 @@ add tlm.ImageAtInfinity
 make ray error plot by histograming on source_coordinate
 
 add render option for sources: draw rays a bit before their origins to see them better
-
+> ray_draw_start = -1.5
 
 ## Thoughts about sampling
 

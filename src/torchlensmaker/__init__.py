@@ -1,8 +1,6 @@
 from torchlensmaker.optics import (
     FocalPointLoss,
     Gap,
-    ParallelBeamRandom,
-    ParallelBeamUniform,
     RefractiveSurface,
     ReflectiveSurface,
     Aperture,
