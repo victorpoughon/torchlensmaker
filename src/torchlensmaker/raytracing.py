@@ -18,29 +18,57 @@ def ray_point_squared_distance(ray_origin, ray_vector, point):
     # Ensure inputs are the correct shape
     assert ray_origin.shape == ray_vector.shape == (ray_origin.shape[0], 2)
     assert point.shape == (2,)
-    
+
     # Compute line coefficients a, b, c for each ray
     a = -ray_vector[:, 1]
     b = ray_vector[:, 0]
     c = ray_vector[:, 1] * ray_origin[:, 0] - ray_vector[:, 0] * ray_origin[:, 1]
-    
+
     # Broadcast point to match the batch size
     point = point.expand(ray_origin.shape[0], 2)
-    
+
     # Compute the squared distance
     numerator = torch.pow((a * point[:, 0] + b * point[:, 1] + c), 2)
     denominator = torch.pow(a, 2) + torch.pow(b, 2)
-    
+
     return numerator / denominator
 
 
-def rot2d_matrix(theta):
-    return np.array( [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]] )
-
-
 def rot2d(v, theta):
-    m = rot2d_matrix(theta)
-    return m.dot(v.T).T
+    """
+    Rotate vectors v by angles theta
+    Works with either v or theta batched
+    """
+    
+    # Ensure inputs are tensors
+    v = torch.as_tensor(v)
+    theta = torch.as_tensor(theta)
+    
+    # Store original dimensions
+    v_dim = v.dim()
+    theta_dim = theta.dim()
+
+    # Reshape inputs if necessary
+    if v.dim() == 1:
+        v = v.unsqueeze(0)  # Add batch dimension if single vector
+    if theta.dim() == 0:
+        theta = theta.unsqueeze(0)  # Add batch dimension if single angle
+    
+    # Create rotation matrices
+    cos_theta = torch.cos(theta)
+    sin_theta = torch.sin(theta)
+    R = torch.stack([
+        torch.stack([cos_theta, -sin_theta], dim=-1),
+        torch.stack([sin_theta, cos_theta], dim=-1)
+    ], dim=-2)
+    
+    # Perform rotation
+    v_rotated = torch.matmul(R, v.unsqueeze(-1)).squeeze(-1)
+    
+    if v_dim == 1:
+        v_rotated = v_rotated.squeeze(0)
+    
+    return v_rotated
 
 
 def reflection(rays, normals):
