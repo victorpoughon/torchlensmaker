@@ -11,7 +11,7 @@ from .optics import (
     focal_point_loss,
 )
 
-from torchlensmaker.render_plt import draw_surface_module
+# from torchlensmaker.render_plt import draw_surface_module
 
 
 def get_all_gradients(model):

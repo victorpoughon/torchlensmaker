@@ -9,7 +9,8 @@ from torchlensmaker.raytracing import (
     reflection,
     ray_point_squared_distance,
     position_on_ray,
-    rays_to_coefficients
+    rays_to_coefficients,
+    rot2d,
 )
 
 from torchlensmaker.surface import Surface
@@ -107,6 +108,27 @@ class ParallelBeamRandom(nn.Module):
         rays_origins = torch.column_stack((rays_x, rays_y))
 
         rays_vectors = torch.tile(torch.tensor([0., 1.]), (self.num_rays, 1))
+
+        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
+
+
+class PointSource(nn.Module):
+    def __init__(self, height, beam_angle):
+        """
+        height: height of the point source above the principal axis
+        beam_angle: total angle of the emitted beam of rays (in degrees)
+        """
+
+        super().__init__()
+        self.height = height
+        self.beam_angle = torch.deg2rad(torch.as_tensor(beam_angle, dtype=torch.float32))
+        self.num_rays = 10
+
+    def forward(self, inputs: OpticalData):
+        rays_origins = torch.tile(inputs.target + torch.tensor([self.height, 0.]), (self.num_rays, 1))
+
+        angles = torch.linspace(-self.beam_angle / 2, self.beam_angle / 2, self.num_rays)
+        rays_vectors = rot2d(torch.tensor([0., 1.]), angles)
 
         return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
 

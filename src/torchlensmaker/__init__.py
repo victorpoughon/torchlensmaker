@@ -6,6 +6,9 @@ from torchlensmaker.optics import (
     RefractiveSurface,
     ReflectiveSurface,
     Aperture,
+    PointSource,
+    OpticalSurface,
+    default_input,
 )
 
 from torchlensmaker.shapes import (

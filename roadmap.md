@@ -134,6 +134,9 @@ add tlm.PointSourceAtInfinity(angle, beam_diameter)
 
 add source_coordinate tensor to OpticalData
 
+> Parametric coordinate of the ray's source point on the shape that emitted the ray
+> source_coordinates
+
 add tlm.Object (= multiple point sources, varying height)
 add tlm.ObjectAtInfinity (= multiple points sources at infinity, varying angles)
 
@@ -144,18 +147,14 @@ move loss compute to optical elements
 add tlm.Image = on surface distance or multi point squared point line distance
 add tlm.ImageAtInfinity
 
-make ray error plot by histogramming on source_coordinate
+make ray error plot by histograming on source_coordinate
 
 
-######
+## Thoughts about sampling
 
-think about sampling
 * elements definition are sampling free. they define the space.
 * When evaluating for either rendering or optimization, then the space is sampled to create rays.
 
 sampling is done by the elements
 but storing the sampling parameters is outside
 each element gets: (num_samples, linspace/uniform random/normal random)
-
-# Parametric coordinate of the ray's source point on the shape that emitted the ray
-# source_coordinates
