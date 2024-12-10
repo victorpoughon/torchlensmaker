@@ -2,13 +2,12 @@
 
 ## Pairing ideas
 
-* Fix piecewise line
-* Fix bezier spline
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
 
 ## New example notebooks ideas
 
+* refractive telescope
 * anchors demo
 * lens inner vs outer thickness
 * sharing shapes between surfaces
@@ -30,7 +29,7 @@
 * Image and object
 * ray diagrams
 
-## Various stuff, higher prio
+## Various stuff
 
 *  more tests:
     lens maker equation
@@ -50,8 +49,6 @@
 
 * fix surface drawing during optimization
 
-## Various stuff, lower prio
-
 * tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
 * make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
 * improve piecewiseline: implement proper intersect_batch
@@ -63,6 +60,16 @@
 * Aperture
 * chromatic aberation, wavelength support
 * better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
+* inspiration from https://phydemo.app/ray-optics/
+* cemented lenses: doublet, etc.
+
+
+## Evaluation plots
+
+* Spot diagram: image of a point source / geometric PSF
+* Spot diagram (chromatic): image of a point source emitting a mixture of wavelengths
+* Ray error plot: focal loss as a function of 1 or 2 configuration
+
 
 ## Rays not colliding with surface
 
@@ -78,22 +85,17 @@ an execution returns the full (data, elements) chain
 
 * provide full output of data at each stage
 * remove need for data.previous chain
-* remove for forwark hooks
+* remove need for forward hooks
 * add option to see number of rays at each stage
-* add option to see aperture of beam at each stage
+* add option to see aperture/spread of beam at each stage
+* find intermediate images
+
 
 ## Negative collisions, aka surfaces collisions
 
 * Remove / make optional detection in OpticalSurface (negative ts is nominal)
 * Add collisions points / rays origins / rays vectors accumulator lists to data pipe
 * Add ts computation function to be used as regression terms during optimization
-
-## Rendering
-
-* Replace matplotlib with custom svg, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
-* Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
-* EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
-* OR use stock build123d viewer, customize it
 
 ## Make the principal axis X
 
@@ -112,3 +114,48 @@ Can combine absolute positioning and relative positioning with constraints to ma
 ## Export 3D
 
 * 3d export for bezier spline
+* 3d export for piecewise line
+
+## New SVG rendering
+
+* Add custom svg rendering, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
+* Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
+
+## 3D display improvements
+
+* EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
+* OR use stock build123d viewer, customize it
+
+
+## Images and Objects
+
+add tlm.PointSource(height, beam_angle)
+add tlm.PointSourceAtInfinity(angle, beam_diameter)
+
+add source_coordinate tensor to OpticalData
+
+add tlm.Object (= multiple point sources, varying height)
+add tlm.ObjectAtInfinity (= multiple points sources at infinity, varying angles)
+
+replace parallelbeamuniform with PointSourceAtInfinity()
+
+move loss compute to optical elements
+
+add tlm.Image = on surface distance or multi point squared point line distance
+add tlm.ImageAtInfinity
+
+make ray error plot by histogramming on source_coordinate
+
+
+######
+
+think about sampling
+* elements definition are sampling free. they define the space.
+* When evaluating for either rendering or optimization, then the space is sampled to create rays.
+
+sampling is done by the elements
+but storing the sampling parameters is outside
+each element gets: (num_samples, linspace/uniform random/normal random)
+
+# Parametric coordinate of the ray's source point on the shape that emitted the ray
+# source_coordinates

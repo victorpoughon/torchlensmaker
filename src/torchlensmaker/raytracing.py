@@ -3,9 +3,6 @@ import numpy as np
 from math import pi
 
 
-from torchlensmaker.shapes.common import normed
-
-
 def ray_point_squared_distance(ray_origin, ray_vector, point):
     """
     Squared distance from a point to rays
