@@ -90,6 +90,8 @@ an execution returns the full (data, elements) chain
 * add option to see aperture/spread of beam at each stage
 * find intermediate images
 
+* in rendering: enable rendering single element if no focal points, some trick for last / first elements if no rays drawing
+
 
 ## Negative collisions, aka surfaces collisions
 
@@ -148,6 +150,8 @@ add tlm.Image = on surface distance or multi point squared point line distance
 add tlm.ImageAtInfinity
 
 make ray error plot by histograming on source_coordinate
+
+add render option for sources: draw rays a bit before their origins to see them better
 
 
 ## Thoughts about sampling

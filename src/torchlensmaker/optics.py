@@ -133,6 +133,30 @@ class PointSource(nn.Module):
         return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
 
 
+class PointSourceAtInfinity(nn.Module):
+    def __init__(self, angle, beam_diameter):
+        """
+        angle: angle of indidence with respect to the principal axis (in degrees)
+        beam_diameter: diameter of the beam of parallel light rays
+        """
+
+        super().__init__()
+        self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
+        self.beam_diameter = beam_diameter
+        self.num_rays = 10
+
+    def forward(self, inputs: OpticalData):
+        margin = 0.1 # TODO
+        rays_x = torch.linspace(-self.beam_diameter/2 + margin, self.beam_diameter/2 - margin, self.num_rays)
+        rays_y = torch.zeros(self.num_rays)
+        
+        rays_origins = inputs.target + torch.column_stack((rays_x , rays_y))
+        vect = rot2d(torch.tensor([0., 1.]), self.angle)
+        rays_vectors = torch.tile(vect, (self.num_rays, 1))
+
+        return OpticalData(rays_origins, rays_vectors, inputs.target, None, None, inputs)
+
+
 class Gap(nn.Module):
     def __init__(self, offset_y):
         super().__init__()

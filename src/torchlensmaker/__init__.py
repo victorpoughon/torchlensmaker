@@ -7,6 +7,7 @@ from torchlensmaker.optics import (
     ReflectiveSurface,
     Aperture,
     PointSource,
+    PointSourceAtInfinity,
     OpticalSurface,
     default_input,
 )

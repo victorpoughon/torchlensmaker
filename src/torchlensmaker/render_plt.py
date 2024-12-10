@@ -132,7 +132,7 @@ artists_dict = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.Aperture: ApertureArtist,
     tlm.FocalPointLoss: FocalPointArtist,
-    tlm.PointSource: PointSourceArtist,
+    #tlm.PointSource: PointSourceArtist,
 }
 
 
@@ -145,10 +145,12 @@ def render_all(ax, optics):
     def forward_hook(module, all_inputs, outputs):
         inputs, outputs = all_inputs[0], outputs
 
+        # Find matching artist and use it to render
         for typ, artist in artists_dict.items():
             if isinstance(module, typ):
                 artist.draw_element(ax, module, inputs, outputs)
-                artist.draw_rays(ax, module, inputs, outputs)
+                if inputs.rays_origins.numel() > 0:
+                    artist.draw_rays(ax, module, inputs, outputs)
                 break
 
     try:
