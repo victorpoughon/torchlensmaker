@@ -76,8 +76,6 @@ class CircularArc(BaseShape):
         ], dim=-1)
 
     def normal(self, ts):
-        "Normal vectors at the given parametric locations"
-
         deriv = self.derivative(ts)
         normal = torch.stack((-deriv[:, 1], deriv[:, 0]), dim=-1)
         return normal / torch.linalg.vector_norm(normal, dim=1).view((-1, 1))

@@ -19,12 +19,12 @@ def sketch_line(line: tlm.Line):
 
 def sketch_parabola(parabola: tlm.Parabola):
     a = parabola.coefficients().detach().numpy()
-    r = parabola.width / 2
+    r = parabola.height / 2
 
     return bd.Bezier([
-        (-r, a*r**2),
-        (0, -a*r**2),
-        (r, a*r**2),
+        (a*r**2, -r),
+        (-a*r**2, 0),
+        (a*r**2, r),
     ])
 
 

@@ -24,6 +24,7 @@ class BaseShape:
         raise NotImplementedError
     
     def normal(self, ts):
+        "Normal vectors at the given parametric locations"
         raise NotImplementedError
 
     def collide(self, lines):
