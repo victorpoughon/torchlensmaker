@@ -7,13 +7,11 @@ from torchlensmaker.shapes.common import mirror_points, intersect_newton
 class BezierSpline(BaseShape):
     """
     Cubic Bezier Spline with constraints to represent a lens surface:
-        - Symmetry around the Y axis
+        - Symmetry around the X axis
         - First knot is (0,0)
         - C1 continuity (control points are mirrored around knots)
-        - First control point is on the y=0 line, so the tangent at (0,0) is horizontal
-        - Knots' X coordinates are uniformly spread on the interval (0, radius)
-        
-    All methods expect the first dimension to be a batch dimension
+        - First control point is on the x=0 line, so the tangent at (0,0) is vertical
+        - Knots' Y coordinates are uniformly spread along the shape's height
     """
 
     # Constants for bezier curve matrix form
@@ -32,21 +30,21 @@ class BezierSpline(BaseShape):
         # P3: w, aw^2
         return
 
-    def __init__(self, width, Y, CX, CY):
-        Y, CX, CY = map(torch.as_tensor, [Y, CX, CY])
+    def __init__(self, height, X, CX, CY):
+        X, CX, CY = map(torch.as_tensor, [X, CX, CY])
     
-        assert Y.shape[0] + 1 == CX.shape[0] == CY.shape[0] + 1
+        assert X.shape[0] + 1 == CX.shape[0] + 1 == CY.shape[0]
 
-        self.radius = width/2
-        self.num_intervals = Y.shape[0]
+        self.radius = height/2
+        self.num_intervals = X.shape[0]
 
-        self._Y = Y
+        self._X = X
         self._CX = CX
         self._CY = CY
 
     def parameters(self):
         all = {
-            "Y": self._Y,
+            "X": self._X,
             "CX": self._CX,
             "CY": self._CY,
         }
@@ -56,16 +54,16 @@ class BezierSpline(BaseShape):
     def coefficients(self):
         # Knots: X fixed on linspace, first Y fixed at zero
 
-        param_Y = self._Y
+        param_X = self._X
         param_CX = self._CX
         param_CY = self._CY
 
-        X = torch.linspace(0.0, self.radius, self.num_intervals + 1)
-        Y = torch.cat((torch.zeros(1), param_Y))
+        X = torch.cat((torch.zeros(1), param_X))
+        Y = torch.linspace(0.0, self.radius, self.num_intervals + 1)
 
-        # Control points: X free, first Y fixed at zero
-        CX = param_CX
-        CY = torch.cat((torch.zeros(1), param_CY))
+        # Control points: first X fixed at zero, Y is free
+        CX = torch.cat((torch.zeros(1), param_CX))
+        CY = param_CY
 
         assert X.numel() == self.num_intervals + 1
         assert Y.numel() == self.num_intervals + 1
@@ -132,10 +130,10 @@ class BezierSpline(BaseShape):
 
         points = self.get_bezier_points(intervals)
 
-        # Symmetry around the Y axis
+        # Symmetry around the X axis
         # Where ts are negative, swap control points and t becomes 1-t
         points_swapped = points[:, [3, 2, 1, 0], :]
-        points_mirrored = torch.stack((-points_swapped[:, :, 0], points_swapped[:, :, 1]), dim=-1)
+        points_mirrored = torch.stack((points_swapped[:, :, 0], -points_swapped[:, :, 1]), dim=-1)
         points = torch.where((ts < 0).view((-1, 1, 1)), points_mirrored, points)
         inner_ts = torch.where(ts < 0, 1.0 - inner_ts, inner_ts)
 
@@ -150,12 +148,7 @@ class BezierSpline(BaseShape):
         print("CY:", CY)
     
     def evaluate(self, ts):
-        ""
-
         # Get the interval and fractional t position
-        #i, t = self.get_interval(ts)
-        #P = self.get_bezier_points(i)
-
         assert isinstance(ts, torch.Tensor) and ts.dim() == 1
         P, t = self.bezier_curve(ts)
 
@@ -222,16 +215,16 @@ class BezierSpline(BaseShape):
             new_CX[2*i+2] = next_interval_ctrl_point[0]
             new_CY[2*i+2] = next_interval_ctrl_point[1]
 
-        return BezierSpline(self.radius*2, new_Y[1:], new_CX, new_CY[1:])
+        return BezierSpline(self.radius*2, new_X[1:], new_CX[1:], new_CY)
 
-    def wiggle(self, cx, cy, y):
-        _, Y, CX, CY = self.coefficients()
+    def wiggle(self, cx, cy, x):
+        X, _, CX, CY = self.coefficients()
         
-        new_Y = Y + y*torch.randn_like(Y)
+        new_X = X + x*torch.randn_like(X)
         new_CX = CX + cx*torch.randn_like(CX)
         new_CY = CY + cy*torch.randn_like(CY)
 
-        return BezierSpline(self.radius*2, new_Y[1:], new_CX, new_CY[1:])
+        return BezierSpline(self.radius*2, new_X[1:], new_CX[1:], new_CY)
 
     def derivative(self, ts):
         "Evaluate the derivative at given parametric locations"

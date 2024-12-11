@@ -49,7 +49,7 @@ def newton_iteration(surface, lines, tn):
     """
     One iteration of Newton's method
     """
-    
+
     # Compute value and derivative
     a, b, c = lines[:, 0], lines[:, 1], lines[:, 2]
     points = surface.evaluate(tn)
@@ -61,6 +61,11 @@ def newton_iteration(surface, lines, tn):
 
     # Update solution
     delta = - L / Lp
+
+    # We might devide by zero above if line is parallel to the surface
+    # derivative. This will result in inf which will be clamped to the surface
+    # domain by intersect_newton, and the iteration should recover from there.
+
     return tn + delta
 
 
@@ -74,15 +79,16 @@ def intersect_newton(surface, lines):
 
     Returns:
         ts :: (N,) parametric coordinate of each intersection
+        A value outside of the shape's domain indicates that there is no solution.
     """
-    
+
     assert isinstance(lines, torch.Tensor) and lines.dim() == 2
-   
+
     # Initialize solutions
     tn = surface.newton_init((lines.shape[0],))
 
     with torch.no_grad():
-        for _ in range(10): # TODO parameters for newton iterations
+        for _ in range(20):  # TODO parameters for newton iterations
             tn = newton_iteration(surface, lines, tn)
 
             # Clamp to the domain
@@ -95,7 +101,30 @@ def intersect_newton(surface, lines):
     tn = newton_iteration(surface, lines, tn)
 
     # The solution can now be outside of the domain
-    # which means 'no solution'
-    
+    # after the last newton step, which means 'no solution'
+
+    # Verify the solution
+    # Even if the solution is within the domain, it does not necessarily
+    # guarantee that it's on the line. So we verify solutions that are within
+    # the domain, and if they're not on the line, assign an out of domain value.
+    within_domain = torch.logical_and(
+        tn <= surface.domain()[1], tn >= surface.domain()[0]
+    )
+
+    points = surface.evaluate(tn[within_domain])
+
+    a, b, c = lines[within_domain, 0], lines[within_domain, 1], lines[within_domain, 2]
+    px, py = points[:, 0], points[:, 1]
+    residuals = a * px + b * py + c
+
+    out_of_domain_value = float("inf")  # TODO ask the shape for a out of domain value
+
+    # placeholder tensor to match tensor sizes in the where() below
+    placeholder = torch.zeros_like(tn)
+    placeholder[within_domain] = torch.where(
+        torch.abs(residuals) < 1e-4, tn[within_domain], out_of_domain_value
+    )
+
+    tn = torch.where(within_domain, placeholder, tn)
+
     return tn
-      

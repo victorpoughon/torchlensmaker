@@ -163,3 +163,17 @@ add render option for sources: draw rays a bit before their origins to see them 
 sampling is done by the elements
 but storing the sampling parameters is outside
 each element gets: (num_samples, linspace/uniform random/normal random)
+
+piecewise line: need more rays to work
+
+## Newton solver improvements
+
+* add parameters with good default
+* detect convergence before max iter
+
+## Training improvements
+
+detect when optimization leads to parameter out of domain with nice error message.
+for example, setup an impossibly short focal length with a spherical lens
+
+detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
