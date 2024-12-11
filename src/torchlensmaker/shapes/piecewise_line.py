@@ -48,55 +48,55 @@ class PiecewiseLine(BaseShape):
     """
 
     
-    def __init__(self, width: float, Y):
+    def __init__(self, height: float, X):
         """
-        Y is height of each point
-        first 0 is implicit
+        X is the position of each connection point
+        The first 0 is implicit and should not be provided
         """
 
         super().__init__()
-        self.width = width
-        self._Y = torch.as_tensor(Y)
+        self.height = height
+        self._X = torch.as_tensor(X)
     
     def coefficients(self):
-        N = self._Y.shape[0]
-        param_X = torch.linspace(0., self.width/2, steps=N+1)[1:]
-        param_Y = self._Y
+        N = self._X.shape[0]
+        param_X = self._X
+        param_Y = torch.linspace(0., self.height/2, steps=N+1)[1:]
 
-        X = torch.concatenate((torch.flip(-param_X, dims=[0]), torch.zeros(1), param_X)).contiguous()
-        Y = torch.concatenate((torch.flip(param_Y, dims=[0]), torch.zeros(1), param_Y))
+        X = torch.concatenate((torch.flip(param_X, dims=[0]), torch.zeros(1), param_X)).contiguous()
+        Y = torch.concatenate((torch.flip(-param_Y, dims=[0]), torch.zeros(1), param_Y))
 
         assert X.numel() == Y.numel()
 
         return X, Y
 
     def parameters(self):
-        if isinstance(self._Y, nn.Parameter):
-            return {"Y": self._Y}
+        if isinstance(self._X, nn.Parameter):
+            return {"X": self._X}
         else:
             return {}
     
     def domain(self):
-        return torch.tensor([-self.width/2, self.width/2])
+        return torch.tensor([-self.height/2, self.height/2])
     
-    def evaluate(self, X):
+    def evaluate(self, Y):
         cX, cY = self.coefficients()
-        Y = interp1d(cX, cY, X)
+        X = interp1d(cY, cX, Y)
         return torch.stack([X, Y], dim=-1)
 
-    def interval_index(self, xs):
+    def interval_index(self, ys):
         """
-        Given X coordinates of points: xs
+        Given Y coordinates of points ys
         Return the index of the edge the point falls into
         """
 
         X, Y = self.coefficients()
         
         # find intervals
-        indices = torch.searchsorted(X, xs.contiguous())
+        indices = torch.searchsorted(Y, ys.contiguous())
 
         # special case for newX == X[0]
-        indices = torch.where(xs == X[0], 1, indices)
+        indices = torch.where(ys == Y[0], 1, indices)
 
         # -1 here because we want the start of the interval
         return indices - 1
@@ -125,7 +125,7 @@ class PiecewiseLine(BaseShape):
         for i, coefficients in enumerate(edges_coefficients):
             
             # collisions with this segment's full line
-            col = line_lines_intersection(coefficients, lines)[:, 0]
+            col = line_lines_intersection(coefficients, lines)[:, 1]
 
             # store the collisions that fall within the current segement
             index = self.interval_index(col)

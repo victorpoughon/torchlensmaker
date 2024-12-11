@@ -103,10 +103,8 @@ an execution returns the full (data, elements) chain
 * Add collisions points / rays origins / rays vectors accumulator lists to data pipe
 * Add ts computation function to be used as regression terms during optimization
 
-## Make the principal axis X
 
-Option 1: Surface() also flips about the Y=X axis, swapping coordinates
-Option 2: Update all shapes axes
+## Ranges for parameters
 
 With clever internal reparametrization or regularization, can implement optimizable gaps with ranges.
 e.g.:
@@ -115,7 +113,6 @@ e.g.:
 
 Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
 
-* Horizontal / left to right ray diagrams
 
 ## Export 3D
 
