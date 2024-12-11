@@ -12,26 +12,26 @@ class CircularArc(BaseShape):
     An arc of circle
 
     Parameters:
-        width: typically diameter of the lens
-        arc_radius: radius of curvature of the surface profile
+        height: total height of the shape accross the principal axis (typically diameter of the lens or mirror)
+        arc_radius: radius of curvature of the shape
 
         The sign of the radius indicates the direction of the center of curvature:
-        * radius > 0: the arc bends towards the positive Y axis
-        * radius < 0: the arc bens towards the negative Y axis
+        * radius > 0: the arc bends towards the positive X axis
+        * radius < 0: the arc bends towards the negative X axis
 
         The internal parameter is curvature = 1/radius, to allow optimization to
         cross over zero and change sign.
     """
 
-    def __init__(self, width, r):
-        assert torch.abs(torch.as_tensor(r)) >= width / 2
+    def __init__(self, height, r):
+        assert torch.abs(torch.as_tensor(r)) >= height / 2
 
         if isinstance(r, nn.Parameter):
             self._K = nn.Parameter(torch.tensor(1./r.item()))
         else:
             self._K = torch.as_tensor(1./r)
-        
-        self.width = width
+
+        self.height = height
 
     def parameters(self):
         if isinstance(self._K, nn.Parameter):
@@ -41,7 +41,7 @@ class CircularArc(BaseShape):
 
     def coefficients(self):
         K = self._K
-        
+
         # Special case to avoid div by zero
         if torch.abs(K) < 1e-8:
             return torch.sign(K) * 1e8
@@ -50,21 +50,26 @@ class CircularArc(BaseShape):
 
     def domain(self):
         R = self.coefficients()
-        a = math.acos(self.width / (2*torch.abs(R)))
-        if R < 0:
-            return a, math.pi - a
-        else:
-            return -math.pi + a, -a
+        a = math.asin(self.height / (2 * torch.abs(R)))
+        return -a, +a
+
 
     def evaluate(self, ts):
         ts = torch.as_tensor(ts)
+
         R = self.coefficients()
-        X = torch.abs(R)*torch.cos(ts)
-        Y = torch.abs(R)*torch.sin(ts) + R
+        if R > 0:
+            ts = ts + math.pi
+
+        X = torch.abs(R)*torch.cos(ts) + R
+        Y = torch.abs(R)*torch.sin(ts)
         return torch.stack((X, Y), dim=-1)
 
     def derivative(self, ts):
         R = self.coefficients()
+        if R > 0:
+            ts = ts + math.pi
+
         return torch.stack([
             - torch.abs(R) * torch.sin(ts),
             torch.abs(R) * torch.cos(ts)
@@ -78,7 +83,7 @@ class CircularArc(BaseShape):
         return normal / torch.linalg.vector_norm(normal, dim=1).view((-1, 1))
 
     def newton_init(self, size):
-        return torch.full(size, math.pi/2)
-    
+        return torch.full(size, 0.)
+
     def collide(self, lines):
         return intersect_newton(self, lines)

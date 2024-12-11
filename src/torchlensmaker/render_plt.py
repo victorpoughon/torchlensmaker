@@ -43,7 +43,7 @@ class FocalPointArtist(Artist):
         pos = inputs.target
 
         # Compute t needed to reach the focal point's position
-        t_real = (pos[1] - rays_origins[:, 1]) / rays_vectors[:, 1]
+        t_real = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
 
         if t_real.mean() > 0:
             t = 1.3 * t_real
@@ -99,7 +99,7 @@ class SurfaceArtist(Artist):
             rays_vectors = inputs.rays_vectors[blocked]
             if rays_origins.numel() > 0:
                 pos = inputs.target
-                t = (pos[1] - rays_origins[:, 1]) / rays_vectors[:, 1]
+                t = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
 
                 end_x = rays_origins[:, 0] + t * rays_vectors[:, 0]
                 end_y = rays_origins[:, 1] + t * rays_vectors[:, 1]

@@ -29,6 +29,10 @@
 * Image and object
 * ray diagrams
 
+* depth of field explanation
+
+* focal length changes if you flip a plano convex lens (contrary to what textbook says)
+
 ## Various stuff
 
 *  more tests:

@@ -4,11 +4,11 @@ from torchlensmaker.shapes import BaseShape
 
 class Line(BaseShape):
     """
-    A straight line perpendicular to the principal axis
+    A straight line segment perpendicular to the principal axis
     """
 
-    def __init__(self, width):
-        self.width = width
+    def __init__(self, height):
+        self.height = height
     
     def parameters(self):
         return {}
@@ -17,15 +17,15 @@ class Line(BaseShape):
         return None
     
     def domain(self):
-        return torch.tensor([-self.width / 2, self.width / 2])
+        return torch.tensor([-self.height / 2, self.height / 2])
 
-    def evaluate(self, X):
-        X = torch.atleast_1d(torch.as_tensor(X))
-        Y = torch.zeros_like(X)
+    def evaluate(self, ts):
+        Y = torch.atleast_1d(torch.as_tensor(ts))
+        X = torch.zeros_like(Y)
         return torch.stack([X, Y], dim=-1)
 
     def normal(self, points):
-        return torch.tile(torch.tensor([0., 1.]), (points.shape[0], 1))
+        return torch.tile(torch.tensor([1., 0.]), (points.shape[0], 1))
 
     def intersect_batch(self, lines):
         """
@@ -35,11 +35,10 @@ class Line(BaseShape):
         # Ensure lines is a tensor
         lines = torch.as_tensor(lines)
 
-        # Assume no horizontal lines, i.e. a != 0
+        # Assume no vertical lines, i.e. b != 0
         a, b, c = lines[:, 0], lines[:, 1], lines[:, 2]
 
-        return -c / a
-
+        return -c / b
     
     def collide(self, lines):
         return self.intersect_batch(lines)

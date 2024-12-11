@@ -20,7 +20,7 @@ class BaseShape:
     def evaluate(self, ts):
         raise NotImplementedError
     
-    def derivative(self):
+    def derivative(self, ts):
         raise NotImplementedError
     
     def normal(self, ts):

@@ -13,13 +13,8 @@ def tuplelist(arr):
 
 
 def sketch_line(line: tlm.Line):
-    a, b, c = 0, 1, 0
-    r = line.width / 2
-
-    return bd.Polyline([
-        (-r, (-c + a*r) / b),
-        (r, (-c - a*r) / b),
-    ])
+    y = line.height / 2
+    return bd.Line([(0, -y), (0, y)])
 
 
 def sketch_parabola(parabola: tlm.Parabola):
@@ -37,10 +32,12 @@ def sketch_circular_arc(arc: tlm.CircularArc):
     arc_radius = arc.coefficients().detach().item()
     x, y = arc.evaluate(arc.domain()[0]).detach().tolist()
 
+    print(x, y, arc_radius)
+
     if arc_radius > 0:
-        return bd.RadiusArc((-x, y), (x, y), arc_radius)
+        return bd.RadiusArc((x, -y), (x, y), arc_radius)
     else:
-        return bd.RadiusArc((x, y), (-x, y), arc_radius)
+        return bd.RadiusArc((x, y), (x, -y), arc_radius)
 
 
 def shape_to_sketch(shape):
@@ -57,22 +54,28 @@ def shape_to_sketch(shape):
 def lens_to_part(lens):
     inner_thickness = lens.inner_thickness().detach().item()
     
-    curve1 = bd.scale(shape_to_sketch(lens.surface1.shape), (1., lens.surface1.scale, 1.))
-    curve2 = bd.Pos(0., inner_thickness) * bd.scale(shape_to_sketch(lens.surface2.shape), (1., lens.surface2.scale, 1.))
+    curve1 = bd.scale(shape_to_sketch(lens.surface1.shape), (lens.surface1.scale, 1., 1.))
+    curve2 = bd.Pos(inner_thickness, 0.) * bd.scale(shape_to_sketch(lens.surface2.shape), (lens.surface2.scale, 1., 1.))
 
-    # Find the "right most" point on the curve
-    # i.e. extremity with the highest X value
+    # Find the "top most" point on the curve
+    # i.e. extremity with the highest Y value
     # This can be either sides depending on how the surface is parametrized
-    v1 = curve1.vertices().sort_by(bd.Axis.X)[-1]
-    v2 = curve2.vertices().sort_by(bd.Axis.X)[-1]
+    v1 = curve1.vertices().sort_by(bd.Axis.Y)[-1]
+    v2 = curve2.vertices().sort_by(bd.Axis.Y)[-1]
 
     # Connect them to form the lens edge
     edge = bd.Polyline([v1, v2])
 
-    # Close the edges, revolve around the Y axis
+    # Close the edges
     face = bd.make_face([curve1, edge, curve2])
-    face = bd.split(face, bisect_by=bd.Plane.YZ)
-    part = bd.revolve(face, bd.Axis.Y)
+
+    # split only the side we are going to revolve
+    # keep bottom side because the normal direction of Plane.XZ is in the
+    # negative y-direction according to the right-hand-rule
+    face = bd.split(face, bisect_by=bd.Plane.XZ, keep=bd.Keep.BOTTOM)
+
+    # revolve around the X axis
+    part = bd.revolve(face, bd.Axis.X)
 
     return part
 

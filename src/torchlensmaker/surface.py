@@ -15,11 +15,11 @@ class Surface:
     A surface places a shape in absolute 2D space.
 
     Shapes are defined in a local 2D coordinate system where the origin (0,0) is
-    the center point of the shape. In this relative reference frame, the travel direction of light rays
-    is assumed to be along the positive Y axis.
+    the center point of the shape. The travel direction of light rays
+    is generally assumed to be along the positive X axis.
 
     A surface (this class), takes a shape and places it in absolute 2D space by applying:
-    * A scale factor (SX, SY) along both axes. Typically (1, -1) is used to make symmetric lenses
+    * A scale factor along the X axis. Typically -1 is used to make symmetric lenses
     * A translation to a point in absolute space
     
     The surface class wraps a shape with:
@@ -29,7 +29,7 @@ class Surface:
 
     Valid anchors are:
         * 'origin' (default): origin (0,0) of the shape
-        * 'extent': point on the Y axis that aligns with the shape's greatest extent
+        * 'extent': point on the X axis that aligns with the shape's greatest extent
     """
 
     valid_anchors = ["origin", "extent"]
@@ -38,7 +38,7 @@ class Surface:
         self.shape = shape
         
         self.pos = torch.as_tensor(pos)
-        self.scale = torch.stack((torch.tensor(1.), torch.as_tensor(scale, dtype=torch.float32)))
+        self.scale = torch.stack((torch.as_tensor(scale, dtype=torch.float32), torch.tensor(1.)))
         self.anchor = anchor
 
         if not anchor in self.valid_anchors:
@@ -60,10 +60,9 @@ class Surface:
             return torch.tensor([0., 0.])
 
         elif anchor == "extent":
-            # Assuming the shape is symmetric, get the extend along the Y axis
+            # Assuming the shape is symmetric, get the extent along the X axis
             off = self.shape.evaluate(self.shape.domain()[1:])[0] * self.scale
-            #return torch.tensor([0., off[1]])  #### stack instead to preserve grad??
-            return torch.stack((torch.tensor(0.), off[1]))
+            return torch.stack((off[0], torch.tensor(0.)))
 
         else:
             raise ValueError(f"Invalid anchor value '{anchor}'")

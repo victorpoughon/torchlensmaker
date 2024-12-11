@@ -72,7 +72,6 @@ def focal_point_loss(data: OpticalData):
 class FocalPointLoss(nn.Module):
     def __init__(self):
         super().__init__()
-        self.pos = None
 
     def forward(self, inputs: OpticalData):
         return inputs
@@ -95,13 +94,13 @@ class PointSource(nn.Module):
     def forward(self, inputs: OpticalData):
         # Create new rays by sampling the beam angle
         rays_origins = torch.tile(
-            inputs.target + torch.tensor([self.height, 0.0]), (self.num_rays, 1)
+            inputs.target + torch.tensor([0.0, self.height]), (self.num_rays, 1)
         )
 
         angles = torch.linspace(
             -self.beam_angle / 2, self.beam_angle / 2, self.num_rays
         )
-        rays_vectors = rot2d(torch.tensor([0.0, 1.0]), angles)
+        rays_vectors = rot2d(torch.tensor([1.0, 0.0]), angles)
 
         # Add new rays to the input rays
         return OpticalData(
@@ -129,15 +128,15 @@ class PointSourceAtInfinity(nn.Module):
     def forward(self, inputs: OpticalData):
         # Create new rays by sampling the beam diameter
         margin = 0.1  # TODO
-        rays_x = torch.linspace(
+        rays_x = torch.zeros(self.num_rays)
+        rays_y = torch.linspace(
             -self.beam_diameter / 2 + margin,
             self.beam_diameter / 2 - margin,
             self.num_rays,
         )
-        rays_y = torch.zeros(self.num_rays)
 
         rays_origins = inputs.target + torch.column_stack((rays_x, rays_y))
-        vect = rot2d(torch.tensor([0.0, 1.0]), self.angle)
+        vect = rot2d(torch.tensor([1.0, 0.0]), self.angle)
         rays_vectors = torch.tile(vect, (self.num_rays, 1))
 
         # Add new rays to the input rays
@@ -152,12 +151,12 @@ class PointSourceAtInfinity(nn.Module):
 
 
 class Gap(nn.Module):
-    def __init__(self, offset_y):
+    def __init__(self, offset):
         super().__init__()
-        self.offset = offset_y
+        self.offset = offset
     
     def forward(self, inputs: OpticalData):
-        offset = torch.stack((torch.tensor(0.), torch.as_tensor(self.offset)))
+        offset = torch.stack((torch.as_tensor(self.offset), torch.tensor(0.)))
         new_target = inputs.target + offset
         return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, None, inputs)
 
