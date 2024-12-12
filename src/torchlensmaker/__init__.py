@@ -22,6 +22,7 @@ from torchlensmaker.shapes import (
 from torchlensmaker.training import (
     optimize,
     focal_point_loss,
+    full_forward,
 )
 
 from torchlensmaker.export3d import (

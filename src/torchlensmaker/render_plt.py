@@ -138,11 +138,9 @@ artists_dict = {
 
 def render_all(ax, optics):
 
-    # To render, call forward() on the model
-    # with a hook that catches input and outputs
-    # and renders them at each step
+    execute_list, outputs = tlm.full_forward(optics, tlm.default_input)
 
-    def forward_hook(module, all_inputs, outputs):
+    for module, all_inputs, outputs in execute_list:
         inputs, outputs = all_inputs[0], outputs
 
         # Find matching artist and use it to render
@@ -152,23 +150,6 @@ def render_all(ax, optics):
                 if inputs.rays_origins.numel() > 0:
                     artist.draw_rays(ax, module, inputs, outputs)
                 break
-
-    try:
-        # Register hooks on all modules
-        handles = []
-        for module in optics.modules():
-            handles.append(module.register_forward_hook(forward_hook))
-
-        # Call the forward model, this will call the hooks
-        _ = optics(tlm.default_input)
-
-        # Remove all hooks
-        for h in handles:
-            h.remove()
-
-    except RuntimeError as e:
-        print("Error calling forward on model", e)
-        raise
 
 
 def render_plt(optics, force_uniform_source=True):

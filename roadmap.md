@@ -67,6 +67,7 @@
 * inspiration from https://phydemo.app/ray-optics/
 * cemented lenses: doublet, etc.
 
+* in rendering: enable rendering single element if no focal points, some trick for last / first elements if no rays drawing
 
 ## Evaluation plots
 
@@ -74,6 +75,9 @@
 * Spot diagram (chromatic): image of a point source emitting a mixture of wavelengths
 * Ray error plot: focal loss as a function of 1 or 2 configuration
 
+* add option to see number of rays at each stage
+* add option to see aperture/spread of beam at each stage
+* find intermediate images
 
 ## Rays not colliding with surface
 
@@ -81,20 +85,6 @@
 3. OpticalSurface: add error_on_negative_collision, by default allow
 4. Factor shape.collide() default impl in BaseShape
     Surface provides override to add transform
-
-## Custom execution context
-
-custom execution context instead of nn.Sequential
-an execution returns the full (data, elements) chain
-
-* provide full output of data at each stage
-* remove need for data.previous chain
-* remove need for forward hooks
-* add option to see number of rays at each stage
-* add option to see aperture/spread of beam at each stage
-* find intermediate images
-
-* in rendering: enable rendering single element if no focal points, some trick for last / first elements if no rays drawing
 
 
 ## Negative collisions, aka surfaces collisions
@@ -114,36 +104,30 @@ e.g.:
 Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
 
 
-## Export 3D
-
-* 3d export for bezier spline
-* 3d export for piecewise line
-
 ## New SVG rendering
 
 * Add custom svg rendering, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
 * Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
 
-## 3D display improvements
+## 3D export and display improvements
+
+* 3d export for bezier spline
+* 3d export for piecewise line
 
 * EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
 * OR use stock build123d viewer, customize it
 
+* export full optical stack
 
 ## Images and Objects
 
-add tlm.PointSource(height, beam_angle)
-add tlm.PointSourceAtInfinity(angle, beam_diameter)
-
 add source_coordinate tensor to OpticalData
 
-> Parametric coordinate of the ray's source point on the shape that emitted the ray
+> Normalized parametric coordinate of the ray's source point on the shape that emitted the ray
 > source_coordinates
 
 add tlm.Object (= multiple point sources, varying height)
 add tlm.ObjectAtInfinity (= multiple points sources at infinity, varying angles)
-
-replace parallelbeamuniform with PointSourceAtInfinity()
 
 move loss compute to optical elements
 

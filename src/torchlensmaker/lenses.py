@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from torchlensmaker.optics import default_input
-
 def lens_thickness_gap(inner_thickness, outer_thickness):
     "Thickness and anchors for the provied thickness parametrization"
 
@@ -32,17 +30,22 @@ class GenericLens(tlm.Module):
         "Thickness at the center of the lens"
 
         # Evaluate the lens stack with zero rays, just to forward compute positions
-        output = self(default_input)
-        s2 = output.surface
-        s1 = output.previous.previous.surface
+        execute_list, _ = tlm.full_forward(self, tlm.default_input)
+        
+        # Get the surfaces to compute thickness
+        s1 = execute_list[0][2].surface
+        s2 = execute_list[2][2].surface
         return torch.linalg.vector_norm(s1.at("origin") - s2.at("origin"))
     
     def outer_thickness(self):
         "Thickness at the outer radius of the lens"
+
         # Evaluate the lens stack with zero rays, just to forward compute positions
-        output = self(default_input)
-        s2 = output.surface
-        s1 = output.previous.previous.surface
+        execute_list, _ = tlm.full_forward(self, tlm.default_input)
+        
+        # Get the surfaces to compute thickness
+        s1 = execute_list[0][2].surface
+        s2 = execute_list[2][2].surface
         return torch.linalg.vector_norm(s1.at("extent") - s2.at("extent"))
     
     def thickness_at(self, x):
