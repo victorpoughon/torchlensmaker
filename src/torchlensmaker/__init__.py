@@ -22,7 +22,6 @@ from torchlensmaker.shapes import (
 from torchlensmaker.training import (
     optimize,
     focal_point_loss,
-    full_forward,
 )
 
 from torchlensmaker.export3d import (
@@ -33,9 +32,7 @@ from torchlensmaker.surface import (
     Surface,
 )
 
-from torchlensmaker.render_plt import (
-    render_plt
-)
+from torchlensmaker.render_plt import render_plt
 
 from torchlensmaker.module import Module
 
@@ -44,3 +41,5 @@ from torchlensmaker.lenses import (
     SymmetricLens,
     PlanoLens,
 )
+
+from torchlensmaker.full_forward import full_forward
