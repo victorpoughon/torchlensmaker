@@ -66,6 +66,9 @@ class FocalPointLoss(nn.Module):
     def forward(self, inputs: OpticalData):
         return inputs
 
+    def loss(self, inputs: OpticalData):
+        return focal_point_loss(inputs)
+
 
 class PointSource(nn.Module):
     def __init__(self, beam_angle, height=0):
@@ -102,10 +105,10 @@ class PointSource(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    def __init__(self, beam_diameter, angle=0):
+    def __init__(self, beam_diameter, angle=0.):
         """
         beam_diameter: diameter of the beam of parallel light rays
-        angle: angle of indidence with respect to the principal axis (in degrees)
+        angle: angle of indidence with respect to the principal axis, in degrees
         """
 
         super().__init__()
@@ -134,6 +137,40 @@ class PointSourceAtInfinity(nn.Module):
             inputs.target,
             None,
         )
+
+
+class ObjectAtInfinity(nn.Module):
+    def __init__(self, beam_diameter, angular_size, angle=0):
+        """
+        angular_size: apparent angular size of the object, in degrees
+        angle: angle of incidence of the object's center with the principal axis, in degrees
+        """
+
+        super().__init__()
+        self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float32)
+        self.angular_size = torch.as_tensor(angular_size, dtype=torch.float32)
+        self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
+        self.num_samples = 3
+
+    def forward(self, inputs: OpticalData):
+        # An object at infinity is a collection of points at infinity,
+        # sampled along the object's angular size
+
+        angles = torch.linspace(-self.angular_size/2., self.angular_size/2, self.num_samples)
+
+        modules = nn.Sequential()
+
+        for angle in angles:
+            # normalized parametric coordinate on the object
+            # (-1, 1) or (0, 1) ?
+            # t = ...
+            # add a PointSourceAtInfinity with that t value
+            current_angle = angle
+            print(current_angle)
+            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle)
+            modules.append(mod)
+
+        return modules.forward(inputs)
 
 
 class Gap(nn.Module):

@@ -1,5 +1,6 @@
 import math
 import torch
+import torch.nn as nn
 import numpy as np
 from os.path import join
 
@@ -10,6 +11,10 @@ from .optics import (
     default_input,
     focal_point_loss,
 )
+
+# Aliases to torch.nn classes
+Parameter = nn.Parameter
+Sequential = nn.Sequential
 
 def get_all_gradients(model):
     grads = []

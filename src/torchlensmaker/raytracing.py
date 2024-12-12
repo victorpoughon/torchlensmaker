@@ -5,15 +5,15 @@ from math import pi
 
 def ray_point_squared_distance(ray_origin, ray_vector, point):
     """
-    Squared distance from a point to rays
+    Squared closest distance between rays and points
     
     Args:
         ray_origin: tensor of shape (N, 2) - origins of the rays
         ray_vector: tensor of shape (N, 2) - direction unit vectors of the rays
-        point: tensor of shape (2,) - the point to compute distance to
+        point: tensor of shape (2,) or (N, 2) - the point(s) to compute distance to
     
     Returns:
-        tensor of shape (N,) - squared distances from the point to each ray
+        tensor of shape (N,) - squared distances between each ray and the point(s)
     """
     # Ensure inputs are the correct shape
     assert ray_origin.shape == ray_vector.shape == (ray_origin.shape[0], 2), (ray_origin.shape, ray_vector.shape)
@@ -24,8 +24,11 @@ def ray_point_squared_distance(ray_origin, ray_vector, point):
     b = ray_vector[:, 0]
     c = ray_vector[:, 1] * ray_origin[:, 0] - ray_vector[:, 0] * ray_origin[:, 1]
 
-    # Broadcast point to match the batch size
-    point = point.expand(ray_origin.shape[0], 2)
+    # If needed, broadcast point to match the batch size
+    if point.dim() == 1:
+        point = point.expand(ray_origin.shape[0], 2)
+    else:
+        assert point.shape == (ray_origin.shape[0], 2)
 
     # Compute the squared distance
     numerator = torch.pow((a * point[:, 0] + b * point[:, 1] + c), 2)
@@ -151,7 +154,7 @@ def rays_to_coefficients(points, directions):
     
     Args:
         points: torch.Tensor (N, 2) - points on the lines directions:
-        torch.Tensor (N, 2) - unit direction vectors
+        directions: torch.Tensor (N, 2) - unit direction vectors
     
     Returns:
         torch.Tensor (N, 3) - line coefficients [a, b, c] for ax + by + c = 0

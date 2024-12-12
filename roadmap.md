@@ -161,3 +161,8 @@ detect when optimization leads to parameter out of domain with nice error messag
 for example, setup an impossibly short focal length with a spherical lens
 
 detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
+
+## Focal length measurement
+
+* be able to measure focal lengths in different ways that make sense for optics (front, back, etc): choose a reference point on the lens
+* position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.

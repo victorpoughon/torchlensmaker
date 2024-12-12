@@ -35,8 +35,8 @@ def full_forward(module, inputs):
 
     # Define the forward hook
     def hook(mod, inp, out):
-        # inp[0] here restricts us to forward() methods with a single argument
-        # this is fine for torchlensmaker because we use OpticalData everywhere
+        # inp[0] here restricts us to forward() first argument
+        # this is fine here because we only need OpticalData
         execute_list.append(ForwardContext(mod, inp[0], out))
     
     # Register forward hooks to every module recursively
