@@ -33,8 +33,8 @@ class GenericLens(tlm.Module):
         execute_list, _ = tlm.full_forward(self, tlm.default_input)
         
         # Get the surfaces to compute thickness
-        s1 = execute_list[0][2].surface
-        s2 = execute_list[2][2].surface
+        s1 = execute_list[0][0].surface(execute_list[0][1].target)
+        s2 = execute_list[2][0].surface(execute_list[2][1].target)
         return torch.linalg.vector_norm(s1.at("origin") - s2.at("origin"))
     
     def outer_thickness(self):
@@ -44,8 +44,8 @@ class GenericLens(tlm.Module):
         execute_list, _ = tlm.full_forward(self, tlm.default_input)
         
         # Get the surfaces to compute thickness
-        s1 = execute_list[0][2].surface
-        s2 = execute_list[2][2].surface
+        s1 = execute_list[0][0].surface(execute_list[0][1].target)
+        s2 = execute_list[2][0].surface(execute_list[2][1].target)
         return torch.linalg.vector_norm(s1.at("extent") - s2.at("extent"))
     
     def thickness_at(self, x):

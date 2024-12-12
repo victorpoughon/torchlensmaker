@@ -69,7 +69,7 @@ class PointSourceArtist(Artist):
 class SurfaceArtist(Artist):
     @staticmethod
     def draw_element(ax, element, inputs, outputs):
-        surface = outputs.surface
+        surface = element.surface(inputs.target)
         color = "steelblue"
 
         # Render optical surface
@@ -140,9 +140,7 @@ def render_all(ax, optics):
 
     execute_list, outputs = tlm.full_forward(optics, tlm.default_input)
 
-    for module, all_inputs, outputs in execute_list:
-        inputs, outputs = all_inputs[0], outputs
-
+    for module, inputs, outputs in execute_list:
         # Find matching artist and use it to render
         for typ, artist in artists_dict.items():
             if isinstance(module, typ):

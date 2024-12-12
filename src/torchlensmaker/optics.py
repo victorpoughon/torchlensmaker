@@ -39,10 +39,6 @@ class OpticalData:
     # Position of the next optical element
     target: torch.Tensor
 
-    # None or tlm.Surface
-    # Surface object of the previous optical element
-    surface: Optional[Surface]
-
     # None or Tensor of shape (N,)
     # Mask array indicating which rays from the previous data in the optical
     # stack were blocked by the previous optical element
@@ -53,7 +49,6 @@ default_input = OpticalData(
     rays_origins = torch.empty((0, 2)),
     rays_vectors = torch.empty((0, 2)),
     target = torch.zeros(2),
-    surface = None,
     blocked = None,
 )
 
@@ -103,7 +98,6 @@ class PointSource(nn.Module):
             torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
             inputs.target,
             None,
-            None,
         )
 
 
@@ -139,7 +133,6 @@ class PointSourceAtInfinity(nn.Module):
             torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
             inputs.target,
             None,
-            None,
         )
 
 
@@ -151,7 +144,7 @@ class Gap(nn.Module):
     def forward(self, inputs: OpticalData):
         offset = torch.stack((torch.as_tensor(self.offset), torch.tensor(0.)))
         new_target = inputs.target + offset
-        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, None)
+        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None)
 
 
 class Aperture(nn.Module):
@@ -180,7 +173,7 @@ class Aperture(nn.Module):
 
         collision_points = surface.evaluate(sols)
 
-        return OpticalData(collision_points, rays_vectors, inputs.target, surface, blocked)
+        return OpticalData(collision_points, rays_vectors, inputs.target, blocked)
 
 
 class OpticalSurface(nn.Module):
@@ -250,7 +243,7 @@ class OpticalSurface(nn.Module):
             output_rays = self.optical_function(rays_vectors, collision_normals)
 
         new_target = surface.at(self.anchors[1])
-        return OpticalData(collision_points, output_rays, new_target, surface, blocked)
+        return OpticalData(collision_points, output_rays, new_target, blocked)
 
 
 class ReflectiveSurface(OpticalSurface):

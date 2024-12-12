@@ -32,7 +32,9 @@ def full_forward(module, inputs):
 
     # Define the forward hook
     def hook(mod, inp, out):
-        execute_list.append((mod, inp, out))
+        # inp[0] here restricts us to forward() methods with a single argument
+        # this is fine for torchlensmaker because we use OpticalData everywhere
+        execute_list.append((mod, inp[0], out))
     
     # Register forward hooks to every module recursively
     hooks = []
