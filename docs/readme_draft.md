@@ -1,3 +1,5 @@
+# Torch Lens Maker
+
 *Torch Lens Maker* is an open-source Python library for designing optical systems using optimization.
 
 It is currently an experimental project, but under active development. The goal is to be able to design complex real-world optical systems using modern and expressive computer code.
@@ -9,6 +11,25 @@ It is currently an experimental project, but under active development. The goal 
 * Analyse with ray error plots, ray diagrams, spot diagrams, and more
 * Export ready to manufacture 3D models in any format
 
+```python
+import torch
+import torchlensmaker as tlm
+
+shape = tlm.CircularArc(height=60., r=70.)
+
+optics = tlm.OpticalSequence(
+    tlm.ObjectAtInfinity(beam_diameter=40, angular_size=15),
+    tlm.Gap(10.),
+    tlm.SymmetricLens(shape, (1.0, 1.5), outer_thickness=5.),
+    tlm.Gap(60.0),
+    tlm.Image(height=10),
+)
+
+tlm.render_plt(optics, sampling={"base": 30, "object": 5}, color_dim="object")
+```
+
+![[image1.png]]
+
 The core of the project is differentiable collision detection and ray-tracing implemented in PyTorch. PyTorch provides world-class automatic differentiation, and access to state-of-the-art numerical optimization algorithms. Export to 3D models is done with build123d.
 
 The key idea is that there is a strong analogy to be made between layers of a neural network, and optical elements in an optical system. If we have an optical system made of a series of lenses, mirrors, etc, we can pretend that each optical element is the layer of a neural network. The data flowing through this network are not images, sounds, text or whatever it is neural networks do these days, but rays of light. Each layer affects light rays depending on its internal parameters describing its surface shape, and following the very much non-linear Snell's law. A stack of non linear functions you say? Sounds like a neural network to me! Inference, or the forward model, is the optical simulation where given some input light, we compute the image formed. Training - or optimization - is finding the best shapes for lenses to focus light where we want it.
@@ -19,6 +40,9 @@ I want *Torch Lens Maker* to be to *Zemax OpticStudio* what *OpenSCAD* is to *So
 ## Design principles
 
 *Torch Lens Maker* design principles are:
+
+* **Geometric Optics**
+Light propagates as rays. They travel in a straight line until they hit a surface, where they can reflect, refract or stop.
 
 * **Rotational Symmetry**
 The full 3D system must be symmetrical around the principal optical axis. This allows the simulation to happen in 2D but generalize correctly to 3D. Rays that lie in a plane that does not contain the principal axis (sometimes called *skew ray*s) are ignored. 
