@@ -1,16 +1,10 @@
 import math
 import torch
-import torch.nn as nn
 import numpy as np
-from os.path import join
 
 import matplotlib.pyplot as plt
 
-from .optics import (
-    OpticalSurface,
-    default_input,
-    focal_point_loss,
-)
+from .optics import default_input
 
 
 def get_all_gradients(model):
@@ -43,8 +37,8 @@ def optimize(optics, optimizer, sampling, num_iter, nshow=20, regularization=Non
     
         output = optics(default_input, sampling)
 
-        # TODO for now we just assume last element is the focal point
-        loss = focal_point_loss(output)
+        # Get loss from the accumulator in the output
+        loss = output.loss
 
         if regularization is not None:
             loss = loss + regularization(optics)

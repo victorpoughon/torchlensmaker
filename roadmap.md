@@ -180,6 +180,10 @@ for example, setup an impossibly short focal length with a spherical lens
 
 detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
 
+multiple loss function for image / focal point:
+- ray point distance
+- on shape distance
+
 ## Focal length measurement
 
 * be able to measure focal lengths in different ways that make sense for optics (front, back, etc): choose a reference point on the lens
@@ -204,3 +208,6 @@ s = t / domain
 t = s*domain
 
 or enforce normalized everywhere?
+
+
+## Support for double precision floats

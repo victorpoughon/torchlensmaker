@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 from typing import Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from torchlensmaker.raytracing import (
     refraction,
@@ -50,6 +50,10 @@ class OpticalData:
     coord_base: torch.Tensor
     coord_object: torch.Tensor
 
+    # Tensor of one element
+    # Loss accumulator
+    loss: torch.Tensor
+
 
 default_input = OpticalData(
     rays_origins = torch.empty((0, 2)),
@@ -58,12 +62,8 @@ default_input = OpticalData(
     blocked = None,
     coord_base = torch.empty((0,)),
     coord_object = torch.empty((0,)),
+    loss = torch.tensor(0.),
 )
-
-def focal_point_loss(data: OpticalData):
-    num_rays = data.rays_origins.shape[0]
-    sum_squared = ray_point_squared_distance(data.rays_origins, data.rays_vectors, data.target).sum()
-    return sum_squared / num_rays
 
 
 class FocalPoint(nn.Module):
@@ -71,15 +71,19 @@ class FocalPoint(nn.Module):
         super().__init__()
 
     def forward(self, inputs: OpticalData, sampling: dict):
-        return inputs
+        num_rays = inputs.rays_origins.shape[0]
+        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, inputs.target).sum()
+        loss = sum_squared / num_rays
 
-    def loss(self, inputs: OpticalData):
-        return focal_point_loss(inputs)
+        return replace(inputs, loss=inputs.loss + loss)
 
 
 class Image(nn.Module):
-    def __init__(self):
+    "An image is a set of focal points that map to the observed object"
+
+    def __init__(self, height):
         super().__init__()
+        self.height = torch.as_tensor(height, dtype=torch.float32)
     
     def forward(self, inputs: OpticalData, sampling: dict):
         return inputs
@@ -132,6 +136,7 @@ class PointSource(nn.Module):
             None,
             torch.cat((inputs.coord_base, coord_base)),
             torch.cat((inputs.coord_object, coord_object)),
+            inputs.loss,
         )
 
 
@@ -177,6 +182,7 @@ class PointSourceAtInfinity(nn.Module):
             None,
             torch.cat((inputs.coord_base, coord_base)),
             torch.cat((inputs.coord_object, coord_object)),
+            inputs.loss,
         )
 
 
@@ -224,7 +230,7 @@ class Gap(nn.Module):
         offset = torch.stack((torch.as_tensor(self.offset), torch.tensor(0.)))
         new_target = inputs.target + offset
 
-        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, inputs.coord_base, inputs.coord_object)
+        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, inputs.coord_base, inputs.coord_object, inputs.loss)
 
 
 class Aperture(nn.Module):
@@ -257,7 +263,7 @@ class Aperture(nn.Module):
         coord_base_filtered = inputs.coord_base[valid]
         coord_object_filtered = inputs.coord_object[valid]
 
-        return OpticalData(collision_points, rays_vectors, inputs.target, blocked, coord_base_filtered, coord_object_filtered)
+        return OpticalData(collision_points, rays_vectors, inputs.target, blocked, coord_base_filtered, coord_object_filtered, inputs.loss)
 
 
 class OpticalSurface(nn.Module):
@@ -337,7 +343,7 @@ class OpticalSurface(nn.Module):
             coord_base_filtered = inputs.coord_base
             coord_object_filtered = inputs.coord_object
 
-        return OpticalData(collision_points, output_rays, new_target, blocked, coord_base_filtered, coord_object_filtered)
+        return OpticalData(collision_points, output_rays, new_target, blocked, coord_base_filtered, coord_object_filtered, inputs.loss)
 
 
 class ReflectiveSurface(OpticalSurface):
