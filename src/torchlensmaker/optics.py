@@ -94,7 +94,7 @@ class Image(nn.Module):
 
 
 class PointSource(nn.Module):
-    def __init__(self, beam_angle, height=0):
+    def __init__(self, beam_angle, height=0, object_coord=0.):
         """
         height: height of the point source above the principal axis
         beam_angle: total angle of the emitted beam of rays (in degrees)
@@ -105,6 +105,7 @@ class PointSource(nn.Module):
             torch.as_tensor(beam_angle, dtype=torch.float32)
         )
         self.height = torch.as_tensor(height, dtype=torch.float32)
+        self.object_coord = torch.as_tensor(object_coord, dtype=torch.float32)
 
     def forward(self, inputs: OpticalData, sampling: dict):
 
@@ -120,12 +121,18 @@ class PointSource(nn.Module):
         )
         rays_vectors = rot2d(torch.tensor([1.0, 0.0]), angles)
 
+        # normalized coordinate along the base dimension
+        coord_base = (angles + self.beam_angle / 2) / self.beam_angle
+        coord_object = self.object_coord.expand_as(coord_base)
+
         # Add new rays to the input rays
         return OpticalData(
             torch.cat((inputs.rays_origins, rays_origins), dim=0),
             torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
             inputs.target,
             None,
+            torch.cat((inputs.coord_base, coord_base)),
+            torch.cat((inputs.coord_object, coord_object)),
         )
 
 
@@ -271,6 +278,7 @@ class OpticalSurface(nn.Module):
     
     def forward(self, inputs: OpticalData, sampling: dict):
         surface = self.surface(inputs.target)
+        valid = None
 
         # special case for zero rays, TODO remove this and make sure the inner code works with B=0
         if inputs.rays_origins.numel() == 0:
@@ -323,8 +331,12 @@ class OpticalSurface(nn.Module):
         new_target = surface.at(self.anchors[1])
 
         # TODO
-        coord_base_filtered = inputs.coord_base[valid]
-        coord_object_filtered = inputs.coord_object[valid]
+        if valid is not None:
+            coord_base_filtered = inputs.coord_base[valid]
+            coord_object_filtered = inputs.coord_object[valid]
+        else:
+            coord_base_filtered = inputs.coord_base
+            coord_object_filtered = inputs.coord_object
 
         return OpticalData(collision_points, output_rays, new_target, blocked, coord_base_filtered, coord_object_filtered)
 

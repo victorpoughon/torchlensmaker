@@ -54,6 +54,8 @@ class FocalPointArtist(Artist):
             color_data = outputs.coord_base
         elif color_dim == "object":
             color_data = outputs.coord_object
+        else:
+            color_data = "orange"
 
         rays_origins, rays_vectors = inputs.rays_origins, inputs.rays_vectors
         pos = inputs.target
@@ -103,6 +105,8 @@ class SurfaceArtist(Artist):
             color_data = outputs.coord_base
         elif color_dim == "object":
             color_data = outputs.coord_object
+        else:
+            color_data = "orange"
 
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
@@ -156,10 +160,11 @@ artists_dict = {
     #tlm.PointSource: PointSourceArtist,
 }
 
+default_sampling = {"base": 10, "object": 1}
 
 def render_all(ax, optics, sampling, **kwargs):
 
-    color_dim = kwargs.get("color_dim", "base")
+    color_dim = kwargs.get("color_dim", None)
 
     execute_list, outputs = tlm.full_forward(optics, tlm.default_input, sampling)
 
@@ -173,7 +178,7 @@ def render_all(ax, optics, sampling, **kwargs):
                 break
 
 
-def render_plt(optics, sampling, **kwargs):
+def render_plt(optics, sampling=default_sampling, **kwargs):
 
     fig, ax = plt.subplots(figsize=(12, 8))
 

@@ -17,6 +17,9 @@ def lens_thickness_gap(inner_thickness, outer_thickness):
     return thickness, anchors
 
 
+sampling_none = {"base": 0, "object": 0}
+
+
 class GenericLens(tlm.Module):
     "A generic lens class providing common lens functions"
 
@@ -30,7 +33,7 @@ class GenericLens(tlm.Module):
         "Thickness at the center of the lens"
 
         # Evaluate the lens stack with zero rays, just to forward compute positions
-        execute_list, _ = tlm.full_forward(self, tlm.default_input)
+        execute_list, _ = tlm.full_forward(self, tlm.default_input, sampling_none)
         
         # Get the surfaces to compute thickness
         s1 = execute_list[0].module.surface(execute_list[0].inputs.target)
@@ -41,7 +44,7 @@ class GenericLens(tlm.Module):
         "Thickness at the outer radius of the lens"
 
         # Evaluate the lens stack with zero rays, just to forward compute positions
-        execute_list, _ = tlm.full_forward(self, tlm.default_input)
+        execute_list, _ = tlm.full_forward(self, tlm.default_input, sampling_none)
         
         # Get the surfaces to compute thickness
         s1 = execute_list[0].module.surface(execute_list[0].inputs.target)

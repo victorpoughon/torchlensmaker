@@ -21,7 +21,7 @@ def get_all_gradients(model):
     return torch.cat(grads)
 
 
-def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
+def optimize(optics, optimizer, sampling, num_iter, nshow=20, regularization=None):
     viridis = plt.get_cmap('viridis')
 
     fig, ax = plt.subplots()
@@ -41,7 +41,7 @@ def optimize(optics, optimizer, num_iter, nshow=20, regularization=None):
 
         optimizer.zero_grad()
     
-        output = optics(default_input)
+        output = optics(default_input, sampling)
 
         # TODO for now we just assume last element is the focal point
         loss = focal_point_loss(output)
