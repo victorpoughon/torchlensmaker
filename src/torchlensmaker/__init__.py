@@ -8,7 +8,8 @@ from torchlensmaker.optics import (
     PointSourceAtInfinity,
     OpticalSurface,
     default_input,
-    ObjectAtInfinity,    
+    ObjectAtInfinity,
+    Image,
 )
 
 from torchlensmaker.shapes import (
@@ -23,8 +24,6 @@ from torchlensmaker.shapes import (
 from torchlensmaker.training import (
     optimize,
     focal_point_loss,
-    Sequential,
-    Parameter,
 )
 
 from torchlensmaker.export3d import (
@@ -45,4 +44,8 @@ from torchlensmaker.lenses import (
     PlanoLens,
 )
 
-from torchlensmaker.full_forward import full_forward
+from torchlensmaker.torch_extensions import (
+    full_forward,
+    OpticalSequence,
+    Parameter,
+)

@@ -4,6 +4,19 @@ import torch.nn as nn
 from dataclasses import dataclass
 from typing import Any
 
+
+# Aliases to torch.nn classes
+Parameter = nn.Parameter
+
+
+# Custom version of nn.Sequential that takes additional read only sampling info
+class OpticalSequence(nn.Sequential):
+    def forward(self, inputs, sampling):
+        for module in self._modules.values():
+            inputs = module(inputs, sampling)
+        return inputs
+
+
 @dataclass
 class ForwardContext:
     module: nn.Module
@@ -14,21 +27,22 @@ class ForwardContext:
         return iter((self.module, self.inputs, self.outputs))
 
 
-def full_forward(module, inputs):
+def full_forward(module, inputs, sampling: dict):
     """
-    Evaluate a pytorch module, returning all intermediate inputs and outputs.
-    
-    `full_forward(module, inputs)` is like `module(inputs)`, except that instead
-    of returning just the output, it also returns a list of
-    (module, inputs, outputs) tuples (actually ForwardContext objects) where
-    each tuple of the list corresponds to a single forward call in the module
-    tree.
+    Evaluate an optical stack model
+
+    This is kind of like normal forward evaluation of a model, as in: `outputs =
+    model(inputs)`, except for two differences:
+
+    1. All intermediate layers inputs and outputs are returned as a list of
+       ForwardContext objects.
+    2. The `sampling` info is passed to each module as additional read-only input.
 
     The returned list does not include the top level forward call.
 
     Returns:
-        execute_list: list of (module, inputs, outputs)
-        outputs: final outputs of the top level module execution
+        execute_list: list of (module, inputs, outputs) outputs: final outputs
+        of the top level module execution
     """
 
     execute_list = []
@@ -46,7 +60,7 @@ def full_forward(module, inputs):
 
     # Evaluate the full model, then remove all hooks
     try:
-        outputs = module(inputs)
+        outputs = module(inputs, sampling)
     finally:
         for h in hooks:
             h.remove()

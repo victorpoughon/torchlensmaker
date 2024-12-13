@@ -23,8 +23,8 @@ class GenericLens(tlm.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, inputs):
-        return self.optics(inputs)
+    def forward(self, inputs, sampling):
+        return self.optics(inputs, sampling)
 
     def inner_thickness(self):
         "Thickness at the center of the lens"
@@ -69,7 +69,7 @@ class AsymmetricLens(GenericLens):
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(self.shape2, tuple(reversed(n)), anchors=tuple(reversed(anchors)))
 
-        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+        self.optics = tlm.OpticalSequence(self.surface1, self.gap, self.surface2)
 
 
 class SymmetricLens(GenericLens):
@@ -87,7 +87,7 @@ class SymmetricLens(GenericLens):
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(self.shape, tuple(reversed(n)), scale=-1., anchors=tuple(reversed(anchors)))
 
-        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+        self.optics = tlm.OpticalSequence(self.surface1, self.gap, self.surface2)
 
 
 class PlanoLens(GenericLens):
@@ -119,5 +119,5 @@ class PlanoLens(GenericLens):
             self.gap = tlm.Gap(thickness)
             self.surface2 = tlm.RefractiveSurface(self.shape, tuple(reversed(n)), scale=-1, anchors=tuple(reversed(anchors)))
         
-        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+        self.optics = tlm.OpticalSequence(self.surface1, self.gap, self.surface2)
         

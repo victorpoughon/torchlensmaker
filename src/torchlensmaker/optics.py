@@ -13,6 +13,8 @@ from torchlensmaker.raytracing import (
     rot2d,
 )
 
+from torchlensmaker.torch_extensions import OpticalSequence
+
 from torchlensmaker.surface import Surface
 from torchlensmaker.shapes import Line
 
@@ -44,12 +46,18 @@ class OpticalData:
     # stack were blocked by the previous optical element
     blocked: Optional[torch.Tensor]
 
+    # experimental
+    coord_base: torch.Tensor
+    coord_object: torch.Tensor
+
 
 default_input = OpticalData(
     rays_origins = torch.empty((0, 2)),
     rays_vectors = torch.empty((0, 2)),
     target = torch.zeros(2),
     blocked = None,
+    coord_base = torch.empty((0,)),
+    coord_object = torch.empty((0,)),
 )
 
 def focal_point_loss(data: OpticalData):
@@ -63,11 +71,26 @@ class FocalPointLoss(nn.Module):
     def __init__(self):
         super().__init__()
 
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         return inputs
 
     def loss(self, inputs: OpticalData):
         return focal_point_loss(inputs)
+
+
+class Image(nn.Module):
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, inputs: OpticalData, sampling: dict):
+        return inputs
+    
+    def loss(self, inputs: OpticalData, _: dict):
+        # target points from rays origin coordinates
+        pass
+        #points = s...
+
+        #return ray_point_squared_distance(inputs.rays_origins, inputs.ray_vectors, points).sum()
 
 
 class PointSource(nn.Module):
@@ -82,16 +105,18 @@ class PointSource(nn.Module):
             torch.as_tensor(beam_angle, dtype=torch.float32)
         )
         self.height = torch.as_tensor(height, dtype=torch.float32)
-        self.num_rays = 10
 
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
+
+        num_rays = sampling["base"]
+
         # Create new rays by sampling the beam angle
         rays_origins = torch.tile(
-            inputs.target + torch.tensor([0.0, self.height]), (self.num_rays, 1)
+            inputs.target + torch.tensor([0.0, self.height]), (num_rays, 1)
         )
 
         angles = torch.linspace(
-            -self.beam_angle / 2, self.beam_angle / 2, self.num_rays
+            -self.beam_angle / 2, self.beam_angle / 2, num_rays
         )
         rays_vectors = rot2d(torch.tensor([1.0, 0.0]), angles)
 
@@ -105,30 +130,38 @@ class PointSource(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    def __init__(self, beam_diameter, angle=0.):
+    def __init__(self, beam_diameter, angle=0., object_coord=0.):
         """
         beam_diameter: diameter of the beam of parallel light rays
         angle: angle of indidence with respect to the principal axis, in degrees
+
+        samples along the base sampling dimension
         """
 
         super().__init__()
         self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float32)
         self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
-        self.num_rays = 10
+        self.object_coord = torch.as_tensor(object_coord, dtype=torch.float32)
 
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         # Create new rays by sampling the beam diameter
+        num_rays = sampling["base"]
         margin = 0.1  # TODO
-        rays_x = torch.zeros(self.num_rays)
+        rays_x = torch.zeros(num_rays)
         rays_y = torch.linspace(
             -self.beam_diameter / 2 + margin,
             self.beam_diameter / 2 - margin,
-            self.num_rays,
+            num_rays,
         )
 
         rays_origins = inputs.target + torch.column_stack((rays_x, rays_y))
         vect = rot2d(torch.tensor([1.0, 0.0]), self.angle)
-        rays_vectors = torch.tile(vect, (self.num_rays, 1))
+        rays_vectors = torch.tile(vect, (num_rays, 1))
+
+        # normalized coordinate along the base dimension
+        coord_base = (rays_y + self.beam_diameter / 2) / self.beam_diameter
+
+        coord_object = self.object_coord.expand_as(coord_base)
 
         # Add new rays to the input rays
         return OpticalData(
@@ -136,6 +169,8 @@ class PointSourceAtInfinity(nn.Module):
             torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
             inputs.target,
             None,
+            torch.cat((inputs.coord_base, coord_base)),
+            torch.cat((inputs.coord_object, coord_object)),
         )
 
 
@@ -150,15 +185,16 @@ class ObjectAtInfinity(nn.Module):
         self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float32)
         self.angular_size = torch.as_tensor(angular_size, dtype=torch.float32)
         self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
-        self.num_samples = 3
 
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         # An object at infinity is a collection of points at infinity,
         # sampled along the object's angular size
 
-        angles = torch.linspace(-self.angular_size/2., self.angular_size/2, self.num_samples)
+        num_samples = sampling["object"]
 
-        modules = nn.Sequential()
+        angles = torch.linspace(-self.angular_size/2., self.angular_size/2, num_samples)
+
+        modules = OpticalSequence()
 
         for angle in angles:
             # normalized parametric coordinate on the object
@@ -166,11 +202,11 @@ class ObjectAtInfinity(nn.Module):
             # t = ...
             # add a PointSourceAtInfinity with that t value
             current_angle = angle
-            print(current_angle)
-            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle)
+            object_coord = (angle + self.angular_size / 2) / self.angular_size
+            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle, object_coord=object_coord)
             modules.append(mod)
 
-        return modules.forward(inputs)
+        return modules.forward(inputs, sampling)
 
 
 class Gap(nn.Module):
@@ -178,20 +214,21 @@ class Gap(nn.Module):
         super().__init__()
         self.offset = offset
     
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         offset = torch.stack((torch.as_tensor(self.offset), torch.tensor(0.)))
         new_target = inputs.target + offset
-        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None)
+
+        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, inputs.coord_base, inputs.coord_object)
 
 
 class Aperture(nn.Module):
-    def __init__(self, inner_width, outer_width):
+    def __init__(self, height, diameter):
         super().__init__()
-        self.inner_width = inner_width
-        self.outer_width = outer_width
-        self.shape = Line(inner_width)
+        self.height = height
+        self.diameter = diameter
+        self.shape = Line(diameter)
     
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         surface = Surface(self.shape, pos=inputs.target)
 
         # TODO factor common collision code with OpticalSurface
@@ -210,7 +247,11 @@ class Aperture(nn.Module):
 
         collision_points = surface.evaluate(sols)
 
-        return OpticalData(collision_points, rays_vectors, inputs.target, blocked)
+        # TODO
+        coord_base_filtered = inputs.coord_base[valid]
+        coord_object_filtered = inputs.coord_object[valid]
+
+        return OpticalData(collision_points, rays_vectors, inputs.target, blocked, coord_base_filtered, coord_object_filtered)
 
 
 class OpticalSurface(nn.Module):
@@ -228,7 +269,7 @@ class OpticalSurface(nn.Module):
     def surface(self, pos):
         return Surface(self.shape, pos=pos, scale=self.scale, anchor=self.anchors[0])
     
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData, sampling: dict):
         surface = self.surface(inputs.target)
 
         # special case for zero rays, TODO remove this and make sure the inner code works with B=0
@@ -280,7 +321,12 @@ class OpticalSurface(nn.Module):
             output_rays = self.optical_function(rays_vectors, collision_normals)
 
         new_target = surface.at(self.anchors[1])
-        return OpticalData(collision_points, output_rays, new_target, blocked)
+
+        # TODO
+        coord_base_filtered = inputs.coord_base[valid]
+        coord_object_filtered = inputs.coord_object[valid]
+
+        return OpticalData(collision_points, output_rays, new_target, blocked, coord_base_filtered, coord_object_filtered)
 
 
 class ReflectiveSurface(OpticalSurface):

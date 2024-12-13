@@ -148,7 +148,25 @@ sampling is done by the elements
 but storing the sampling parameters is outside
 each element gets: (num_samples, linspace/uniform random/normal random)
 
+idea: instead of s value, rays have an ID
+sampling information can associate sampling configuration to IDs:
+wavelength, position on object, ...
+
+SamplingConfiguration:
+    - variable: main, source coordinate, wavelength, config1, config2, ...
+    - number of samples: 1+
+    - mode: linspace, random-uniform, random-normal, custom
+
 piecewise line: need more rays to work
+
+declare a sampling dimension: num_rays, position on object, wavelength, system configuration, ...
+choose sample density for each dimension
+also store a normalized sample coordinate to generate a colormap
+communicate it to modules that need it
+modules generate the samples that concern their element
+when computing loss, ray sample data is available via ID
+
+add back_distance render option to light sources rendering (useful for object at infinity)
 
 ## Newton solver improvements
 
@@ -166,3 +184,23 @@ detect when optimization reaches a point where there are no rays exiting the sys
 
 * be able to measure focal lengths in different ways that make sense for optics (front, back, etc): choose a reference point on the lens
 * position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.
+
+
+## Parametric coordinates
+
+t:
+shape parametric coordinate
+valid on shape.domain()
+domain is anything the shape wants but must be:
+0 indicates center
+finite value for domain maximum
+
+s:
+normalized parametric coordinate
+domain is (-1, 1) where 0 indicates the center (principal axis), and 1 is the extremity of the shape
+
+convert using
+s = t / domain
+t = s*domain
+
+or enforce normalized everywhere?

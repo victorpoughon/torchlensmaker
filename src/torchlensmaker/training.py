@@ -12,9 +12,6 @@ from .optics import (
     focal_point_loss,
 )
 
-# Aliases to torch.nn classes
-Parameter = nn.Parameter
-Sequential = nn.Sequential
 
 def get_all_gradients(model):
     grads = []
