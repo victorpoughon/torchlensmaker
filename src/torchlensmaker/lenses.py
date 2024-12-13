@@ -17,7 +17,7 @@ def lens_thickness_gap(inner_thickness, outer_thickness):
     return thickness, anchors
 
 
-sampling_none = {"base": 0, "object": 0}
+sampling_none = {"rays": 0, "object": 0}
 
 
 class GenericLens(tlm.Module):

@@ -50,7 +50,7 @@ class FocalPointArtist(Artist):
     def draw_rays(ax, element, inputs, outputs, color_dim):
 
 
-        if color_dim == "base":
+        if color_dim == "rays":
             color_data = outputs.coord_base
         elif color_dim == "object":
             color_data = outputs.coord_object
@@ -101,7 +101,7 @@ class SurfaceArtist(Artist):
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
 
-        if color_dim == "base":
+        if color_dim == "rays":
             color_data = outputs.coord_base
         elif color_dim == "object":
             color_data = outputs.coord_object
@@ -156,11 +156,11 @@ class ApertureArtist(Artist):
 artists_dict = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.Aperture: ApertureArtist,
-    tlm.FocalPointLoss: FocalPointArtist,
+    tlm.FocalPoint: FocalPointArtist,
     #tlm.PointSource: PointSourceArtist,
 }
 
-default_sampling = {"base": 10, "object": 1}
+default_sampling = {"rays": 10, "object": 1}
 
 def render_all(ax, optics, sampling, **kwargs):
 

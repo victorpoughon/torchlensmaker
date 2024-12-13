@@ -1,5 +1,5 @@
 from torchlensmaker.optics import (
-    FocalPointLoss,
+    FocalPoint,
     Gap,
     RefractiveSurface,
     ReflectiveSurface,

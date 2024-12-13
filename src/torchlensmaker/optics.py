@@ -66,8 +66,7 @@ def focal_point_loss(data: OpticalData):
     return sum_squared / num_rays
 
 
-# TODO remove this or rename to FocalPoint
-class FocalPointLoss(nn.Module):
+class FocalPoint(nn.Module):
     def __init__(self):
         super().__init__()
 
@@ -109,7 +108,7 @@ class PointSource(nn.Module):
 
     def forward(self, inputs: OpticalData, sampling: dict):
 
-        num_rays = sampling["base"]
+        num_rays = sampling["rays"]
 
         # Create new rays by sampling the beam angle
         rays_origins = torch.tile(
@@ -152,7 +151,7 @@ class PointSourceAtInfinity(nn.Module):
 
     def forward(self, inputs: OpticalData, sampling: dict):
         # Create new rays by sampling the beam diameter
-        num_rays = sampling["base"]
+        num_rays = sampling["rays"]
         margin = 0.1  # TODO
         rays_x = torch.zeros(num_rays)
         rays_y = torch.linspace(
