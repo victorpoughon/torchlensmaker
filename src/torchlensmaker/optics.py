@@ -44,10 +44,15 @@ class OpticalData:
     # None or Tensor of shape (N,)
     # Mask array indicating which rays from the previous data in the optical
     # stack were blocked by the previous optical element
+    # "block" includes hitting an absorbing surface but also not hitting anything
     blocked: Optional[torch.Tensor]
 
     # experimental
+    # coordinates normalized to (-1, 1) of sample points in 'number of rays' space
     coord_base: torch.Tensor
+
+    # experimental
+    # coordinates normalied to (-1, 1) of sample points in 'object' space
     coord_object: torch.Tensor
 
     # Tensor of one element
@@ -86,7 +91,20 @@ class Image(nn.Module):
         self.height = torch.as_tensor(height, dtype=torch.float32)
     
     def forward(self, inputs: OpticalData, sampling: dict):
-        return inputs
+        # Compute image loss
+
+        # First, make the 2D points that correspond to the object sampling
+        
+        points_y = inputs.coord_object * self.height - self.height / 2
+        points_x = inputs.target[0].expand_as(points_y)
+
+        points = torch.stack((points_x, points_y), dim=-1)
+
+        num_rays = inputs.rays_origins.shape[0]
+        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, points).sum()
+        loss = sum_squared / num_rays
+
+        return replace(inputs, loss=inputs.loss + loss)
     
     def loss(self, inputs: OpticalData, _: dict):
         # target points from rays origin coordinates

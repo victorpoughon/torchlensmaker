@@ -48,8 +48,38 @@ class FocalPointArtist(Artist):
 
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
+        if color_dim == "rays":
+            color_data = outputs.coord_base
+        elif color_dim == "object":
+            color_data = outputs.coord_object
+        else:
+            color_data = "orange"
+
+        rays_origins, rays_vectors = inputs.rays_origins, inputs.rays_vectors
+        pos = inputs.target
+
+        # Compute t needed to reach the focal point's position
+        t_real = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
+
+        if t_real.mean() > 0:
+            t = 1.3 * t_real
+        else:
+            t = -t_real / 3
+
+        end_x = rays_origins[:, 0] + t * rays_vectors[:, 0]
+        end_y = rays_origins[:, 1] + t * rays_vectors[:, 1]
+        draw_rays(ax, rays_origins, torch.column_stack((end_x, end_y)), color=color_data)
 
 
+class ImageArtist(Artist):
+    @staticmethod
+    def draw_element(ax, element, inputs, outputs):
+        pos = inputs.target.detach().numpy()
+        height = element.height
+        ax.plot([pos[0], pos[0]], [-height/2, height/2], linestyle="--", color="black")
+
+    @staticmethod
+    def draw_rays(ax, element, inputs, outputs, color_dim):
         if color_dim == "rays":
             color_data = outputs.coord_base
         elif color_dim == "object":
@@ -158,6 +188,7 @@ artists_dict = {
     tlm.Aperture: ApertureArtist,
     tlm.FocalPoint: FocalPointArtist,
     #tlm.PointSource: PointSourceArtist,
+    tlm.Image: ImageArtist,
 }
 
 default_sampling = {"rays": 10, "object": 1}

@@ -17,7 +17,6 @@ def ray_point_squared_distance(ray_origin, ray_vector, point):
     """
     # Ensure inputs are the correct shape
     assert ray_origin.shape == ray_vector.shape == (ray_origin.shape[0], 2), (ray_origin.shape, ray_vector.shape)
-    assert point.shape == (2,)
 
     # Compute line coefficients a, b, c for each ray
     a = -ray_vector[:, 1]
