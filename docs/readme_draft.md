@@ -77,8 +77,6 @@ Furthermore, I strongly believe that you only truly understand something once yo
 
 (As an aside, I think the question "what is an image?" might be to optics experts the same as "what is money?" is to economists).
 
-In fact, now that I think of it, maybe writing a textbook on optics using code in python notebooks and forgetting all approximations to embrace the non linearity of Snell's law would be an interesting modern approach to teaching optics. A computation first explanation is always eye-opening. If you were somewhat ambitious you might call that book *Structure and Interpretation of Optics*, but I'm not there yet 😊. I'd love to work on it though, if you're interested please reach out!
-
 2. Recurse Center
 
 In Winter 2024, I attended the Recurse Center, a technical retreat for programmers. At the Recurse Center, you become a better programmer by working at the edge of your abilities, learning generously and working on your own projects. *Torch Lens Maker* was my main project during my batch, and I was able to work on it full time for 12 weeks, making great progress and having great fun! Now that my batch has ended, I'm looking for a way to keep working on it because I believe it has great potential. I don't want all lenses in the future to be designed with 5 figures closed-source commercial software, we can do better! Look at how machine learning enjoys state of the art open-source tooling. Let's do the same for optics!
