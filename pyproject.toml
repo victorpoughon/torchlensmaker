@@ -22,6 +22,12 @@ dependencies = [
   "pytest~=8.3.3",
 ]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocs",
+    "mkdocs-material"
+]
+
 [project.urls]
 Homepage = "https://github.com/fouronnes/torchlensmaker"
 Issues = "https://github.com/fouronnes/torchlensmaker/issues"
