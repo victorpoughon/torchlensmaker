@@ -1,0 +1,38 @@
+site_name: Torch Lens Maker
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.path
+    # - toc.integrate
+  palette:
+    - scheme: default
+      primary: orange
+      accent: orange
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      primary: teal
+      accent: teal
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+plugins:
+  - search
+  - mkdocs-jupyter
+
+nav:
+  - Home: index.md
+  - Developer Guide: dev-guide.md
+  - About: about.md
+  - Light Sources: 'Light Sources.ipynb'
+  - Examples:
+    - Biconvex: 'examples/Biconvex lens parabola.ipynb'

@@ -25,7 +25,8 @@ dependencies = [
 [project.optional-dependencies]
 docs = [
     "mkdocs",
-    "mkdocs-material"
+    "mkdocs-material",
+    "mkdocs-jupyter",
 ]
 
 [project.urls]
