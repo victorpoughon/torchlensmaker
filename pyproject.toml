@@ -27,6 +27,7 @@ docs = [
     "mkdocs",
     "mkdocs-material",
     "mkdocs-jupyter",
+    "jupytext <= 1.16.3", # https://github.com/mwouts/jupytext/issues/1301
 ]
 
 [project.urls]
