@@ -21,9 +21,21 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
+  icon:
+    logo: material/circle-half
+
 
 extra_css:
   - stylesheets/extra.css
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
 
 plugins:
   - search
@@ -33,27 +45,27 @@ nav:
   - Home: index.md
   - Examples:
     - Simple Lenses:
-      - Biconvex lens (sphere): examples_executed/Biconvex lens sphere.ipynb
-      - Biconvex lens (parabola): examples_executed/Biconvex lens parabola.ipynb
-      - Biconvex lens (bezier spline): examples_executed/Biconvex lens bezier spline.ipynb
-      - Biconcave diverging lens: examples_executed/Biconcave diverging lens.ipynb
-      - Planoconvex lens (sphere): examples_executed/Planoconvex lens (sphere).ipynb
-      - Planoconvex lens (piecewise line): examples_executed/Planoconvex lens (piecewise line).ipynb
+      - Biconvex lens (sphere): examples/executed/Biconvex lens sphere.ipynb
+      - Biconvex lens (parabola): examples/executed/Biconvex lens parabola.ipynb
+      - Biconvex lens (bezier spline): examples/executed/Biconvex lens bezier spline.ipynb
+      - Biconcave diverging lens: examples/executed/Biconcave diverging lens.ipynb
+      - Planoconvex lens (sphere): examples/executed/Planoconvex lens (sphere).ipynb
+      - Planoconvex lens (piecewise line): examples/executed/Planoconvex lens (piecewise line).ipynb
 
     - Multiple Lenses:
-      - Variable number of lenses: examples_executed/Multiple Lenses Sequence.ipynb
-      - Triple Lens: examples_executed/Triple Biconvex lens parabola.ipynb
-      - Optimization without tlm.Module: examples_executed/Biconvex Parabola - No tlmModule.ipynb
-      - Moving a lens to focus: examples_executed/Moving a lens to focus.ipynb
-      - Regularization - Equal Thickness Lenses: examples_executed/Regularization - Equal Thickness Lenses.ipynb
+      - Variable number of lenses: examples/executed/Multiple Lenses Sequence.ipynb
+      - Triple Lens: examples/executed/Triple Biconvex lens parabola.ipynb
+      - Optimization without tlm.Module: examples/executed/Biconvex Parabola - No tlmModule.ipynb
+      - Moving a lens to focus: examples/executed/Moving a lens to focus.ipynb
+      - Regularization - Equal Thickness Lenses: examples/executed/Regularization - Equal Thickness Lenses.ipynb
   
     - Mirrors:
-      - Reflecting Telescope: examples_executed/Reflecting Telescope.ipynb
-      - Concave Mirror: examples_executed/Concave Mirror.ipynb
+      - Reflecting Telescope: examples/executed/Reflecting Telescope.ipynb
+      - Concave Mirror: examples/executed/Concave Mirror.ipynb
     
     - Optics:
-      - Aperture: examples_executed/Aperture.ipynb
-      - Surface Anchors: examples_executed/Surface anchors.ipynb
+      - Aperture: examples/executed/Aperture.ipynb
+      - Surface Anchors: examples/executed/Surface anchors.ipynb
 
   - Reference:
     - Shapes: reference/shapes.md

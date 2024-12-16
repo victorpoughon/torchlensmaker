@@ -23,7 +23,7 @@ def get_h1(notebook_path):
 
 def main():
     examples_dir = "examples"
-    output_dir = "examples_executed"
+    output_dir = "examples/executed"
 
     all_examples = []
 
