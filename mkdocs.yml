@@ -32,11 +32,29 @@ plugins:
 nav:
   - Home: index.md
   - Examples:
-    - Aperture: 'examples_executed/Aperture.ipynb'
-    - Biconvex Diverging Lens: 'examples_executed/Biconcave diverging lens.ipynb'
-    - Biconvex lens bezier Spline: 'examples_executed/Biconvex lens bezier spline.ipynb'
-    - Biconvex lens parabola: 'examples_executed/Biconvex lens parabola.ipynb'
+    - Simple Lenses:
+      - Biconvex lens (sphere): examples_executed/Biconvex lens sphere.ipynb
+      - Biconvex lens (parabola): examples_executed/Biconvex lens parabola.ipynb
+      - Biconvex lens (bezier spline): examples_executed/Biconvex lens bezier spline.ipynb
+      - Biconcave diverging lens: examples_executed/Biconcave diverging lens.ipynb
+      - Planoconvex lens (sphere): examples_executed/Planoconvex lens (sphere).ipynb
+      - Planoconvex lens (piecewise line): examples_executed/Planoconvex lens (piecewise line).ipynb
+
+    - Multiple Lenses:
+      - Variable number of lenses: examples_executed/Multiple Lenses Sequence.ipynb
+      - Triple Lens: examples_executed/Triple Biconvex lens parabola.ipynb
+      - Optimization without tlm.Module: examples_executed/Biconvex Parabola - No tlmModule.ipynb
+      - Moving a lens to focus: examples_executed/Moving a lens to focus.ipynb
+      - Regularization - Equal Thickness Lenses: examples_executed/Regularization - Equal Thickness Lenses.ipynb
+  
+    - Mirrors:
+      - Reflecting Telescope: examples_executed/Reflecting Telescope.ipynb
+      - Concave Mirror: examples_executed/Concave Mirror.ipynb
+    
+    - Optics:
+      - Aperture: examples_executed/Aperture.ipynb
+      - Surface Anchors: examples_executed/Surface anchors.ipynb
+
   - Reference:
     - Shapes: reference/shapes.md
     - Lenses: reference/lenses.md
-  - About: about.md
