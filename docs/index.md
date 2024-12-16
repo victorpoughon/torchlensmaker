@@ -29,9 +29,9 @@ tlm.render_plt(optics, sampling={"rays": 30, "object": 5}, color_dim="object")
 
 The core of the project is differentiable collision detection and ray-tracing implemented in PyTorch. PyTorch provides world-class automatic differentiation, and access to state-of-the-art numerical optimization algorithms. Export to 3D models is done with [build123d](https://build123d.readthedocs.io/en/latest/).
 
-The key idea is that there is a strong analogy to be made between layers of a neural network, and optical elements in an optical system. If we have an optical system made of a series of lenses, mirrors, etc, we can pretend that each optical element is the layer of a neural network. The data flowing through this network are not images, sounds, or text, but rays of light. Each layer affects light rays depending on its internal parameters describing its surface shape, and following the very much non-linear Snell's law. Inference, or the forward model, is the optical simulation where given some input light, we compute the image formed. Training - or optimization - is finding the best shapes for lenses to focus light where we want it.
+The key idea is that there is a strong analogy to be made between layers of a neural network, and optical elements in an optical system. If we have an optical system made of a series of lenses, mirrors, etc, we can pretend that each optical element is the layer of a neural network. The data flowing through this network are not images, sounds, or text, but rays of light. Each layer affects light rays depending on its internal parameters describing its surface shape, and following the very much non-linear Snell's law. Inference, or the forward model, is the optical simulation where given some input light, we compute the image formed. Training, or optimization, is finding the best shapes for lenses to focus light where we want it.
 
-The magic is that we can pretty much use `torch.nn` and `nn.Module` directly, stacking layers like Lego bricks. Then, pass the whole thing through `optimize()` to find the optimal values for parametric surfaces, and designing lenses is surprisingly like training a neural network! Once this is implemented, you get 'for free' the massive power of modern open-source machine learning tooling: automatic differentiation, optimization algorithms, composability, GPU training, distributed training, and more. I strongly believe that writing code is a very powerful way to design lenses and this project is an exploration of that.
+The magic is that we can pretty much use `torch.nn` and `nn.Module` directly, stacking lenses and mirrors as if they were `Conv2d` and `ReLU`. Then, pass the whole thing through `optimize()` to find the optimal values for parametric surfaces, and designing lenses is surprisingly like training a neural network! Once this is implemented, you get 'for free' the massive power of modern open-source machine learning tooling: automatic differentiation, optimization algorithms, composability, GPU training, distributed training, and more. I strongly believe that writing code is a very powerful way to design lenses and this project is an exploration of that.
 
 I want *Torch Lens Maker* to be to *Zemax OpticStudio* what *OpenSCAD* is to *SolidWorks*.
 
@@ -39,11 +39,11 @@ I want *Torch Lens Maker* to be to *Zemax OpticStudio* what *OpenSCAD* is to *So
 
 *Torch Lens Maker* design principles are:
 
-* **Geometric Optics**
+### Geometric Optics
 
 Light propagates as rays that travel in a straight line. If they hit a surface, they can reflect, refract or stop.
 
-* **Rotational Symmetry**
+### Rotational Symmetry
 
 The real-world 3D system being modeled must be symmetric around the principal optical axis. This allows the simulation to happen in 2D but generalize correctly to 3D. Rays that lie in a plane that does not contain the principal axis (sometimes called *skew ray*s) are ignored. 
 
@@ -51,11 +51,11 @@ Note that I personally still don't fully understand [how ray diagrams generalize
 
 (By the way full 3D differentiable optics [has been done before](https://github.com/vccimaging/DiffOptics), and that paper has been a strong inspiration for this project, so huge thank you to the authors for publishing that work. In particular, differentiable collision detection with Newton's method used in torchlensmaker comes from there.)
 
-* **No approximations**
+### No approximations
 
 The so-called *paraxial approximation* (sin(x) = tan(x) = x), the *thin lens equation* and other approximations are very widely used in optics. In fact, I've been frustrated with how in most material on optics, it's never really clear if approximations are used or not, making learning difficult. Everything in *Torch Lens Maker* is always geometrically accurate, up to floating point precision.
 
-* **Sequential optical elements**
+### Sequential optical elements
 
 The order in which rays of light interact with optical elements must be known and fixed. Not knowing the order would require figuring out which surface is being hit at every step, which is computationally very expensive. By limiting ourselves to linear, sequential systems the complexity is manageable. It might be possible to implement a generic raytracer in fully differentiable PyTorch, complete with Bounding Volume Hierarchies and everything. But for optimizing the parametric shape of surfaces, this approach is best, I think.
 
@@ -63,9 +63,9 @@ This sequential requirement hasn't been a problem at all so far, especially with
 
 Also, things like apertures (small hole for some of the light to pass through) or rays that diverge too much and don't hit their target optical element is fully supported. This is thanks to the dynamic nature of the PyTorch compute graph, and enables amazing feats of optimization.
 
-* **High quality software engineering**
+### Beautiful code
 
-The design of a software library is extremely important. The goal of this project is not just to design lenses and mirrors, but to enable anyone to do it with the maximum amount of correctness, verifiability and joy. This obviously means open-source code so you can collaborate on it with git, verify it, modify it, understand it, and most importantly read it and understand it!
+The design of a software library is extremely important. The goal of this project is not just to design lenses and mirrors, but to enable anyone to do it with the maximum amount of correctness, verifiability and joy. This obviously means open-source code so you can collaborate on it with git, verify it, modify it, and most importantly read it and understand it!
 
 I think too often code is optimized for being easy to write, when being easy to **read** is the most important. Bringing best in class code quality to optical systems design is part of the vision for this project.
 
@@ -110,16 +110,3 @@ If you are interested in seeing on of these implemented soon, consider sponsorin
 - a
 - b
 - c
-
-
-## Installation
-
-TODO
-
-## How to build documentation
-
-Install the package in dev mode including optional dependencies:
-
-```
-pip install -e '.[docs]'
-```

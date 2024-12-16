@@ -42,7 +42,11 @@ plugins:
   - mkdocs-jupyter
 
 nav:
-  - Home: index.md
+  - Home:
+    - Welcome: index.md
+    - Installation: installation.md
+    - How does it work?: how.md
+    - Roadmap: roadmap.md
   - Examples:
     - Simple Lenses:
       - Biconvex lens (sphere): examples/executed/Biconvex lens sphere.ipynb
