@@ -16,8 +16,8 @@ theme:
         name: Switch to dark mode
     # Palette toggle for dark mode
     - scheme: slate
-      primary: teal
-      accent: teal
+      primary: orange
+      accent: orange
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -31,8 +31,12 @@ plugins:
 
 nav:
   - Home: index.md
-  - Developer Guide: dev-guide.md
-  - About: about.md
-  - Light Sources: 'Light Sources.ipynb'
   - Examples:
-    - Biconvex: 'examples/Biconvex lens parabola.ipynb'
+    - Aperture: 'examples_executed/Aperture.ipynb'
+    - Biconvex Diverging Lens: 'examples_executed/Biconcave diverging lens.ipynb'
+    - Biconvex lens bezier Spline: 'examples_executed/Biconvex lens bezier spline.ipynb'
+    - Biconvex lens parabola: 'examples_executed/Biconvex lens parabola.ipynb'
+  - Reference:
+    - Shapes: reference/shapes.md
+    - Lenses: reference/lenses.md
+  - About: about.md

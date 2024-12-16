@@ -106,3 +106,16 @@ If you are interested in seeing on of these implemented soon, consider sponsorin
 - a
 - b
 - c
+
+
+## Installation
+
+TODO
+
+## How to build documentation
+
+Install the package in dev mode including optional dependencies:
+
+```
+pip install -e '.[docs]'
+```
