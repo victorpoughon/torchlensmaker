@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from torchlensmaker.module import Module
+
 from typing import Optional
 from dataclasses import dataclass, replace
 
@@ -284,7 +286,7 @@ class Aperture(nn.Module):
         return OpticalData(collision_points, rays_vectors, inputs.target, blocked, coord_base_filtered, coord_object_filtered, inputs.loss)
 
 
-class OpticalSurface(nn.Module):
+class OpticalSurface(Module):
     """
     Common base class for ReflectiveSurface and RefractiveSurface
     """

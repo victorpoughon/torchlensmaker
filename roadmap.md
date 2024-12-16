@@ -7,6 +7,7 @@
 
 ## New example notebooks ideas
 
+* pinhole camera model
 * refractive telescope
 * anchors demo
 * lens inner vs outer thickness
@@ -69,6 +70,8 @@
 
 * in rendering: enable rendering single element if no focal points, some trick for last / first elements if no rays drawing
 
+* custom tlm.Parameter to enforce float32 without need for trailing dot in user code
+
 ## Evaluation plots
 
 * Spot diagram: image of a point source / geometric PSF
@@ -78,6 +81,9 @@
 * add option to see number of rays at each stage
 * add option to see aperture/spread of beam at each stage
 * find intermediate images
+
+* optical aberations and concepts: coma, astigmatism, petzval field curvature, etc...
+
 
 ## Rays not colliding with surface
 

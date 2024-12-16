@@ -24,9 +24,6 @@ def draw_rays(ax, rays_origins, rays_ends, color):
         # draw rays origins
         # ax.scatter(a[0], a[1], marker="x", color="lightgrey")
 
-    if A.shape[0] > 0:
-        print("rays aperture", np.max(A[:, 0]) - np.min(A[:, 0]))
-
 
 class Artist:
     @staticmethod
@@ -191,7 +188,7 @@ artists_dict = {
     tlm.Image: ImageArtist,
 }
 
-default_sampling = {"rays": 10, "object": 1}
+default_sampling = {"rays": 10, "object": 3}
 
 def render_all(ax, optics, sampling, **kwargs):
 

@@ -7,12 +7,9 @@ from torchlensmaker.shapes.common import intersect_newton
 from torchlensmaker.shapes import BaseShape
 
 
-class CircularArc(BaseShape):
+class CircularArcOld(BaseShape):
     """
-    An arc of circle parametrized by the Y coordinate
-
-    X = (K * t**2) / (1 + np.sqrt(1 - t**2 * K**2))
-    Y = t
+    An arc of circle
 
     Parameters:
         height: total height of the shape accross the principal axis (typically diameter of the lens or mirror)
@@ -52,25 +49,31 @@ class CircularArc(BaseShape):
             return 1. / K
 
     def domain(self):
-        return -self.height / 2, self.height / 2
+        R = self.coefficients()
+        a = math.asin(self.height / (2 * torch.abs(R)))
+        return -a, +a
+
 
     def evaluate(self, ts):
         ts = torch.as_tensor(ts)
 
-        K = self._K
-        
-        Y = ts
-        X = (K * ts**2) / (1 + torch.sqrt(1 - ts**2 * K**2))
+        R = self.coefficients()
+        if R > 0:
+            ts = ts + math.pi
 
+        X = torch.abs(R)*torch.cos(ts) + R
+        Y = torch.abs(R)*torch.sin(ts)
         return torch.stack((X, Y), dim=-1)
 
     def derivative(self, ts):
-        K = self._K
+        R = self.coefficients()
+        if R > 0:
+            ts = ts + math.pi
 
-        Yp = torch.ones_like(ts)
-        Xp = K*ts / torch.sqrt( 1 - ts ** 2 * K **2)
-
-        return torch.stack([Xp, Yp], dim=-1)
+        return torch.stack([
+            - torch.abs(R) * torch.sin(ts),
+            torch.abs(R) * torch.cos(ts)
+        ], dim=-1)
 
     def normal(self, ts):
         deriv = self.derivative(ts)
