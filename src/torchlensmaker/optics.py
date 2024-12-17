@@ -54,7 +54,7 @@ class OpticalData:
     coord_base: torch.Tensor
 
     # experimental
-    # coordinates normalied to (-1, 1) of sample points in 'object' space
+    # coordinates normalized to (-1, 1) of sample points in 'object' space
     coord_object: torch.Tensor
 
     # Tensor of one element
@@ -107,13 +107,44 @@ class Image(nn.Module):
         loss = sum_squared / num_rays
 
         return replace(inputs, loss=inputs.loss + loss)
-    
-    def loss(self, inputs: OpticalData, _: dict):
-        # target points from rays origin coordinates
-        pass
-        #points = s...
 
-        #return ray_point_squared_distance(inputs.rays_origins, inputs.ray_vectors, points).sum()
+
+class ImagePlane(nn.Module):
+    "An image is a set of focal points that map to the observed object"
+
+    def __init__(self):
+        super().__init__()
+    
+    def forward(self, inputs: OpticalData, sampling: dict):
+        
+        # object coordinates
+        T = inputs.coord_object
+
+        # image plane coordinates
+        orig = inputs.rays_origins
+        V = inputs.rays_vectors
+        a, b, c = -V[:, 1], V[:, 0], V[:, 1] * orig[:, 0] - V[:, 0] * orig[:, 1]
+        X = torch.full_like(a, inputs.target[0])
+        Y = (- c - a*X ) / b
+
+        # image plane computes image coordinates
+        # but not loss
+
+        # Compute image loss
+
+        # First, make the 2D points that correspond to the object sampling
+        
+        points_y = inputs.coord_object * self.height - self.height / 2
+        points_x = inputs.target[0].expand_as(points_y)
+
+        points = torch.stack((points_x, points_y), dim=-1)
+
+        num_rays = inputs.rays_origins.shape[0]
+        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, points).sum()
+        loss = sum_squared / num_rays
+
+        return replace(inputs, loss=inputs.loss + loss)
+
 
 
 class PointSource(nn.Module):

@@ -72,7 +72,7 @@ class ImageArtist(Artist):
     @staticmethod
     def draw_element(ax, element, inputs, outputs):
         pos = inputs.target.detach().numpy()
-        height = element.height
+        height = element.height.item()
         ax.plot([pos[0], pos[0]], [-height/2, height/2], linestyle="--", color="black")
 
     @staticmethod
