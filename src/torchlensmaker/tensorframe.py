@@ -23,11 +23,14 @@ class TensorFrame:
         return self.data.numel()
 
     def get(self, names: str | Iterable[str]):
-        if isinstance(names, str):
-            idx = self.columns.index(names)
-        else:
-            idx = [self.columns.index(n) for n in names]
-        return self.data[:, idx]
+        try:
+            if isinstance(names, str):
+                idx = self.columns.index(names)
+            else:
+                idx = [self.columns.index(n) for n in names]
+            return self.data[:, idx]
+        except:
+            raise KeyError(f"TensorFrame doesn't have column(s): {names}")
 
     def masked(self, mask):
         return TensorFrame(self.data[mask], self.columns)

@@ -8,16 +8,27 @@ import matplotlib as mpl
 viridis = mpl.colormaps['viridis']
 
 
+def normalize_tensor(tensor):
+    min_val = tensor.min()
+    max_val = tensor.max()
+    normalized_tensor = (tensor - min_val) / (max_val - min_val)
+    return normalized_tensor
+
+
 def draw_rays(ax, rays_origins, rays_ends, color):
     A = rays_origins.detach().numpy()
     B = rays_ends.detach().numpy()
+
+    if isinstance(color, torch.Tensor):
+        color = normalize_tensor(color)
+
     for i, (a, b) in enumerate(zip(A, B)):
 
         # compute color if we have a color dimension
         if isinstance(color, str):
             this_color = color
         else:
-            this_color = viridis(color[i])
+            this_color = viridis(color[i].item())
 
         # draw rays
         ax.plot([a[0], b[0]], [a[1], b[1]], color=this_color, linewidth=1.0, zorder=0)
@@ -79,9 +90,9 @@ class ImageArtist(Artist):
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
         if color_dim == "rays":
-            color_data = outputs.rays.get("rays").detach().numpy()
+            color_data = outputs.rays.get("rays")
         elif color_dim == "object":
-            color_data = outputs.rays.get("object").detach().numpy()
+            color_data = outputs.rays.get("object")
         else:
             color_data = "orange"
 
@@ -95,7 +106,7 @@ class ImageArtist(Artist):
         t_real = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
 
         if t_real.mean() > 0:
-            t = 1.3 * t_real
+            t = 1.15 * t_real
         else:
             t = -t_real / 3
 
@@ -194,6 +205,7 @@ artists_dict = {
     tlm.FocalPoint: FocalPointArtist,
     #tlm.PointSource: PointSourceArtist,
     tlm.Image: ImageArtist,
+    tlm.ImagePlane: ImageArtist,
 }
 
 default_sampling = {"rays": 10, "object": 3}

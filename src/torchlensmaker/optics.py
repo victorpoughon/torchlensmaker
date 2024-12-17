@@ -106,38 +106,27 @@ class Image(nn.Module):
 class ImagePlane(nn.Module):
     "An image is a set of focal points that map to the observed object"
 
-    def __init__(self):
+    def __init__(self, height):
         super().__init__()
+        self.height = torch.as_tensor(height, dtype=torch.float32) # TODO needs a height only for rendering
     
     def forward(self, inputs: OpticalData, sampling: dict):
-        
-        # object coordinates
-        T = inputs.coord_object
+        # Compute image coordinates of rays hitting the image plane
 
         # image plane coordinates
-        orig = inputs.rays_origins
-        V = inputs.rays_vectors
+        orig, V = (
+            inputs.rays.get(["RX", "RY"]),
+            inputs.rays.get(["VX", "VY"]),
+        )
         a, b, c = -V[:, 1], V[:, 0], V[:, 1] * orig[:, 0] - V[:, 0] * orig[:, 1]
-        X = torch.full_like(a, inputs.target[0])
+        X = torch.full_like(a, inputs.target[0].item())
         Y = (- c - a*X ) / b
 
-        # image plane computes image coordinates
-        # but not loss
-
-        # Compute image loss
-
-        # First, make the 2D points that correspond to the object sampling
-        
-        points_y = inputs.coord_object * self.height - self.height / 2
-        points_x = inputs.target[0].expand_as(points_y)
-
-        points = torch.stack((points_x, points_y), dim=-1)
-
-        num_rays = inputs.rays_origins.shape[0]
-        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, points).sum()
-        loss = sum_squared / num_rays
-
-        return replace(inputs, loss=inputs.loss + loss)
+        # Add the image coordinate column to the rays TensorFrame
+        return replace(
+            inputs,
+            rays=inputs.rays.update(image=Y)
+        )
 
 
 class PointSource(nn.Module):
@@ -258,13 +247,9 @@ class ObjectAtInfinity(nn.Module):
         modules = OpticalSequence()
 
         for angle in angles:
-            # normalized parametric coordinate on the object
-            # (-1, 1) or (0, 1) ?
-            # t = ...
-            # add a PointSourceAtInfinity with that t value
+            # add a PointSourceAtInfinity with that object coordinate
             current_angle = angle
-            object_coord = (angle + self.angular_size / 2) / self.angular_size
-            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle, object_coord=object_coord)
+            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle, object_coord=current_angle)
             modules.append(mod)
 
         return modules.forward(inputs, sampling)

@@ -10,6 +10,7 @@ from torchlensmaker.optics import (
     default_input,
     ObjectAtInfinity,
     Image,
+    ImagePlane,
 )
 
 from torchlensmaker.shapes import (
@@ -48,3 +49,5 @@ from torchlensmaker.torch_extensions import (
     OpticalSequence,
     Parameter,
 )
+
+from torchlensmaker.plot_magnification import plot_magnification
