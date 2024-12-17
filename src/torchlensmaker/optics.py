@@ -20,6 +20,8 @@ from torchlensmaker.torch_extensions import OpticalSequence
 from torchlensmaker.surface import Surface
 from torchlensmaker.shapes import Line
 
+from torchlensmaker.tensorframe import TensorFrame
+
 
 def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
@@ -31,13 +33,8 @@ class OpticalData:
     Holder class for the data that's passed between optical elements
     """
 
-    # Tensor of shape (N, 2)
-    # Rays origins points
-    rays_origins: torch.Tensor
-
-    # Tensor of shape (N, 2)
-    # Rays unit vectors
-    rays_vectors: torch.Tensor
+    # TensorFrame of light rays
+    rays: TensorFrame
 
     # Tensor of shape (2,)
     # Position of the next optical element
@@ -49,26 +46,15 @@ class OpticalData:
     # "block" includes hitting an absorbing surface but also not hitting anything
     blocked: Optional[torch.Tensor]
 
-    # experimental
-    # coordinates normalized to (-1, 1) of sample points in 'number of rays' space
-    coord_base: torch.Tensor
-
-    # experimental
-    # coordinates normalized to (-1, 1) of sample points in 'object' space
-    coord_object: torch.Tensor
-
     # Tensor of one element
     # Loss accumulator
     loss: torch.Tensor
 
 
 default_input = OpticalData(
-    rays_origins = torch.empty((0, 2)),
-    rays_vectors = torch.empty((0, 2)),
+    rays = TensorFrame(torch.empty((0, 4)), columns = ["RX", "RY", "VX", "VY"]),
     target = torch.zeros(2),
     blocked = None,
-    coord_base = torch.empty((0,)),
-    coord_object = torch.empty((0,)),
     loss = torch.tensor(0.),
 )
 
@@ -78,8 +64,12 @@ class FocalPoint(nn.Module):
         super().__init__()
 
     def forward(self, inputs: OpticalData, sampling: dict):
-        num_rays = inputs.rays_origins.shape[0]
-        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, inputs.target).sum()
+        num_rays = inputs.rays.shape[0]
+        rays_origins, rays_vectors = (
+            inputs.rays.get(["RX", "RY"]),
+            inputs.rays.get(["VX", "VY"]),
+        )
+        sum_squared = ray_point_squared_distance(rays_origins, rays_vectors, inputs.target).sum()
         loss = sum_squared / num_rays
 
         return replace(inputs, loss=inputs.loss + loss)
@@ -96,14 +86,18 @@ class Image(nn.Module):
         # Compute image loss
 
         # First, make the 2D points that correspond to the object sampling
-        
-        points_y = inputs.coord_object * self.height - self.height / 2
+        coords_object = inputs.rays.get("object")
+        rays_origins, rays_vectors = (
+            inputs.rays.get(["RX", "RY"]),
+            inputs.rays.get(["VX", "VY"]),
+        )
+        points_y = coords_object * self.height - self.height / 2
         points_x = inputs.target[0].expand_as(points_y)
 
         points = torch.stack((points_x, points_y), dim=-1)
 
-        num_rays = inputs.rays_origins.shape[0]
-        sum_squared = ray_point_squared_distance(inputs.rays_origins, inputs.rays_vectors, points).sum()
+        num_rays = rays_origins.shape[0]
+        sum_squared = ray_point_squared_distance(rays_origins, rays_vectors, points).sum()
         loss = sum_squared / num_rays
 
         return replace(inputs, loss=inputs.loss + loss)
@@ -146,7 +140,6 @@ class ImagePlane(nn.Module):
         return replace(inputs, loss=inputs.loss + loss)
 
 
-
 class PointSource(nn.Module):
     def __init__(self, beam_angle, height=0, object_coord=0.):
         """
@@ -159,6 +152,8 @@ class PointSource(nn.Module):
             torch.as_tensor(beam_angle, dtype=torch.float32)
         )
         self.height = torch.as_tensor(height, dtype=torch.float32)
+
+        # TODO remove this and do sampling directly in object?
         self.object_coord = torch.as_tensor(object_coord, dtype=torch.float32)
 
     def forward(self, inputs: OpticalData, sampling: dict):
@@ -179,14 +174,16 @@ class PointSource(nn.Module):
         coord_base = (angles + self.beam_angle / 2) / self.beam_angle
         coord_object = self.object_coord.expand_as(coord_base)
 
+        new_rays = TensorFrame(
+            torch.cat((rays_origins, rays_vectors, coord_base.unsqueeze(1), coord_object.unsqueeze(1)), dim=1),
+            columns=["RX", "RY", "VX", "VY", "rays", "object"],
+        )
+
         # Add new rays to the input rays
         return OpticalData(
-            torch.cat((inputs.rays_origins, rays_origins), dim=0),
-            torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
+            inputs.rays.stack(new_rays),
             inputs.target,
             None,
-            torch.cat((inputs.coord_base, coord_base)),
-            torch.cat((inputs.coord_object, coord_object)),
             inputs.loss,
         )
 
@@ -209,30 +206,31 @@ class PointSourceAtInfinity(nn.Module):
         # Create new rays by sampling the beam diameter
         num_rays = sampling["rays"]
         margin = 0.1  # TODO
-        rays_x = torch.zeros(num_rays)
-        rays_y = torch.linspace(
+        RX = torch.zeros(num_rays)
+        RY = torch.linspace(
             -self.beam_diameter / 2 + margin,
             self.beam_diameter / 2 - margin,
             num_rays,
         )
 
-        rays_origins = inputs.target + torch.column_stack((rays_x, rays_y))
+        rays_origins = inputs.target + torch.column_stack((RX, RY))
         vect = rot2d(torch.tensor([1.0, 0.0]), self.angle)
         rays_vectors = torch.tile(vect, (num_rays, 1))
 
         # normalized coordinate along the base dimension
-        coord_base = (rays_y + self.beam_diameter / 2) / self.beam_diameter
+        coord_base = (RY + self.beam_diameter / 2) / self.beam_diameter
 
         coord_object = self.object_coord.expand_as(coord_base)
 
-        # Add new rays to the input rays
+        new_rays = TensorFrame(
+            torch.cat((rays_origins, rays_vectors, coord_base.unsqueeze(1), coord_object.unsqueeze(1)), dim=1),
+            columns=["RX", "RY", "VX", "VY", "rays", "object"],
+        )
+
         return OpticalData(
-            torch.cat((inputs.rays_origins, rays_origins), dim=0),
-            torch.cat((inputs.rays_vectors, rays_vectors), dim=0),
+            inputs.rays.stack(new_rays),
             inputs.target,
             None,
-            torch.cat((inputs.coord_base, coord_base)),
-            torch.cat((inputs.coord_object, coord_object)),
             inputs.loss,
         )
 
@@ -281,7 +279,7 @@ class Gap(nn.Module):
         offset = torch.stack((torch.as_tensor(self.offset), torch.tensor(0.)))
         new_target = inputs.target + offset
 
-        return OpticalData(inputs.rays_origins, inputs.rays_vectors, new_target, None, inputs.coord_base, inputs.coord_object, inputs.loss)
+        return OpticalData(inputs.rays, new_target, None, inputs.loss)
 
 
 class Aperture(nn.Module):
@@ -296,7 +294,11 @@ class Aperture(nn.Module):
 
         # TODO factor common collision code with OpticalSurface
         # For all rays, find the intersection with the surface and the normal vector at the intersection
-        lines = rays_to_coefficients(inputs.rays_origins, inputs.rays_vectors)
+        rays_origins, rays_vectors = (
+            inputs.rays.get(["RX", "RY"]),
+            inputs.rays.get(["VX", "VY"]),
+        )
+        lines = rays_to_coefficients(rays_origins, rays_vectors)
         sols = surface.collide(lines)
 
         # Detect solutions outside the surface domain
@@ -304,17 +306,17 @@ class Aperture(nn.Module):
         
         # Filter data to keep only colliding rays
         sols = sols[valid]
-        rays_origins = inputs.rays_origins[valid]
-        rays_vectors = inputs.rays_vectors[valid]
+        rays_origins = rays_origins[valid]
+        rays_vectors = rays_vectors[valid]
         blocked = ~valid
 
-        collision_points = surface.evaluate(sols)
-
         # TODO
-        coord_base_filtered = inputs.coord_base[valid]
-        coord_object_filtered = inputs.coord_object[valid]
+        if valid is not None:
+            input_masked = inputs.rays.masked(valid)
+        else:
+            input_masked = inputs.rays
 
-        return OpticalData(collision_points, rays_vectors, inputs.target, blocked, coord_base_filtered, coord_object_filtered, inputs.loss)
+        return OpticalData(input_masked, inputs.target, blocked, inputs.loss)
 
 
 class OpticalSurface(Module):
@@ -331,19 +333,23 @@ class OpticalSurface(Module):
 
     def surface(self, pos):
         return Surface(self.shape, pos=pos, scale=self.scale, anchor=self.anchors[0])
-    
+
     def forward(self, inputs: OpticalData, sampling: dict):
         surface = self.surface(inputs.target)
         valid = None
 
-        # special case for zero rays, TODO remove this and make sure the inner code works with B=0
-        if inputs.rays_origins.numel() == 0:
+        # special case for zero rays, TODO remove this and make sure the inner code works with N=0
+        if inputs.rays.data.numel() == 0:
             collision_points = torch.empty((0, 0))
             output_rays = torch.empty((0, 0))
             blocked = None
         else:
             # For all rays, find the intersection with the surface and the normal vector at the intersection
-            lines = rays_to_coefficients(inputs.rays_origins, inputs.rays_vectors)
+            rays_origins, rays_vectors = (
+                inputs.rays.get(["RX", "RY"]),
+                inputs.rays.get(["VX", "VY"]),
+            )
+            lines = rays_to_coefficients(rays_origins, rays_vectors)
             sols = surface.collide(lines)
 
             # Detect solutions outside the surface domain
@@ -353,8 +359,8 @@ class OpticalSurface(Module):
 
             # Filter data to keep only colliding rays
             sols = sols[valid]
-            rays_origins = inputs.rays_origins[valid]
-            rays_vectors = inputs.rays_vectors[valid]
+            rays_origins = rays_origins[valid]
+            rays_vectors = rays_vectors[valid]
             blocked = ~valid
 
             # Evaluate collision points and normals
@@ -372,7 +378,7 @@ class OpticalSurface(Module):
                 if not torch.all(ts > 0): # TODO regression term on ts < 0 (== lens surface collision)
                     print("!! Some ts <= 0")
                     raise RuntimeError("negative collisions")
-            
+
             # A surface always has two opposite normals, so keep the one pointing against the ray
             # i.e. the normal such that dot(normal, ray) < 0
             dot = torch.sum(surface_normals * rays_vectors, dim=1)
@@ -380,7 +386,7 @@ class OpticalSurface(Module):
 
             # Verify no weirdness again
             assert torch.all(torch.isfinite(collision_normals))
-            
+
             # Refract or reflect rays based on the derived class implementation
             output_rays = self.optical_function(rays_vectors, collision_normals)
 
@@ -388,13 +394,22 @@ class OpticalSurface(Module):
 
         # TODO
         if valid is not None:
-            coord_base_filtered = inputs.coord_base[valid]
-            coord_object_filtered = inputs.coord_object[valid]
+            input_masked = inputs.rays.masked(valid)
         else:
-            coord_base_filtered = inputs.coord_base
-            coord_object_filtered = inputs.coord_object
+            input_masked = inputs.rays
 
-        return OpticalData(collision_points, output_rays, new_target, blocked, coord_base_filtered, coord_object_filtered, inputs.loss)
+        # TODO
+        if collision_points.numel() > 0:
+            new_rays = input_masked.update(
+                RX=collision_points[:, 0],
+                RY=collision_points[:, 1],
+                VX=output_rays[:, 0],
+                VY=output_rays[:, 1],
+            )
+        else:
+            new_rays = input_masked
+
+        return OpticalData(new_rays, new_target, blocked, inputs.loss)
 
 
 class ReflectiveSurface(OpticalSurface):

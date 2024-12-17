@@ -7,6 +7,7 @@ import torchlensmaker as tlm
 import matplotlib as mpl
 viridis = mpl.colormaps['viridis']
 
+
 def draw_rays(ax, rays_origins, rays_ends, color):
     A = rays_origins.detach().numpy()
     B = rays_ends.detach().numpy()
@@ -52,7 +53,7 @@ class FocalPointArtist(Artist):
         else:
             color_data = "orange"
 
-        rays_origins, rays_vectors = inputs.rays_origins, inputs.rays_vectors
+        rays_origins, rays_vectors = inputs.rays.get(["RX", "RY"]), inputs.rays.get(["VX", "VY"])
         pos = inputs.target
 
         # Compute t needed to reach the focal point's position
@@ -78,13 +79,16 @@ class ImageArtist(Artist):
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
         if color_dim == "rays":
-            color_data = outputs.coord_base
+            color_data = outputs.rays.get("rays").detach().numpy()
         elif color_dim == "object":
-            color_data = outputs.coord_object
+            color_data = outputs.rays.get("object").detach().numpy()
         else:
             color_data = "orange"
 
-        rays_origins, rays_vectors = inputs.rays_origins, inputs.rays_vectors
+        rays_origins, rays_vectors = (
+            inputs.rays.get(["RX", "RY"]),
+            inputs.rays.get(["VX", "VY"]),
+        )
         pos = inputs.target
 
         # Compute t needed to reach the focal point's position
@@ -129,9 +133,9 @@ class SurfaceArtist(Artist):
     def draw_rays(ax, element, inputs, outputs, color_dim):
 
         if color_dim == "rays":
-            color_data = outputs.coord_base
+            color_data = outputs.rays.get("rays").detach().numpy()
         elif color_dim == "object":
-            color_data = outputs.coord_object
+            color_data = outputs.rays.get("object").detach().numpy()
         else:
             color_data = "orange"
 
@@ -143,13 +147,17 @@ class SurfaceArtist(Artist):
 
             # Render non blocked rays
             blocked = outputs.blocked
+            input_origins = inputs.rays.get(["RX", "RY"])
+            input_vectors = inputs.rays.get(["VX", "VY"])
+            output_origins = outputs.rays.get(["RX", "RY"])
+
             draw_rays(
-                ax, inputs.rays_origins[~blocked], outputs.rays_origins, color=color_data
+                ax, input_origins[~blocked], output_origins, color=color_data
             )
 
             # Render blocked rays up to the target
-            rays_origins = inputs.rays_origins[blocked]
-            rays_vectors = inputs.rays_vectors[blocked]
+            rays_origins = input_origins[blocked]
+            rays_vectors = input_vectors[blocked]
             if rays_origins.numel() > 0:
                 pos = inputs.target
                 t = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
@@ -201,7 +209,7 @@ def render_all(ax, optics, sampling, **kwargs):
         for typ, artist in artists_dict.items():
             if isinstance(module, typ):
                 artist.draw_element(ax, module, inputs, outputs)
-                if inputs.rays_origins.numel() > 0:
+                if inputs.rays.numel() > 0:
                     artist.draw_rays(ax, module, inputs, outputs, color_dim)
                 break
 

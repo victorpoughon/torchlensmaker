@@ -7,6 +7,7 @@
 
 ## New example notebooks ideas
 
+* pink floyd prism
 * pinhole camera model
 * refractive telescope
 * anchors demo

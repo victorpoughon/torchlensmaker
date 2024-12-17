@@ -105,6 +105,7 @@ class PlanoLens(GenericLens):
     """
 
     # TODO make this an asymmetriclens?
+    # TODO is this the right way around: planoconvex vs convexplano
 
     def __init__(self, shape, n, inner_thickness=None, outer_thickness=None, reverse=False):
         super().__init__()
