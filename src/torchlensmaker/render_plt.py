@@ -37,6 +37,15 @@ def draw_rays(ax, rays_origins, rays_ends, color):
         # ax.scatter(a[0], a[1], marker="x", color="lightgrey")
 
 
+def get_color_data(rays, color_dim: str):
+        if color_dim == "rays":
+            return rays.get("rays").detach().numpy()
+        elif color_dim == "object":
+            return rays.get("object").detach().numpy()
+        else:
+            return "orange"
+
+
 class Artist:
     @staticmethod
     def draw_element(ax, element, inputs, outputs):
@@ -57,12 +66,7 @@ class FocalPointArtist(Artist):
 
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
-        if color_dim == "rays":
-            color_data = outputs.rays.get("rays")
-        elif color_dim == "object":
-            color_data = outputs.rays.get("object")
-        else:
-            color_data = "orange"
+        color_data = get_color_data(outputs.rays, color_dim)
 
         rays_origins, rays_vectors = inputs.rays.get(["RX", "RY"]), inputs.rays.get(["VX", "VY"])
         pos = inputs.target
@@ -89,12 +93,7 @@ class ImageArtist(Artist):
 
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
-        if color_dim == "rays":
-            color_data = outputs.rays.get("rays")
-        elif color_dim == "object":
-            color_data = outputs.rays.get("object")
-        else:
-            color_data = "orange"
+        color_data = get_color_data(outputs.rays, color_dim)
 
         rays_origins, rays_vectors = (
             inputs.rays.get(["RX", "RY"]),
@@ -142,13 +141,7 @@ class SurfaceArtist(Artist):
 
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
-
-        if color_dim == "rays":
-            color_data = outputs.rays.get("rays").detach().numpy()
-        elif color_dim == "object":
-            color_data = outputs.rays.get("object").detach().numpy()
-        else:
-            color_data = "orange"
+        color_data = get_color_data(outputs.rays, color_dim)
 
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
@@ -199,6 +192,21 @@ class ApertureArtist(Artist):
         SurfaceArtist.draw_rays(ax, element, inputs, outputs, color_dim)
 
 
+def draw_output_rays(ax, rays, color_dim, end):
+    if rays.numel() == 0:
+        return
+
+    color_data = get_color_data(rays, color_dim)
+
+    orig = rays.get(["RX", "RY"])
+    vect = rays.get(["VX", "VY"])
+
+    t = (end - orig[:, 0]) / vect[:, 0]
+    rays_end = orig + t.unsqueeze(1).expand(-1, 2) * vect
+
+    draw_rays(ax, orig, rays_end, color=color_data)
+
+
 artists_dict = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.Aperture: ApertureArtist,
@@ -210,9 +218,10 @@ artists_dict = {
 
 default_sampling = {"rays": 10, "object": 3}
 
-def render_all(ax, optics, sampling, **kwargs):
+def render_all(ax, optics, sampling, **rendering):
 
-    color_dim = kwargs.get("color_dim", None)
+    color_dim = rendering.get("color_dim", None)
+    end = rendering.get("end", None)
 
     execute_list, outputs = tlm.full_forward(optics, tlm.default_input, sampling)
 
@@ -225,14 +234,42 @@ def render_all(ax, optics, sampling, **kwargs):
                     artist.draw_rays(ax, module, inputs, outputs, color_dim)
                 break
 
+    # Draw output rays
+    if end is not None:
+        draw_output_rays(ax, outputs.rays, color_dim, end)
 
-def render_plt(optics, sampling=default_sampling, **kwargs):
+
+
+def render_plt(optics, sampling=default_sampling, **rendering):
+    """
+    Render the physical layout of an optical stack
+
+    Options (default values):
+
+        end (None):
+            Maximum coordinate along the principal axis to draw output rays.
+            If None, output rays are not shown.
+
+        show_rays (True):      # TODO
+            Draw rays
+        
+        show_blocked_rays (True):    # TODO
+            Draw rays that don't exit the optical system
+        
+        show_elements (True):
+            Draw optical elements
+
+        color_dim (None):
+            Coordinate dimension to use for coloring rays
+    """
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    render_all(ax, optics, sampling, **kwargs)
+    render_all(ax, optics, sampling, **rendering)
 
     plt.gca().set_title(f"")
     plt.gca().set_aspect("equal")
 
-    plt.show()
+    # plt.show()
+
+    return fig, ax

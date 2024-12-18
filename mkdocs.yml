@@ -6,6 +6,7 @@ theme:
     - navigation.tabs
     - navigation.sections
     - navigation.path
+    - navigation.footer
     # - toc.integrate
   palette:
     - scheme: default

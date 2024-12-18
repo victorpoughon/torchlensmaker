@@ -8,6 +8,7 @@
 
 ## New example notebooks ideas
 
+* what is an image
 * https://en.wikipedia.org/wiki/Petzval_lens
 * https://en.wikipedia.org/wiki/Rapid_Rectilinear
 * dispersion demo, "pink floyd" prism
@@ -38,6 +39,10 @@
 * focal length changes if you flip a plano convex lens (contrary to what textbook says)
 
 ## Various stuff
+
+* handle refractive index in optical data
+* lenses only given their inner refractive index
+* refractive surface sets the next index of refraction and get the previous from input
 
 * per parameter learning rate adapted to parameter scale
     * example: one parabola coefficient, one distance
