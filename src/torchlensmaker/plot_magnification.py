@@ -3,11 +3,17 @@ import torch
 
 import torchlensmaker as tlm
 
+
+from torchlensmaker.optics import linear_magnification
+
+
 def plot_magnification(optics, sampling):
     """
     Compute and plot magnification data for the given optical system
     The system must compute object and image coordinates
     """
+
+    # TODO add color_dim
 
     # Evaluate the optical stack
     output = optics(tlm.default_input, sampling)
@@ -16,9 +22,7 @@ def plot_magnification(optics, sampling):
     T = output.rays.get("object")
     V = output.rays.get("image")
 
-    # Fit linear magnification and compute residuals
-    mag = torch.sum(T * V) / torch.sum(T**2)
-    residuals = V - mag * T
+    mag, _ = linear_magnification(T, V)
 
     fig, ax = plt.subplots(figsize=(12, 8))
     ax.plot(T.detach().numpy(), V.detach().numpy(), linestyle="none", marker="+")
@@ -34,3 +38,5 @@ def plot_magnification(optics, sampling):
     ax.set_xlabel("Object coordinates")
     ax.set_ylabel("Image coordinates")
     ax.legend()
+
+    plt.show()

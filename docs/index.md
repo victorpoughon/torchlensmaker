@@ -53,7 +53,7 @@ Note that I personally still don't fully understand [how ray diagrams generalize
 
 ### No approximations
 
-The so-called *paraxial approximation* (sin(x) = tan(x) = x), the *thin lens equation* and other approximations are very widely used in optics. In fact, I've been frustrated with how in most material on optics, it's never really clear if approximations are used or not, making learning difficult. Everything in *Torch Lens Maker* is always geometrically accurate, up to floating point precision.
+The so-called *paraxial approximation* (sin(x) = tan(x) = x), the *thin lens equation* and other approximations are very widely used in optics. In fact, I've been frustrated with how in most material on optics, it's never really clear if approximations are used or not, making learning difficult. Everything in *Torch Lens Maker* is always geometrically accurate, up to floating point precision. We never use the paraxial approximation, the thin-lens equation, the lens's maker equation, or any other geometric approximation.
 
 ### Sequential optical elements
 

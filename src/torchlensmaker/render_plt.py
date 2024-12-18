@@ -106,7 +106,7 @@ class ImageArtist(Artist):
         t_real = (pos[0] - rays_origins[:, 0]) / rays_vectors[:, 0]
 
         if t_real.mean() > 0:
-            t = 1.15 * t_real
+            t = 1.00 * t_real
         else:
             t = -t_real / 3
 

@@ -27,6 +27,16 @@ def loss_nonpositive(parameters, scale=1):
     return torch.where(parameters > 0, torch.pow(scale*parameters, 2), torch.zeros_like(parameters))
 
 
+def linear_magnification(object_coordinates, image_coordinates):
+    T, V = object_coordinates, image_coordinates
+
+    # Fit linear magnification with least square and compute residuals
+    mag = torch.sum(T * V) / torch.sum(T**2)
+    residuals = V - mag * T
+
+    return mag, residuals
+
+
 @dataclass
 class OpticalData:
     """
@@ -122,10 +132,16 @@ class ImagePlane(nn.Module):
         X = torch.full_like(a, inputs.target[0].item())
         Y = (- c - a*X ) / b
 
+        # Compute loss
+        # TODO this could be outside this class
+        mag, residuals = linear_magnification(object_coordinates=inputs.rays.get("object"), image_coordinates=Y)
+        loss = inputs.loss + torch.sum(torch.pow(residuals, 2))
+
         # Add the image coordinate column to the rays TensorFrame
         return replace(
             inputs,
-            rays=inputs.rays.update(image=Y)
+            rays=inputs.rays.update(image=Y),
+            loss=loss,
         )
 
 

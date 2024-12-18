@@ -73,7 +73,7 @@ def optimize(optics, optimizer, sampling, num_iter, nshow=20, regularization=Non
     # Plot parameters and loss
     fig, (ax1, ax2) = plt.subplots(2, 1)
     epoch_range = np.arange(0, num_iter)
-    ax2.plot(epoch_range, loss_record.detach())
+    ax2.plot(epoch_range, loss_record.detach(), label="loss")
     for n, param in optics.named_parameters():
         if parameters_record[n][0].dim() == 0:
             data = torch.stack(parameters_record[n]).detach().numpy()
@@ -81,5 +81,6 @@ def optimize(optics, optimizer, sampling, num_iter, nshow=20, regularization=Non
     ax1.set_title("parameter")
     ax1.legend()
     ax2.set_title("loss")
+    ax2.legend()
     plt.show()
 

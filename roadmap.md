@@ -7,6 +7,9 @@
 
 ## New example notebooks ideas
 
+* making your own module
+* https://en.wikipedia.org/wiki/Petzval_lens
+* https://en.wikipedia.org/wiki/Rapid_Rectilinear
 * pink floyd prism
 * pinhole camera model
 * refractive telescope
@@ -73,6 +76,13 @@
 
 * custom tlm.Parameter to enforce float32 without need for trailing dot in user code
 
+* support radial weighting in loss function. so residuals further from the optical axis can have less weight
+
+* compute f number
+
+* doc: glossary of terms
+* doc: sign convention
+
 ## Evaluation plots
 
 * Spot diagram: image of a point source / geometric PSF
@@ -84,6 +94,9 @@
 * find intermediate images
 
 * optical aberations and concepts: coma, astigmatism, petzval field curvature, etc...
+
+* Support color_dim magnification plot
+* Loss plot: plot loss function of a variable
 
 
 ## Rays not colliding with surface

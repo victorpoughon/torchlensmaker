@@ -32,8 +32,6 @@ def sketch_circular_arc(arc: tlm.CircularArc):
     arc_radius = arc.coefficients().detach().item()
     x, y = arc.evaluate(arc.domain()[0]).detach().tolist()
 
-    print(x, y, arc_radius)
-
     if arc_radius > 0:
         return bd.RadiusArc((x, y), (x, -y), arc_radius)
     else:

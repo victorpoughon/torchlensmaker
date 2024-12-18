@@ -55,6 +55,7 @@ nav:
       - Biconcave diverging lens: examples/executed/Biconcave diverging lens.ipynb
       - Planoconvex lens (sphere): examples/executed/Planoconvex lens (sphere).ipynb
       - Planoconvex lens (piecewise line): examples/executed/Planoconvex lens (piecewise line).ipynb
+      - Landscape Singlet Lens: examples/executed/landscape_singlet_lens.ipynb
 
     - Multiple Lenses:
       - Variable number of lenses: examples/executed/Multiple Lenses Sequence.ipynb
