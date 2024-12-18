@@ -27,6 +27,35 @@ def test_update():
     assert tf2.shape == tf2.data.shape == (N, 4)
 
 
+def test_update_broadcast():
+    "Test update with a float"
+
+    N = 2
+    tf = TensorFrame(
+        torch.column_stack(
+            (
+                torch.full((N,), 1),
+                torch.full((N,), 2),
+                torch.full((N,), 3),
+            )
+        ),
+        ("a", "b", "c"),
+    )
+
+    # broadcast single number
+    tf = tf.update(a=42, d=45)
+
+    # broadcast tensor of dim 0
+    tf = tf.update(e=torch.tensor(0.))
+
+    # broadcast tensor of dim 1, size 1
+    tf = tf.update(f=torch.tensor([-10]))
+
+    assert torch.all(tf.data == torch.tensor([[42, 2, 3, 45, 0, -10], [42, 2, 3, 45, 0, -10]]))
+    assert tf.columns == ["a", "b", "c", "d", "e", "f"]
+    assert tf.shape == tf.data.shape == (N, 6)
+
+
 def test_stack():
     N = 2
     tf1 = TensorFrame(

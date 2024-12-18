@@ -194,7 +194,7 @@ class PointSource(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    def __init__(self, beam_diameter, angle=0., object_coord=0.):
+    def __init__(self, beam_diameter, angle=0.):
         """
         beam_diameter: diameter of the beam of parallel light rays
         angle: angle of indidence with respect to the principal axis, in degrees
@@ -205,7 +205,6 @@ class PointSourceAtInfinity(nn.Module):
         super().__init__()
         self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float32)
         self.angle = torch.deg2rad(torch.as_tensor(angle, dtype=torch.float32))
-        self.object_coord = torch.as_tensor(object_coord, dtype=torch.float32)
 
     def forward(self, inputs: OpticalData, sampling: dict):
         # Create new rays by sampling the beam diameter
@@ -225,11 +224,9 @@ class PointSourceAtInfinity(nn.Module):
         # normalized coordinate along the base dimension
         coord_base = (RY + self.beam_diameter / 2) / self.beam_diameter
 
-        coord_object = self.object_coord.expand_as(coord_base)
-
         new_rays = TensorFrame(
-            torch.cat((rays_origins, rays_vectors, coord_base.unsqueeze(1), coord_object.unsqueeze(1)), dim=1),
-            columns=["RX", "RY", "VX", "VY", "rays", "object"],
+            torch.cat((rays_origins, rays_vectors, coord_base.unsqueeze(1)), dim=1),
+            columns=["RX", "RY", "VX", "VY", "rays"],
         )
 
         return OpticalData(
@@ -260,15 +257,20 @@ class ObjectAtInfinity(nn.Module):
 
         angles = torch.linspace(-self.angular_size/2., self.angular_size/2, num_samples)
 
-        modules = OpticalSequence()
+        rays = inputs.rays
 
         for angle in angles:
-            # add a PointSourceAtInfinity with that object coordinate
-            current_angle = angle
-            mod = PointSourceAtInfinity(self.beam_diameter, angle=current_angle + self.angle, object_coord=current_angle)
-            modules.append(mod)
+            # add a PointSourceAtInfinity to represent the point source at that angle
+            mod = PointSourceAtInfinity(self.beam_diameter, angle=angle + self.angle)
+            outputs = mod(inputs, sampling)
 
-        return modules.forward(inputs, sampling)
+            # Add object coordinates to the point source rays
+            new_rays = outputs.rays.update(object=angle)
+
+            # Merge that point source rays with all rays of the object
+            rays = rays.stack(new_rays) 
+
+        return replace(inputs, rays=rays)
 
 
 class Gap(nn.Module):

@@ -58,9 +58,9 @@ class FocalPointArtist(Artist):
     @staticmethod
     def draw_rays(ax, element, inputs, outputs, color_dim):
         if color_dim == "rays":
-            color_data = outputs.coord_base
+            color_data = outputs.rays.get("rays")
         elif color_dim == "object":
-            color_data = outputs.coord_object
+            color_data = outputs.rays.get("object")
         else:
             color_data = "orange"
 

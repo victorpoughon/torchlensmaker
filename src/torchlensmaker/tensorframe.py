@@ -1,5 +1,6 @@
 import torch
 from typing import Iterable
+import numbers
 
 
 class TensorFrame:
@@ -53,8 +54,20 @@ class TensorFrame:
     def update(self, **kwargs):
         "Return a new TensorFrame with updated or inserted columns"
 
+        N = self.data.shape[0]
         new_cols = kwargs.keys() - set(self.columns)
         merged_cols = list(self.columns) + list(new_cols)
+
+        # broadcast / lift values of kwargs
+        for k, v in kwargs.items():
+            if isinstance(v, torch.Tensor) and v.dim() == 0:
+                kwargs[k] = v.unsqueeze(0).expand((N,))
+            elif isinstance(v, torch.Tensor) and v.shape == (1,):
+                kwargs[k] = v.expand((N,))
+            elif isinstance(v, numbers.Number):
+                kwargs[k] = torch.full((N,), v)
+        
+            assert kwargs[k].shape == (N,)
 
         new_data = torch.stack(
             tuple(
