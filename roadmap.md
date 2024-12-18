@@ -1,23 +1,22 @@
 # Torchlensmaker roadmap and TODOs
 
-## Pairing ideas
 
-* per parameter learning rate adapted to parameter scale
-    * example: one parabola coefficient, one distance
+## Finger work - small tasks
+
+* Update all examples to not use tlm.Module, except one for demoing custom module
+
 
 ## New example notebooks ideas
 
-* making your own module
 * https://en.wikipedia.org/wiki/Petzval_lens
 * https://en.wikipedia.org/wiki/Rapid_Rectilinear
-* pink floyd prism
+* dispersion demo, "pink floyd" prism
 * pinhole camera model
 * refractive telescope
 * anchors demo
 * lens inner vs outer thickness
 * sharing shapes between surfaces
 * using free parameters (offset along x)
-* real optical systems
 * custom lens with manually making RefractiveSurface
 
 * Optimizing a lens thickness
@@ -39,6 +38,9 @@
 * focal length changes if you flip a plano convex lens (contrary to what textbook says)
 
 ## Various stuff
+
+* per parameter learning rate adapted to parameter scale
+    * example: one parabola coefficient, one distance
 
 *  more tests:
     lens maker equation
@@ -66,7 +68,6 @@
 * port pulaski code to new lib
 * multiple configuration support (a new data dimension?) zoom lenses, etc.
 * diffuse reflection
-* Aperture
 * chromatic aberation, wavelength support
 * better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
 * inspiration from https://phydemo.app/ray-optics/
