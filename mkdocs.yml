@@ -27,7 +27,7 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
-  logo: tlmlogo_black.png
+  logo: tlmlogo_black150.png
 
 
 extra_css:
@@ -43,6 +43,7 @@ markdown_extensions:
   - pymdownx.snippets
   - pymdownx.superfences
   - md_in_html
+  - attr_list
 
 plugins:
   - search
@@ -50,7 +51,7 @@ plugins:
 
 nav:
   - Home:
-    - Welcome: index.md
+    - Overview: index.md
     - Installation: installation.md
     - How does it work?: how.md
     - Roadmap: roadmap.md
