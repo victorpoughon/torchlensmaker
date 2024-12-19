@@ -270,6 +270,4 @@ def render_plt(optics, sampling=default_sampling, **rendering):
     plt.gca().set_title(f"")
     plt.gca().set_aspect("equal")
 
-    # plt.show()
-
-    return fig, ax
+    plt.show()

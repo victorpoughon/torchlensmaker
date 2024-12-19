@@ -35,7 +35,7 @@ def sketch_circular_arc(arc: tlm.CircularArc):
     if arc_radius > 0:
         return bd.RadiusArc((x, y), (x, -y), arc_radius)
     else:
-        return bd.RadiusArc((x, -y), (x, y), arc_radius)
+        return bd.RadiusArc((x, -y), (x, y), -arc_radius)
 
 
 def shape_to_sketch(shape):

@@ -51,6 +51,7 @@ nav:
     - Roadmap: roadmap.md
   - Examples:
     - Simple Lenses:
+      - Simple Lenses: examples/executed/simple_lenses.ipynb
       - Biconvex lens (sphere): examples/executed/Biconvex lens sphere.ipynb
       - Biconvex lens (parabola): examples/executed/Biconvex lens parabola.ipynb
       - Biconvex lens (bezier spline): examples/executed/Biconvex lens bezier spline.ipynb
