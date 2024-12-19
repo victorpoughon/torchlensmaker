@@ -27,12 +27,12 @@ theme:
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
-  icon:
-    logo: material/circle-half
+  logo: tlmlogo_black.png
 
 
 extra_css:
   - stylesheets/extra.css
+  - stylesheets/jupyter.css
 
 markdown_extensions:
   - pymdownx.highlight:

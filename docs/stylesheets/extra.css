@@ -1,6 +1,5 @@
-.jp-InputPrompt, .jp-OutputPrompt {
-    display: none !important;
-}
+
+/* Typography */
 
 .md-typeset h1, .md-typeset h2 {
     color: var(--md-default-fg-color);
@@ -19,27 +18,13 @@
     font-size: .75em !important;
 }
 
-/* Jupyter notebook syntax highlight */
-:root > * {
-    --md-code-hl-number-color: #080;
-    --md-code-hl-special-color: rgb(0, 54, 109);
-    --md-code-hl-keyword-color: #008000;
-    --md-code-hl-string-color: #ba2121;
-    --md-code-hl-operator-color: #a2f;
-    --md-code-hl-comment-color: #408080;
-    --md-code-hl-function-color: var(--md-code-hl-name-color);
-    /* --md-code-hl-constant-color
-    --md-code-hl-name-color
-    --md-code-hl-punctuation-color
-    --md-code-hl-generic-color
-    --md-code-hl-variable-color */
-  }
+
+
 
 /* Center Markdown Tables (requires md_in_html extension) */
 .center-table {
     text-align: center;
 }
-
 .md-typeset .center-table :is(td,th):not([align]) {
     /* Reset alignment for table cells */
     text-align: initial;
