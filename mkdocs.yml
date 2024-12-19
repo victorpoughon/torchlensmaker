@@ -1,5 +1,9 @@
 site_name: Torch Lens Maker
 
+repo_name: fouronnes/torchlensmaker
+repo_url: https://github.com/fouronnes/torchlensmaker
+edit_uri: edit/main/docs/
+
 theme:
   name: material
   features:
@@ -7,6 +11,7 @@ theme:
     - navigation.sections
     - navigation.path
     - navigation.footer
+    - content.action.edit
     # - toc.integrate
   palette:
     - scheme: default

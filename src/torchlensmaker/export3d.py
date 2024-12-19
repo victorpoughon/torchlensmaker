@@ -13,13 +13,13 @@ def tuplelist(arr):
 
 
 def sketch_line(line: tlm.Line):
-    y = line.height / 2
+    y = (line.height / 2).detach().item()
     return bd.Line([(0, -y), (0, y)])
 
 
 def sketch_parabola(parabola: tlm.Parabola):
-    a = parabola.coefficients().detach().numpy()
-    r = parabola.height / 2
+    a = parabola.coefficients().detach().item()
+    r = (parabola.height / 2).detach().item()
 
     return bd.Bezier([
         (a*r**2, -r),

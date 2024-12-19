@@ -12,7 +12,7 @@ class Parabola(BaseShape):
 
     def __init__(self, height, a):
         super().__init__()
-        self.height = height
+        self.height = torch.as_tensor(height)
         self._a = torch.as_tensor(a)
 
         assert self._a.ndim == 0
