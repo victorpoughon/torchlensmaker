@@ -6,8 +6,15 @@
 * Update all examples to not use tlm.Module, except one for demoing custom module
 
 
+## The big stuff
+
+* Wavelength support
+
+
+
 ## New example notebooks ideas
 
+* Cooke triplet
 * what is an image
 * https://en.wikipedia.org/wiki/Petzval_lens
 * https://en.wikipedia.org/wiki/Rapid_Rectilinear
@@ -170,29 +177,11 @@ add render option for sources: draw rays a bit before their origins to see them 
 * elements definition are sampling free. they define the space.
 * When evaluating for either rendering or optimization, then the space is sampled to create rays.
 
-sampling is done by the elements
-but storing the sampling parameters is outside
-each element gets: (num_samples, linspace/uniform random/normal random)
-
-idea: instead of s value, rays have an ID
-sampling information can associate sampling configuration to IDs:
-wavelength, position on object, ...
-
-SamplingConfiguration:
-    - variable: main, source coordinate, wavelength, config1, config2, ...
-    - number of samples: 1+
-    - mode: linspace, random-uniform, random-normal, custom
+* add sampling distribution parameter? linspace, random-uniform, random-normal
 
 piecewise line: need more rays to work
 
-declare a sampling dimension: num_rays, position on object, wavelength, system configuration, ...
-choose sample density for each dimension
-also store a normalized sample coordinate to generate a colormap
-communicate it to modules that need it
-modules generate the samples that concern their element
-when computing loss, ray sample data is available via ID
-
-add back_distance render option to light sources rendering (useful for object at infinity)
+* add back_distance render option to light sources rendering (useful for object at infinity)
 
 ## Newton solver improvements
 
@@ -224,16 +213,5 @@ valid on shape.domain()
 domain is anything the shape wants but must be:
 0 indicates center
 finite value for domain maximum
-
-s:
-normalized parametric coordinate
-domain is (-1, 1) where 0 indicates the center (principal axis), and 1 is the extremity of the shape
-
-convert using
-s = t / domain
-t = s*domain
-
-or enforce normalized everywhere?
-
 
 ## Support for double precision floats

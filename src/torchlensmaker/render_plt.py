@@ -21,6 +21,7 @@ def draw_rays(ax, rays_origins, rays_ends, color):
 
     if isinstance(color, torch.Tensor):
         color = normalize_tensor(color)
+        color = color.detach().numpy()
 
     for i, (a, b) in enumerate(zip(A, B)):
 
@@ -39,9 +40,9 @@ def draw_rays(ax, rays_origins, rays_ends, color):
 
 def get_color_data(rays, color_dim: str):
         if color_dim == "rays":
-            return rays.get("rays").detach().numpy()
+            return rays.get("rays")
         elif color_dim == "object":
-            return rays.get("object").detach().numpy()
+            return rays.get("object")
         else:
             return "orange"
 

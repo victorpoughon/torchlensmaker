@@ -11,7 +11,7 @@ class CircularArc(BaseShape):
     """
     An arc of circle parametrized by the Y coordinate
 
-    X = (K * t**2) / (1 + np.sqrt(1 - t**2 * K**2))
+    X = (K * t**2) / (1 + sqrt(1 - t**2 * K**2))
     Y = t
 
     Parameters:
