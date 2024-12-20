@@ -14,7 +14,7 @@ classifiers = [
 dependencies = [
   "torch~=2.4.1",
   #"build123d~=0.7.0",
-  "build123d @ git+https://github.com/fouronnes/build123d.git@fix_async_display",
+  "build123d @ git+https://github.com/victorpoughon/build123d.git@fix_async_display",
 
   "matplotlib~=3.9.2",
   "notebook >= 7",
@@ -32,8 +32,8 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/fouronnes/torchlensmaker"
-Issues = "https://github.com/fouronnes/torchlensmaker/issues"
+Homepage = "https://github.com/victorpoughon/torchlensmaker"
+Issues = "https://github.com/victorpoughon/torchlensmaker/issues"
 
 [build-system]
 requires = ["setuptools>=61.0"]

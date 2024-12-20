@@ -1,7 +1,7 @@
 site_name: Torch Lens Maker
 
-repo_name: fouronnes/torchlensmaker
-repo_url: https://github.com/fouronnes/torchlensmaker
+repo_name: victorpoughon/torchlensmaker
+repo_url: https://github.com/victorpoughon/torchlensmaker
 edit_uri: edit/main/docs/
 
 theme:
