@@ -14,6 +14,8 @@
 
 ## New example notebooks ideas
 
+* abbe number
+* airy disk
 * Cooke triplet
 * what is an image
 * https://en.wikipedia.org/wiki/Petzval_lens
