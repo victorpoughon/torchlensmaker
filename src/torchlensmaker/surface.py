@@ -82,6 +82,9 @@ class Surface:
         "Convert the inner shape evaluate() to absolute space"
         relative_points = self.shape.evaluate(ts) * self.scale
         return relative_points + self.to_abs()
+    
+    def derivative(self, ts):
+        return self.scale * self.shape.derivative(ts)
 
     def normal(self, ts):
         return self.shape.normal(ts) * self.scale
