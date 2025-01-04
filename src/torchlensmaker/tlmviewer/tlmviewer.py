@@ -2,6 +2,7 @@ from IPython.display import display, HTML
 import string
 import uuid
 import os.path
+import json
 
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -18,5 +19,5 @@ def random_id():
 def viewer(data):
     div_id = random_id()
     div = string.Template(div_template).substitute(div_id=div_id)
-    script = string.Template(script_template).substitute(data=data, div_id=div_id)
+    script = string.Template(script_template).substitute(data=json.dumps(data, allow_nan=False), div_id=div_id)
     display(HTML(div + script))

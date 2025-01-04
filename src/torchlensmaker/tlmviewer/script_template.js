@@ -10,6 +10,6 @@ async function importtlm() {
 const module = await importtlm();
 const tlmviewer = module.tlmviewer;
 
-const data = $data;
+const data = '$data';
     
 tlmviewer(document.getElementById("$div_id"), data);    
