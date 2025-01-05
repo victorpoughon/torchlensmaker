@@ -9,7 +9,7 @@ dir_path = os.path.dirname(os.path.realpath(__file__))
 with open(os.path.join(dir_path, "script_template.js"), encoding="utf-8") as f:
     script_template = "<script type='module'>" + f.read() + "</script>"
 
-div_template = "<div id='$div_id' style='width: 800px; height: 600px;'></div>"
+div_template = "<div data-jp-suppress-context-menu id='$div_id' style='width: 800px; height: 600px;'></div>"
 
 
 def random_id():
