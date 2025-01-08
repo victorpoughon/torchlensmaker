@@ -47,6 +47,10 @@
 
 * focal length changes if you flip a plano convex lens (contrary to what textbook says)
 
+* mars rover / hubble repair mission / space cameras
+* x ray lens with weird concentric stuff
+
+
 ## Various stuff
 
 * handle refractive index in optical data
