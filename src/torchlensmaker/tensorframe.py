@@ -1,6 +1,9 @@
+from __future__ import annotations
+
 import torch
 from typing import Iterable
 import numbers
+
 
 
 class TensorFrame:
@@ -13,11 +16,11 @@ class TensorFrame:
         self.data = data
         self.columns = list(columns)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"TensorFrame:\ndata:\n{self.data.__repr__()}\ncolumns:\n{self.columns}"
 
     @property
-    def shape(self):
+    def shape(self) -> tuple:
         return self.data.shape
 
     def numel(self) -> int:
@@ -33,10 +36,10 @@ class TensorFrame:
         except:
             raise KeyError(f"TensorFrame doesn't have column(s): {names}")
 
-    def masked(self, mask):
+    def masked(self, mask) -> TensorFrame:
         return TensorFrame(self.data[mask], self.columns)
-    
-    def stack(self, other):
+
+    def stack(self, other) -> TensorFrame:
         """
         Return a new TensorFrame that stacks self with other
         Both columns must be identical, unless one of the tensor frames is empty
@@ -50,8 +53,7 @@ class TensorFrame:
             assert self.columns == other.columns
             return TensorFrame(torch.cat((self.data, other.data), dim=0), self.columns)
 
-
-    def update(self, **kwargs):
+    def update(self, **kwargs) -> TensorFrame:
         "Return a new TensorFrame with updated or inserted columns"
 
         N = self.data.shape[0]
@@ -66,7 +68,7 @@ class TensorFrame:
                 kwargs[k] = v.expand((N,))
             elif isinstance(v, numbers.Number):
                 kwargs[k] = torch.full((N,), v)
-        
+
             assert kwargs[k].shape == (N,)
 
         new_data = torch.stack(

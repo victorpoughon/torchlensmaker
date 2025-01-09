@@ -1,6 +1,7 @@
 import torch
 
-def interp1d(X, Y, newX):
+
+def interp1d(X: torch.Tensor, Y: torch.Tensor, newX: torch.Tensor) -> torch.Tensor:
     "torch version of np.interp"
 
     assert X.ndim == Y.ndim == 1
@@ -13,13 +14,13 @@ def interp1d(X, Y, newX):
 
     # -1 here because we want the start of the interval
     indices = indices - 1
-    
+
     # make sure all newX are within the X domain
     assert torch.min(indices) >= 0
     assert torch.max(indices) <= X.numel() - 1
-    
+
     # compute slopes
     # careful potential div by zero here
     slopes = torch.diff(Y) / torch.diff(X)
 
-    return Y[indices] + slopes[indices]*(newX - X[indices])
+    return Y[indices] + slopes[indices] * (newX - X[indices])

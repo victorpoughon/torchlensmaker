@@ -36,16 +36,14 @@ def ray_point_squared_distance(ray_origin, ray_vector, point):
     return numerator / denominator
 
 
-def rot2d(v, theta):
+def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
     """
     Rotate vectors v by angles theta
     Works with either v or theta batched
     """
-    
-    # Ensure inputs are tensors
-    v = torch.as_tensor(v)
+
     theta = torch.as_tensor(theta)
-    
+
     # Store original dimensions
     v_dim = v.dim()
     theta_dim = theta.dim()

@@ -8,7 +8,7 @@ class Line(BaseShape):
     """
 
     def __init__(self, height):
-        self.height = height
+        self.height = torch.as_tensor(height)
     
     def parameters(self):
         return {}

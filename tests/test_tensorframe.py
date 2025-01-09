@@ -2,12 +2,12 @@ import torch
 from torchlensmaker.tensorframe import TensorFrame
 
 
-def test_print():
+def test_print() -> None:
     tf = TensorFrame(torch.rand(10, 3), ("a", "b", "c"))
     print(tf)
 
 
-def test_update():
+def test_update() -> None:
     N = 2
     tf = TensorFrame(
         torch.column_stack(
@@ -27,7 +27,7 @@ def test_update():
     assert tf2.shape == tf2.data.shape == (N, 4)
 
 
-def test_update_broadcast():
+def test_update_broadcast() -> None:
     "Test update with a float"
 
     N = 2
@@ -56,7 +56,7 @@ def test_update_broadcast():
     assert tf.shape == tf.data.shape == (N, 6)
 
 
-def test_stack():
+def test_stack() -> None:
     N = 2
     tf1 = TensorFrame(
         torch.column_stack(
