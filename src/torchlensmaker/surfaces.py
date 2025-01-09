@@ -1,5 +1,10 @@
-import torchlensmaker as tlm
 import torch
+
+from torchlensmaker.outline import (
+    Outline,
+    SquareOutline,
+    CircularOutline,
+)
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -10,7 +15,7 @@ class LocalSurface3D:
     Defines a 3D surface in a local reference frame
     """
 
-    def __init__(self, outline: tlm.Outline):
+    def __init__(self, outline: Outline):
         self.outline = outline
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -39,7 +44,7 @@ class LocalSurface3D:
 class Plane(LocalSurface3D):
     "X=0 plane"
 
-    def __init__(self, outline: tlm.Outline):
+    def __init__(self, outline: Outline):
         super().__init__(outline)
 
     def samples2D(self, N: int) -> Tensor:
@@ -64,14 +69,14 @@ class Plane(LocalSurface3D):
 
 class SquarePlane(Plane):
     def __init__(self, side_length: float):
-        super().__init__(tlm.SquareOutline(side_length))
+        super().__init__(SquareOutline(side_length))
 
 
 class CircularPlane(Plane):
     "aka disk"
 
     def __init__(self, diameter: float):
-        super().__init__(tlm.CircularOutline(diameter))
+        super().__init__(CircularOutline(diameter))
 
 
 class ImplicitSurface3D(LocalSurface3D):
@@ -79,7 +84,7 @@ class ImplicitSurface3D(LocalSurface3D):
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, outline: tlm.Outline):
+    def __init__(self, outline: Outline):
         super().__init__(outline)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
@@ -132,7 +137,7 @@ class ImplicitSurface3D(LocalSurface3D):
 
 class Parabola(ImplicitSurface3D):
     def __init__(self, diameter: float, a: float):
-        super().__init__(tlm.CircularOutline(diameter))
+        super().__init__(CircularOutline(diameter))
         self.a = a
 
     def samples2D(self, N: int) -> Tensor:
@@ -167,7 +172,7 @@ class Parabola(ImplicitSurface3D):
 
 class Sphere(ImplicitSurface3D):
     def __init__(self, diameter: float, r: float):
-        super().__init__(tlm.CircularOutline(diameter))
+        super().__init__(CircularOutline(diameter))
         assert (
             torch.abs(torch.as_tensor(r)) >= diameter / 2
         ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"

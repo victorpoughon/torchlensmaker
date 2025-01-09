@@ -58,3 +58,4 @@ from torchlensmaker.tlmviewer.tlmviewer import viewer
 
 from torchlensmaker.outline import *
 import torchlensmaker.surfaces as surfaces
+from torchlensmaker.transforms import *
