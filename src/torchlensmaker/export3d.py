@@ -18,14 +18,14 @@ def sketch_line(line: tlm.Line):
 
 
 def sketch_parabola(parabola: tlm.Parabola):
-    a = parabola.coefficients().detach().item()
-    r = (parabola.height / 2).detach().item()
+    a: float = parabola.coefficients().detach().item()
+    r: float = (parabola.height / 2).detach().item()
 
-    return bd.Bezier([
+    return bd.Bezier(
         (a*r**2, -r),
         (-a*r**2, 0),
-        (a*r**2, r),
-    ])
+        (a*r**2, r)
+    )
 
 
 def sketch_circular_arc(arc: tlm.CircularArc):

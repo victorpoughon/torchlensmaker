@@ -53,7 +53,7 @@ class TensorFrame:
             assert self.columns == other.columns
             return TensorFrame(torch.cat((self.data, other.data), dim=0), self.columns)
 
-    def update(self, **kwargs: Dict[str, float | torch.Tensor]) -> TensorFrame:
+    def update(self, **kwargs: float | torch.Tensor) -> TensorFrame:
         "Return a new TensorFrame with updated or inserted columns"
 
         N = self.data.shape[0]
