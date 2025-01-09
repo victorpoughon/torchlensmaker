@@ -3,7 +3,7 @@ import math
 
 
 class Outline:
-    "An outline limits the extent of a surface in the local YZ plane"
+    "An outline limits the extent of a 3D surface in the local YZ plane"
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
         raise NotImplementedError
@@ -32,11 +32,11 @@ class SquareOutline(Outline):
 class CircularOutline(Outline):
     "Fixed distance to the X axis"
 
-    def __init__(self, diameter):
+    def __init__(self, diameter: float):
         self.diameter = diameter
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
-        return torch.hypot(points[:, 1], points[:, 2]) <= self.diameter / 2
+        return torch.le(torch.hypot(points[:, 1], points[:, 2]), self.diameter / 2)
 
-    def max_radius(self):
+    def max_radius(self) -> float:
         return self.diameter / 2
