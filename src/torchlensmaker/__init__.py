@@ -57,3 +57,4 @@ from torchlensmaker.tlmviewer.tlmviewer import viewer
 ## new 3D stuff
 
 from torchlensmaker.outline import *
+import torchlensmaker.surfaces as surfaces
