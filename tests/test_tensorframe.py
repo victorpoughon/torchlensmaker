@@ -7,6 +7,13 @@ def test_print() -> None:
     print(tf)
 
 
+def test_get() -> None:
+    tf = TensorFrame(torch.rand(10, 3), ("a", "b", "c"))
+
+    print(tf.get("a"))
+    print(tf.get(["a", "b"]))
+
+
 def test_update() -> None:
     N = 2
     tf = TensorFrame(
@@ -28,8 +35,6 @@ def test_update() -> None:
 
 
 def test_update_broadcast() -> None:
-    "Test update with a float"
-
     N = 2
     tf = TensorFrame(
         torch.column_stack(
@@ -80,5 +85,5 @@ def test_stack() -> None:
 
     tf3 = tf1.stack(tf2)
 
-    assert torch.all(tf3.data == torch.tensor([[[1, 2], [1, 2]], [[3, 4], [3, 4]]]))
+    assert torch.all(tf3.data == torch.tensor([[1, 2], [1, 2], [3, 4], [3, 4]]))
     assert tf3.columns == tf1.columns == tf2.columns

@@ -53,3 +53,7 @@ from torchlensmaker.torch_extensions import (
 from torchlensmaker.plot_magnification import plot_magnification
 
 from torchlensmaker.tlmviewer.tlmviewer import viewer
+
+## new 3D stuff
+
+from torchlensmaker.outline import *
