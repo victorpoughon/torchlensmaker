@@ -1,8 +1,6 @@
 import torch
 
-from torchlensmaker.surfaces import (
-    LocalSurface3D
-)
+from torchlensmaker.surfaces import LocalSurface3D
 
 from torchlensmaker.rot3d import euler_angles_to_matrix
 
@@ -20,9 +18,7 @@ class BaseTransform:
         "Apply the transform to vectors"
         raise NotImplementedError
 
-    def inverse_points(
-        self, surface: LocalSurface3D, points: Tensor
-    ) -> Tensor:
+    def inverse_points(self, surface: LocalSurface3D, points: Tensor) -> Tensor:
         "Apply the inverse transform to points"
         raise NotImplementedError
 
@@ -43,7 +39,9 @@ class SurfaceTransform(BaseTransform):
     where A is a surface anchor point determined by the surface shape
     """
 
-    def __init__(self, scale: float, anchor: str, rotations: list[float], position: list[float]):
+    def __init__(
+        self, scale: float, anchor: str, rotations: list[float], position: list[float]
+    ):
         self.anchor = anchor
 
         # scale matrix
@@ -66,9 +64,7 @@ class SurfaceTransform(BaseTransform):
         if self.anchor == "origin":
             return torch.zeros(3)
         elif self.anchor == "extent":
-            return torch.cat(
-                (surface.extent().unsqueeze(0), torch.zeros(2)), dim=0
-            )
+            return torch.cat((surface.extent().unsqueeze(0), torch.zeros(2)), dim=0)
         else:
             raise ValueError
 
@@ -80,7 +76,9 @@ class SurfaceTransform(BaseTransform):
         A = self.anchor_point(surface)
         return (S_inv @ R_inv @ (P - T).T).T + A
 
-    def inverse_rays(self, P: Tensor, V: Tensor, surface: LocalSurface3D) -> tuple[Tensor, Tensor]:
+    def inverse_rays(
+        self, P: Tensor, V: Tensor, surface: LocalSurface3D
+    ) -> tuple[Tensor, Tensor]:
         S_inv, R_inv, T = self.S_inv, self.R_inv, self.T
         A = self.anchor_point(surface)
 
@@ -94,3 +92,41 @@ class SurfaceTransform(BaseTransform):
         return hom(self.R @ self.S, self.T) @ hom(
             torch.eye(3), -self.anchor_point(surface)
         )
+
+
+def intersect(
+    surface: LocalSurface3D, P: Tensor, V: Tensor, transform: BaseTransform
+) -> tuple[Tensor, Tensor]:
+    """
+    Surface-rays collision detection
+
+    Find collision points and normal vectors for the intersection of rays P+tV with
+    a surface and a transform applied to that surface.
+
+    Args:
+        P: (N,3) tensor, rays origins
+        V: (N, 3) tensor, rays vectors
+        surface: surface to collide with
+        transform: transform applied to the surface
+
+    Returns:
+        points: collision points
+        normals: surface normals at the collision points
+    """
+
+    # Convert rays to surface local frame
+    Ps, Vs = transform.inverse_rays(P, V, surface)
+
+    # Collision detection in the surface local frame
+    t, local_normals, valid = surface.local_collide(Ps, Vs)
+
+    # Compute collision points and convert normals to global frame
+    points = P + t.unsqueeze(1).expand((-1, 3)) * V
+    normals = transform.direct_vectors(local_normals)
+
+    # remove non valid (non intersecting) points
+    # do this before computing global frame?
+    points = points[valid]
+    normals = normals[valid]
+
+    return points, normals
