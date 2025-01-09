@@ -7,13 +7,13 @@ from typing import Optional
 from dataclasses import dataclass, replace
 
 from torchlensmaker.raytracing import (
-    refraction,
-    reflection,
     ray_point_squared_distance,
     position_on_ray,
     rays_to_coefficients,
     rot2d,
 )
+
+from torchlensmaker.physics import reflection, refraction
 
 from torchlensmaker.torch_extensions import OpticalSequence
 
