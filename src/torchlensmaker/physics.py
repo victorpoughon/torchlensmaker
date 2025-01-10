@@ -76,7 +76,7 @@ def refraction(
 
     elif critical_angle == "drop":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
-        valid = (radicand >= 0.0).squeeze()
+        valid = (radicand >= 0.0).squeeze(1)
         R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
         R_perp = R_perp[valid, :]
 
