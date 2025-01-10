@@ -46,6 +46,10 @@ def refraction(
           refracted. The returned tensor doesn't necesarily have the same shape
           as the input tensors.
 
+        * 'reflect': Incident rays beyond the critical angle are reflected. This
+          is true physical behavior aka total internal reflection. The returned
+          tensor always has the same shape as the input tensors.
+
     Args:
         ray: unit vectors of the incident rays, shape (B, 2)
         normal: unit vectors normal to the surface, shape (B, 2)
@@ -79,6 +83,17 @@ def refraction(
         valid = (radicand >= 0.0).squeeze(1)
         R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
         R_perp = R_perp[valid, :]
+
+    elif critical_angle == "reflect":
+        radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
+        valid = (radicand >= 0.0).squeeze(1)
+        R_para = (
+            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
+        )
+        R = R_perp + R_para
+
+        R[~valid] = reflection(ray, normal)[~valid]
+        return torch.div(R, torch.norm(R, dim=1, keepdim=True))
 
     else:
         raise ValueError(
