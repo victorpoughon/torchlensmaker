@@ -58,46 +58,55 @@ def render_rays(rays: Tensor, length: float) -> list[object]:
 
 
 def render(
-    rays: Tensor,
-    points: Tensor,
-    normals: Tensor,
-    surfaces: list[tlm.surfaces.ImplicitSurface3D],
-    transforms: list[tlm.BaseTransform],
-    rays_length: float,
+    rays: Tensor | None = None,
+    points: Tensor | None = None,
+    normals: Tensor | None = None,
+    surfaces: list[tlm.surfaces.ImplicitSurface3D] | None = None,
+    transforms: list[tlm.BaseTransform] | None = None,
+    rays_length: float | None = None,
+    rays_color: str = "#ffa724",
 ) -> object:
     "Render tlm objects to json-able object"
 
     groups = []
 
-    groups.append(
-        {
-            "type": "surfaces",
-            "data": [
-                render_surface(s, t.matrix4(s)) for t, s in zip(surfaces, transforms)
-            ],
-        }
-    )
+    if surfaces is not None:
+        groups.append(
+            {
+                "type": "surfaces",
+                "data": [
+                    render_surface(s, t.matrix4(s))
+                    for s, t in zip(surfaces, transforms)
+                ],
+            }
+        )
 
-    groups.append(
-        {
-            "type": "rays",
-            "data": render_rays(rays, rays_length),
-        }
-    )
+    if rays is not None:
+        groups.append(
+            {
+                "type": "rays",
+                "data": render_rays(rays, rays_length),
+                "color": rays_color,
+            }
+        )
 
-    groups.append(
-        {
-            "type": "points",
-            "data": points.tolist(),
-            "color": "#ff0000",
-        }
-    )
+    if points is not None:
+        groups.append(
+            {
+                "type": "points",
+                "data": points.tolist(),
+                "color": "#ff0000",
+            }
+        )
 
-    groups.append(
-        {
-            "type": "arrows",
-            "data": [n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)],
-        }
-    )
+    if normals is not None:
+        groups.append(
+            {
+                "type": "arrows",
+                "data": [
+                    n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)
+                ],
+            }
+        )
 
     return groups
