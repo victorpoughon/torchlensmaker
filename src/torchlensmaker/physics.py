@@ -2,7 +2,7 @@ import torch
 from typing import Literal
 
 Tensor = torch.Tensor
-RefractionCriticalAngleMode = Literal["drop", "nan", "clamp"]
+RefractionCriticalAngleMode = Literal["drop", "nan", "clamp", "reflect"]
 
 
 def reflection(rays: Tensor, normals: Tensor) -> Tensor:
@@ -23,10 +23,10 @@ def reflection(rays: Tensor, normals: Tensor) -> Tensor:
 
 
 def refraction(
-    ray: Tensor,
-    normal: Tensor,
-    n1: float,
-    n2: float,
+    rays: Tensor,
+    normals: Tensor,
+    n1: float | Tensor,
+    n2: float | Tensor,
     critical_angle: RefractionCriticalAngleMode = "drop",
 ) -> Tensor:
     """
@@ -51,48 +51,59 @@ def refraction(
           tensor always has the same shape as the input tensors.
 
     Args:
-        ray: unit vectors of the incident rays, shape (B, 2)
-        normal: unit vectors normal to the surface, shape (B, 2)
-        n1: index of refraction of the incident medium (float)
-        n2: index of refraction of the refracted medium (float)
-        critical_angle: one of 'nan', 'clamp', 'drop' (default: 'nan')
+        rays: unit vectors of the incident rays, shape (B, 2/3)
+        normals: unit vectors normal to the surface, shape (B, 2/3)
+        n1: index of refraction of the incident medium, float or tensor of shape (N)
+        n2: index of refraction of the refracted medium float or tensor of shape (N)
+        critical_angle: one of 'nan', 'clamp', 'drop', 'reflect' (default: 'nan')
 
     Returns:
         unit vectors of the refracted rays, shape (C, 2)
     """
 
+    assert rays.dim() == 2 and rays.shape[1] in {2, 3}
+    assert normals.dim() == 2 and normals.shape[1] in {2, 3}
+    assert rays.shape[0] == normals.shape[0]
+
     # Compute dot product for the batch, aka cosine of the incident angle
-    cos_theta_i = torch.sum(ray * -normal, dim=1, keepdim=True)
+    cos_theta_i = torch.sum(rays * -normals, dim=1, keepdim=True)
 
-    # Compute R_perp and R_para, depending on critical angle options
-    R_perp = n1 / n2 * (ray + cos_theta_i * normal)
+    # Convert n1 and n2 into tensors
+    N = rays.shape[0]
+    n1 = torch.as_tensor(n1).expand((N,))
+    n2 = torch.as_tensor(n2).expand((N,))
 
+    # Compute R_perp
+    eta = n1 / n2
+    R_perp = eta.unsqueeze(1) * (rays + cos_theta_i * normals)
+
+    # Compute R_para, depending on critical angle option
     if critical_angle == "nan":
         R_para = (
-            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
+            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normals
         )
 
     elif critical_angle == "clamp":
         radicand = torch.clamp(
             1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0.0, max=None
         )
-        R_para = -torch.sqrt(radicand) * normal
+        R_para = -torch.sqrt(radicand) * normals
 
     elif critical_angle == "drop":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
         valid = (radicand >= 0.0).squeeze(1)
-        R_para = -torch.sqrt(radicand[valid, :]) * normal[valid, :]
+        R_para = -torch.sqrt(radicand[valid, :]) * normals[valid, :]
         R_perp = R_perp[valid, :]
 
     elif critical_angle == "reflect":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
         valid = (radicand >= 0.0).squeeze(1)
         R_para = (
-            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normal
+            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normals
         )
         R = R_perp + R_para
 
-        R[~valid] = reflection(ray, normal)[~valid]
+        R[~valid] = reflection(rays, normals)[~valid]
         return torch.div(R, torch.norm(R, dim=1, keepdim=True))
 
     else:
