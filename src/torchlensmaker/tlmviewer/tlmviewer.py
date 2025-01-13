@@ -109,4 +109,4 @@ def render(
             }
         )
 
-    return groups
+    return {"data": groups}
