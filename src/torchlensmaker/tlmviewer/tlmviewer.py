@@ -26,15 +26,18 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
-def show(data: object) -> None:
+def show(data: object, dump_json=False) -> None:
     div_id = random_id()
     div_template = get_div_template()
     script_template = get_script_template()
 
+    json_data = json.dumps(data, allow_nan=False)
+
+    if dump_json:
+        print(json_data)
+
     div = string.Template(div_template).substitute(div_id=div_id)
-    script = string.Template(script_template).substitute(
-        data=json.dumps(data, allow_nan=False), div_id=div_id
-    )
+    script = string.Template(script_template).substitute(data=json_data, div_id=div_id)
     display(HTML(div + script))  # type: ignore
 
 
@@ -51,10 +54,15 @@ def render_surface(surface: tlm.surfaces.ImplicitSurface3D, matrix4: Tensor) -> 
     return obj
 
 
-def render_rays(rays: Tensor, length: float) -> list[object]:
+def render_rays(rays: Tensor, length: float, color: str = "#ffa724") -> list[object]:
     rays_start = rays[:, :3]
     rays_end = rays_start + length * rays[:, 3:]
-    return torch.hstack((rays_start, rays_end)).tolist()
+    data = torch.hstack((rays_start, rays_end)).tolist()
+    return {
+        "type": "rays",
+        "data": data,
+        "color": color,
+    }
 
 
 def render(
@@ -82,13 +90,7 @@ def render(
         )
 
     if rays is not None:
-        groups.append(
-            {
-                "type": "rays",
-                "data": render_rays(rays, rays_length),
-                "color": rays_color,
-            }
-        )
+        groups.append(render_rays(rays, rays_length))
 
     if points is not None:
         groups.append(
