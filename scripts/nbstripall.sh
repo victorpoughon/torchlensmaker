@@ -2,5 +2,5 @@
 
 set -euo pipefail
 
-nbstripout examples/*.ipynb test_notebooks/*.ipynb
+nbstripout-fast examples/*.ipynb test_notebooks/*.ipynb
 
