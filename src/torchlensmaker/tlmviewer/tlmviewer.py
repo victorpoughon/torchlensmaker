@@ -26,14 +26,17 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
-def show(data: object, dump_json=False) -> None:
+def show(data: object, ndigits=None, dump=False) -> None:
     div_id = random_id()
     div_template = get_div_template()
     script_template = get_script_template()
 
     json_data = json.dumps(data, allow_nan=False)
 
-    if dump_json:
+    if ndigits is not None:
+        json_data = json.dumps(json.loads(json_data, parse_float=lambda x: round(float(x), ndigits)))
+
+    if dump:
         print(json_data)
 
     div = string.Template(div_template).substitute(div_id=div_id)
