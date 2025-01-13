@@ -30,6 +30,7 @@ docs = [
 test = [
     "nbmake~=1.5.4",
     "pytest~=8.3.3",
+    "nbstripout",
 ]
 
 [project.urls]
