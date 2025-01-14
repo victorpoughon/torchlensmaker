@@ -201,16 +201,24 @@ class Sphere(ImplicitSurface):
         self.K = torch.as_tensor(1.0 / r)
 
     def extent(self) -> Tensor:
-        r = self.outline.max_radius()
+        r2 = self.outline.max_radius()**2
         K = self.K
-        return torch.div(K * r, 1 + torch.sqrt(1 - r * K**2))
+        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2))
 
     def samples2D(self, N: int) -> Tensor:
-        # TODO sample by angle parameterization for rendering precision
-        K = self.K
-        r = torch.linspace(0, self.outline.max_radius(), N)
-        x = (K * r**2) / (1 + torch.sqrt(1 - r**2 * K**2))
-        return torch.stack((x, r), dim=-1)
+        # Use the angular parameterization of the circle so that samples are
+        # smoother, especially for high curvature circles.
+        R = 1/self.K
+        theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+        theta = torch.linspace(0., theta_max, N)
+
+        if R > 0:
+            theta = theta + torch.pi
+
+        X = torch.abs(R) * torch.cos(theta) + R
+        Y = torch.abs(R) * torch.sin(theta)
+
+        return torch.stack((X, Y), dim=-1)
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]

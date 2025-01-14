@@ -14,6 +14,7 @@
 
 ## New example notebooks ideas
 
+* rainbow: 2D and 3D
 * abbe number
 * airy disk
 * Cooke triplet
@@ -53,6 +54,7 @@
 
 ## Various stuff
 
+* optimize for index of refraction of a material
 * handle refractive index in optical data
 * lenses only given their inner refractive index
 * refractive surface sets the next index of refraction and get the previous from input
