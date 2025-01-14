@@ -63,7 +63,7 @@ class Plane(LocalSurface):
         return t, local_normals, valid
 
     def extent(self) -> Tensor:
-        return torch.zeros(1)
+        return torch.as_tensor(0.)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         return torch.logical_and(
