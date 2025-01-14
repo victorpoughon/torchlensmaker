@@ -73,7 +73,7 @@ def render(
     points: Tensor | None = None,
     normals: Tensor | None = None,
     surfaces: list[tlm.surfaces.ImplicitSurface3D] | None = None,
-    transforms: list[tlm.BaseTransform] | None = None,
+    transforms: list[tlm.Surface3DTransform] | None = None,
     rays_length: float | None = None,
     rays_color: str = "#ffa724",
 ) -> object:

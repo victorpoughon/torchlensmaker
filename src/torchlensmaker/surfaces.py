@@ -10,9 +10,9 @@ from torchlensmaker.outline import (
 Tensor = torch.Tensor
 
 
-class LocalSurface3D:
+class LocalSurface:
     """
-    Defines a 3D surface in a local reference frame
+    Defines a surface in a local reference frame
     """
 
     def __init__(self, outline: Outline):
@@ -41,7 +41,7 @@ class LocalSurface3D:
         raise NotImplementedError
 
 
-class Plane(LocalSurface3D):
+class Plane(LocalSurface):
     "X=0 plane"
 
     def __init__(self, outline: Outline):
@@ -79,7 +79,7 @@ class CircularPlane(Plane):
         super().__init__(CircularOutline(diameter))
 
 
-class ImplicitSurface3D(LocalSurface3D):
+class ImplicitSurface3D(LocalSurface):
     """
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
