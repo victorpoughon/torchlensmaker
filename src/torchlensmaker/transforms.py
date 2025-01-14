@@ -93,7 +93,7 @@ class Surface2DTransform:
 
         # scale matrix
         self.S = torch.tensor([[scale, 0.0], [0.0, 1.0]])
-        self.S_inv = torch.tensor([[1.0 / scale, 0.0, 0.0], [0.0, 1.0, 0.0]])
+        self.S_inv = torch.tensor([[1.0 / scale, 0.0], [0.0, 1.0]])
 
         # rotation matrix
         theta = torch.deg2rad(torch.as_tensor(rotation))
@@ -146,7 +146,7 @@ class Surface2DTransform:
 
 
 def intersect(
-    surface: LocalSurface, P: Tensor, V: Tensor, transform: Surface3DTransform
+    surface: LocalSurface, P: Tensor, V: Tensor, transform: Surface3DTransform | Surface2DTransform
 ) -> tuple[Tensor, Tensor]:
     """
     Surface-rays collision detection
@@ -155,8 +155,8 @@ def intersect(
     a surface and a transform applied to that surface.
 
     Args:
-        P: (N,3) tensor, rays origins
-        V: (N, 3) tensor, rays vectors
+        P: (N, 2|3) tensor, rays origins
+        V: (N, 2|3) tensor, rays vectors
         surface: surface to collide with
         transform: transform applied to the surface
 
@@ -165,6 +165,10 @@ def intersect(
         normals: surface normals at the collision points
     """
 
+    assert P.shape[0] == V.shape[0]
+    assert P.shape[1] == P.shape[1]
+    dim = P.shape[1]
+
     # Convert rays to surface local frame
     Ps, Vs = transform.inverse_rays(P, V, surface)
 
@@ -172,7 +176,7 @@ def intersect(
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 
     # Compute collision points and convert normals to global frame
-    points = P + t.unsqueeze(1).expand((-1, 3)) * V
+    points = P + t.unsqueeze(1).expand((-1, dim)) * V
     normals = transform.direct_vectors(local_normals)
 
     # remove non valid (non intersecting) points

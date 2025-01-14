@@ -20,10 +20,14 @@ class SquareOutline(Outline):
         self.side_length = side_length
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
-        return (
-            torch.maximum(torch.abs(points[:, 1]), torch.abs(points[:, 2]))
-            < self.side_length / 2
-        )
+        dim = points.shape[1]
+        if dim == 2:
+            return torch.le(torch.abs(points[:, 1]), self.max_radius())
+        else:
+            return (
+                torch.maximum(torch.abs(points[:, 1]), torch.abs(points[:, 2]))
+                < self.side_length / 2
+            )
 
     def max_radius(self) -> float:
         return math.sqrt(2) * self.side_length / 2
@@ -36,7 +40,11 @@ class CircularOutline(Outline):
         self.diameter = diameter
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
-        return torch.le(torch.hypot(points[:, 1], points[:, 2]), self.diameter / 2)
+        dim = points.shape[1]
+        if dim == 2:
+            return torch.le(torch.abs(points[:, 1]), self.diameter / 2)
+        else:
+            return torch.le(torch.hypot(points[:, 1], points[:, 2]), self.diameter / 2)
 
     def max_radius(self) -> float:
         return self.diameter / 2

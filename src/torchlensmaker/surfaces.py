@@ -52,9 +52,13 @@ class Plane(LocalSurface):
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        dim = P.shape[1]
         t = -P[:, 0] / V[:, 0]
-        local_points = P + t.unsqueeze(1).expand((-1, 3)) * V
-        local_normals = torch.tile(Tensor([-1.0, 0.0, 0.0]), (P.shape[0], 1))
+        local_points = P + t.unsqueeze(1).expand_as(V) * V
+        normal = (
+            torch.Tensor([-1.0, 0.0]) if dim == 2 else torch.Tensor([-1.0, 0.0, 0.0])
+        )
+        local_normals = torch.tile(normal, (P.shape[0], 1))
         valid = self.outline.contains(local_points)
         return t, local_normals, valid
 
@@ -79,7 +83,7 @@ class CircularPlane(Plane):
         super().__init__(CircularOutline(diameter))
 
 
-class ImplicitSurface3D(LocalSurface):
+class ImplicitSurface(LocalSurface):
     """
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
@@ -88,19 +92,28 @@ class ImplicitSurface3D(LocalSurface):
         super().__init__(outline)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+        dim = points.shape[1]
+
+        F = self.F if dim == 3 else self.f
+
         return torch.logical_and(
-            self.outline.contains(points), torch.abs(self.F(points)) < tol
+            self.outline.contains(points), torch.abs(F(points)) < tol
         )
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
+        dim = P.shape[1]
         # Initial guess is the intersection of rays with the X=0 plane
         init_t = -P[:, 0] / V[:, 0]
 
-        t = intersect_newton_3D(self, P, V, init_t)
+        t = intersect_newton(self, P, V, init_t)
 
-        local_points = P + t.unsqueeze(1).expand((-1, 3)) * V
-        local_normals = self.F_grad(local_points)
+        local_points = P + t.unsqueeze(1).expand_as(V) * V
+
+        if dim == 2:
+            local_normals = self.f_grad(local_points)
+        else:
+            local_normals = self.F_grad(local_points)
 
         # If there is no intersection, newton's method won't converge
         # and points will not be on the surface
@@ -109,6 +122,12 @@ class ImplicitSurface3D(LocalSurface):
         valid = self.contains(local_points, tol=1e-3)
 
         return t, local_normals, valid
+
+    def f(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
 
     def F(self, points: Tensor) -> Tensor:
         """
@@ -135,7 +154,7 @@ class ImplicitSurface3D(LocalSurface):
         raise NotImplementedError
 
 
-class Parabola(ImplicitSurface3D):
+class Parabola(ImplicitSurface):
     def __init__(self, diameter: float, a: float):
         super().__init__(CircularOutline(diameter))
         self.a = a
@@ -153,10 +172,12 @@ class Parabola(ImplicitSurface3D):
         r = self.outline.max_radius()
         return torch.as_tensor(self.a * r**2)
 
-    def f(self, x: Tensor, r: Tensor) -> Tensor:
-        return torch.mul(self.a, torch.pow(r, 2) - x)
+    def f(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        return torch.mul(self.a, torch.pow(r, 2)) - x
 
-    def f_grad(self, x: Tensor, r: Tensor) -> Tensor:
+    def f_grad(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
         return torch.stack((-torch.ones_like(x), 2 * self.a * r), dim=-1)
 
     def F(self, points: Tensor) -> Tensor:
@@ -170,7 +191,7 @@ class Parabola(ImplicitSurface3D):
         )
 
 
-class Sphere(ImplicitSurface3D):
+class Sphere(ImplicitSurface):
     def __init__(self, diameter: float, r: float):
         super().__init__(CircularOutline(diameter))
         assert (
@@ -185,10 +206,24 @@ class Sphere(ImplicitSurface3D):
         return torch.div(K * r, 1 + torch.sqrt(1 - r * K**2))
 
     def samples2D(self, N: int) -> Tensor:
+        # TODO sample by angle parameterization for rendering precision
         K = self.K
         r = torch.linspace(0, self.outline.max_radius(), N)
         x = (K * r**2) / (1 + torch.sqrt(1 - r**2 * K**2))
         return torch.stack((x, r), dim=-1)
+
+    def f(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K = self.K
+        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2)) - x
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K = self.K
+        denom = torch.sqrt(1 - r2 * K**2)
+        return torch.stack((-torch.ones_like(x), (K * r) / denom), dim=-1)
 
     def F(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
@@ -206,13 +241,18 @@ class Sphere(ImplicitSurface3D):
         )
 
 
-def newton_delta(surface: ImplicitSurface3D, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
+def newton_delta(surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
     "Compute the delta for one step of Newton's method"
 
+    dim = P.shape[1]
     points = P + t.unsqueeze(1).expand_as(V) * V
 
-    F = surface.F(points)
-    F_grad = surface.F_grad(points)
+    if dim == 2:
+        F = surface.f(points)
+        F_grad = surface.f_grad(points)
+    else:
+        F = surface.F(points)
+        F_grad = surface.F_grad(points)
 
     # Denominator will be zero if F_grad and V are orthogonal
     denom = torch.sum(F_grad * V, dim=1)
@@ -220,8 +260,8 @@ def newton_delta(surface: ImplicitSurface3D, P: Tensor, V: Tensor, t: Tensor) ->
     return F / denom
 
 
-def intersect_newton_3D(
-    surface: ImplicitSurface3D, P: Tensor, V: Tensor, init_t: Tensor
+def intersect_newton(
+    surface: ImplicitSurface, P: Tensor, V: Tensor, init_t: Tensor
 ) -> Tensor:
     """
     Collision detection of parametric rays with implicit surface using Newton's
@@ -231,8 +271,8 @@ def intersect_newton_3D(
     direction vectors.
 
     Args:
-        P: tensor (N, 3), rays origin points
-        V: tensor (N, 3), rays unit vectors
+        P: tensor (N, 2|3), rays origin points
+        V: tensor (N, 2|3), rays unit vectors
         init_t: tensor (N,), initial value for t
 
     Returns:
@@ -241,8 +281,9 @@ def intersect_newton_3D(
 
     assert isinstance(P, Tensor) and P.dim() == 2
     assert isinstance(V, Tensor) and V.dim() == 2
-    assert P.shape[0] == V.shape[0]
-    assert P.shape[1] == V.shape[1] == 3
+    assert P.shape == V.shape
+    dim = P.shape[1]
+    assert dim == 2 or dim == 3
 
     # Initialize solutions t
     t = init_t

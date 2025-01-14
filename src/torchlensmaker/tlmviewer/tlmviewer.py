@@ -44,7 +44,7 @@ def show(data: object, ndigits=None, dump=False) -> None:
     display(HTML(div + script))  # type: ignore
 
 
-def render_surface(surface: tlm.surfaces.ImplicitSurface3D, matrix4: Tensor) -> object:
+def render_surface(surface: tlm.surfaces.ImplicitSurface, matrix4: Tensor) -> object:
     N = 100
     samples = surface.samples2D(N)
 
@@ -72,7 +72,7 @@ def render(
     rays: Tensor | None = None,
     points: Tensor | None = None,
     normals: Tensor | None = None,
-    surfaces: list[tlm.surfaces.ImplicitSurface3D] | None = None,
+    surfaces: list[tlm.surfaces.ImplicitSurface] | None = None,
     transforms: list[tlm.Surface3DTransform] | None = None,
     rays_length: float | None = None,
     rays_color: str = "#ffa724",
