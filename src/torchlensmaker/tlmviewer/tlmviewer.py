@@ -34,7 +34,9 @@ def show(data: object, ndigits=None, dump=False) -> None:
     json_data = json.dumps(data, allow_nan=False)
 
     if ndigits is not None:
-        json_data = json.dumps(json.loads(json_data, parse_float=lambda x: round(float(x), ndigits)))
+        json_data = json.dumps(
+            json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+        )
 
     if dump:
         print(json_data)
@@ -44,23 +46,34 @@ def show(data: object, ndigits=None, dump=False) -> None:
     display(HTML(div + script))  # type: ignore
 
 
-def render_surface(surface: tlm.surfaces.ImplicitSurface, matrix4: Tensor) -> object:
-    N = 100
+def render_surface(
+    surface: tlm.surfaces.ImplicitSurface, matrix: Tensor, dim: int, N: int = 100
+) -> object:
+    """
+    Render a surface to a json serializable object in tlmviewer format
+    """
+
     samples = surface.samples2D(N)
 
-    obj = {"matrix": matrix4.tolist(), "samples": samples.tolist()}
+    if dim == 2:
+        front = torch.flip(
+            torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
+        )
+
+        samples = torch.row_stack((front, samples))
+        obj = {"matrix3": matrix.tolist(), "samples": samples.tolist()}
+    else:
+        obj = {"matrix": matrix.tolist(), "samples": samples.tolist()}
 
     # outline
-    if isinstance(surface.outline, tlm.SquareOutline):
+    if dim == 2 and isinstance(surface.outline, tlm.SquareOutline):
         obj["side_length"] = surface.outline.side_length
 
     return obj
 
 
-def render_rays(rays: Tensor, length: float, color: str = "#ffa724") -> list[object]:
-    rays_start = rays[:, :3]
-    rays_end = rays_start + length * rays[:, 3:]
-    data = torch.hstack((rays_start, rays_end)).tolist()
+def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> list[object]:
+    data = torch.hstack((start, end)).tolist()
     return {
         "type": "rays",
         "data": data,
@@ -69,12 +82,12 @@ def render_rays(rays: Tensor, length: float, color: str = "#ffa724") -> list[obj
 
 
 def render(
-    rays: Tensor | None = None,
+    rays_start: Tensor | None = None,
+    rays_end: Tensor | None = None,
     points: Tensor | None = None,
     normals: Tensor | None = None,
     surfaces: list[tlm.surfaces.ImplicitSurface] | None = None,
     transforms: list[tlm.Surface3DTransform] | None = None,
-    rays_length: float | None = None,
     rays_color: str = "#ffa724",
 ) -> object:
     "Render tlm objects to json-able object"
@@ -86,14 +99,14 @@ def render(
             {
                 "type": "surfaces",
                 "data": [
-                    render_surface(s, t.matrix4(s))
+                    render_surface(s, t.matrix4(s), dim=3)
                     for s, t in zip(surfaces, transforms)
                 ],
             }
         )
 
-    if rays is not None:
-        groups.append(render_rays(rays, rays_length))
+    if rays_start is not None and rays_end is not None:
+        groups.append(render_rays(rays_start, rays_end, rays_color))
 
     if points is not None:
         groups.append(
