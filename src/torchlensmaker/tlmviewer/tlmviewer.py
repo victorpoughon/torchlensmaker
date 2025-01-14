@@ -66,7 +66,7 @@ def render_surface(
         obj = {"matrix": matrix.tolist(), "samples": samples.tolist()}
 
     # outline
-    if dim == 2 and isinstance(surface.outline, tlm.SquareOutline):
+    if dim == 3 and isinstance(surface.outline, tlm.SquareOutline):
         obj["side_length"] = surface.outline.side_length
 
     return obj
