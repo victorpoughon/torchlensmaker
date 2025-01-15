@@ -4,7 +4,7 @@ import uuid
 import os.path
 import json
 import torch
-
+import typing
 Tensor = torch.Tensor
 
 import torchlensmaker as tlm
@@ -26,7 +26,7 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
-def show(data: object, ndigits=None, dump=False) -> None:
+def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     div_id = random_id()
     div_template = get_div_template()
     script_template = get_script_template()
@@ -58,7 +58,7 @@ def render_surface(
 
     samples = surface.samples2D(N)
 
-    if dim == 2:
+    if dim == 2 and isinstance(transform, tlm.Surface2DTransform):
         front = torch.flip(
             torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
         )
@@ -68,11 +68,13 @@ def render_surface(
             "matrix": transform.matrix3(surface).tolist(),
             "samples": samples.tolist(),
         }
-    else:
+    elif dim == 3 and isinstance(transform, tlm.Surface3DTransform):
         obj = {
             "matrix": transform.matrix4(surface).tolist(),
             "samples": samples.tolist(),
         }
+    else:
+        raise RuntimeError("inconsistent arguments to render_surface")
 
     # convert the outline to clip planes
     if dim == 3:
@@ -83,7 +85,7 @@ def render_surface(
     return obj
 
 
-def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> list[object]:
+def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> dict[str, typing.Any]:
     data = torch.hstack((start, end)).tolist()
     return {
         "type": "rays",
@@ -105,7 +107,8 @@ def render(
 
     groups = []
 
-    if surfaces is not None:
+    if surfaces is not None and transforms is not None:
+        assert surfaces is not None
         groups.append(
             {
                 "type": "surfaces",
@@ -127,7 +130,7 @@ def render(
             }
         )
 
-    if normals is not None:
+    if normals is not None and points is not None:
         groups.append(
             {
                 "type": "arrows",
