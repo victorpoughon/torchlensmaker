@@ -7,8 +7,7 @@ from torchlensmaker.transforms2D import (
     Transform2DBase,
     Translate2D,
     Linear2D,
-    Compose2D,
-    ComposeList2D,
+    ComposeTransform2D,
     SurfaceExtent2D,
     rotation_matrix_2D,
 )
@@ -68,29 +67,17 @@ def make_transforms(
     A_3 = SurfaceExtent2D(s3)
     A_4 = SurfaceExtent2D(s4)
 
-    # Compose2D
-    C_1 = Compose2D(T_id, T_1)
-    C_2 = Compose2D(T_id, L_id)
-    C_3 = Compose2D(T_1, L_scale)
-    C_4 = Compose2D(L_rot, L_scale)
-    C_5 = Compose2D(C_4, T_1)
-    C_6 = Compose2D(C_5, C_5)
-    C_7 = Compose2D(C_4, C_2)
-    C_8 = Compose2D(A_1, A_2)
-    C_9 = Compose2D(A_1, C_6)
-    C_10 = Compose2D(C_9, C_4)
-
-    # ComposeList2D
-    D_1 = ComposeList2D([T_id, T_1])
-    D_2 = ComposeList2D([T_id, L_id])
-    D_3 = ComposeList2D([T_1, L_scale])
-    D_4 = ComposeList2D([L_rot, L_scale])
-    D_5 = ComposeList2D([D_4, T_1])
-    D_6 = ComposeList2D([D_5, D_5, D_2, A_3])
-    D_7 = ComposeList2D([D_4, D_2])
-    D_8 = ComposeList2D([A_1, A_2, C_2, C_5])
-    D_9 = ComposeList2D([A_1, D_6])
-    D_10 = ComposeList2D([D_9, D_4])
+    # ComposeTransform2D
+    D_1 = ComposeTransform2D([T_id, T_1])
+    D_2 = ComposeTransform2D([T_id, L_id])
+    D_3 = ComposeTransform2D([T_1, L_scale])
+    D_4 = ComposeTransform2D([L_rot, L_scale])
+    D_5 = ComposeTransform2D([D_4, T_1])
+    D_6 = ComposeTransform2D([D_5, D_5, D_2, A_3])
+    D_7 = ComposeTransform2D([D_4, D_2, D_2, D_5, D_5])
+    D_8 = ComposeTransform2D([A_1, A_2, D_2, D_5])
+    D_9 = ComposeTransform2D([A_1, D_6])
+    D_10 = ComposeTransform2D([D_9, D_4])
 
     return (
         dtype,
@@ -105,16 +92,6 @@ def make_transforms(
             A_2,
             A_3,
             A_4,
-            C_1,
-            C_2,
-            C_3,
-            C_4,
-            C_5,
-            C_6,
-            C_7,
-            C_8,
-            C_9,
-            C_10,
             D_1,
             D_2,
             D_3,

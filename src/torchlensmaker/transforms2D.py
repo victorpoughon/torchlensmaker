@@ -129,30 +129,7 @@ class SurfaceExtent2D(Transform2DBase):
         )
 
 
-class Compose2D(Transform2DBase):
-    "Compose two 2D transforms"
-
-    def __init__(self, T1: Transform2DBase, T2: Transform2DBase):
-        self.T1 = T1
-        self.T2 = T2
-
-    def direct_points(self, points: Tensor) -> Tensor:
-        return self.T2.direct_points(self.T1.direct_points(points))
-
-    def direct_vectors(self, vectors: Tensor) -> Tensor:
-        return self.T2.direct_vectors(self.T1.direct_vectors(vectors))
-
-    def inverse_points(self, points: Tensor) -> Tensor:
-        return self.T1.inverse_points(self.T2.inverse_points(points))
-
-    def inverse_vectors(self, vectors: Tensor) -> Tensor:
-        return self.T1.inverse_vectors(self.T2.inverse_vectors(vectors))
-
-    def matrix3(self) -> Tensor:
-        return self.T2.matrix3() @ self.T1.matrix3()
-
-
-class ComposeList2D(Transform2DBase):
+class ComposeTransform2D(Transform2DBase):
     "Compose a list of 2D transforms"
 
     def __init__(self, transforms: list[Transform2DBase]):
