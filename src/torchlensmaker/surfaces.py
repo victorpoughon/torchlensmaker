@@ -6,6 +6,7 @@ from torchlensmaker.outline import (
     CircularOutline,
 )
 
+
 # shorter for type annotations
 Tensor = torch.Tensor
 
@@ -307,3 +308,5 @@ def intersect_newton(
     t = t - newton_delta(surface, P, V, t)
 
     return t
+
+
