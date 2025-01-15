@@ -10,6 +10,7 @@ from torchlensmaker.transforms2D import (
     Compose2D,
     ComposeList2D,
     SurfaceExtent2D,
+    rotation_matrix_2D,
 )
 
 from torchlensmaker.surfaces import (
@@ -209,5 +210,58 @@ def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> 
         check_matrix3(t, dtype)
 
 
-# TODO implement test that invalid initializations raise error, like Linear2D(torch.zeros(), ...)
-# TODO check that we can parameterize and compute grads
+def test_grad_translate2D(dtype_fixture: torch.dtype) -> None:
+    dtype = dtype_fixture
+
+    transform = Translate2D(torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True))
+
+    loss = transform.matrix3().sum()
+    loss.backward()  # type: ignore[no-untyped-call]
+    grad = transform.T.grad
+
+    assert grad is not None
+
+    # known grad for a translation
+    assert torch.allclose(grad, torch.ones(2, dtype=dtype))
+
+    assert torch.all(torch.isfinite(grad))
+    assert grad.dtype == dtype
+
+
+def test_grad_scale2D(dtype_fixture: torch.dtype) -> None:
+    dtype = dtype_fixture
+
+    scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
+    transform = Linear2D(
+        torch.eye(2, dtype=dtype) * scale, torch.eye(2, dtype=dtype) * 1.0 / scale
+    )
+
+    loss = transform.matrix3().sum()
+    loss.backward()  # type: ignore[no-untyped-call]
+    grad = scale.grad
+
+    assert grad is not None
+
+    # known grad for a scale
+    assert torch.allclose(grad, torch.tensor([2.0], dtype=dtype))
+
+    assert torch.all(torch.isfinite(grad))
+    assert grad.dtype == dtype
+
+
+def test_grad_rot2D(dtype_fixture: torch.dtype) -> None:
+    dtype = dtype_fixture
+
+    theta = torch.tensor([0.1], dtype=dtype, requires_grad=True)
+    transform = Linear2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
+
+    loss = transform.matrix3().sum()
+    loss.backward()  # type: ignore[no-untyped-call]
+    grad = theta.grad
+
+    assert grad is not None
+    assert torch.all(torch.isfinite(grad))
+    assert grad.dtype == dtype
+
+
+# TODO implement test that invalid initializations raises error, like Linear2D(torch.zeros(), ...)

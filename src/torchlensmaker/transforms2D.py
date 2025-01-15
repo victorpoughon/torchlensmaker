@@ -28,6 +28,7 @@ class Transform2DBase:
         raise NotImplementedError
 
     def matrix3(self) -> Tensor:
+        "Homogenous 3x3 transform matrix"
         raise NotImplementedError
 
 
@@ -183,6 +184,23 @@ class ComposeList2D(Transform2DBase):
         )
 
 
+def rotation_matrix_2D(
+    theta: float | Tensor, dtype: torch.dtype | None = None
+) -> Tensor:
+    if dtype is None:
+        dtype = theta.dtype if isinstance(theta, Tensor) else torch.float64
+    elif isinstance(theta, Tensor):
+        assert dtype == theta.dtype
+
+    theta = torch.as_tensor(theta, dtype=dtype)
+    return torch.vstack(
+        (
+            torch.cat((torch.cos(theta), -torch.sin(theta))),
+            torch.cat((torch.sin(theta), torch.cos(theta))),
+        )
+    )
+
+
 class Surface2DTransform:
     """
     2D Transform of the form X' = RS(X - A) + T
@@ -200,7 +218,7 @@ class Surface2DTransform:
 
         # rotation matrix
         theta = torch.deg2rad(torch.as_tensor(rotation))
-        self.R = torch.tensor(
+        self.R = torch.tensor(  # TODO use rotation_matrix_2D
             [
                 [torch.cos(theta), -torch.sin(theta)],
                 [torch.sin(theta), torch.cos(theta)],
