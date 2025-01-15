@@ -1,4 +1,5 @@
 import pytest
+import typing
 
 import torch
 
@@ -19,7 +20,16 @@ from torchlensmaker.surfaces import (
 )
 
 
-def make_transforms(dtype: torch.dtype) -> list[Transform2DBase]:
+@pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
+def dtype_fixture(request: pytest.FixtureRequest) -> typing.Any:
+    return request.param
+
+
+@pytest.fixture
+def make_transforms(
+    dtype_fixture: torch.dtype,
+) -> tuple[torch.dtype, list[Transform2DBase]]:
+    dtype = dtype_fixture
     # Translate2D
     T_id = Translate2D(torch.tensor([0.0, 0.0], dtype=dtype))
     T_1 = Translate2D(torch.tensor([1.0, 1.0], dtype=dtype))
@@ -81,38 +91,41 @@ def make_transforms(dtype: torch.dtype) -> list[Transform2DBase]:
     D_9 = ComposeList2D([A_1, D_6])
     D_10 = ComposeList2D([D_9, D_4])
 
-    return [
-        T_id,
-        T_1,
-        T_rand,
-        L_id,
-        L_scale,
-        L_rot,
-        A_1,
-        A_2,
-        A_3,
-        A_4,
-        C_1,
-        C_2,
-        C_3,
-        C_4,
-        C_5,
-        C_6,
-        C_7,
-        C_8,
-        C_9,
-        C_10,
-        D_1,
-        D_2,
-        D_3,
-        D_4,
-        D_5,
-        D_6,
-        D_7,
-        D_8,
-        D_9,
-        D_10,
-    ]
+    return (
+        dtype,
+        [
+            T_id,
+            T_1,
+            T_rand,
+            L_id,
+            L_scale,
+            L_rot,
+            A_1,
+            A_2,
+            A_3,
+            A_4,
+            C_1,
+            C_2,
+            C_3,
+            C_4,
+            C_5,
+            C_6,
+            C_7,
+            C_8,
+            C_9,
+            C_10,
+            D_1,
+            D_2,
+            D_3,
+            D_4,
+            D_5,
+            D_6,
+            D_7,
+            D_8,
+            D_9,
+            D_10,
+        ],
+    )
 
 
 def check_roundtrip(t: Transform2DBase, dtype: torch.dtype) -> None:
@@ -146,40 +159,20 @@ def check_preserve_dtype(t: Transform2DBase, dtype: torch.dtype) -> None:
     assert t.matrix3().dtype == dtype
 
 
-@pytest.fixture
-def transforms_float32() -> list[Transform2DBase]:
-    return make_transforms(torch.float32)
+def test_roundtrip(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
+    dtype, transforms = make_transforms
+    for t in transforms:
+        check_roundtrip(t, dtype)
 
 
-@pytest.fixture
-def transforms_float64() -> list[Transform2DBase]:
-    return make_transforms(torch.float64)
+def test_preserve_dtype(
+    make_transforms: tuple[torch.dtype, list[Transform2DBase]]
+) -> None:
+    dtype, transforms = make_transforms
+    for t in transforms:
+        check_preserve_dtype(t, dtype)
 
 
-def test_roundtrip_float32(transforms_float32: list[Transform2DBase]) -> None:
-    for t in transforms_float32:
-        check_roundtrip(t, torch.float32)
-
-
-def test_roundtrip_float64(transforms_float64: list[Transform2DBase]) -> None:
-    for t in transforms_float64:
-        check_roundtrip(t, torch.float64)
-
-
-def test_preserve_dtype_float32(transforms_float32: list[Transform2DBase]) -> None:
-    for t in transforms_float32:
-        check_preserve_dtype(t, torch.float32)
-
-
-def test_preserve_dtype_float64(transforms_float64: list[Transform2DBase]) -> None:
-    for t in transforms_float64:
-        check_preserve_dtype(t, torch.float64)
-
-
-def test_invalid() -> None:
-    # TODO check that Linear(00) raise an error?
-    ...
-
-
+# TODO implement test that invalid initializations raise error, like Linear2D(torch.zeros(), ...)
 # TODO test matrix3 product compared with manual transform
 # TODO check that we can parameterize and compute grads
