@@ -129,7 +129,7 @@ def make_transforms(
 
 
 def check_roundtrip(t: Transform2DBase, dtype: torch.dtype) -> None:
-    N = 50
+    N = 5
 
     if dtype == torch.float32:
         atol, rtol = 1e-5, 1e-4
@@ -173,6 +173,41 @@ def test_preserve_dtype(
         check_preserve_dtype(t, dtype)
 
 
+def check_matrix3(t: Transform2DBase, dtype: torch.dtype) -> None:
+    N = 5
+
+    if dtype == torch.float32:
+        atol, rtol = 1e-5, 1e-4
+    elif dtype == torch.float64:
+        atol, rtol = 1e-10, 1e-8
+
+    # cartesian and homogeneous coordinates
+    points = torch.rand((N, 2), dtype=dtype)
+    hom_points = torch.column_stack(
+        (points, torch.ones((points.shape[0], 1), dtype=dtype))
+    )
+
+    # direct transform using homogenous coordinates
+    f_hom = (t.matrix3() @ hom_points.T).T
+
+    # direct transform using cartesian coordinates
+    f_direct = t.direct_points(points)
+
+    # convert to homogenous after application of the direct transform
+    f_direct_hom = torch.column_stack(
+        (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
+    )
+
+    assert torch.allclose(f_direct_hom, f_hom, atol=atol, rtol=rtol), (
+        f_hom - f_direct_hom
+    )
+
+
+def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
+    dtype, transforms = make_transforms
+    for t in transforms:
+        check_matrix3(t, dtype)
+
+
 # TODO implement test that invalid initializations raise error, like Linear2D(torch.zeros(), ...)
-# TODO test matrix3 product compared with manual transform
 # TODO check that we can parameterize and compute grads

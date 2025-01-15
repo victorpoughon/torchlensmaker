@@ -120,7 +120,7 @@ class SurfaceExtent2D(Transform2DBase):
                 torch.column_stack(
                     (
                         torch.eye(2, dtype=self.surface.dtype),
-                        self._extent().unsqueeze(0).T,
+                        -self._extent().unsqueeze(0).T,
                     )
                 ),
                 torch.tensor([0, 0, 1], dtype=self.surface.dtype),
