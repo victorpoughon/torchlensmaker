@@ -26,6 +26,16 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
+def pprint(scene: object, ndigits: int | None = None):
+    from pprint import pprint
+    
+    if ndigits is not None:
+        json_data = json.dumps(scene, allow_nan=False)
+        scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+    
+    pprint(scene)
+
+
 def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     div_id = random_id()
     div_template = get_div_template()

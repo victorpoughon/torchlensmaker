@@ -16,6 +16,8 @@ class Module(nn.Module):
         super().__setattr__("_shapes", {})
 
     def __getattr__(self, name: str):
+        # if you get an error here, check that you called super().__init__
+        # in your custom tlm.Module
         if name in self.__dict__["_shapes"]:
             return self.__dict__["_shapes"][name]
         else:
