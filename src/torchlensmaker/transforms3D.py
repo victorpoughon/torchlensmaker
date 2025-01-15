@@ -12,8 +12,10 @@ def homogeneous_transform_matrix4(A: Tensor, B: Tensor) -> Tensor:
     rows = torch.cat((A, B.unsqueeze(0).T), dim=1)
     return torch.cat((rows, torch.tensor([[0.0, 0.0, 0.0, 1.0]])), dim=0)
 
+class Transform3DBase:
+    pass
 
-class Surface3DTransform:
+class Surface3DTransform(Transform3DBase):
     """
     3D transform of the form X' = RS(X - A) + T
     where A is a surface anchor point determined by the surface shape

@@ -36,7 +36,8 @@ def intersect(
     dim = P.shape[1]
 
     # Convert rays to surface local frame
-    Ps, Vs = transform.inverse_rays(P, V, surface)
+    Ps = transform.inverse_points(P)
+    Vs = transform.inverse_vectors(V)
 
     # Collision detection in the surface local frame
     t, local_normals, valid = surface.local_collide(Ps, Vs)

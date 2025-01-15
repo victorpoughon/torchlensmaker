@@ -68,17 +68,17 @@ def render_surface(
 
     samples = surface.samples2D(N)
 
-    if dim == 2 and isinstance(transform, tlm.Surface2DTransform):
+    if dim == 2 and isinstance(transform, tlm.Transform2DBase):
         front = torch.flip(
             torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
         )
 
         samples = torch.row_stack((front, samples))
         obj = {
-            "matrix": transform.matrix3(surface).tolist(),
+            "matrix": transform.matrix3().tolist(),
             "samples": samples.tolist(),
         }
-    elif dim == 3 and isinstance(transform, tlm.Surface3DTransform):
+    elif dim == 3 and isinstance(transform, tlm.Transform3DBase):
         obj = {
             "matrix": transform.matrix4(surface).tolist(),
             "samples": samples.tolist(),

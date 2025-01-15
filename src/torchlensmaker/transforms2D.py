@@ -169,7 +169,7 @@ def rotation_matrix_2D(
     elif isinstance(theta, Tensor):
         assert dtype == theta.dtype
 
-    theta = torch.as_tensor(theta, dtype=dtype)
+    theta = torch.atleast_1d(torch.as_tensor(theta, dtype=dtype))
     return torch.vstack(
         (
             torch.cat((torch.cos(theta), -torch.sin(theta))),

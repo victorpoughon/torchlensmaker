@@ -59,7 +59,7 @@ class Plane(LocalSurface):
         t = -P[:, 0] / V[:, 0]
         local_points = P + t.unsqueeze(1).expand_as(V) * V
         normal = (
-            torch.Tensor([-1.0, 0.0]) if dim == 2 else torch.Tensor([-1.0, 0.0, 0.0])
+            torch.tensor([-1.0, 0.0], dtype=self.dtype) if dim == 2 else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
         )
         local_normals = torch.tile(normal, (P.shape[0], 1))
         valid = self.outline.contains(local_points)
