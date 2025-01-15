@@ -19,7 +19,7 @@ from torchlensmaker.surfaces import (
 )
 
 
-def make_transforms(dtype: torch.dtype):
+def make_transforms(dtype: torch.dtype) -> list[Transform2DBase]:
     # Translate2D
     T_id = Translate2D(torch.tensor([0.0, 0.0], dtype=dtype))
     T_1 = Translate2D(torch.tensor([1.0, 1.0], dtype=dtype))
@@ -48,10 +48,10 @@ def make_transforms(dtype: torch.dtype):
     )
 
     # SurfaceExtent2D
-    s1 = Sphere(35.0, 35 / 2)
-    s2 = Parabola(35.0, 0.010)
-    s3 = SquarePlane(35.0)
-    s4 = CircularPlane(35.0)
+    s1 = Sphere(35.0, 35 / 2, dtype=dtype)
+    s2 = Parabola(35.0, 0.010, dtype=dtype)
+    s3 = SquarePlane(35.0, dtype=dtype)
+    s4 = CircularPlane(35.0, dtype=dtype)
     A_1 = SurfaceExtent2D(s1)
     A_2 = SurfaceExtent2D(s2)
     A_3 = SurfaceExtent2D(s3)
@@ -147,31 +147,31 @@ def check_preserve_dtype(t: Transform2DBase, dtype: torch.dtype) -> None:
 
 
 @pytest.fixture
-def transforms_float32():
+def transforms_float32() -> list[Transform2DBase]:
     return make_transforms(torch.float32)
 
 
 @pytest.fixture
-def transforms_float64():
+def transforms_float64() -> list[Transform2DBase]:
     return make_transforms(torch.float64)
 
 
-def test_roundtrip_float32(transforms_float32) -> None:
+def test_roundtrip_float32(transforms_float32: list[Transform2DBase]) -> None:
     for t in transforms_float32:
         check_roundtrip(t, torch.float32)
 
 
-def test_roundtrip_float64(transforms_float64) -> None:
+def test_roundtrip_float64(transforms_float64: list[Transform2DBase]) -> None:
     for t in transforms_float64:
         check_roundtrip(t, torch.float64)
 
 
-def test_preserve_dtype_float32(transforms_float32) -> None:
+def test_preserve_dtype_float32(transforms_float32: list[Transform2DBase]) -> None:
     for t in transforms_float32:
         check_preserve_dtype(t, torch.float32)
 
 
-def test_preserve_dtype_float64(transforms_float64) -> None:
+def test_preserve_dtype_float64(transforms_float64: list[Transform2DBase]) -> None:
     for t in transforms_float64:
         check_preserve_dtype(t, torch.float64)
 
@@ -183,4 +183,3 @@ def test_invalid() -> None:
 
 # TODO test matrix3 product compared with manual transform
 # TODO check that we can parameterize and compute grads
-# TODO assert that dtypes are preserved

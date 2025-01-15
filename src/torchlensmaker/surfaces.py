@@ -6,6 +6,7 @@ from torchlensmaker.outline import (
     CircularOutline,
 )
 
+from typing import Optional
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -16,8 +17,9 @@ class LocalSurface:
     Defines a surface in a local reference frame
     """
 
-    def __init__(self, outline: Outline):
+    def __init__(self, outline: Outline, dtype: torch.dtype):
         self.outline = outline
+        self.dtype = dtype
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """
@@ -45,8 +47,8 @@ class LocalSurface:
 class Plane(LocalSurface):
     "X=0 plane"
 
-    def __init__(self, outline: Outline):
-        super().__init__(outline)
+    def __init__(self, outline: Outline, dtype: torch.dtype):
+        super().__init__(outline, dtype)
 
     def samples2D(self, N: int) -> Tensor:
         r = torch.linspace(0, self.outline.max_radius(), N)
@@ -64,7 +66,7 @@ class Plane(LocalSurface):
         return t, local_normals, valid
 
     def extent(self) -> Tensor:
-        return torch.as_tensor(0.)
+        return torch.as_tensor(0.0)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         return torch.logical_and(
@@ -73,15 +75,15 @@ class Plane(LocalSurface):
 
 
 class SquarePlane(Plane):
-    def __init__(self, side_length: float):
-        super().__init__(SquareOutline(side_length))
+    def __init__(self, side_length: float, dtype: torch.dtype = torch.float64):
+        super().__init__(SquareOutline(side_length), dtype)
 
 
 class CircularPlane(Plane):
     "aka disk"
 
-    def __init__(self, diameter: float):
-        super().__init__(CircularOutline(diameter))
+    def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
+        super().__init__(CircularOutline(diameter), dtype)
 
 
 class ImplicitSurface(LocalSurface):
@@ -89,8 +91,8 @@ class ImplicitSurface(LocalSurface):
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, outline: Outline):
-        super().__init__(outline)
+    def __init__(self, outline: Outline, dtype: torch.dtype):
+        super().__init__(outline, dtype)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         dim = points.shape[1]
@@ -156,8 +158,8 @@ class ImplicitSurface(LocalSurface):
 
 
 class Parabola(ImplicitSurface):
-    def __init__(self, diameter: float, a: float):
-        super().__init__(CircularOutline(diameter))
+    def __init__(self, diameter: float, a: float, dtype: torch.dtype = torch.float64):
+        super().__init__(CircularOutline(diameter), dtype)
         self.a = a
 
     def samples2D(self, N: int) -> Tensor:
@@ -193,8 +195,8 @@ class Parabola(ImplicitSurface):
 
 
 class Sphere(ImplicitSurface):
-    def __init__(self, diameter: float, r: float):
-        super().__init__(CircularOutline(diameter))
+    def __init__(self, diameter: float, r: float, dtype: torch.dtype = torch.float64):
+        super().__init__(CircularOutline(diameter), dtype)
         assert (
             torch.abs(torch.as_tensor(r)) >= diameter / 2
         ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
@@ -202,16 +204,16 @@ class Sphere(ImplicitSurface):
         self.K = torch.as_tensor(1.0 / r)
 
     def extent(self) -> Tensor:
-        r2 = self.outline.max_radius()**2
+        r2 = self.outline.max_radius() ** 2
         K = self.K
         return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2))
 
     def samples2D(self, N: int) -> Tensor:
         # Use the angular parameterization of the circle so that samples are
         # smoother, especially for high curvature circles.
-        R = 1/self.K
+        R = 1 / self.K
         theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
-        theta = torch.linspace(0., theta_max, N)
+        theta = torch.linspace(0.0, theta_max, N)
 
         if R > 0:
             theta = theta + torch.pi
@@ -308,5 +310,3 @@ def intersect_newton(
     t = t - newton_delta(surface, P, V, t)
 
     return t
-
-

@@ -1,6 +1,6 @@
 import torch
 from torchlensmaker.surfaces import LocalSurface
-
+import functools
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -118,9 +118,12 @@ class SurfaceExtent2D(Transform2DBase):
         return torch.row_stack(
             (
                 torch.column_stack(
-                    (torch.eye(2, dtype=self.T.dtype), self._extent().unsqueeze(0).T)
+                    (
+                        torch.eye(2, dtype=self.surface.dtype),
+                        self._extent().unsqueeze(0).T,
+                    )
                 ),
-                torch.tensor([0, 0, 1], dtype=self.T.dtype),
+                torch.tensor([0, 0, 1], dtype=self.surface.dtype),
             )
         )
 
@@ -145,7 +148,7 @@ class Compose2D(Transform2DBase):
         return self.T1.inverse_vectors(self.T2.inverse_vectors(vectors))
 
     def matrix3(self) -> Tensor:
-        raise NotImplementedError
+        return self.T2.matrix3() @ self.T1.matrix3()
 
 
 class ComposeList2D(Transform2DBase):
@@ -175,7 +178,9 @@ class ComposeList2D(Transform2DBase):
         return vectors
 
     def matrix3(self) -> Tensor:
-        raise NotImplementedError
+        return functools.reduce(
+            lambda t1, t2: t2 @ t1, [t.matrix3() for t in self.transforms]
+        )
 
 
 class Surface2DTransform:
