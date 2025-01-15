@@ -47,7 +47,10 @@ def show(data: object, ndigits=None, dump=False) -> None:
 
 
 def render_surface(
-    surface: tlm.surfaces.ImplicitSurface, matrix: Tensor, dim: int, N: int = 100
+    surface: tlm.surfaces.ImplicitSurface,
+    transform: tlm.Surface2DTransform | tlm.Surface3DTransform,
+    dim: int,
+    N: int = 100,
 ) -> object:
     """
     Render a surface to a json serializable object in tlmviewer format
@@ -61,13 +64,21 @@ def render_surface(
         )
 
         samples = torch.row_stack((front, samples))
-        obj = {"matrix3": matrix.tolist(), "samples": samples.tolist()}
+        obj = {
+            "matrix": transform.matrix3(surface).tolist(),
+            "samples": samples.tolist(),
+        }
     else:
-        obj = {"matrix": matrix.tolist(), "samples": samples.tolist()}
+        obj = {
+            "matrix": transform.matrix4(surface).tolist(),
+            "samples": samples.tolist(),
+        }
 
-    # outline
-    if dim == 3 and isinstance(surface.outline, tlm.SquareOutline):
-        obj["side_length"] = surface.outline.side_length
+    # convert the outline to clip planes
+    if dim == 3:
+        clip_planes = surface.outline.clip_planes()
+        if len(clip_planes) > 0:
+            obj["clip_planes"] = clip_planes
 
     return obj
 
@@ -99,8 +110,7 @@ def render(
             {
                 "type": "surfaces",
                 "data": [
-                    render_surface(s, t.matrix4(s), dim=3)
-                    for s, t in zip(surfaces, transforms)
+                    render_surface(s, t, dim=3) for s, t in zip(surfaces, transforms)
                 ],
             }
         )

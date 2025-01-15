@@ -12,6 +12,10 @@ class Outline:
         "Furthest distance to the X axis that's within the outline"
         raise NotImplementedError
 
+    def clip_planes(self) -> list[list[float]]:
+        "Express the outline as 3D clip planes"
+        raise NotImplementedError
+
 
 class SquareOutline(Outline):
     "Square outline around the X axis"
@@ -32,6 +36,15 @@ class SquareOutline(Outline):
     def max_radius(self) -> float:
         return math.sqrt(2) * self.side_length / 2
 
+    def clip_planes(self) -> list[list[float]]:
+        a = self.side_length / 2
+        return [
+            [0.0, -1.0, 0.0, a],
+            [0.0, 1.0, 0.0, a],
+            [0.0, 0.0, -1.0, a],
+            [0.0, 0.0, 1.0, a],
+        ]
+
 
 class CircularOutline(Outline):
     "Fixed distance to the X axis"
@@ -48,3 +61,6 @@ class CircularOutline(Outline):
 
     def max_radius(self) -> float:
         return self.diameter / 2
+
+    def clip_planes(self) -> list[list[float]]:
+        return []
