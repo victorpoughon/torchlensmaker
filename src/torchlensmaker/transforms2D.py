@@ -55,7 +55,14 @@ class Translate2D(Transform2DBase):
         return vectors
 
     def matrix3(self) -> Tensor:
-        raise NotImplementedError
+        return torch.row_stack(
+            (
+                torch.column_stack(
+                    (torch.eye(2, dtype=self.T.dtype), self.T.unsqueeze(0).T)
+                ),
+                torch.tensor([0, 0, 1], dtype=self.T.dtype),
+            )
+        )
 
 
 class Linear2D(Transform2DBase):
@@ -78,11 +85,48 @@ class Linear2D(Transform2DBase):
         return (self.A_inv @ vectors.T).T
 
     def matrix3(self) -> Tensor:
-        raise NotImplementedError
+        return torch.row_stack(
+            (
+                torch.column_stack((self.A, torch.zeros((2, 1), dtype=self.A.dtype))),
+                torch.tensor([0, 0, 1], dtype=self.A.dtype),
+            )
+        )
+
+
+class SurfaceExtent2D(Transform2DBase):
+    "Translation from a surface extent point"
+
+    def __init__(self, surface: LocalSurface):
+        self.surface = surface
+
+    def _extent(self) -> Tensor:
+        return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(1)), dim=0)
+
+    def direct_points(self, points: Tensor) -> Tensor:
+        return points - self._extent()
+
+    def direct_vectors(self, vectors: Tensor) -> Tensor:
+        return vectors
+
+    def inverse_points(self, points: Tensor) -> Tensor:
+        return points + self._extent()
+
+    def inverse_vectors(self, vectors: Tensor) -> Tensor:
+        return vectors
+
+    def matrix3(self) -> Tensor:
+        return torch.row_stack(
+            (
+                torch.column_stack(
+                    (torch.eye(2, dtype=self.T.dtype), self._extent().unsqueeze(0).T)
+                ),
+                torch.tensor([0, 0, 1], dtype=self.T.dtype),
+            )
+        )
 
 
 class Compose2D(Transform2DBase):
-    "Compose 2D transforms"
+    "Compose two 2D transforms"
 
     def __init__(self, T1: Transform2DBase, T2: Transform2DBase):
         self.T1 = T1
@@ -104,25 +148,30 @@ class Compose2D(Transform2DBase):
         raise NotImplementedError
 
 
-class SurfaceExtentTransform2D(Transform2DBase):
-    "Translation from a surface extent point"
+class ComposeList2D(Transform2DBase):
+    "Compose a list of 2D transforms"
 
-    def __init__(self, surface: LocalSurface):
-        self.surface = surface
-
-    def _extent(self) -> Tensor:
-        return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(1)), dim=0)
+    def __init__(self, transforms: list[Transform2DBase]):
+        self.transforms = transforms
 
     def direct_points(self, points: Tensor) -> Tensor:
-        return points - self._extent()
+        for t in self.transforms:
+            points = t.direct_points(points)
+        return points
 
     def direct_vectors(self, vectors: Tensor) -> Tensor:
+        for t in self.transforms:
+            vectors = t.direct_vectors(vectors)
         return vectors
 
     def inverse_points(self, points: Tensor) -> Tensor:
-        return points + self._extent()
+        for t in reversed(self.transforms):
+            points = t.inverse_points(points)
+        return points
 
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
+        for t in reversed(self.transforms):
+            vectors = t.inverse_vectors(vectors)
         return vectors
 
     def matrix3(self) -> Tensor:
