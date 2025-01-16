@@ -105,90 +105,76 @@ def make_transforms(
     )
 
 
-def check_roundtrip(t: Transform2DBase, dtype: torch.dtype) -> None:
-    N = 5
-
-    if dtype == torch.float32:
-        atol, rtol = 1e-5, 1e-4
-    elif dtype == torch.float64:
-        atol, rtol = 1e-10, 1e-8
-
-    points = torch.rand((N, 2), dtype=dtype)
-    rtp1 = t.direct_points(t.inverse_points(points))
-    rtp2 = t.inverse_points(t.direct_points(points))
-    assert torch.allclose(rtp1, points, atol=atol, rtol=rtol), rtp1 - points
-    assert torch.allclose(rtp2, points, atol=atol, rtol=rtol), rtp2 - points
-
-    vectors = torch.rand((N, 2), dtype=dtype)
-    rtv1 = t.direct_vectors(t.inverse_vectors(vectors))
-    rtv2 = t.inverse_vectors(t.direct_vectors(vectors))
-    assert torch.allclose(rtv1, vectors, atol=atol, rtol=rtol), rtv1 - vectors
-    assert torch.allclose(rtv2, vectors, atol=atol, rtol=rtol), rtv2 - vectors
-
-
-def check_preserve_dtype(t: Transform2DBase, dtype: torch.dtype) -> None:
-    N = 1
-
-    assert t.direct_points(torch.rand((N, 2), dtype=dtype)).dtype == dtype
-    assert t.direct_vectors(torch.rand((N, 2), dtype=dtype)).dtype == dtype
-    assert t.inverse_points(torch.rand((N, 2), dtype=dtype)).dtype == dtype
-    assert t.inverse_vectors(torch.rand((N, 2), dtype=dtype)).dtype == dtype
-    assert t.matrix3().dtype == dtype
-
-
 def test_roundtrip(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
     dtype, transforms = make_transforms
+    N = 5
     for t in transforms:
-        check_roundtrip(t, dtype)
+
+        if dtype == torch.float32:
+            atol, rtol = 1e-5, 1e-4
+        elif dtype == torch.float64:
+            atol, rtol = 1e-10, 1e-8
+
+        points = torch.rand((N, 2), dtype=dtype)
+        rtp1 = t.direct_points(t.inverse_points(points))
+        rtp2 = t.inverse_points(t.direct_points(points))
+        assert torch.allclose(rtp1, points, atol=atol, rtol=rtol), rtp1 - points
+        assert torch.allclose(rtp2, points, atol=atol, rtol=rtol), rtp2 - points
+
+        vectors = torch.rand((N, 2), dtype=dtype)
+        rtv1 = t.direct_vectors(t.inverse_vectors(vectors))
+        rtv2 = t.inverse_vectors(t.direct_vectors(vectors))
+        assert torch.allclose(rtv1, vectors, atol=atol, rtol=rtol), rtv1 - vectors
+        assert torch.allclose(rtv2, vectors, atol=atol, rtol=rtol), rtv2 - vectors
 
 
 def test_preserve_dtype(
     make_transforms: tuple[torch.dtype, list[Transform2DBase]]
 ) -> None:
     dtype, transforms = make_transforms
+    N = 1
     for t in transforms:
-        check_preserve_dtype(t, dtype)
-
-
-def check_matrix3(t: Transform2DBase, dtype: torch.dtype) -> None:
-    N = 5
-
-    if dtype == torch.float32:
-        atol, rtol = 1e-5, 1e-4
-    elif dtype == torch.float64:
-        atol, rtol = 1e-10, 1e-8
-
-    # cartesian and homogeneous coordinates
-    points = torch.rand((N, 2), dtype=dtype)
-    hom_points = torch.column_stack(
-        (points, torch.ones((points.shape[0], 1), dtype=dtype))
-    )
-
-    # direct transform using homogenous coordinates
-    f_hom = (t.matrix3() @ hom_points.T).T
-
-    # direct transform using cartesian coordinates
-    f_direct = t.direct_points(points)
-
-    # convert to homogenous after application of the direct transform
-    f_direct_hom = torch.column_stack(
-        (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
-    )
-
-    assert t.matrix3().dtype == dtype
-    assert f_hom.dtype == dtype
-    assert f_direct.dtype == dtype
-    assert f_direct_hom.dtype == dtype
-
-    assert torch.allclose(f_direct_hom, f_hom, atol=atol, rtol=rtol), (
-        f_hom - f_direct_hom
-    )
+        assert t.direct_points(torch.rand((N, 2), dtype=dtype)).dtype == dtype
+        assert t.direct_vectors(torch.rand((N, 2), dtype=dtype)).dtype == dtype
+        assert t.inverse_points(torch.rand((N, 2), dtype=dtype)).dtype == dtype
+        assert t.inverse_vectors(torch.rand((N, 2), dtype=dtype)).dtype == dtype
+        assert t.matrix3().dtype == dtype
 
 
 def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
     dtype, transforms = make_transforms
+    N = 5
     for t in transforms:
-        check_matrix3(t, dtype)
+        if dtype == torch.float32:
+            atol, rtol = 1e-5, 1e-4
+        elif dtype == torch.float64:
+            atol, rtol = 1e-10, 1e-8
+
+        # cartesian and homogeneous coordinates
+        points = torch.rand((N, 2), dtype=dtype)
+        hom_points = torch.column_stack(
+            (points, torch.ones((points.shape[0], 1), dtype=dtype))
+        )
+
+        # direct transform using homogenous coordinates
+        f_hom = (t.matrix3() @ hom_points.T).T
+
+        # direct transform using cartesian coordinates
+        f_direct = t.direct_points(points)
+
+        # convert to homogenous after application of the direct transform
+        f_direct_hom = torch.column_stack(
+            (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
+        )
+
+        assert t.matrix3().dtype == dtype
+        assert f_hom.dtype == dtype
+        assert f_direct.dtype == dtype
+        assert f_direct_hom.dtype == dtype
+
+        assert torch.allclose(f_direct_hom, f_hom, atol=atol, rtol=rtol), (
+            f_hom - f_direct_hom
+        )
 
 
 def test_grad_translate2D(dtype: torch.dtype) -> None:
