@@ -2,8 +2,8 @@ import torch
 
 from torchlensmaker.surfaces import LocalSurface
 
-from torchlensmaker.transforms2D import Surface2DTransform
-from torchlensmaker.transforms3D import Surface3DTransform
+from torchlensmaker.transforms2D import Transform2DBase
+from torchlensmaker.transforms3D import Transform3DBase
 
 Tensor = torch.Tensor
 
@@ -12,7 +12,7 @@ def intersect(
     surface: LocalSurface,
     P: Tensor,
     V: Tensor,
-    transform: Surface3DTransform | Surface2DTransform,
+    transform: Transform2DBase | Transform3DBase,
 ) -> tuple[Tensor, Tensor]:
     """
     Surface-rays collision detection

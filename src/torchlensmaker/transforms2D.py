@@ -2,6 +2,8 @@ import torch
 from torchlensmaker.surfaces import LocalSurface
 import functools
 
+from typing import Iterable
+
 # for shorter type annotations
 Tensor = torch.Tensor
 
@@ -172,67 +174,32 @@ def rotation_matrix_2D(
         )
     )
 
-
-class Surface2DTransform:
+def basic_transform(scale: float, anchor: str, theta: float, translate: Iterable[float], dtype=torch.float64):
     """
-    2D Transform of the form X' = RS(X - A) + T
-    where A is a surface anchor point determined by the surface shape
+    Experimental
+
+    Create a transform Y = RS(X - A) + T
+    Returns a function foo(surface)
     """
 
-    def __init__(
-        self, scale: float, anchor: str, rotation: float, position: list[float]
-    ):
-        self.anchor = anchor
+    def makeit(surface):
+        # anchor
+        transforms = [SurfaceExtentTransform2D(surface)] if anchor == "extent" else []
 
-        # scale matrix
-        self.S = torch.tensor([[scale, 0.0], [0.0, 1.0]])
-        self.S_inv = torch.tensor([[1.0 / scale, 0.0], [0.0, 1.0]])
-
-        # rotation matrix
-        theta = torch.deg2rad(torch.as_tensor(rotation))
-        self.R = torch.tensor(  # TODO use rotation_matrix_2D
-            [
-                [torch.cos(theta), -torch.sin(theta)],
-                [torch.sin(theta), torch.cos(theta)],
-            ]
+        # scale
+        transforms.append(
+            LinearTransform2D(torch.tensor([[scale, 0.0], [0., scale]], dtype=dtype), torch.tensor([[1/scale, 0.0], [0., 1/scale]], dtype=dtype))
         )
 
-        self.R_inv = self.R.T
-
-        # position translation
-        self.T = torch.as_tensor(position)
-
-    def anchor_point(self, surface: LocalSurface) -> Tensor:
-        "Get position of anchor of surface"
-        if self.anchor == "origin":
-            return torch.zeros(2)
-        elif self.anchor == "extent":
-            return torch.cat((surface.extent().unsqueeze(0), torch.zeros(1)), dim=0)
-        else:
-            raise ValueError("anchor must be one of origin/extent")
-
-    def direct_vectors(self, V: Tensor) -> Tensor:
-        return (self.R @ self.S @ V.T).T
-
-    def inverse_points(self, surface: LocalSurface, P: Tensor) -> Tensor:
-        S_inv, R_inv, T = self.S_inv, self.R_inv, self.T
-        A = self.anchor_point(surface)
-        return (S_inv @ R_inv @ (P - T).T).T + A
-
-    def inverse_rays(
-        self, P: Tensor, V: Tensor, surface: LocalSurface
-    ) -> tuple[Tensor, Tensor]:
-        S_inv, R_inv, T = self.S_inv, self.R_inv, self.T
-        A = self.anchor_point(surface)
-
-        Ps = (S_inv @ R_inv @ (P - T).T).T + A
-        Vs = (S_inv @ R_inv @ V.T).T
-
-        return Ps, Vs
-
-    def matrix3(self, surface: LocalSurface) -> Tensor:
-
-        hom = homogeneous_transform_matrix3
-        return hom(self.R @ self.S, self.T) @ hom(
-            torch.eye(2), -self.anchor_point(surface)
+        # rotate
+        transforms.append(
+            LinearTransform2D(rotation_matrix_2D(theta, dtype=dtype), rotation_matrix_2D(-theta, dtype=dtype))
         )
+
+        # translate
+        transforms.append(
+            TranslateTransform2D(torch.as_tensor(translate, dtype=dtype))
+        )
+    
+        return ComposeTransform2D(transforms)
+    return makeit
