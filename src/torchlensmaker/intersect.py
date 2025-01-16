@@ -2,7 +2,7 @@ import torch
 
 from torchlensmaker.surfaces import LocalSurface
 
-from torchlensmaker.transforms2D import Transform2DBase
+from torchlensmaker.transforms import Transform2DBase
 from torchlensmaker.transforms3D import Transform3DBase
 
 Tensor = torch.Tensor

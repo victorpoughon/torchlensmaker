@@ -9,15 +9,15 @@ Tensor = torch.Tensor
 
 
 def hom_matrix(A: Tensor, B: Tensor) -> Tensor:
-    "Homogeneous 3x3 transform matrix for 2D transform AX+B"
+    "Homogeneous transform matrix for transform AX+B"
     assert A.dim() == 2
     assert B.dim() == 1
     assert A.shape[0] == A.shape[1] == B.shape[0]
-    assert A.dtype == B.dtype
+    assert A.dtype == B.dtype, (A.dtype, B.dtype)
     dim = A.shape[0]
     assert dim == 2 or dim == 3
 
-    top = torch.cat((A, B.unsqueeze(0).T), dim=1)
+    top = torch.cat((A, B.unsqueeze(1)), dim=1)
     if dim == 2:
         bottom = torch.tensor([[0.0, 0.0, 1.0]], dtype=A.dtype)
     else:
@@ -102,8 +102,9 @@ class LinearTransform2D(Transform2DBase):
 class SurfaceExtentTransform2D(Transform2DBase):
     "Translation from a surface extent point"
 
-    def __init__(self, surface: LocalSurface):
+    def __init__(self, surface: LocalSurface, dim: int):
         self.surface = surface
+        self.dim = dim
 
     def _extent(self) -> Tensor:
         return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(1)), dim=0)
@@ -120,18 +121,11 @@ class SurfaceExtentTransform2D(Transform2DBase):
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
         return vectors
 
-    def matrix3(self) -> Tensor:
-        return torch.row_stack(
-            (
-                torch.column_stack(
-                    (
-                        torch.eye(2, dtype=self.surface.dtype),
-                        -self._extent().unsqueeze(0).T,
-                    )
-                ),
-                torch.tensor([0, 0, 1], dtype=self.surface.dtype),
-            )
-        )
+    def hom_matrix(self) -> Tensor:
+        dim = self.dim
+        A = torch.eye(dim, dtype=self.surface.dtype)
+        B = -self._extent()
+        return hom_matrix(A, B)
 
 
 class ComposeTransform2D(Transform2DBase):
@@ -160,21 +154,16 @@ class ComposeTransform2D(Transform2DBase):
             vectors = t.inverse_vectors(vectors)
         return vectors
 
-    def matrix3(self) -> Tensor:
+    def hom_matrix(self) -> Tensor:
         return functools.reduce(
-            lambda t1, t2: t2 @ t1, [t.matrix3() for t in self.transforms]
+            lambda t1, t2: t2 @ t1, [t.hom_matrix() for t in self.transforms]
         )
 
 
 def rotation_matrix_2D(
-    theta: float | Tensor, dtype: torch.dtype | None = None
+    theta : Tensor
 ) -> Tensor:
-    if dtype is None:
-        dtype = theta.dtype if isinstance(theta, Tensor) else torch.float64
-    elif isinstance(theta, Tensor):
-        assert dtype == theta.dtype
-
-    theta = torch.atleast_1d(torch.as_tensor(theta, dtype=dtype))
+    theta = torch.atleast_1d(theta)
     return torch.vstack(
         (
             torch.cat((torch.cos(theta), -torch.sin(theta))),
@@ -212,8 +201,8 @@ def basic_transform(
         # rotate
         transforms.append(
             LinearTransform2D(
-                rotation_matrix_2D(theta, dtype=dtype),
-                rotation_matrix_2D(-theta, dtype=dtype),
+                rotation_matrix_2D(torch.as_tensor(theta, dtype=dtype)),
+                rotation_matrix_2D(-torch.as_tensor(theta, dtype=dtype)),
             )
         )
 

@@ -66,7 +66,7 @@ class Plane(LocalSurface):
         return t, local_normals, valid
 
     def extent(self) -> Tensor:
-        return torch.as_tensor(0.0)
+        return torch.as_tensor(0.0, dtype=self.dtype)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         return torch.logical_and(
@@ -173,7 +173,7 @@ class Parabola(ImplicitSurface):
 
     def extent(self) -> Tensor:
         r = self.outline.max_radius()
-        return torch.as_tensor(self.a * r**2)
+        return torch.as_tensor(self.a * r**2, dtype=self.dtype)
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
@@ -201,7 +201,7 @@ class Sphere(ImplicitSurface):
             torch.abs(torch.as_tensor(r)) >= diameter / 2
         ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
         self.diameter = diameter
-        self.K = torch.as_tensor(1.0 / r)
+        self.K = torch.as_tensor(1.0 / r, dtype=dtype)
 
     def extent(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2
