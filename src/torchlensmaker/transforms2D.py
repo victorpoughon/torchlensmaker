@@ -9,7 +9,7 @@ Tensor = torch.Tensor
 def homogeneous_transform_matrix3(A: Tensor, B: Tensor) -> Tensor:
     "Homogeneous 3x3 transform matrix for 2D transform AX+B"
     rows = torch.cat((A, B.unsqueeze(0).T), dim=1)
-    return torch.cat((rows, torch.tensor([[0.0, 0.0, 1.0]])), dim=0)
+    return torch.cat((rows, torch.tensor([[0.0, 0.0, 1.0]], dtype=A.dtype)), dim=0)
 
 
 class Transform2DBase:

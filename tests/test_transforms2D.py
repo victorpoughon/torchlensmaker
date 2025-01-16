@@ -175,6 +175,11 @@ def check_matrix3(t: Transform2DBase, dtype: torch.dtype) -> None:
     f_direct_hom = torch.column_stack(
         (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
     )
+    
+    assert t.matrix3().dtype == dtype
+    assert f_hom.dtype == dtype
+    assert f_direct.dtype == dtype
+    assert f_direct_hom.dtype == dtype
 
     assert torch.allclose(f_direct_hom, f_hom, atol=atol, rtol=rtol), (
         f_hom - f_direct_hom
