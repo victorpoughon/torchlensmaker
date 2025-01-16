@@ -7,13 +7,15 @@ from torchlensmaker.rot3d import euler_angles_to_matrix
 Tensor = torch.Tensor
 
 
-def homogeneous_transform_matrix4(A: Tensor, B: Tensor) -> Tensor:
+def homogeneous_transform_matrix4(A: Tensor, B: Tensor, dtype=torch.float64) -> Tensor:
     "Homogeneous 4x4 transform matrix for 3D transform AX+B"
     rows = torch.cat((A, B.unsqueeze(0).T), dim=1)
-    return torch.cat((rows, torch.tensor([[0.0, 0.0, 0.0, 1.0]])), dim=0)
+    return torch.cat((rows, torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=dtype)), dim=0)
+
 
 class Transform3DBase:
     pass
+
 
 class Surface3DTransform(Transform3DBase):
     """
@@ -27,19 +29,23 @@ class Surface3DTransform(Transform3DBase):
         self.anchor = anchor
 
         # scale matrix
-        self.S = torch.tensor([[scale, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        self.S = torch.tensor(
+            [[scale, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]], dtype=torch.float64
+        )
         self.S_inv = torch.tensor(
-            [[1.0 / scale, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+            [[1.0 / scale, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]],
+            dtype=torch.float64,
         )
 
         # rotation matrix
+        # TODO dtype
         self.R = euler_angles_to_matrix(
             torch.deg2rad(torch.as_tensor(rotations)), "XYZ"
-        )
+        ).to(dtype=torch.float64)
         self.R_inv = self.R.T
 
         # position translation
-        self.T = torch.as_tensor(position)
+        self.T = torch.as_tensor(position).to(dtype=torch.float64)
 
     def anchor_point(self, surface: LocalSurface) -> Tensor:
         "Get position of anchor of surface"
@@ -72,8 +78,5 @@ class Surface3DTransform(Transform3DBase):
     def matrix4(self, surface: LocalSurface) -> Tensor:
         hom = homogeneous_transform_matrix4
         return hom(self.R @ self.S, self.T) @ hom(
-            torch.eye(3), -self.anchor_point(surface)
+            torch.eye(3, dtype=torch.float64), -self.anchor_point(surface)
         )
-
-
-
