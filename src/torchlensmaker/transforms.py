@@ -172,7 +172,7 @@ def rotation_matrix_2D(
     )
 
 
-# TODO test in test_transforms
+# TODO find a better name
 def basic_transform(
         scale: float,
         anchor: str,

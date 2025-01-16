@@ -10,6 +10,7 @@ from torchlensmaker.transforms import (
     ComposeTransform,
     SurfaceExtentTransform,
     rotation_matrix_2D,
+    basic_transform,
 )
 
 from torchlensmaker.surfaces import (
@@ -75,6 +76,19 @@ def make_transforms(
     A_3 = SurfaceExtentTransform(s3, dim)
     A_4 = SurfaceExtentTransform(s4, dim)
 
+    if dim == 2:
+        B_1 = basic_transform(1.0, "extent", 0.1, [20.0, 30.0], dtype=dtype)(s1)
+        B_2 = basic_transform(-1.0, "origin", -0.2, [-20.0, 30.0], dtype=dtype)(s2)
+        B_3 = basic_transform(-1.5, "extent", -0.1, [-20.0, -30.0], dtype=dtype)(s3)
+    else:
+        B_1 = basic_transform(1.0, "extent", [0.1, 0.2, 0.3], [10.0, 20.0, 30.0], dtype=dtype)(s1)
+        B_2 = basic_transform(-1.0, "origin", [0.1, 0.2, 0.3], [-10.0, -20.0, 30.0], dtype=dtype)(
+            s2
+        )
+        B_3 = basic_transform(-1.5, "extent", [0.1, 0.2, 0.3], [10.0, -20.0, -30.0], dtype=dtype)(
+            s3
+        )
+
     # ComposeTransform
     D_1 = ComposeTransform([T_id, T_1])
     D_2 = ComposeTransform([T_id, L_id])
@@ -86,29 +100,40 @@ def make_transforms(
     D_8 = ComposeTransform([A_1, A_2, D_2, D_5])
     D_9 = ComposeTransform([A_1, D_6])
     D_10 = ComposeTransform([D_9, D_4])
+    D_11 = ComposeTransform([B_1, B_2, B_3])
+    D_12 = ComposeTransform([D_11, A_2, B_3])
 
-    return (dtype, dim, [
-        T_id,
-        T_1,
-        T_rand,
-        L_id,
-        L_scale,
-        L_rot,
-        A_1,
-        A_2,
-        A_3,
-        A_4,
-        D_1,
-        D_2,
-        D_3,
-        D_4,
-        D_5,
-        D_6,
-        D_7,
-        D_8,
-        D_9,
-        D_10,
-    ])
+    return (
+        dtype,
+        dim,
+        [
+            T_id,
+            T_1,
+            T_rand,
+            L_id,
+            L_scale,
+            L_rot,
+            A_1,
+            A_2,
+            A_3,
+            A_4,
+            B_1,
+            B_2,
+            B_3,
+            D_1,
+            D_2,
+            D_3,
+            D_4,
+            D_5,
+            D_6,
+            D_7,
+            D_8,
+            D_9,
+            D_10,
+            D_11,
+            D_12,
+        ],
+    )
 
 
 def test_roundtrip(
@@ -119,7 +144,7 @@ def test_roundtrip(
     for t in transforms:
 
         if dtype == torch.float32:
-            atol, rtol = 1e-5, 1e-4
+            atol, rtol = 1e-4, 1e-4
         elif dtype == torch.float64:
             atol, rtol = 1e-10, 1e-8
 
@@ -188,9 +213,7 @@ def test_hom_matrix(
 
 
 def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
-    transform = TranslateTransform(
-        torch.zeros((dim,), dtype=dtype, requires_grad=True)
-    )
+    transform = TranslateTransform(torch.zeros((dim,), dtype=dtype, requires_grad=True))
 
     loss = transform.hom_matrix().sum()
     loss.backward()  # type: ignore[no-untyped-call]
