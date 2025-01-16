@@ -21,15 +21,14 @@ from torchlensmaker.surfaces import (
 
 
 @pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
-def dtype_fixture(request: pytest.FixtureRequest) -> typing.Any:
+def dtype(request: pytest.FixtureRequest) -> typing.Any:
     return request.param
 
 
 @pytest.fixture
 def make_transforms(
-    dtype_fixture: torch.dtype,
+    dtype: torch.dtype,
 ) -> tuple[torch.dtype, list[Transform2DBase]]:
-    dtype = dtype_fixture
     # Translate2D
     T_id = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype))
     T_1 = TranslateTransform2D(torch.tensor([1.0, 1.0], dtype=dtype))
@@ -175,7 +174,7 @@ def check_matrix3(t: Transform2DBase, dtype: torch.dtype) -> None:
     f_direct_hom = torch.column_stack(
         (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
     )
-    
+
     assert t.matrix3().dtype == dtype
     assert f_hom.dtype == dtype
     assert f_direct.dtype == dtype
@@ -192,10 +191,10 @@ def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> 
         check_matrix3(t, dtype)
 
 
-def test_grad_translate2D(dtype_fixture: torch.dtype) -> None:
-    dtype = dtype_fixture
-
-    transform = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True))
+def test_grad_translate2D(dtype: torch.dtype) -> None:
+    transform = TranslateTransform2D(
+        torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True)
+    )
 
     loss = transform.matrix3().sum()
     loss.backward()  # type: ignore[no-untyped-call]
@@ -210,9 +209,7 @@ def test_grad_translate2D(dtype_fixture: torch.dtype) -> None:
     assert grad.dtype == dtype
 
 
-def test_grad_scale2D(dtype_fixture: torch.dtype) -> None:
-    dtype = dtype_fixture
-
+def test_grad_scale2D(dtype: torch.dtype) -> None:
     scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
     transform = LinearTransform2D(
         torch.eye(2, dtype=dtype) * scale, torch.eye(2, dtype=dtype) * 1.0 / scale
@@ -231,9 +228,7 @@ def test_grad_scale2D(dtype_fixture: torch.dtype) -> None:
     assert grad.dtype == dtype
 
 
-def test_grad_rot2D(dtype_fixture: torch.dtype) -> None:
-    dtype = dtype_fixture
-
+def test_grad_rot2D(dtype: torch.dtype) -> None:
     theta = torch.tensor([0.1], dtype=dtype, requires_grad=True)
     transform = LinearTransform2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
 
