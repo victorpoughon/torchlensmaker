@@ -4,11 +4,11 @@ import typing
 import torch
 
 from torchlensmaker.transforms import (
-    Transform2DBase,
-    TranslateTransform2D,
-    LinearTransform2D,
-    ComposeTransform2D,
-    SurfaceExtentTransform2D,
+    TransformBase,
+    TranslateTransform,
+    LinearTransform,
+    ComposeTransform,
+    SurfaceExtentTransform,
     rotation_matrix_2D,
 )
 
@@ -36,49 +36,49 @@ def dim(request: pytest.FixtureRequest) -> typing.Any:
 def make_transforms(
     dtype: torch.dtype,
     dim: int,
-) -> tuple[torch.dtype, int, list[Transform2DBase]]:
+) -> tuple[torch.dtype, int, list[TransformBase]]:
     if dim == 2:
         return dtype, dim, make_transforms_2D(dtype)
     else:
         return dtype, dim, make_transforms_3D(dtype)
 
 
-def make_transforms_2D(dtype: torch.dtype) -> list[Transform2DBase]:
+def make_transforms_2D(dtype: torch.dtype) -> list[TransformBase]:
     # Translate2D
-    T_id = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype))
-    T_1 = TranslateTransform2D(torch.tensor([1.0, 1.0], dtype=dtype))
-    T_rand = TranslateTransform2D(torch.rand((2,), dtype=dtype))
+    T_id = TranslateTransform(torch.tensor([0.0, 0.0], dtype=dtype))
+    T_1 = TranslateTransform(torch.tensor([1.0, 1.0], dtype=dtype))
+    T_rand = TranslateTransform(torch.rand((2,), dtype=dtype))
 
     # Linear2D
-    L_id = LinearTransform2D(torch.eye(2, dtype=dtype), torch.eye(2, dtype=dtype))
-    L_scale = LinearTransform2D(
+    L_id = LinearTransform(torch.eye(2, dtype=dtype), torch.eye(2, dtype=dtype))
+    L_scale = LinearTransform(
         torch.diag(torch.tensor([0.5, 0.25], dtype=dtype)),
         torch.diag(torch.tensor([2.0, 4.0], dtype=dtype)),
     )
     theta = torch.as_tensor(1.5, dtype=dtype)
-    L_rot = LinearTransform2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
+    L_rot = LinearTransform(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
 
     # SurfaceExtent2D
     s1 = Sphere(35.0, 35 / 2, dtype=dtype)
     s2 = Parabola(35.0, 0.010, dtype=dtype)
     s3 = SquarePlane(35.0, dtype=dtype)
     s4 = CircularPlane(35.0, dtype=dtype)
-    A_1 = SurfaceExtentTransform2D(s1, 2)
-    A_2 = SurfaceExtentTransform2D(s2, 2)
-    A_3 = SurfaceExtentTransform2D(s3, 2)
-    A_4 = SurfaceExtentTransform2D(s4, 2)
+    A_1 = SurfaceExtentTransform(s1, 2)
+    A_2 = SurfaceExtentTransform(s2, 2)
+    A_3 = SurfaceExtentTransform(s3, 2)
+    A_4 = SurfaceExtentTransform(s4, 2)
 
     # ComposeTransform2D
-    D_1 = ComposeTransform2D([T_id, T_1])
-    D_2 = ComposeTransform2D([T_id, L_id])
-    D_3 = ComposeTransform2D([T_1, L_scale])
-    D_4 = ComposeTransform2D([L_rot, L_scale])
-    D_5 = ComposeTransform2D([D_4, T_1])
-    D_6 = ComposeTransform2D([D_5, D_5, D_2, A_3])
-    D_7 = ComposeTransform2D([D_4, D_2, D_2, D_5, D_5])
-    D_8 = ComposeTransform2D([A_1, A_2, D_2, D_5])
-    D_9 = ComposeTransform2D([A_1, D_6])
-    D_10 = ComposeTransform2D([D_9, D_4])
+    D_1 = ComposeTransform([T_id, T_1])
+    D_2 = ComposeTransform([T_id, L_id])
+    D_3 = ComposeTransform([T_1, L_scale])
+    D_4 = ComposeTransform([L_rot, L_scale])
+    D_5 = ComposeTransform([D_4, T_1])
+    D_6 = ComposeTransform([D_5, D_5, D_2, A_3])
+    D_7 = ComposeTransform([D_4, D_2, D_2, D_5, D_5])
+    D_8 = ComposeTransform([A_1, A_2, D_2, D_5])
+    D_9 = ComposeTransform([A_1, D_6])
+    D_10 = ComposeTransform([D_9, D_4])
 
     return [
         T_id,
@@ -104,9 +104,9 @@ def make_transforms_2D(dtype: torch.dtype) -> list[Transform2DBase]:
     ]
 
 
-def make_transforms_3D(dtype: torch.dtype) -> list[Transform2DBase]:
+def make_transforms_3D(dtype: torch.dtype) -> list[TransformBase]:
     # Translate
-    T_id = TranslateTransform2D(torch.tensor([0.0, 0.0, 0.0], dtype=dtype))
+    T_id = TranslateTransform(torch.tensor([0.0, 0.0, 0.0], dtype=dtype))
 
     # TODO more
 
@@ -114,7 +114,7 @@ def make_transforms_3D(dtype: torch.dtype) -> list[Transform2DBase]:
 
 
 def test_roundtrip(
-    make_transforms: tuple[torch.dtype, int, list[Transform2DBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 5
@@ -139,7 +139,7 @@ def test_roundtrip(
 
 
 def test_preserve_dtype(
-    make_transforms: tuple[torch.dtype, int, list[Transform2DBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 3
@@ -152,7 +152,7 @@ def test_preserve_dtype(
 
 
 def test_hom_matrix(
-    make_transforms: tuple[torch.dtype, int, list[Transform2DBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 5
@@ -190,7 +190,7 @@ def test_hom_matrix(
 
 
 def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
-    transform = TranslateTransform2D(
+    transform = TranslateTransform(
         torch.zeros((dim,), dtype=dtype, requires_grad=True)
     )
 
@@ -209,7 +209,7 @@ def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
 
 def test_grad_scale2D(dtype: torch.dtype, dim: int) -> None:
     scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
-    transform = LinearTransform2D(
+    transform = LinearTransform(
         torch.eye(dim, dtype=dtype) * scale, torch.eye(dim, dtype=dtype) * 1.0 / scale
     )
 
@@ -235,7 +235,7 @@ def test_grad_rot2D(dtype: torch.dtype, dim: int) -> None:
     else:
         M = euler_angles_to_matrix(theta3, "XYZ")
 
-    transform = LinearTransform2D(M, M.T)
+    transform = LinearTransform(M, M.T)
 
     loss = transform.hom_matrix().sum()
     loss.backward()  # type: ignore[no-untyped-call]

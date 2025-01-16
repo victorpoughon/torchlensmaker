@@ -58,7 +58,7 @@ def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
 
 def render_surface(
     surface: tlm.surfaces.ImplicitSurface,
-    transform: tlm.Transform2DBase | tlm.Transform3DBase,
+    transform: tlm.TransformBase | tlm.Transform3DBase,
     dim: int,
     N: int = 100,
 ) -> object:
@@ -68,14 +68,14 @@ def render_surface(
 
     samples = surface.samples2D(N)
 
-    if dim == 2 and isinstance(transform, tlm.Transform2DBase):
+    if dim == 2 and isinstance(transform, tlm.TransformBase):
         front = torch.flip(
             torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
         )
 
         samples = torch.row_stack((front, samples))
         obj = {
-            "matrix": transform.matrix3().tolist(),
+            "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
         }
     elif dim == 3 and isinstance(transform, tlm.Transform3DBase):

@@ -26,7 +26,7 @@ def hom_matrix(A: Tensor, B: Tensor) -> Tensor:
     return torch.cat((top, bottom), dim=0)
 
 
-class Transform2DBase:
+class TransformBase:
     "Abstract base class for 2D transforms"
 
     def direct_points(self, points: Tensor) -> Tensor:
@@ -46,7 +46,7 @@ class Transform2DBase:
         raise NotImplementedError
 
 
-class TranslateTransform2D(Transform2DBase):
+class TranslateTransform(TransformBase):
     "2D translation: Y = X + T"
 
     def __init__(self, T: Tensor):
@@ -71,7 +71,7 @@ class TranslateTransform2D(Transform2DBase):
         return hom_matrix(A, B)
 
 
-class LinearTransform2D(Transform2DBase):
+class LinearTransform(TransformBase):
     "Linear 2D transform: Y = AX"
 
     def __init__(self, A: Tensor, A_inv: Tensor):
@@ -99,7 +99,7 @@ class LinearTransform2D(Transform2DBase):
         return hom_matrix(A, B)
 
 
-class SurfaceExtentTransform2D(Transform2DBase):
+class SurfaceExtentTransform(TransformBase):
     "Translation from a surface extent point"
 
     def __init__(self, surface: LocalSurface, dim: int):
@@ -128,10 +128,10 @@ class SurfaceExtentTransform2D(Transform2DBase):
         return hom_matrix(A, B)
 
 
-class ComposeTransform2D(Transform2DBase):
+class ComposeTransform(TransformBase):
     "Compose a list of 2D transforms"
 
-    def __init__(self, transforms: list[Transform2DBase]):
+    def __init__(self, transforms: list[TransformBase]):
         self.transforms = transforms
 
     def direct_points(self, points: Tensor) -> Tensor:
@@ -188,11 +188,11 @@ def basic_transform(
 
     def makeit(surface):
         # anchor
-        transforms = [SurfaceExtentTransform2D(surface)] if anchor == "extent" else []
+        transforms = [SurfaceExtentTransform(surface, 2)] if anchor == "extent" else []
 
         # scale
         transforms.append(
-            LinearTransform2D(
+            LinearTransform(
                 torch.tensor([[scale, 0.0], [0.0, scale]], dtype=dtype),
                 torch.tensor([[1 / scale, 0.0], [0.0, 1 / scale]], dtype=dtype),
             )
@@ -200,15 +200,15 @@ def basic_transform(
 
         # rotate
         transforms.append(
-            LinearTransform2D(
+            LinearTransform(
                 rotation_matrix_2D(torch.as_tensor(theta, dtype=dtype)),
                 rotation_matrix_2D(-torch.as_tensor(theta, dtype=dtype)),
             )
         )
 
         # translate
-        transforms.append(TranslateTransform2D(torch.as_tensor(translate, dtype=dtype)))
+        transforms.append(TranslateTransform(torch.as_tensor(translate, dtype=dtype)))
 
-        return ComposeTransform2D(transforms)
+        return ComposeTransform(transforms)
 
     return makeit
