@@ -32,14 +32,6 @@ class Transform3DBase:
         "Homogenous 4x4 transform matrix"
         raise NotImplementedError
 
-# tlm.Transform3DBase
-# tlm.TranslateTransform3D
-# tlm.LinearTransform3D
-# tlm.SurfaceExtentTransform3D
-# tlm.ComposeTransform3D
-
-class Translate3D(Transform3DBase):
-    ...
 
 class Surface3DTransform(Transform3DBase):
     """

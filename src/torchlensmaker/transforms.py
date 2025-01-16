@@ -47,7 +47,7 @@ class TransformBase:
 
 
 class TranslateTransform(TransformBase):
-    "2D translation: Y = X + T"
+    "Translation transform Y = X + T"
 
     def __init__(self, T: Tensor):
         self.T = T
@@ -72,7 +72,7 @@ class TranslateTransform(TransformBase):
 
 
 class LinearTransform(TransformBase):
-    "Linear 2D transform: Y = AX"
+    "Linear transform Y = AX"
 
     def __init__(self, A: Tensor, A_inv: Tensor):
         assert A.shape == A_inv.shape
@@ -107,7 +107,7 @@ class SurfaceExtentTransform(TransformBase):
         self.dim = dim
 
     def _extent(self) -> Tensor:
-        return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(1)), dim=0)
+        return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(self.dim-1)), dim=0)
 
     def direct_points(self, points: Tensor) -> Tensor:
         return points - self._extent()
@@ -129,7 +129,7 @@ class SurfaceExtentTransform(TransformBase):
 
 
 class ComposeTransform(TransformBase):
-    "Compose a list of 2D transforms"
+    "Compose a list of transforms"
 
     def __init__(self, transforms: list[TransformBase]):
         self.transforms = transforms

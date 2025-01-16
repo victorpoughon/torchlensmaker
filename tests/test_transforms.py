@@ -37,38 +37,45 @@ def make_transforms(
     dtype: torch.dtype,
     dim: int,
 ) -> tuple[torch.dtype, int, list[TransformBase]]:
+    # Translate
+    T_id = TranslateTransform(torch.zeros((dim,), dtype=dtype))
+    T_1 = TranslateTransform(torch.ones((dim,), dtype=dtype))
+    T_rand = TranslateTransform(torch.rand((dim,), dtype=dtype))
+
+    # Linear
+    L_id = LinearTransform(torch.eye(dim, dtype=dtype), torch.eye(dim, dtype=dtype))
+
     if dim == 2:
-        return dtype, dim, make_transforms_2D(dtype)
+        L_scale = LinearTransform(
+            torch.diag(torch.tensor([0.5, 0.25], dtype=dtype)),
+            torch.diag(torch.tensor([2.0, 4.0], dtype=dtype)),
+        )
     else:
-        return dtype, dim, make_transforms_3D(dtype)
+        L_scale = LinearTransform(
+            torch.diag(torch.tensor([0.5, 0.25, 0.2], dtype=dtype)),
+            torch.diag(torch.tensor([2.0, 4.0, 5.0], dtype=dtype)),
+        )
 
+    if dim == 2:
+        theta = torch.as_tensor(1.5, dtype=dtype)
+        M = rotation_matrix_2D(theta)
+        L_rot = LinearTransform(M, M.T)
+    else:
+        theta = torch.tensor([1.1, 1.2, 1.3], dtype=dtype)
+        M = euler_angles_to_matrix(theta, "XYZ")
+        L_rot = LinearTransform(M, M.T)
 
-def make_transforms_2D(dtype: torch.dtype) -> list[TransformBase]:
-    # Translate2D
-    T_id = TranslateTransform(torch.tensor([0.0, 0.0], dtype=dtype))
-    T_1 = TranslateTransform(torch.tensor([1.0, 1.0], dtype=dtype))
-    T_rand = TranslateTransform(torch.rand((2,), dtype=dtype))
-
-    # Linear2D
-    L_id = LinearTransform(torch.eye(2, dtype=dtype), torch.eye(2, dtype=dtype))
-    L_scale = LinearTransform(
-        torch.diag(torch.tensor([0.5, 0.25], dtype=dtype)),
-        torch.diag(torch.tensor([2.0, 4.0], dtype=dtype)),
-    )
-    theta = torch.as_tensor(1.5, dtype=dtype)
-    L_rot = LinearTransform(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
-
-    # SurfaceExtent2D
+    # SurfaceExtent
     s1 = Sphere(35.0, 35 / 2, dtype=dtype)
     s2 = Parabola(35.0, 0.010, dtype=dtype)
     s3 = SquarePlane(35.0, dtype=dtype)
     s4 = CircularPlane(35.0, dtype=dtype)
-    A_1 = SurfaceExtentTransform(s1, 2)
-    A_2 = SurfaceExtentTransform(s2, 2)
-    A_3 = SurfaceExtentTransform(s3, 2)
-    A_4 = SurfaceExtentTransform(s4, 2)
+    A_1 = SurfaceExtentTransform(s1, dim)
+    A_2 = SurfaceExtentTransform(s2, dim)
+    A_3 = SurfaceExtentTransform(s3, dim)
+    A_4 = SurfaceExtentTransform(s4, dim)
 
-    # ComposeTransform2D
+    # ComposeTransform
     D_1 = ComposeTransform([T_id, T_1])
     D_2 = ComposeTransform([T_id, L_id])
     D_3 = ComposeTransform([T_1, L_scale])
@@ -80,7 +87,7 @@ def make_transforms_2D(dtype: torch.dtype) -> list[TransformBase]:
     D_9 = ComposeTransform([A_1, D_6])
     D_10 = ComposeTransform([D_9, D_4])
 
-    return [
+    return (dtype, dim, [
         T_id,
         T_1,
         T_rand,
@@ -101,16 +108,7 @@ def make_transforms_2D(dtype: torch.dtype) -> list[TransformBase]:
         D_8,
         D_9,
         D_10,
-    ]
-
-
-def make_transforms_3D(dtype: torch.dtype) -> list[TransformBase]:
-    # Translate
-    T_id = TranslateTransform(torch.tensor([0.0, 0.0, 0.0], dtype=dtype))
-
-    # TODO more
-
-    return [T_id]
+    ])
 
 
 def test_roundtrip(
