@@ -2,7 +2,7 @@ import torch
 from torchlensmaker.surfaces import LocalSurface
 import functools
 
-from typing import Iterable
+from torchlensmaker.rot3d import euler_angles_to_matrix
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -173,11 +173,11 @@ def rotation_matrix_2D(
 
 
 def basic_transform(
-    scale: float,
-    anchor: str,
-    theta: float,
-    translate: Iterable[float],
-    dtype=torch.float64,
+        scale: float,
+        anchor: str,
+        thetas: float | list[float],
+        translate: list[float],
+        dtype = torch.float64
 ):
     """
     Experimental
@@ -186,25 +186,30 @@ def basic_transform(
     Returns a function foo(surface)
     """
 
+    if isinstance(thetas, list) and len(translate) == 3:
+        dim = 3
+    elif isinstance(thetas, (float, int)) and len(translate) == 2:
+        dim = 2
+    else:
+        raise RuntimeError("invalid arguments to basic_transform")
+
     def makeit(surface):
         # anchor
-        transforms = [SurfaceExtentTransform(surface, 2)] if anchor == "extent" else []
+        transforms = [SurfaceExtentTransform(surface, dim)] if anchor == "extent" else []
 
         # scale
-        transforms.append(
-            LinearTransform(
-                torch.tensor([[scale, 0.0], [0.0, scale]], dtype=dtype),
-                torch.tensor([[1 / scale, 0.0], [0.0, 1 / scale]], dtype=dtype),
-            )
-        )
+        Md = torch.eye(dim, dtype=dtype) * scale
+        Mi = torch.eye(dim, dtype=dtype) * 1 / scale
+        transforms.append(LinearTransform(Md, Mi))
 
         # rotate
-        transforms.append(
-            LinearTransform(
-                rotation_matrix_2D(torch.as_tensor(theta, dtype=dtype)),
-                rotation_matrix_2D(-torch.as_tensor(theta, dtype=dtype)),
-            )
-        )
+        if dim == 2:
+            Mr = rotation_matrix_2D(torch.as_tensor(thetas, dtype=dtype))
+        else:
+            Mr = euler_angles_to_matrix(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
+        ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
+
+        transforms.append(LinearTransform(Mr, Mr.T))
 
         # translate
         transforms.append(TranslateTransform(torch.as_tensor(translate, dtype=dtype)))
@@ -212,3 +217,4 @@ def basic_transform(
         return ComposeTransform(transforms)
 
     return makeit
+    
