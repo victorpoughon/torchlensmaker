@@ -3,7 +3,6 @@ import torch
 from torchlensmaker.surfaces import LocalSurface
 
 from torchlensmaker.transforms import TransformBase
-from torchlensmaker.transforms3D import Transform3DBase
 
 Tensor = torch.Tensor
 
@@ -12,7 +11,7 @@ def intersect(
     surface: LocalSurface,
     P: Tensor,
     V: Tensor,
-    transform: TransformBase | Transform3DBase,
+    transform: TransformBase,
 ) -> tuple[Tensor, Tensor]:
     """
     Surface-rays collision detection
@@ -36,13 +35,9 @@ def intersect(
     dim = P.shape[1]
 
     # Convert rays to surface local frame
-    # TODO temp
-    if P.shape[1] == 2:
-        Ps = transform.inverse_points(P)
-        Vs = transform.inverse_vectors(V)
-    else:
-        Ps, Vs = transform.inverse_rays(P, V, surface)
-
+    Ps = transform.inverse_points(P)
+    Vs = transform.inverse_vectors(V)
+    
     # Collision detection in the surface local frame
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 

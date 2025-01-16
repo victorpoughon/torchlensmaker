@@ -58,7 +58,7 @@ def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
 
 def render_surface(
     surface: tlm.surfaces.ImplicitSurface,
-    transform: tlm.TransformBase | tlm.Transform3DBase,
+    transform: tlm.TransformBase,
     dim: int,
     N: int = 100,
 ) -> object:
@@ -68,7 +68,7 @@ def render_surface(
 
     samples = surface.samples2D(N)
 
-    if dim == 2 and isinstance(transform, tlm.TransformBase):
+    if dim == 2:
         front = torch.flip(
             torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
         )
@@ -78,9 +78,9 @@ def render_surface(
             "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
         }
-    elif dim == 3 and isinstance(transform, tlm.Transform3DBase):
+    elif dim == 3:
         obj = {
-            "matrix": transform.matrix4(surface).tolist(),
+            "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
         }
     else:
@@ -110,7 +110,7 @@ def render(
     points: Tensor | None = None,
     normals: Tensor | None = None,
     surfaces: list[tlm.surfaces.ImplicitSurface] | None = None,
-    transforms: list[tlm.Surface3DTransform] | None = None,
+    transforms: list[tlm.TransformBase] | None = None,
     rays_color: str = "#ffa724",
 ) -> object:
     "Render tlm objects to json-able object"

@@ -57,7 +57,6 @@ from torchlensmaker.plot_magnification import plot_magnification
 
 from torchlensmaker.outline import *
 import torchlensmaker.surfaces as surfaces
-from torchlensmaker.transforms3D import *
 from torchlensmaker.transforms import *
 from torchlensmaker.physics import *
 
