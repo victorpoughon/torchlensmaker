@@ -7,15 +7,39 @@ from torchlensmaker.rot3d import euler_angles_to_matrix
 Tensor = torch.Tensor
 
 
-def homogeneous_transform_matrix4(A: Tensor, B: Tensor, dtype=torch.float64) -> Tensor:
+def homogeneous_transform_matrix4(A: Tensor, B: Tensor) -> Tensor:
     "Homogeneous 4x4 transform matrix for 3D transform AX+B"
     rows = torch.cat((A, B.unsqueeze(0).T), dim=1)
-    return torch.cat((rows, torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=dtype)), dim=0)
+    return torch.cat((rows, torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=A.dtype)), dim=0)
 
 
 class Transform3DBase:
-    pass
+    "Abstract base class for 3D transforms"
 
+    def direct_points(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def direct_vectors(self, vectors: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def inverse_points(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def inverse_vectors(self, vectors: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def matrix3(self) -> Tensor:
+        "Homogenous 4x4 transform matrix"
+        raise NotImplementedError
+
+# tlm.Transform3DBase
+# tlm.TranslateTransform3D
+# tlm.LinearTransform3D
+# tlm.SurfaceExtentTransform3D
+# tlm.ComposeTransform3D
+
+class Translate3D(Transform3DBase):
+    ...
 
 class Surface3DTransform(Transform3DBase):
     """

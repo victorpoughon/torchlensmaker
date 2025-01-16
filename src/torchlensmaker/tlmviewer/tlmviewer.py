@@ -19,7 +19,7 @@ def get_script_template() -> str:
 
 
 def get_div_template() -> str:
-    return "<div data-jp-suppress-context-menu id='$div_id' style='width: 800px; height: 600px;'></div>"
+    return "<div data-jp-suppress-context-menu id='$div_id' style='width: 1000px; height: 650px;'></div>"
 
 
 def random_id() -> str:
@@ -58,7 +58,7 @@ def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
 
 def render_surface(
     surface: tlm.surfaces.ImplicitSurface,
-    transform: tlm.Surface2DTransform | tlm.Surface3DTransform,
+    transform: tlm.Transform2DBase | tlm.Transform3DBase,
     dim: int,
     N: int = 100,
 ) -> object:
