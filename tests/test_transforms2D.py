@@ -19,6 +19,8 @@ from torchlensmaker.surfaces import (
     CircularPlane,
 )
 
+from torchlensmaker.rot3d import euler_angles_to_matrix
+
 
 @pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
 def dtype(request: pytest.FixtureRequest) -> typing.Any:
@@ -186,17 +188,17 @@ def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> 
 
 def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
     transform = TranslateTransform2D(
-        torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True)
+        torch.zeros((dim,), dtype=dtype, requires_grad=True)
     )
 
-    loss = transform.matrix3().sum()
+    loss = transform.hom_matrix().sum()
     loss.backward()  # type: ignore[no-untyped-call]
     grad = transform.T.grad
 
     assert grad is not None
 
     # known grad for a translation
-    assert torch.allclose(grad, torch.ones(2, dtype=dtype))
+    assert torch.allclose(grad, torch.ones(dim, dtype=dtype))
 
     assert torch.all(torch.isfinite(grad))
     assert grad.dtype == dtype
@@ -205,29 +207,40 @@ def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
 def test_grad_scale2D(dtype: torch.dtype, dim: int) -> None:
     scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
     transform = LinearTransform2D(
-        torch.eye(2, dtype=dtype) * scale, torch.eye(2, dtype=dtype) * 1.0 / scale
+        torch.eye(dim, dtype=dtype) * scale, torch.eye(dim, dtype=dtype) * 1.0 / scale
     )
 
-    loss = transform.matrix3().sum()
+    loss = transform.hom_matrix().sum()
     loss.backward()  # type: ignore[no-untyped-call]
     grad = scale.grad
 
     assert grad is not None
 
     # known grad for a scale
-    assert torch.allclose(grad, torch.tensor([2.0], dtype=dtype))
+    assert torch.allclose(grad, torch.tensor([dim], dtype=dtype))
 
     assert torch.all(torch.isfinite(grad))
     assert grad.dtype == dtype
 
 
 def test_grad_rot2D(dtype: torch.dtype, dim: int) -> None:
-    theta = torch.tensor([0.1], dtype=dtype, requires_grad=True)
-    transform = LinearTransform2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
+    theta2 = torch.tensor([0.1], dtype=dtype, requires_grad=True)
+    theta3 = torch.tensor([0.1, 0.2, 0.3], dtype=dtype, requires_grad=True)
 
-    loss = transform.matrix3().sum()
+    if dim == 2:
+        M = rotation_matrix_2D(theta2)
+    else:
+        M = euler_angles_to_matrix(theta3, "XYZ")
+
+    transform = LinearTransform2D(M, M.T)
+
+    loss = transform.hom_matrix().sum()
     loss.backward()  # type: ignore[no-untyped-call]
-    grad = theta.grad
+    
+    if dim == 2:
+        grad = theta2.grad
+    else:
+        grad = theta3.grad
 
     assert grad is not None
     assert torch.all(torch.isfinite(grad))

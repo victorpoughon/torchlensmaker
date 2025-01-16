@@ -8,10 +8,22 @@ from typing import Iterable
 Tensor = torch.Tensor
 
 
-def homogeneous_transform_matrix3(A: Tensor, B: Tensor) -> Tensor:
+def hom_matrix(A: Tensor, B: Tensor) -> Tensor:
     "Homogeneous 3x3 transform matrix for 2D transform AX+B"
-    rows = torch.cat((A, B.unsqueeze(0).T), dim=1)
-    return torch.cat((rows, torch.tensor([[0.0, 0.0, 1.0]], dtype=A.dtype)), dim=0)
+    assert A.dim() == 2
+    assert B.dim() == 1
+    assert A.shape[0] == A.shape[1] == B.shape[0]
+    assert A.dtype == B.dtype
+    dim = A.shape[0]
+    assert dim == 2 or dim == 3
+
+    top = torch.cat((A, B.unsqueeze(0).T), dim=1)
+    if dim == 2:
+        bottom = torch.tensor([[0.0, 0.0, 1.0]], dtype=A.dtype)
+    else:
+        bottom = torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=A.dtype)
+
+    return torch.cat((top, bottom), dim=0)
 
 
 class Transform2DBase:
@@ -29,8 +41,8 @@ class Transform2DBase:
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
         raise NotImplementedError
 
-    def matrix3(self) -> Tensor:
-        "Homogenous 3x3 transform matrix"
+    def hom_matrix(self) -> Tensor:
+        "Homogenous transform matrix"
         raise NotImplementedError
 
 
@@ -52,21 +64,19 @@ class TranslateTransform2D(Transform2DBase):
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
         return vectors
 
-    def matrix3(self) -> Tensor:
-        return torch.row_stack(
-            (
-                torch.column_stack(
-                    (torch.eye(2, dtype=self.T.dtype), self.T.unsqueeze(0).T)
-                ),
-                torch.tensor([0, 0, 1], dtype=self.T.dtype),
-            )
-        )
+    def hom_matrix(self) -> Tensor:
+        dim = self.T.shape[0]
+        A = torch.eye(dim, dtype=self.T.dtype)
+        B = self.T
+        return hom_matrix(A, B)
 
 
 class LinearTransform2D(Transform2DBase):
     "Linear 2D transform: Y = AX"
 
     def __init__(self, A: Tensor, A_inv: Tensor):
+        assert A.shape == A_inv.shape
+        assert A.shape[0] == A.shape[1]
         self.A = A
         self.A_inv = A_inv
 
@@ -82,13 +92,11 @@ class LinearTransform2D(Transform2DBase):
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
         return (self.A_inv @ vectors.T).T
 
-    def matrix3(self) -> Tensor:
-        return torch.row_stack(
-            (
-                torch.column_stack((self.A, torch.zeros((2, 1), dtype=self.A.dtype))),
-                torch.tensor([0, 0, 1], dtype=self.A.dtype),
-            )
-        )
+    def hom_matrix(self) -> Tensor:
+        dim = self.A.shape[0]
+        A = self.A
+        B = torch.zeros((dim,), dtype=self.A.dtype)
+        return hom_matrix(A, B)
 
 
 class SurfaceExtentTransform2D(Transform2DBase):
@@ -174,7 +182,14 @@ def rotation_matrix_2D(
         )
     )
 
-def basic_transform(scale: float, anchor: str, theta: float, translate: Iterable[float], dtype=torch.float64):
+
+def basic_transform(
+    scale: float,
+    anchor: str,
+    theta: float,
+    translate: Iterable[float],
+    dtype=torch.float64,
+):
     """
     Experimental
 
@@ -188,18 +203,23 @@ def basic_transform(scale: float, anchor: str, theta: float, translate: Iterable
 
         # scale
         transforms.append(
-            LinearTransform2D(torch.tensor([[scale, 0.0], [0., scale]], dtype=dtype), torch.tensor([[1/scale, 0.0], [0., 1/scale]], dtype=dtype))
+            LinearTransform2D(
+                torch.tensor([[scale, 0.0], [0.0, scale]], dtype=dtype),
+                torch.tensor([[1 / scale, 0.0], [0.0, 1 / scale]], dtype=dtype),
+            )
         )
 
         # rotate
         transforms.append(
-            LinearTransform2D(rotation_matrix_2D(theta, dtype=dtype), rotation_matrix_2D(-theta, dtype=dtype))
+            LinearTransform2D(
+                rotation_matrix_2D(theta, dtype=dtype),
+                rotation_matrix_2D(-theta, dtype=dtype),
+            )
         )
 
         # translate
-        transforms.append(
-            TranslateTransform2D(torch.as_tensor(translate, dtype=dtype))
-        )
-    
+        transforms.append(TranslateTransform2D(torch.as_tensor(translate, dtype=dtype)))
+
         return ComposeTransform2D(transforms)
+
     return makeit
