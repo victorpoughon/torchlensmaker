@@ -5,10 +5,10 @@ import torch
 
 from torchlensmaker.transforms2D import (
     Transform2DBase,
-    Translate2D,
-    Linear2D,
+    TranslateTransform2D,
+    LinearTransform2D,
     ComposeTransform2D,
-    SurfaceExtent2D,
+    SurfaceExtentTransform2D,
     rotation_matrix_2D,
 )
 
@@ -31,18 +31,18 @@ def make_transforms(
 ) -> tuple[torch.dtype, list[Transform2DBase]]:
     dtype = dtype_fixture
     # Translate2D
-    T_id = Translate2D(torch.tensor([0.0, 0.0], dtype=dtype))
-    T_1 = Translate2D(torch.tensor([1.0, 1.0], dtype=dtype))
-    T_rand = Translate2D(torch.rand((2,), dtype=dtype))
+    T_id = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype))
+    T_1 = TranslateTransform2D(torch.tensor([1.0, 1.0], dtype=dtype))
+    T_rand = TranslateTransform2D(torch.rand((2,), dtype=dtype))
 
     # Linear2D
-    L_id = Linear2D(torch.eye(2, dtype=dtype), torch.eye(2, dtype=dtype))
-    L_scale = Linear2D(
+    L_id = LinearTransform2D(torch.eye(2, dtype=dtype), torch.eye(2, dtype=dtype))
+    L_scale = LinearTransform2D(
         torch.diag(torch.tensor([0.5, 0.25], dtype=dtype)),
         torch.diag(torch.tensor([2.0, 4.0], dtype=dtype)),
     )
     theta = torch.as_tensor(1.5, dtype=dtype)
-    L_rot = Linear2D(
+    L_rot = LinearTransform2D(
         torch.tensor(
             [
                 [torch.cos(theta), -torch.sin(theta)],
@@ -62,10 +62,10 @@ def make_transforms(
     s2 = Parabola(35.0, 0.010, dtype=dtype)
     s3 = SquarePlane(35.0, dtype=dtype)
     s4 = CircularPlane(35.0, dtype=dtype)
-    A_1 = SurfaceExtent2D(s1)
-    A_2 = SurfaceExtent2D(s2)
-    A_3 = SurfaceExtent2D(s3)
-    A_4 = SurfaceExtent2D(s4)
+    A_1 = SurfaceExtentTransform2D(s1)
+    A_2 = SurfaceExtentTransform2D(s2)
+    A_3 = SurfaceExtentTransform2D(s3)
+    A_4 = SurfaceExtentTransform2D(s4)
 
     # ComposeTransform2D
     D_1 = ComposeTransform2D([T_id, T_1])
@@ -195,7 +195,7 @@ def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> 
 def test_grad_translate2D(dtype_fixture: torch.dtype) -> None:
     dtype = dtype_fixture
 
-    transform = Translate2D(torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True))
+    transform = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True))
 
     loss = transform.matrix3().sum()
     loss.backward()  # type: ignore[no-untyped-call]
@@ -214,7 +214,7 @@ def test_grad_scale2D(dtype_fixture: torch.dtype) -> None:
     dtype = dtype_fixture
 
     scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
-    transform = Linear2D(
+    transform = LinearTransform2D(
         torch.eye(2, dtype=dtype) * scale, torch.eye(2, dtype=dtype) * 1.0 / scale
     )
 
@@ -235,7 +235,7 @@ def test_grad_rot2D(dtype_fixture: torch.dtype) -> None:
     dtype = dtype_fixture
 
     theta = torch.tensor([0.1], dtype=dtype, requires_grad=True)
-    transform = Linear2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
+    transform = LinearTransform2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
 
     loss = transform.matrix3().sum()
     loss.backward()  # type: ignore[no-untyped-call]

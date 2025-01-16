@@ -32,12 +32,7 @@ class Transform2DBase:
         raise NotImplementedError
 
 
-# testing transforms
-# compose inverse with direct == identity for both vector and points
-#
-
-
-class Translate2D(Transform2DBase):
+class TranslateTransform2D(Transform2DBase):
     "2D translation: Y = X + T"
 
     def __init__(self, T: Tensor):
@@ -66,7 +61,7 @@ class Translate2D(Transform2DBase):
         )
 
 
-class Linear2D(Transform2DBase):
+class LinearTransform2D(Transform2DBase):
     "Linear 2D transform: Y = AX"
 
     def __init__(self, A: Tensor, A_inv: Tensor):
@@ -94,7 +89,7 @@ class Linear2D(Transform2DBase):
         )
 
 
-class SurfaceExtent2D(Transform2DBase):
+class SurfaceExtentTransform2D(Transform2DBase):
     "Translation from a surface extent point"
 
     def __init__(self, surface: LocalSurface):
