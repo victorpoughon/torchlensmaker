@@ -25,9 +25,15 @@ def dtype(request: pytest.FixtureRequest) -> typing.Any:
     return request.param
 
 
+@pytest.fixture(params=[2, 3], ids=["2D", "3D"])
+def dim(request: pytest.FixtureRequest) -> typing.Any:
+    return request.param
+
+
 @pytest.fixture
 def make_transforms(
     dtype: torch.dtype,
+    dim: int,
 ) -> tuple[torch.dtype, list[Transform2DBase]]:
     # Translate2D
     T_id = TranslateTransform2D(torch.tensor([0.0, 0.0], dtype=dtype))
@@ -80,6 +86,7 @@ def make_transforms(
 
     return (
         dtype,
+        dim,
         [
             T_id,
             T_1,
@@ -106,7 +113,7 @@ def make_transforms(
 
 
 def test_roundtrip(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
-    dtype, transforms = make_transforms
+    dtype, dim, transforms = make_transforms
     N = 5
     for t in transforms:
 
@@ -131,7 +138,7 @@ def test_roundtrip(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -
 def test_preserve_dtype(
     make_transforms: tuple[torch.dtype, list[Transform2DBase]]
 ) -> None:
-    dtype, transforms = make_transforms
+    dtype, dim, transforms = make_transforms
     N = 1
     for t in transforms:
         assert t.direct_points(torch.rand((N, 2), dtype=dtype)).dtype == dtype
@@ -142,7 +149,7 @@ def test_preserve_dtype(
 
 
 def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> None:
-    dtype, transforms = make_transforms
+    dtype, dim, transforms = make_transforms
     N = 5
     for t in transforms:
         if dtype == torch.float32:
@@ -177,7 +184,7 @@ def test_matrix3(make_transforms: tuple[torch.dtype, list[Transform2DBase]]) -> 
         )
 
 
-def test_grad_translate2D(dtype: torch.dtype) -> None:
+def test_grad_translate2D(dtype: torch.dtype, dim: int) -> None:
     transform = TranslateTransform2D(
         torch.tensor([0.0, 0.0], dtype=dtype, requires_grad=True)
     )
@@ -195,7 +202,7 @@ def test_grad_translate2D(dtype: torch.dtype) -> None:
     assert grad.dtype == dtype
 
 
-def test_grad_scale2D(dtype: torch.dtype) -> None:
+def test_grad_scale2D(dtype: torch.dtype, dim: int) -> None:
     scale = torch.tensor([5.0], dtype=dtype, requires_grad=True)
     transform = LinearTransform2D(
         torch.eye(2, dtype=dtype) * scale, torch.eye(2, dtype=dtype) * 1.0 / scale
@@ -214,7 +221,7 @@ def test_grad_scale2D(dtype: torch.dtype) -> None:
     assert grad.dtype == dtype
 
 
-def test_grad_rot2D(dtype: torch.dtype) -> None:
+def test_grad_rot2D(dtype: torch.dtype, dim: int) -> None:
     theta = torch.tensor([0.1], dtype=dtype, requires_grad=True)
     transform = LinearTransform2D(rotation_matrix_2D(theta), rotation_matrix_2D(-theta))
 
