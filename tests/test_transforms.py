@@ -176,6 +176,8 @@ def test_preserve_dtype(
         assert t.inverse_points(torch.rand((N, dim), dtype=dtype)).dtype == dtype
         assert t.inverse_vectors(torch.rand((N, dim), dtype=dtype)).dtype == dtype
         assert t.hom_matrix().dtype == dtype
+        assert t.dtype == dtype
+        assert t.dim == dim
 
 
 def test_hom_matrix(

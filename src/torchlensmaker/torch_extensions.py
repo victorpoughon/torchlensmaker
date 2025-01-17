@@ -38,11 +38,9 @@ def full_forward(module: nn.Module, inputs: Any, sampling: dict):
        ForwardContext objects.
     2. The `sampling` object is passed to each module as additional read-only input.
 
-    The returned list does not include the top level forward call.
-
     Returns:
-        execute_list: list of (module, inputs, outputs) outputs: final outputs
-        of the top level module execution
+        execute_list: list of (module, inputs, outputs)
+        outputs: final outputs of the top level module execution
     """
 
     execute_list = []

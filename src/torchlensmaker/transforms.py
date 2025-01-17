@@ -27,7 +27,14 @@ def hom_matrix(A: Tensor, B: Tensor) -> Tensor:
 
 
 class TransformBase:
-    "Abstract base class for 2D transforms"
+    "Abstract base class for transforms"
+
+    def __init__(self, dim: int, dtype: torch.dtype):
+        self.dim = dim
+        self.dtype = dtype
+    
+    def __repr__(self):
+        return f"[{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}]"
 
     def direct_points(self, points: Tensor) -> Tensor:
         raise NotImplementedError
@@ -47,10 +54,6 @@ class TransformBase:
 
 
 class IdentityTransform(TransformBase):
-    def __init__(self, dim: int, dtype: torch.dtype):
-        self.dim = dim
-        self.dtype = dtype
-
     def direct_points(self, points: Tensor) -> Tensor:
         return points
 
@@ -74,6 +77,7 @@ class TranslateTransform(TransformBase):
     "Translation transform Y = X + T"
 
     def __init__(self, T: Tensor):
+        super().__init__(T.shape[0], T.dtype)
         self.T = T
 
     def direct_points(self, points: Tensor) -> Tensor:
@@ -89,8 +93,7 @@ class TranslateTransform(TransformBase):
         return vectors
 
     def hom_matrix(self) -> Tensor:
-        dim = self.T.shape[0]
-        A = torch.eye(dim, dtype=self.T.dtype)
+        A = torch.eye(self.dim, dtype=self.dtype)
         B = self.T
         return hom_matrix(A, B)
 
@@ -101,6 +104,7 @@ class LinearTransform(TransformBase):
     def __init__(self, A: Tensor, A_inv: Tensor):
         assert A.shape == A_inv.shape
         assert A.shape[0] == A.shape[1]
+        super().__init__(A.shape[0], A.dtype)
         self.A = A
         self.A_inv = A_inv
 
@@ -117,9 +121,8 @@ class LinearTransform(TransformBase):
         return (self.A_inv @ vectors.T).T
 
     def hom_matrix(self) -> Tensor:
-        dim = self.A.shape[0]
         A = self.A
-        B = torch.zeros((dim,), dtype=self.A.dtype)
+        B = torch.zeros((self.dim,), dtype=self.dtype)
         return hom_matrix(A, B)
 
 
@@ -127,8 +130,8 @@ class SurfaceExtentTransform(TransformBase):
     "Translation from a surface extent point"
 
     def __init__(self, surface: LocalSurface, dim: int):
+        super().__init__(dim, surface.dtype)
         self.surface = surface
-        self.dim = dim
 
     def _extent(self) -> Tensor:
         return torch.cat(
@@ -148,8 +151,7 @@ class SurfaceExtentTransform(TransformBase):
         return vectors
 
     def hom_matrix(self) -> Tensor:
-        dim = self.dim
-        A = torch.eye(dim, dtype=self.surface.dtype)
+        A = torch.eye(self.dim, dtype=self.dtype)
         B = -self._extent()
         return hom_matrix(A, B)
 
@@ -158,6 +160,10 @@ class ComposeTransform(TransformBase):
     "Compose a list of transforms"
 
     def __init__(self, transforms: list[TransformBase]):
+        assert (len(transforms) > 0)
+        assert sum([t.dtype == transforms[0].dtype for t in transforms]) == len(transforms)
+        assert sum([t.dim == transforms[0].dim for t in transforms]) == len(transforms)
+        super().__init__(transforms[0].dim, transforms[0].dtype)
         self.transforms = transforms
 
     def direct_points(self, points: Tensor) -> Tensor:
