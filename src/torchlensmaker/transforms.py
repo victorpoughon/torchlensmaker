@@ -46,6 +46,30 @@ class TransformBase:
         raise NotImplementedError
 
 
+class IdentityTransform(TransformBase):
+    def __init__(self, dim: int, dtype: torch.dtype):
+        self.dim = dim
+        self.dtype = dtype
+
+    def direct_points(self, points: Tensor) -> Tensor:
+        return points
+
+    def direct_vectors(self, vectors: Tensor) -> Tensor:
+        return vectors
+
+    def inverse_points(self, points: Tensor) -> Tensor:
+        return points
+
+    def inverse_vectors(self, vectors: Tensor) -> Tensor:
+        return vectors
+
+    def hom_matrix(self) -> Tensor:
+        return hom_matrix(
+            torch.eye(self.dim, dtype=self.dtype),
+            torch.zeros((self.dim,), dtype=self.dtype),
+        )
+
+
 class TranslateTransform(TransformBase):
     "Translation transform Y = X + T"
 
@@ -107,7 +131,9 @@ class SurfaceExtentTransform(TransformBase):
         self.dim = dim
 
     def _extent(self) -> Tensor:
-        return torch.cat((self.surface.extent().unsqueeze(0), torch.zeros(self.dim-1)), dim=0)
+        return torch.cat(
+            (self.surface.extent().unsqueeze(0), torch.zeros(self.dim - 1)), dim=0
+        )
 
     def direct_points(self, points: Tensor) -> Tensor:
         return points - self._extent()
@@ -160,9 +186,7 @@ class ComposeTransform(TransformBase):
         )
 
 
-def rotation_matrix_2D(
-    theta : Tensor
-) -> Tensor:
+def rotation_matrix_2D(theta: Tensor) -> Tensor:
     theta = torch.atleast_1d(theta)
     return torch.vstack(
         (
@@ -174,11 +198,11 @@ def rotation_matrix_2D(
 
 # TODO find a better name
 def basic_transform(
-        scale: float,
-        anchor: str,
-        thetas: float | list[float],
-        translate: list[float],
-        dtype = torch.float64
+    scale: float,
+    anchor: str,
+    thetas: float | list[float],
+    translate: list[float],
+    dtype=torch.float64,
 ):
     """
     Experimental
@@ -196,7 +220,9 @@ def basic_transform(
 
     def makeit(surface):
         # anchor
-        transforms = [SurfaceExtentTransform(surface, dim)] if anchor == "extent" else []
+        transforms = (
+            [SurfaceExtentTransform(surface, dim)] if anchor == "extent" else []
+        )
 
         # scale
         Md = torch.eye(dim, dtype=dtype) * scale
@@ -207,8 +233,11 @@ def basic_transform(
         if dim == 2:
             Mr = rotation_matrix_2D(torch.as_tensor(thetas, dtype=dtype))
         else:
-            Mr = euler_angles_to_matrix(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
-        ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
+            Mr = euler_angles_to_matrix(
+                torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
+            ).to(
+                dtype=dtype
+            )  # TODO need to support dtype in euler_angles_to_matrix
 
         transforms.append(LinearTransform(Mr, Mr.T))
 
@@ -218,4 +247,3 @@ def basic_transform(
         return ComposeTransform(transforms)
 
     return makeit
-    

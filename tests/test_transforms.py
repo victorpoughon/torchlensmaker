@@ -4,6 +4,7 @@ import typing
 import torch
 
 from torchlensmaker.transforms import (
+    IdentityTransform,
     TransformBase,
     TranslateTransform,
     LinearTransform,
@@ -38,6 +39,8 @@ def make_transforms(
     dtype: torch.dtype,
     dim: int,
 ) -> tuple[torch.dtype, int, list[TransformBase]]:
+    # Identity
+    ID_1 = IdentityTransform(dim, dtype)
     # Translate
     T_id = TranslateTransform(torch.zeros((dim,), dtype=dtype))
     T_1 = TranslateTransform(torch.ones((dim,), dtype=dtype))
@@ -107,6 +110,7 @@ def make_transforms(
         dtype,
         dim,
         [
+            ID_1,
             T_id,
             T_1,
             T_rand,

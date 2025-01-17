@@ -27,7 +27,7 @@ class ForwardContext:
         return iter((self.module, self.inputs, self.outputs))
 
 
-def full_forward(module, inputs, sampling: dict):
+def full_forward(module: nn.Module, inputs: Any, sampling: dict):
     """
     Evaluate an optical stack model
 
@@ -36,7 +36,7 @@ def full_forward(module, inputs, sampling: dict):
 
     1. All intermediate layers inputs and outputs are returned as a list of
        ForwardContext objects.
-    2. The `sampling` info is passed to each module as additional read-only input.
+    2. The `sampling` object is passed to each module as additional read-only input.
 
     The returned list does not include the top level forward call.
 
