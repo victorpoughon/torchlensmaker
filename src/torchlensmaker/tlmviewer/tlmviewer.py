@@ -5,6 +5,7 @@ import os.path
 import json
 import torch
 import typing
+
 Tensor = torch.Tensor
 
 import torchlensmaker as tlm
@@ -28,13 +29,19 @@ def random_id() -> str:
 
 def pprint(scene: object, ndigits: int | None = None):
     from pprint import pprint
-    
+
     if ndigits is not None:
         json_data = json.dumps(scene, allow_nan=False)
         scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
-    
+
     pprint(scene)
 
+def dump(scene: object, ndigits: int | None = None):
+    if ndigits is not None:
+        json_data = json.dumps(scene, allow_nan=False)
+        scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+
+    print(scene)
 
 def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     div_id = random_id()
@@ -95,13 +102,8 @@ def render_surface(
     return obj
 
 
-def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> dict[str, typing.Any]:
-    data = torch.hstack((start, end)).tolist()
-    return {
-        "type": "rays",
-        "data": data,
-        "color": color,
-    }
+def render_rays(start: Tensor, end: Tensor) -> dict[str, typing.Any]:
+    return torch.hstack((start, end)).tolist()
 
 
 def render(
@@ -129,7 +131,13 @@ def render(
         )
 
     if rays_start is not None and rays_end is not None:
-        groups.append(render_rays(rays_start, rays_end, rays_color))
+        groups.append(
+            {
+                "type": "rays",
+                "data": render_rays(rays_start, rays_end),
+                "color": rays_color,
+            }
+        )
 
     if points is not None:
         groups.append(

@@ -14,6 +14,7 @@ class TensorFrame:
     def __init__(self, data: torch.Tensor, columns: Iterable[str]):
         self.data = data
         self.columns = list(columns)
+        assert len(columns) == data.shape[1]
 
     def __repr__(self) -> str:
         return f"TensorFrame:\ndata:\n{repr(self.data)}\ncolumns:\n{self.columns}"
