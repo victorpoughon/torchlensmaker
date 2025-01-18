@@ -1,6 +1,6 @@
 import math
 import torch
-from torchlensmaker.raytracing import rot2d
+from torchlensmaker.rot2d import rot2d
 
 
 def test_single_vector_single_angle() -> None:

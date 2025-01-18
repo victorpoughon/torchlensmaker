@@ -1,5 +1,3 @@
-
-
 from torchlensmaker.module import Module
 
 from torchlensmaker.torch_extensions import (
@@ -7,7 +5,6 @@ from torchlensmaker.torch_extensions import (
     OpticalSequence,
     Parameter,
 )
-
 
 
 ## new 3D stuff
