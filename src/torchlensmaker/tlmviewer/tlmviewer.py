@@ -41,7 +41,7 @@ def dump(scene: object, ndigits: int | None = None):
         json_data = json.dumps(scene, allow_nan=False)
         scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
 
-    print(scene)
+    print(json.dumps(scene))
 
 def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     div_id = random_id()
