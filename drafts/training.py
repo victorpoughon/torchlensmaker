@@ -4,8 +4,6 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
-from .optics import default_input
-
 
 def get_all_gradients(model):
     grads = []
