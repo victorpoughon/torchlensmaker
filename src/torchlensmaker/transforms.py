@@ -135,7 +135,7 @@ class SurfaceExtentTransform(TransformBase):
 
     def _extent(self) -> Tensor:
         return torch.cat(
-            (self.surface.extent().unsqueeze(0), torch.zeros(self.dim - 1)), dim=0
+            (self.surface.extent().unsqueeze(0), torch.zeros(self.dim - 1, dtype=self.dtype)), dim=0
         )
 
     def direct_points(self, points: Tensor) -> Tensor:
