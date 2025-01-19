@@ -11,7 +11,6 @@ def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
 
     # Store original dimensions
     v_dim = v.dim()
-    theta_dim = theta.dim()
 
     # Reshape inputs if necessary
     if v.dim() == 1:

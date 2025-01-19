@@ -7,7 +7,7 @@ from torchlensmaker.outline import (
     CircularOutline,
 )
 
-from typing import Optional, Iterable
+from typing import Iterable
 
 # shorter for type annotations
 Tensor = torch.Tensor
