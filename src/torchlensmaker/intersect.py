@@ -31,7 +31,6 @@ def intersect(
 
     assert P.shape[0] == V.shape[0]
     assert P.shape[1] == P.shape[1]
-    dim = P.shape[1]
 
     # Convert rays to surface local frame
     Ps = transform.inverse_points(P)
@@ -41,7 +40,7 @@ def intersect(
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 
     # Compute collision points and convert normals to global frame
-    points = P + t.unsqueeze(1).expand((-1, dim)) * V
+    points = P + t.unsqueeze(1).expand_as(V) * V
     normals = transform.direct_vectors(local_normals)
 
     # remove non valid (non intersecting) points
@@ -49,4 +48,4 @@ def intersect(
     points = points[valid]
     normals = normals[valid]
 
-    return points, normals
+    return points, normals, valid
