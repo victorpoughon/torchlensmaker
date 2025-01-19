@@ -1,4 +1,6 @@
 import torch
+from torch.nn.functional import normalize
+
 from typing import Literal
 
 Tensor = torch.Tensor
@@ -51,8 +53,8 @@ def refraction(
           tensor always has the same shape as the input tensors.
 
     Args:
-        rays: unit vectors of the incident rays, shape (B, 2/3)
-        normals: unit vectors normal to the surface, shape (B, 2/3)
+        rays: unit vectors of the incident rays, shape (N, 2/3)
+        normals: unit vectors normal to the surface, shape (N, 2/3)
         n1: index of refraction of the incident medium, float or tensor of shape (N)
         n2: index of refraction of the refracted medium float or tensor of shape (N)
         critical_angle: one of 'nan', 'clamp', 'drop', 'reflect' (default: 'nan')
@@ -83,17 +85,23 @@ def refraction(
             -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normals
         )
 
+        return normalize(R_perp + R_para)
+
     elif critical_angle == "clamp":
         radicand = torch.clamp(
             1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0.0, max=None
         )
         R_para = -torch.sqrt(radicand) * normals
 
+        return normalize(R_perp + R_para)
+
     elif critical_angle == "drop":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
         valid = (radicand >= 0.0).squeeze(1)
         R_para = -torch.sqrt(radicand[valid, :]) * normals[valid, :]
         R_perp = R_perp[valid, :]
+
+        return normalize(R_perp + R_para)
 
     elif critical_angle == "reflect":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
@@ -104,13 +112,9 @@ def refraction(
         R = R_perp + R_para
 
         R[~valid] = reflection(rays, normals)[~valid]
-        return torch.div(R, torch.norm(R, dim=1, keepdim=True))
+        return normalize(R)
 
     else:
         raise ValueError(
-            f"critical_angle must be one of 'nan', 'clamp', 'drop'. Got {repr(critical_angle)}."
+            f"critical_angle must be one of 'nan', 'clamp', 'drop', 'reflect'. Got {repr(critical_angle)}."
         )
-
-    # Combine R_perp and R_para and normalize the result
-    R = R_perp + R_para
-    return torch.div(R, torch.norm(R, dim=1, keepdim=True))
