@@ -1,8 +1,10 @@
 import torch
-from torchlensmaker.surfaces import LocalSurface
 import functools
 
 from torchlensmaker.rot3d import euler_angles_to_matrix
+from torchlensmaker.surfaces import LocalSurface
+
+from typing import Callable
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -32,9 +34,11 @@ class TransformBase:
     def __init__(self, dim: int, dtype: torch.dtype):
         self.dim = dim
         self.dtype = dtype
-    
-    def __repr__(self):
-        return f"[{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}]"
+
+    def __repr__(self) -> str:
+        return (
+            f"[{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}]"
+        )
 
     def direct_points(self, points: Tensor) -> Tensor:
         raise NotImplementedError
@@ -135,7 +139,11 @@ class SurfaceExtentTransform(TransformBase):
 
     def _extent(self) -> Tensor:
         return torch.cat(
-            (self.surface.extent().unsqueeze(0), torch.zeros(self.dim - 1, dtype=self.dtype)), dim=0
+            (
+                self.surface.extent().unsqueeze(0),
+                torch.zeros(self.dim - 1, dtype=self.dtype),
+            ),
+            dim=0,
         )
 
     def direct_points(self, points: Tensor) -> Tensor:
@@ -160,8 +168,10 @@ class ComposeTransform(TransformBase):
     "Compose a list of transforms"
 
     def __init__(self, transforms: list[TransformBase]):
-        assert (len(transforms) > 0)
-        assert sum([t.dtype == transforms[0].dtype for t in transforms]) == len(transforms)
+        assert len(transforms) > 0
+        assert sum([t.dtype == transforms[0].dtype for t in transforms]) == len(
+            transforms
+        )
         assert sum([t.dim == transforms[0].dim for t in transforms]) == len(transforms)
         super().__init__(transforms[0].dim, transforms[0].dtype)
         self.transforms = transforms
@@ -193,7 +203,7 @@ class ComposeTransform(TransformBase):
 
 
 def rotation_matrix_2D(theta: Tensor) -> Tensor:
-    theta = torch.atleast_1d(theta)
+    theta = torch.atleast_1d(theta) # type: ignore
     return torch.vstack(
         (
             torch.cat((torch.cos(theta), -torch.sin(theta))),
@@ -208,8 +218,8 @@ def basic_transform(
     anchor: str,
     thetas: float | list[float],
     translate: list[float],
-    dtype=torch.float64,
-):
+    dtype: torch.dtype = torch.float64,
+) -> Callable[[LocalSurface], TransformBase]:
     """
     Experimental
 
@@ -224,9 +234,9 @@ def basic_transform(
     else:
         raise RuntimeError("invalid arguments to basic_transform")
 
-    def makeit(surface):
+    def makeit(surface: LocalSurface) -> TransformBase:
         # anchor
-        transforms = (
+        transforms: list[TransformBase] = (
             [SurfaceExtentTransform(surface, dim)] if anchor == "extent" else []
         )
 
