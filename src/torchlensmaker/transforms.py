@@ -1,10 +1,6 @@
 import torch
 import functools
 
-from torchlensmaker.rot3d import euler_angles_to_matrix
-from torchlensmaker.surfaces import LocalSurface
-
-from typing import Callable
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -130,40 +126,6 @@ class LinearTransform(TransformBase):
         return hom_matrix(A, B)
 
 
-class SurfaceExtentTransform(TransformBase):
-    "Translation from a surface extent point"
-
-    def __init__(self, surface: LocalSurface, dim: int):
-        super().__init__(dim, surface.dtype)
-        self.surface = surface
-
-    def _extent(self) -> Tensor:
-        return torch.cat(
-            (
-                self.surface.extent().unsqueeze(0),
-                torch.zeros(self.dim - 1, dtype=self.dtype),
-            ),
-            dim=0,
-        )
-
-    def direct_points(self, points: Tensor) -> Tensor:
-        return points - self._extent()
-
-    def direct_vectors(self, vectors: Tensor) -> Tensor:
-        return vectors
-
-    def inverse_points(self, points: Tensor) -> Tensor:
-        return points + self._extent()
-
-    def inverse_vectors(self, vectors: Tensor) -> Tensor:
-        return vectors
-
-    def hom_matrix(self) -> Tensor:
-        A = torch.eye(self.dim, dtype=self.dtype)
-        B = -self._extent()
-        return hom_matrix(A, B)
-
-
 class ComposeTransform(TransformBase):
     "Compose a list of transforms"
 
@@ -200,66 +162,3 @@ class ComposeTransform(TransformBase):
         return functools.reduce(
             lambda t1, t2: t2 @ t1, [t.hom_matrix() for t in self.transforms]
         )
-
-
-def rotation_matrix_2D(theta: Tensor) -> Tensor:
-    theta = torch.atleast_1d(theta) # type: ignore
-    return torch.vstack(
-        (
-            torch.cat((torch.cos(theta), -torch.sin(theta))),
-            torch.cat((torch.sin(theta), torch.cos(theta))),
-        )
-    )
-
-
-# TODO find a better name
-def basic_transform(
-    scale: float,
-    anchor: str,
-    thetas: float | list[float],
-    translate: list[float],
-    dtype: torch.dtype = torch.float64,
-) -> Callable[[LocalSurface], TransformBase]:
-    """
-    Experimental
-
-    Create a transform Y = RS(X - A) + T
-    Returns a function foo(surface)
-    """
-
-    if isinstance(thetas, list) and len(translate) == 3:
-        dim = 3
-    elif isinstance(thetas, (float, int)) and len(translate) == 2:
-        dim = 2
-    else:
-        raise RuntimeError("invalid arguments to basic_transform")
-
-    def makeit(surface: LocalSurface) -> TransformBase:
-        # anchor
-        transforms: list[TransformBase] = (
-            [SurfaceExtentTransform(surface, dim)] if anchor == "extent" else []
-        )
-
-        # scale
-        Md = torch.eye(dim, dtype=dtype) * scale
-        Mi = torch.eye(dim, dtype=dtype) * 1 / scale
-        transforms.append(LinearTransform(Md, Mi))
-
-        # rotate
-        if dim == 2:
-            Mr = rotation_matrix_2D(torch.as_tensor(thetas, dtype=dtype))
-        else:
-            Mr = euler_angles_to_matrix(
-                torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
-            ).to(
-                dtype=dtype
-            )  # TODO need to support dtype in euler_angles_to_matrix
-
-        transforms.append(LinearTransform(Mr, Mr.T))
-
-        # translate
-        transforms.append(TranslateTransform(torch.as_tensor(translate, dtype=dtype)))
-
-        return ComposeTransform(transforms)
-
-    return makeit

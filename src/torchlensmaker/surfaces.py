@@ -126,6 +126,7 @@ class ImplicitSurface(LocalSurface):
         # and points will not be on the surface
         # So verify intersection here and filter points
         # that aren't on the surface
+        # TODO test Newton method, and support tolerance configuration based on sampling dtype?
         valid = self.contains(local_points, tol=1e-3)
 
         return t, local_normals, valid

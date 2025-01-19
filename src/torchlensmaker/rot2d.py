@@ -1,6 +1,16 @@
 import torch
 
 
+def rotation_matrix_2D(theta: torch.Tensor) -> torch.Tensor:
+    theta = torch.atleast_1d(theta)  # type: ignore
+    return torch.vstack(
+        (
+            torch.cat((torch.cos(theta), -torch.sin(theta))),
+            torch.cat((torch.sin(theta), torch.cos(theta))),
+        )
+    )
+
+
 def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
     """
     Rotate vectors v by angles theta

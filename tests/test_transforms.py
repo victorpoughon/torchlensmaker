@@ -9,9 +9,6 @@ from torchlensmaker.transforms import (
     TranslateTransform,
     LinearTransform,
     ComposeTransform,
-    SurfaceExtentTransform,
-    rotation_matrix_2D,
-    basic_transform,
 )
 
 from torchlensmaker.surfaces import (
@@ -22,6 +19,8 @@ from torchlensmaker.surfaces import (
 )
 
 from torchlensmaker.rot3d import euler_angles_to_matrix
+from torchlensmaker.rot2d import rotation_matrix_2D
+from torchlensmaker.testing.basic_transform import basic_transform
 
 
 @pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
@@ -74,23 +73,21 @@ def make_transforms(
     s2 = Parabola(35.0, 0.010, dtype=dtype)
     s3 = SquarePlane(35.0, dtype=dtype)
     s4 = CircularPlane(35.0, dtype=dtype)
-    A_1 = SurfaceExtentTransform(s1, dim)
-    A_2 = SurfaceExtentTransform(s2, dim)
-    A_3 = SurfaceExtentTransform(s3, dim)
-    A_4 = SurfaceExtentTransform(s4, dim)
 
     if dim == 2:
         B_1 = basic_transform(1.0, "extent", 0.1, [20.0, 30.0], dtype=dtype)(s1)
         B_2 = basic_transform(-1.0, "origin", -0.2, [-20.0, 30.0], dtype=dtype)(s2)
         B_3 = basic_transform(-1.5, "extent", -0.1, [-20.0, -30.0], dtype=dtype)(s3)
     else:
-        B_1 = basic_transform(1.0, "extent", [0.1, 0.2, 0.3], [10.0, 20.0, 30.0], dtype=dtype)(s1)
-        B_2 = basic_transform(-1.0, "origin", [0.1, 0.2, 0.3], [-10.0, -20.0, 30.0], dtype=dtype)(
-            s2
-        )
-        B_3 = basic_transform(-1.5, "extent", [0.1, 0.2, 0.3], [10.0, -20.0, -30.0], dtype=dtype)(
-            s3
-        )
+        B_1 = basic_transform(
+            1.0, "extent", [0.1, 0.2, 0.3], [10.0, 20.0, 30.0], dtype=dtype
+        )(s1)
+        B_2 = basic_transform(
+            -1.0, "origin", [0.1, 0.2, 0.3], [-10.0, -20.0, 30.0], dtype=dtype
+        )(s2)
+        B_3 = basic_transform(
+            -1.5, "extent", [0.1, 0.2, 0.3], [10.0, -20.0, -30.0], dtype=dtype
+        )(s3)
 
     # ComposeTransform
     D_1 = ComposeTransform([T_id, T_1])
@@ -98,13 +95,13 @@ def make_transforms(
     D_3 = ComposeTransform([T_1, L_scale])
     D_4 = ComposeTransform([L_rot, L_scale])
     D_5 = ComposeTransform([D_4, T_1])
-    D_6 = ComposeTransform([D_5, D_5, D_2, A_3])
+    D_6 = ComposeTransform([D_5, D_5, D_2])
     D_7 = ComposeTransform([D_4, D_2, D_2, D_5, D_5])
-    D_8 = ComposeTransform([A_1, A_2, D_2, D_5])
-    D_9 = ComposeTransform([A_1, D_6])
+    D_8 = ComposeTransform([D_2, D_5])
+    D_9 = ComposeTransform([D_6])
     D_10 = ComposeTransform([D_9, D_4])
     D_11 = ComposeTransform([B_1, B_2, B_3])
-    D_12 = ComposeTransform([D_11, A_2, B_3])
+    D_12 = ComposeTransform([D_11, D_4, B_3])
 
     return (
         dtype,
@@ -117,10 +114,6 @@ def make_transforms(
             L_id,
             L_scale,
             L_rot,
-            A_1,
-            A_2,
-            A_3,
-            A_4,
             B_1,
             B_2,
             B_3,
