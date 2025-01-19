@@ -4,7 +4,8 @@ import uuid
 import os.path
 import json
 import torch
-import typing
+
+from typing import Any
 
 
 import torchlensmaker as tlm
@@ -66,7 +67,16 @@ def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     display(HTML(div + script))  # type: ignore
 
 
-def render_surface(
+def new_scene(mode: str) -> Any:
+    if mode == "2D":
+        return {"mode": "2D", "camera": "XY", "data": []}
+    elif mode == "3D":
+        return {"mode": "3D", "camera": "orthographic", "data": []}
+    else:
+        raise RuntimeError("mode should be 2D or 3D")
+
+
+def process_surface(
     surface: tlm.surfaces.ImplicitSurface,
     transform: tlm.TransformBase,
     dim: int,
@@ -106,60 +116,36 @@ def render_surface(
     return obj
 
 
-def render_rays(start: Tensor, end: Tensor) -> typing.Any:
-    return torch.hstack((start, end)).tolist()
+def render_surfaces(
+    surfaces: list[tlm.LocalSurface],
+    transforms: list[tlm.TransformBase],
+    dim: int,
+    N: int = 100,
+) -> Any:
+    return {
+        "type": "surfaces",
+        "data": [process_surface(s, t, dim, N) for s, t in zip(surfaces, transforms)],
+    }
 
 
-def render(
-    rays_start: Tensor | None = None,
-    rays_end: Tensor | None = None,
-    points: Tensor | None = None,
-    normals: Tensor | None = None,
-    surfaces: list[tlm.surfaces.ImplicitSurface] | None = None,
-    transforms: list[tlm.TransformBase] | None = None,
-    rays_color: str = "#ffa724",
-) -> object:
-    "Render tlm objects to json-able object"
+def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> Any:
+    return {
+        "type": "rays",
+        "data": torch.hstack((start, end)).tolist(),
+        "color": color,
+    }
 
-    groups = []
 
-    if surfaces is not None and transforms is not None:
-        assert surfaces is not None
-        groups.append(
-            {
-                "type": "surfaces",
-                "data": [
-                    render_surface(s, t, dim=3) for s, t in zip(surfaces, transforms)
-                ],
-            }
-        )
+def render_collisions(points: Tensor, normals: Tensor) -> Any:
+    g1 = {
+        "type": "points",
+        "data": points.tolist(),
+        "color": "#ff0000",
+    }
 
-    if rays_start is not None and rays_end is not None:
-        groups.append(
-            {
-                "type": "rays",
-                "data": render_rays(rays_start, rays_end),
-                "color": rays_color,
-            }
-        )
+    g2 = {
+        "type": "arrows",
+        "data": [n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)],
+    }
 
-    if points is not None:
-        groups.append(
-            {
-                "type": "points",
-                "data": points.tolist(),
-                "color": "#ff0000",
-            }
-        )
-
-    if normals is not None and points is not None:
-        groups.append(
-            {
-                "type": "arrows",
-                "data": [
-                    n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)
-                ],
-            }
-        )
-
-    return {"data": groups}
+    return [g1, g2]
