@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from typing import List, Dict
+from typing import Dict
 import numbers
 
 
@@ -9,9 +9,9 @@ class TensorFrame:
     "A 2D tensor with named columns"
 
     data: torch.Tensor
-    columns: List[str]
+    columns: list[str]
 
-    def __init__(self, data: torch.Tensor, columns: List[str]):
+    def __init__(self, data: torch.Tensor, columns: list[str]):
         self.data = data
         self.columns = list(columns)
         assert len(columns) == data.shape[1]
@@ -28,7 +28,7 @@ class TensorFrame:
 
     def get(self, names: str | list[str]) -> torch.Tensor:
         try:
-            idx: int | List[int]
+            idx: int | list[int]
             if isinstance(names, str):
                 idx = self.columns.index(names)
             else:

@@ -3,12 +3,12 @@ from torchlensmaker.tensorframe import TensorFrame
 
 
 def test_print() -> None:
-    tf = TensorFrame(torch.rand(10, 3), ("a", "b", "c"))
+    tf = TensorFrame(torch.rand(10, 3), ["a", "b", "c"])
     print(tf)
 
 
 def test_get() -> None:
-    tf = TensorFrame(torch.rand(10, 3), ("a", "b", "c"))
+    tf = TensorFrame(torch.rand(10, 3), ["a", "b", "c"])
 
     print(tf.get("a"))
     print(tf.get(["a", "b"]))
@@ -24,7 +24,7 @@ def test_update() -> None:
                 torch.full((N,), 3),
             )
         ),
-        ("a", "b", "c"),
+        ["a", "b", "c"],
     )
 
     tf2 = tf.update(a=torch.full((N,), 0), d=torch.full((N,), 10))
@@ -44,7 +44,7 @@ def test_update_broadcast() -> None:
                 torch.full((N,), 3),
             )
         ),
-        ("a", "b", "c"),
+        ["a", "b", "c"],
     )
 
     # broadcast single number
@@ -70,7 +70,7 @@ def test_stack() -> None:
                 torch.full((N,), 2),
             )
         ),
-        ("a", "b"),
+        ["a", "b"],
     )
 
     tf2 = TensorFrame(
@@ -80,7 +80,7 @@ def test_stack() -> None:
                 torch.full((N,), 4),
             )
         ),
-        ("a", "b"),
+        ["a", "b"],
     )
 
     tf3 = tf1.stack(tf2)
