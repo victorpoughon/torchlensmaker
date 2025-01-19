@@ -1,13 +1,7 @@
-from torchlensmaker.module import Module
-
-from torchlensmaker.torch_extensions import (
-    full_forward,
-    OpticalSequence,
-    Parameter,
-)
+# from torchlensmaker.module import Module
 
 
-## new 3D stuff
+from torchlensmaker.full_forward import full_forward
 
 from torchlensmaker.outline import *
 from torchlensmaker.surfaces import *
