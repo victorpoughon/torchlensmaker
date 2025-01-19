@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 from torchlensmaker.outline import (
     Outline,
@@ -6,7 +7,7 @@ from torchlensmaker.outline import (
     CircularOutline,
 )
 
-from typing import Optional
+from typing import Optional, Iterable
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -20,6 +21,9 @@ class LocalSurface:
     def __init__(self, outline: Outline, dtype: torch.dtype):
         self.outline = outline
         self.dtype = dtype
+    
+    def parameter(self) -> Iterable[nn.Parameter]:
+        raise NotImplementedError
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """

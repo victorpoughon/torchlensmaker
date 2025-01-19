@@ -6,6 +6,10 @@ import torchlensmaker as tlm
 from typing import Any, Union
 
 
+# TODO could this class be removed is surfaces are also modules?
+# that way when assigning parameter to surface, then surface to opticalsurface,
+# it all ends up working with standard pytorch?
+
 class Module(nn.Module):
     """
     Overload of nn.Module to automatically register parameters of surfaces

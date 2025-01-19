@@ -27,6 +27,9 @@ class ForwardContext:
         return iter((self.module, self.inputs, self.outputs))
 
 
+# TODO: move sampling to opticaldata so we can delete optical sequence?
+
+
 def full_forward(module: nn.Module, inputs: Any, sampling: dict):
     """
     Evaluate an optical stack model

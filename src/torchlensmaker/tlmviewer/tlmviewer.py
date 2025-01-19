@@ -27,7 +27,7 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
-def pprint(scene: object, ndigits: int | None = None):
+def pprint(scene: object, ndigits: int | None = None) -> None:
     from pprint import pprint
 
     if ndigits is not None:
@@ -36,7 +36,7 @@ def pprint(scene: object, ndigits: int | None = None):
 
     pprint(scene)
 
-def dump(scene: object, ndigits: int | None = None):
+def dump(scene: object, ndigits: int | None = None) -> None:
     if ndigits is not None:
         json_data = json.dumps(scene, allow_nan=False)
         scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
@@ -73,6 +73,7 @@ def render_surface(
     Render a surface to a json serializable object in tlmviewer format
     """
 
+    # TODO, should we have a type SymmetricSurface that provides samples2D?
     samples = surface.samples2D(N)
 
     if dim == 2:
@@ -102,7 +103,7 @@ def render_surface(
     return obj
 
 
-def render_rays(start: Tensor, end: Tensor) -> dict[str, typing.Any]:
+def render_rays(start: Tensor, end: Tensor) -> typing.Any:
     return torch.hstack((start, end)).tolist()
 
 

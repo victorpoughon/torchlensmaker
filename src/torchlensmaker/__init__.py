@@ -10,7 +10,7 @@ from torchlensmaker.torch_extensions import (
 ## new 3D stuff
 
 from torchlensmaker.outline import *
-import torchlensmaker.surfaces as surfaces
+from torchlensmaker.surfaces import *
 from torchlensmaker.transforms import *
 from torchlensmaker.physics import *
 
