@@ -1,7 +1,6 @@
 import torch
 
 from torchlensmaker.surfaces import LocalSurface
-
 from torchlensmaker.transforms import TransformBase
 
 Tensor = torch.Tensor
