@@ -162,3 +162,9 @@ class ComposeTransform(TransformBase):
         return functools.reduce(
             lambda t1, t2: t2 @ t1, [t.hom_matrix() for t in self.transforms]
         )
+
+
+def forward_kinematic(transforms: list[TransformBase]) -> Tensor:
+    "Compose transforms that describe a forward kinematic chain"
+
+    return ComposeTransform(list(reversed(transforms)))
