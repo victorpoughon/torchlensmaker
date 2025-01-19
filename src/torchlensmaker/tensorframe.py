@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import torch
-from typing import Iterable, List, Dict
+from typing import List, Dict
 import numbers
 
 
@@ -11,7 +11,7 @@ class TensorFrame:
     data: torch.Tensor
     columns: List[str]
 
-    def __init__(self, data: torch.Tensor, columns: Iterable[str]):
+    def __init__(self, data: torch.Tensor, columns: List[str]):
         self.data = data
         self.columns = list(columns)
         assert len(columns) == data.shape[1]
@@ -26,9 +26,9 @@ class TensorFrame:
     def numel(self) -> int:
         return self.data.numel()
 
-    def get(self, names: str | Iterable[str]) -> torch.Tensor:
+    def get(self, names: str | list[str]) -> torch.Tensor:
         try:
-            idx: int | list[int]
+            idx: int | List[int]
             if isinstance(names, str):
                 idx = self.columns.index(names)
             else:
