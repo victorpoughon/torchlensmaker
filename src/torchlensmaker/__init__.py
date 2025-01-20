@@ -1,6 +1,3 @@
-# from torchlensmaker.module import Module
-
-
 from torchlensmaker.full_forward import full_forward
 
 from torchlensmaker.outline import *
@@ -16,8 +13,9 @@ from torchlensmaker.viewer import ipython_show as show
 
 # Aliases
 import torch.nn as nn
-Parameter = nn.Parameter
 Sequential = nn.Sequential
+
+from torchlensmaker.parameter import parameter
 
 __all__ = [
     # Viewer
@@ -25,8 +23,8 @@ __all__ = [
     'show',
 
     'full_forward',
+    'parameter',
 
     # Aliases
-    'Parameter',
     'Sequential',
 ]

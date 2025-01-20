@@ -154,6 +154,10 @@ class OpticalSurface(nn.Module):
         self.scale = scale
         self.anchors = anchors
 
+        # If surface has parameters, register them
+        for name, p in surface.parameters().items():
+            self.register_parameter(name, p)
+
     def surface_transform(self, dim: int, dtype: torch.dtype) -> list[TransformBase]:
         "Additional transform that applies to the surface"
 

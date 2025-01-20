@@ -139,7 +139,9 @@ def render_sequence(
     return scene
 
 
-def default_show_sampling(optics: nn.Module, mode: Literal["2D", "3D"]):
+def default_show_sampling(
+    optics: nn.Module, mode: Literal["2D", "3D"]
+) -> dict[str, Any]:
     "Guess good default sampling parameters for the purposes of viewing"
 
     if mode == "2D":

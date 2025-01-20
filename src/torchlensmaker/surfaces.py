@@ -21,8 +21,8 @@ class LocalSurface:
     def __init__(self, outline: Outline, dtype: torch.dtype):
         self.outline = outline
         self.dtype = dtype
-    
-    def parameter(self) -> Iterable[nn.Parameter]:
+
+    def parameters(self) -> dict[str, nn.Parameter]:
         raise NotImplementedError
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -53,6 +53,9 @@ class Plane(LocalSurface):
 
     def __init__(self, outline: Outline, dtype: torch.dtype):
         super().__init__(outline, dtype)
+    
+    def parameters(self) -> dict[str, nn.Parameter]:
+            return {}
 
     def samples2D(self, N: int) -> Tensor:
         r = torch.linspace(0, self.outline.max_radius(), N)
@@ -63,7 +66,9 @@ class Plane(LocalSurface):
         t = -P[:, 0] / V[:, 0]
         local_points = P + t.unsqueeze(1).expand_as(V) * V
         normal = (
-            torch.tensor([-1.0, 0.0], dtype=self.dtype) if dim == 2 else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
+            torch.tensor([-1.0, 0.0], dtype=self.dtype)
+            if dim == 2
+            else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
         )
         local_normals = torch.tile(normal, (P.shape[0], 1))
         valid = self.outline.contains(local_points)
@@ -166,6 +171,9 @@ class Parabola(ImplicitSurface):
     def __init__(self, diameter: float, a: float, dtype: torch.dtype = torch.float64):
         super().__init__(CircularOutline(diameter), dtype)
         self.a = a
+    
+    def parameters(self) -> dict[str, nn.Parameter]:
+            return {}
 
     def samples2D(self, N: int) -> Tensor:
         """
@@ -200,13 +208,32 @@ class Parabola(ImplicitSurface):
 
 
 class Sphere(ImplicitSurface):
-    def __init__(self, diameter: float, r: float, dtype: torch.dtype = torch.float64):
+    def __init__(
+        self,
+        diameter: float,
+        r: float | nn.Parameter,
+        dtype: torch.dtype = torch.float64,
+    ):
         super().__init__(CircularOutline(diameter), dtype)
+
         assert (
             torch.abs(torch.as_tensor(r)) >= diameter / 2
         ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
         self.diameter = diameter
-        self.K = torch.as_tensor(1.0 / r, dtype=dtype)
+
+        self.K: torch.Tensor
+        if isinstance(r, nn.Parameter):
+            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=dtype))
+        else:
+            self.K = Tensor = torch.as_tensor(1.0 / r, dtype=dtype)
+
+        assert self.K.dim() == 0
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        if isinstance(self.K, nn.Parameter):
+            return {"K": self.K}
+        else:
+            return {}
 
     def extent(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2
