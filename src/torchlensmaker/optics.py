@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from dataclasses import dataclass, replace
 
-from typing import Any
+from typing import Any, Sequence
 
 from torchlensmaker.tensorframe import TensorFrame
 from torchlensmaker.transforms import (
@@ -166,12 +166,14 @@ class OpticalSurface(nn.Module):
         # surface transform = anchor1 + scale + chain
         # output transform = chain + anchor1 + anchor2
 
-    def surface_transform(self, dim, dtype) -> list[TransformBase]:
+    def surface_transform(self, dim, dtype) -> Sequence[TransformBase]:
         "Transform chain that applies to the underlying surface"
 
         S = self.scale * torch.eye(dim, dtype=dtype)
         S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
-        scale = [LinearTransform(S, S_inv)]
+    
+        scale: list[TransformBase] = [LinearTransform(S, S_inv)]
+        anchor: list[TransformBase]
 
         if self.anchors[0] == "extent":
             T = -self.scale * torch.cat(
@@ -184,7 +186,7 @@ class OpticalSurface(nn.Module):
 
         return anchor + scale
 
-    def output_transform(self, dim, dtype) -> list[TransformBase]:
+    def output_transform(self, dim, dtype) -> Sequence[TransformBase]:
         "Transform chain that applies to the next element"
 
         # subtract first anchor, add second anchor

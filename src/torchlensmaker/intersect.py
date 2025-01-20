@@ -11,7 +11,7 @@ def intersect(
     P: Tensor,
     V: Tensor,
     transform: TransformBase,
-) -> tuple[Tensor, Tensor]:
+) -> tuple[Tensor, Tensor, Tensor]:
     """
     Surface-rays collision detection
 
@@ -27,6 +27,7 @@ def intersect(
     Returns:
         points: collision points
         normals: surface normals at the collision points
+        valid: bool tensor indicating which rays do collide with the surface
     """
 
     assert P.shape[0] == V.shape[0]

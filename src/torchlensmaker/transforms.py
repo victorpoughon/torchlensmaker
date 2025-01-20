@@ -164,7 +164,7 @@ class ComposeTransform(TransformBase):
         )
 
 
-def forward_kinematic(transforms: list[TransformBase]) -> Tensor:
+def forward_kinematic(transforms: list[TransformBase]) -> ComposeTransform:
     "Compose transforms that describe a forward kinematic chain"
 
     return ComposeTransform(list(reversed(transforms)))

@@ -1,12 +1,13 @@
 import torch
+import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal
+from typing import Literal, Any
 
 
 class SurfaceArtist:
     @staticmethod
-    def render_element(element: tlm.OpticalSurface, inputs, _outputs):
+    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> Any:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         chain = inputs.transforms + element.surface_transform(dim, dtype)
@@ -18,7 +19,7 @@ class SurfaceArtist:
         )
 
     @staticmethod
-    def render_rays(element, inputs, outputs):
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> Any:
 
         # TODO dim, dtype as argument
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
@@ -35,7 +36,7 @@ class SurfaceArtist:
 
 class JointArtist:
     @staticmethod
-    def render_element(element: tlm.OpticalSurface, inputs, _outputs):
+    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> Any:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         transform = tlm.forward_kinematic(inputs.transforms)
@@ -49,7 +50,7 @@ artists_dict = {
 }
 
 
-def inspect_stack(execute_list):
+def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
     for module, inputs, outputs in execute_list:
         print(type(module))
         print("inputs.transform:")
@@ -62,7 +63,7 @@ def inspect_stack(execute_list):
         print()
 
 
-def render_sequence(optics, sampling):
+def render_sequence(optics: nn.Module, sampling: dict[str, Any]) -> Any:
     dim, dtype = sampling["dim"], sampling["dtype"]
     execute_list, top_output = tlm.full_forward(optics, tlm.default_input(sampling))
 
