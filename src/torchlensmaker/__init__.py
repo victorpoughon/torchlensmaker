@@ -14,8 +14,19 @@ from torchlensmaker.optics import *
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
 
+# Aliases
+import torch.nn as nn
+Parameter = nn.Parameter
+Sequential = nn.Sequential
+
 __all__ = [
+    # Viewer
     'viewer',
-    'full_forward',
     'show',
+
+    'full_forward',
+
+    # Aliases
+    'Parameter',
+    'Sequential',
 ]
