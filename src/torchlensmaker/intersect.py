@@ -25,18 +25,19 @@ def intersect(
         transform: transform applied to the surface
 
     Returns:
-        points: collision points
-        normals: surface normals at the collision points
-        valid: bool tensor indicating which rays do collide with the surface
+        points: valid collision points
+        normals: valid surface normals at the collision points
+        valid: bool tensor (N,) indicating which rays do collide with the surface
     """
 
     assert P.shape[0] == V.shape[0]
-    assert P.shape[1] == P.shape[1]
+    assert P.shape[1] == V.shape[1]
+    assert P.shape[1] in {2, 3}
 
     # Convert rays to surface local frame
     Ps = transform.inverse_points(P)
     Vs = transform.inverse_vectors(V)
-    
+
     # Collision detection in the surface local frame
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 
@@ -49,4 +50,15 @@ def intersect(
     points = points[valid]
     normals = normals[valid]
 
-    return points, normals, valid
+    # A surface always has two opposite normals, so keep the one pointing
+    # against the ray, because that's what we need for refraction / reflection
+    # i.e. the normal such that dot(normal, ray) < 0
+    dot = torch.sum(normals * V[valid], dim=1)
+    opposite_normals = torch.where(
+        (dot > 0).unsqueeze(1).expand_as(normals), -normals, normals
+    )
+
+    assert points.shape == opposite_normals.shape
+    assert valid.shape == (P.shape[0],)
+
+    return points, opposite_normals, valid

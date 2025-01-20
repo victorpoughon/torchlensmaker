@@ -26,11 +26,13 @@ class OpticalData:
     # sampling information
     sampling: dict[str, Any]
 
-    # transform kinematic chain
+    # Transform kinematic chain
     transforms: list[TransformBase]
 
-    # TensorFrame of light rays
-    rays: TensorFrame
+    # Tensors of shape (N, 2|3)
+    # Parametric light rays P + tV
+    P: Tensor
+    V: Tensor
 
     # None or Tensor of shape (N,)
     # Mask array indicating which rays from the previous data in the sequence
@@ -41,17 +43,12 @@ class OpticalData:
 
 def default_input(sampling: dict[str, Any]) -> OpticalData:
     dim, dtype = sampling["dim"], sampling["dtype"]
-    if dim == 2:
-        rays = TensorFrame(torch.empty((0, 4)), columns=["RX", "RY", "VX", "VY"])
-    else:
-        rays = TensorFrame(
-            torch.empty((0, 6)), columns=["RX", "RY", "RZ", "VX", "VY", "VZ"]
-        )
 
     return OpticalData(
         sampling=sampling,
         transforms=[IdentityTransform(dim, dtype)],
-        rays=rays,
+        P=torch.empty((0, dim)),
+        V=torch.empty((0, dim)),
         blocked=None,
     )
 
@@ -136,20 +133,16 @@ class PointSourceAtInfinity(nn.Module):
         # normalized coordinate along the base dimension
         # coord_base = (RY + self.beam_diameter / 2) / self.beam_diameter
 
-        if dim == 2:
-            new_rays = TensorFrame(
-                torch.cat((rays_origins, rays_vectors), dim=1),
-                columns=["RX", "RY", "VX", "VY"],
-            )
-        else:
-            assert rays_origins.shape[1] == 3, rays_origins.shape
-            assert rays_vectors.shape[1] == 3, rays_vectors.shape
-            new_rays = TensorFrame(
-                torch.cat((rays_origins, rays_vectors), dim=1),
-                columns=["RX", "RY", "RZ", "VX", "VY", "VZ"],
-            )
 
-        return replace(inputs, rays=inputs.rays.stack(new_rays))
+        assert rays_origins.shape[1] == dim, rays_origins.shape
+        assert rays_vectors.shape[1] == dim, rays_vectors.shape
+
+
+        return replace(
+            inputs,
+            P=torch.cat((inputs.P, rays_origins), dim=0),
+            V=torch.cat((inputs.V, rays_vectors), dim=0),
+        )
 
 
 class OpticalSurface(nn.Module):
@@ -179,7 +172,7 @@ class OpticalSurface(nn.Module):
 
         S = self.scale * torch.eye(dim, dtype=dtype)
         S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
-    
+
         scale: list[TransformBase] = [LinearTransform(S, S_inv)]
         anchor: list[TransformBase]
 
@@ -226,58 +219,33 @@ class OpticalSurface(nn.Module):
             inputs.transforms + self.surface_transform(dim, dtype)
         )
 
-        # Intersect rays with surface
-        # TODO use tensorframe.get instead?
-        P = inputs.rays.data[:, 0:dim]
-        V = inputs.rays.data[:, dim : 2 * dim]
+        assert inputs.P.shape[1] == dim
+        assert inputs.V.shape[1] == dim
+
         collision_points, surface_normals, valid = intersect(
-            self.surface, P, V, surface_transform
+            self.surface, inputs.P, inputs.V, surface_transform
         )
 
         # Keep only non blocked rays
-        blocked = ~valid
-        input_rays_valid = inputs.rays.masked(valid)
-        P_valid = P[valid]
-        V_valid = V[valid]
+        V_valid = inputs.V[valid]
 
         # Verify no weirdness in the data
         assert torch.all(torch.isfinite(collision_points))
         assert torch.all(torch.isfinite(surface_normals))
 
-        # A surface always has two opposite normals, so keep the one pointing against the ray
-        # i.e. the normal such that dot(normal, ray) < 0
-        dot = torch.sum(surface_normals * V_valid, dim=1)
-        collision_normals = torch.where(
-            (dot > 0).unsqueeze(1).expand(-1, dim), -surface_normals, surface_normals
-        )
-
-        # Verify no weirdness again
-        assert torch.all(torch.isfinite(collision_normals))
-
         # Refract or reflect rays based on the derived class implementation
-        output_rays = refraction(V_valid, collision_normals, 1.0, 1.5, critical_angle="clamp")
-
-        if dim == 2:
-            new_rays = input_rays_valid.update(
-                RX=collision_points[:, 0],
-                RY=collision_points[:, 1],
-                VX=output_rays[:, 0],
-                VY=output_rays[:, 1],
-            )
-        else:
-            new_rays = input_rays_valid.update(
-                RX=collision_points[:, 0],
-                RY=collision_points[:, 1],
-                RZ=collision_points[:, 2],
-                VX=output_rays[:, 0],
-                VY=output_rays[:, 1],
-                VZ=output_rays[:, 2],
-            )
+        output_rays = refraction(
+            V_valid, surface_normals, 1.0, 1.5, critical_angle="clamp"
+        )
 
         output_transform = self.output_transform(dim, dtype)
 
         return replace(
-            inputs, rays=new_rays, transforms=inputs.transforms + output_transform, blocked=blocked,
+            inputs,
+            P = collision_points,
+            V = output_rays,
+            transforms=inputs.transforms + output_transform,
+            blocked=~valid,
         )
 
 
