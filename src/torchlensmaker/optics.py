@@ -56,10 +56,6 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
     )
 
 
-# light sources have to be in the optical sequence
-# but not necessarily on the kinematic chain
-
-
 class PointSourceAtInfinity(nn.Module):
     """
     A simple light source that models a perfect point at infinity.

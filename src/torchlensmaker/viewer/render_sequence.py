@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal, Any
+from typing import Literal, Any, Optional
 
 from torchlensmaker.tensorframe import TensorFrame
 
@@ -14,7 +14,7 @@ color_valid = "#ffa724"
 color_blocked = "red"
 
 
-def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color) -> list[Any]:
+def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any]:
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [tlm.viewer.render_rays(P, ends, color=color)]
@@ -97,7 +97,7 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 
 def render_sequence(
-    optics: nn.Module, sampling: dict[str, Any], end: float = None
+    optics: nn.Module, sampling: dict[str, Any], end: Optional[float] = None
 ) -> Any:
     dim, dtype = sampling["dim"], sampling["dtype"]
     execute_list, top_output = tlm.full_forward(optics, tlm.default_input(sampling))
