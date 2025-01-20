@@ -53,9 +53,9 @@ class Plane(LocalSurface):
 
     def __init__(self, outline: Outline, dtype: torch.dtype):
         super().__init__(outline, dtype)
-    
+
     def parameters(self) -> dict[str, nn.Parameter]:
-            return {}
+        return {}
 
     def samples2D(self, N: int) -> Tensor:
         r = torch.linspace(0, self.outline.max_radius(), N)
@@ -168,11 +168,20 @@ class ImplicitSurface(LocalSurface):
 
 
 class Parabola(ImplicitSurface):
-    def __init__(self, diameter: float, a: float, dtype: torch.dtype = torch.float64):
+    def __init__(
+        self,
+        diameter: float,
+        a: float | nn.Parameter,
+        dtype: torch.dtype = torch.float64,
+    ):
         super().__init__(CircularOutline(diameter), dtype)
+
         self.a = a
-    
+
     def parameters(self) -> dict[str, nn.Parameter]:
+        if isinstance(self.a, nn.Parameter):
+            return {"a": self.a}
+        else:
             return {}
 
     def samples2D(self, N: int) -> Tensor:
@@ -219,7 +228,6 @@ class Sphere(ImplicitSurface):
         assert (
             torch.abs(torch.as_tensor(r)) >= diameter / 2
         ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
-        self.diameter = diameter
 
         self.K: torch.Tensor
         if isinstance(r, nn.Parameter):

@@ -3,8 +3,11 @@ import torch.nn as nn
 import torch.optim as optim
 
 import math
+from dataclasses import dataclass
 
 import torchlensmaker as tlm
+
+from typing import Any
 
 Tensor = torch.Tensor
 
@@ -17,11 +20,23 @@ def get_all_gradients(model: nn.Module) -> Tensor:
     return torch.cat(grads)
 
 
-def train(
-    optics: nn.Module, dim: int, dtype: torch.dtype, num_iter: int, nshow: int = 20
+@dataclass
+class OptimizationRecord:
+    parameters: dict[str, list[torch.Tensor]]
+    loss: torch.Tensor
+
+
+def optimize(
+    optics: nn.Module,
+    optimizer: torch.optim.Optimizer,
+    sampling: dict[str, Any],
+    num_iter: int,
+    nshow: int = 20,
 ) -> None:
-    optimizer = optim.Adam(optics.parameters(), lr=4e-3)
-    sampling = {"dim": dim, "dtype": dtype, "base": 10}
+
+    # Record values for analysis
+    parameters_record = {n: [] for n, _ in optics.named_parameters()}
+    loss_record = torch.zeros(num_iter)
 
     default_input = tlm.default_input(sampling)
 
@@ -30,11 +45,26 @@ def train(
     for i in range(num_iter):
         optimizer.zero_grad()
 
-        # evaluate the model
+        # Evaluate the model
         outputs = optics(default_input)
         loss = outputs.loss
+
+        if not loss.requires_grad:
+            raise RuntimeError(
+                "No differentiable loss computed by optical stack (loss.requires_grad is False)"
+            )
+
         loss.backward()
 
+        # Record loss values
+        loss_record[i] = loss.detach()
+
+        # Record parameter values
+        for n, param in optics.named_parameters():
+            parameters_record[n].append(param.detach().clone())
+
+        # Compute gradients for gradient magniture
+        # and sanity check that gradient isn't nan or inf
         grad = get_all_gradients(optics)
         if torch.isnan(grad).any():
             print("ERROR: nan in grad", grad)
@@ -42,7 +72,9 @@ def train(
 
         optimizer.step()
 
-        if i % show_every == 0:
-            iter_str = f"[{i:>3}/{num_iter}]"
+        if i % show_every == 0 or i == num_iter - 1:
+            iter_str = f"[{i+1:>3}/{num_iter}]"
             L_str = f"L= {loss.item():>6.3f} | grad norm= {torch.linalg.norm(grad)}"
             print(f"{iter_str} {L_str}")
+
+    return OptimizationRecord(parameters_record, loss_record)

@@ -7,15 +7,11 @@ from torchlensmaker.physics import *
 
 from torchlensmaker.intersect import *
 from torchlensmaker.optics import *
-from torchlensmaker.optimize import *
+from torchlensmaker.optimize import optimize
 
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
 
-
-# Aliases
-import torch.nn as nn
-Sequential = nn.Sequential
 
 from torchlensmaker.parameter import parameter
 
@@ -26,7 +22,4 @@ __all__ = [
 
     'full_forward',
     'parameter',
-
-    # Aliases
-    'Sequential',
 ]
