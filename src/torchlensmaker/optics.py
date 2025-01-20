@@ -12,6 +12,9 @@ from torchlensmaker.transforms import (
     IdentityTransform,
     forward_kinematic,
 )
+from torchlensmaker.surfaces import (
+    LocalSurface,
+)
 from torchlensmaker.physics import refraction, reflection
 from torchlensmaker.rot2d import rot2d
 from torchlensmaker.rot3d import euler_angles_to_matrix
@@ -64,7 +67,7 @@ class PointSourceAtInfinity(nn.Module):
     All rays are parallel with possibly some incidence angle
     """
 
-    def __init__(self, beam_diameter, angle1=0.0, angle2=0.0):
+    def __init__(self, beam_diameter: float, angle1: float = 0.0, angle2: float = 0.0):
         """
         beam_diameter: diameter of the beam of parallel light rays
         angle1: angle of indidence with respect to the principal axis, in degrees
@@ -78,7 +81,7 @@ class PointSourceAtInfinity(nn.Module):
         self.angle1 = torch.deg2rad(torch.as_tensor(angle1, dtype=torch.float64))
         self.angle2 = torch.deg2rad(torch.as_tensor(angle2, dtype=torch.float64))
 
-    def forward(self, inputs):
+    def forward(self, inputs: OpticalData) -> OpticalData:
         # Create new rays by sampling the beam diameter
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
         num_rays = inputs.sampling["base"]
@@ -133,10 +136,8 @@ class PointSourceAtInfinity(nn.Module):
         # normalized coordinate along the base dimension
         # coord_base = (RY + self.beam_diameter / 2) / self.beam_diameter
 
-
         assert rays_origins.shape[1] == dim, rays_origins.shape
         assert rays_vectors.shape[1] == dim, rays_vectors.shape
-
 
         return replace(
             inputs,
@@ -146,105 +147,81 @@ class PointSourceAtInfinity(nn.Module):
 
 
 class OpticalSurface(nn.Module):
-    def __init__(self, surface, scale=1.0, anchors=("origin", "origin")):
+    def __init__(
+        self,
+        surface: LocalSurface,
+        scale: float = 1.0,
+        anchors: tuple[str, str] = ("origin", "origin"),
+    ):
         super().__init__()
         self.surface = surface
         self.scale = scale
         self.anchors = anchors
 
-        # mode 1:  inline / chained / affecting
-        # surface transform = input.transforms - anchor + scale
-        # output transform = input.transforms - first anchor + second anchor
-
-        # mode 2: offline / free / independent
-        # surface transform = input.transforms + local transform - anchor + scale
-        # output transform = input.transforms
-
-        # how to support absolute position on chain?
-
-        # RS(X - A) + T
-        # surface transform(X) = CSX - A
-        # surface transform = anchor1 + scale + chain
-        # output transform = chain + anchor1 + anchor2
-
-    def surface_transform(self, dim, dtype) -> Sequence[TransformBase]:
-        "Transform chain that applies to the underlying surface"
+    def surface_transform(self, dim: int, dtype: torch.dtype) -> list[TransformBase]:
+        "Additional transform that applies to the surface"
 
         S = self.scale * torch.eye(dim, dtype=dtype)
         S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
 
-        scale: list[TransformBase] = [LinearTransform(S, S_inv)]
-        anchor: list[TransformBase]
+        scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
 
-        if self.anchors[0] == "extent":
-            T = -self.scale * torch.cat(
-                (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-                dim=0,
-            )
-            anchor = [TranslateTransform(T)]
-        else:
-            anchor = []
+        extent_translate = -self.scale * torch.cat(
+            (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            dim=0,
+        )
 
-        return anchor + scale
+        anchor: Sequence[TransformBase] = (
+            [TranslateTransform(extent_translate)]
+            if self.anchors[0] == "extent"
+            else []
+        )
 
-    def output_transform(self, dim, dtype) -> Sequence[TransformBase]:
-        "Transform chain that applies to the next element"
+        return list(anchor) + list(scale)
 
-        # subtract first anchor, add second anchor
+    def chain_transform(self, dim: int, dtype: torch.dtype) -> Sequence[TransformBase]:
+        "Additional transform that applies to the next element"
 
-        if self.anchors[0] == "extent":
-            Ta = -self.scale * torch.cat(
-                (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-                dim=0,
-            )
-            anchor1 = [TranslateTransform(Ta)]
-        else:
-            anchor1 = []
+        T = torch.cat(
+            (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            dim=0,
+        )
 
-        if self.anchors[1] == "extent":
-            Tb = self.scale * torch.cat(
-                (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-                dim=0,
-            )
-            anchor2 = [TranslateTransform(Tb)]
-        else:
-            anchor2 = []
+        # Subtract first anchor, add second anchor
+        anchor0 = (
+            [TranslateTransform(-self.scale * T)] if self.anchors[0] == "extent" else []
+        )
+        anchor1 = (
+            [TranslateTransform(self.scale * T)] if self.anchors[1] == "extent" else []
+        )
 
-        return anchor1 + anchor2
+        return list(anchor0) + list(anchor1)
 
-    def forward(self, inputs):
+    def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
         surface_transform = forward_kinematic(
             inputs.transforms + self.surface_transform(dim, dtype)
         )
 
-        assert inputs.P.shape[1] == dim
-        assert inputs.V.shape[1] == dim
+        assert inputs.P.shape[1] == inputs.V.shape[1] == dim
 
         collision_points, surface_normals, valid = intersect(
             self.surface, inputs.P, inputs.V, surface_transform
         )
 
-        # Keep only non blocked rays
-        V_valid = inputs.V[valid]
-
-        # Verify no weirdness in the data
-        assert torch.all(torch.isfinite(collision_points))
-        assert torch.all(torch.isfinite(surface_normals))
-
         # Refract or reflect rays based on the derived class implementation
         output_rays = refraction(
-            V_valid, surface_normals, 1.0, 1.5, critical_angle="clamp"
+            inputs.V[valid], surface_normals, 1.0, 1.5, critical_angle="clamp"
         )
 
-        output_transform = self.output_transform(dim, dtype)
+        chain_transform = self.chain_transform(dim, dtype)
 
         return replace(
             inputs,
-            P = collision_points,
-            V = output_rays,
-            transforms=inputs.transforms + output_transform,
+            P=collision_points,
+            V=output_rays,
+            transforms=list(inputs.transforms) + list(chain_transform),
             blocked=~valid,
         )
 
@@ -260,7 +237,7 @@ class Gap(nn.Module):
         # dtype when creating the corresponding transform in forward()
         self.offset = torch.as_tensor(offset, dtype=torch.float64)
 
-    def forward(self, inputs):
+    def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
         translate_vector = torch.cat(

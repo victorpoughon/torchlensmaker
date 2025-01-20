@@ -1,6 +1,6 @@
 import torch
 import functools
-
+from collections.abc import Sequence
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -164,7 +164,7 @@ class ComposeTransform(TransformBase):
         )
 
 
-def forward_kinematic(transforms: list[TransformBase]) -> ComposeTransform:
+def forward_kinematic(transforms: Sequence[TransformBase]) -> ComposeTransform:
     "Compose transforms that describe a forward kinematic chain"
 
     return ComposeTransform(list(reversed(transforms)))

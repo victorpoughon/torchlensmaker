@@ -60,5 +60,8 @@ def intersect(
 
     assert points.shape == opposite_normals.shape
     assert valid.shape == (P.shape[0],)
+    assert torch.all(torch.isfinite(points))
+    assert torch.all(torch.isfinite(opposite_normals))
+    assert torch.all(torch.isfinite(valid))
 
     return points, opposite_normals, valid
