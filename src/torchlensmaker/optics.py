@@ -43,6 +43,15 @@ class OpticalData:
     # an absorbing surface but also not hitting anything
     blocked: Optional[Tensor]
 
+    # Tensor of dim 0
+    # Loss accumulator
+    loss: torch.Tensor
+
+    def target(self):
+        dim, dtype = self.transforms[0].dim, self.transforms[0].dtype
+        transform = forward_kinematic(self.transforms)
+        return transform.direct_points(torch.zeros((dim,), dtype=dtype))
+
 
 def default_input(sampling: dict[str, Any]) -> OpticalData:
     dim, dtype = sampling["dim"], sampling["dtype"]
@@ -53,7 +62,38 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
         P=torch.empty((0, dim)),
         V=torch.empty((0, dim)),
         blocked=None,
+        loss=torch.tensor(0., dtype=dtype),
     )
+
+
+class FocalPoint(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, inputs: OpticalData):
+        dim = inputs.sampling["dim"]
+        N = inputs.P.shape[0]
+
+        X = inputs.target()
+        P = inputs.P
+        V = inputs.V
+
+        # Compute ray-point squared distance distance
+        
+        # If 2D, pad to 3D with zeros
+        if dim == 2:
+            X = torch.cat((X, torch.zeros(1)), dim=0)
+            P = torch.cat((P, torch.zeros((N, 1))), dim=1)
+            V = torch.cat((V, torch.zeros((N, 1))), dim=1)
+
+        cross = torch.cross(X - P, V, dim=1)
+        norm = torch.norm(V, dim=1)
+
+        distance = torch.norm(cross, dim=1) / norm
+
+        loss = distance.sum() / N
+
+        return replace(inputs, loss=inputs.loss + loss)
 
 
 class PointSourceAtInfinity(nn.Module):
