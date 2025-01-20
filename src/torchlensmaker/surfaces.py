@@ -242,6 +242,10 @@ class Sphere(ImplicitSurface):
             return {"K": self.K}
         else:
             return {}
+    
+    def radius(self) -> Tensor:
+        "Utility function because parameter is stored internally as curvature"
+        return 1./self.K
 
     def extent(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2
