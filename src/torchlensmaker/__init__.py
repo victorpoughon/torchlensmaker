@@ -12,8 +12,10 @@ from torchlensmaker.intersect import *
 from torchlensmaker.optics import *
 
 import torchlensmaker.viewer as viewer
+from torchlensmaker.viewer import ipython_show as show
 
 __all__ = [
     'viewer',
     'full_forward',
+    'show',
 ]

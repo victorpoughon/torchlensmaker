@@ -15,10 +15,17 @@ color_blocked = "red"
 
 
 def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any]:
+    "Render rays until an absolute X coordinate"
+
     t = (end - P[:, 0]) / V[:, 0]
-    t[t < 0] = -t[t < 0] # TODO temp solution for demo
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [tlm.viewer.render_rays(P, ends, color=color)]
+
+
+def render_rays_length(P: Tensor, V: Tensor, length: float, color: str) -> list[Any]:
+    "Render rays with fixed length"
+
+    return [tlm.viewer.render_rays(P, P + length * V, color=color)]
 
 
 class SurfaceArtist:
@@ -60,7 +67,7 @@ class SurfaceArtist:
                 target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
 
                 group_blocked = render_rays_until(P, V, target[0], color=color_blocked)
-                
+
             else:
                 group_blocked = []
 
@@ -98,7 +105,9 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 
 def render_sequence(
-    optics: nn.Module, sampling: dict[str, Any], end: Optional[float] = None
+    optics: nn.Module,
+    sampling: dict[str, Any],
+    end: Optional[float] = None,
 ) -> Any:
     dim, dtype = sampling["dim"], sampling["dtype"]
     execute_list, top_output = tlm.full_forward(optics, tlm.default_input(sampling))
@@ -124,9 +133,33 @@ def render_sequence(
     # Render output rays
     if end is not None:
         scene["data"].extend(
-            render_rays_until(
-                top_output.P, top_output.V, torch.as_tensor(end), color=color_valid
-            )
+            render_rays_length(top_output.P, top_output.V, end, color=color_valid)
         )
 
     return scene
+
+
+def default_show_sampling(optics: nn.Module, mode: Literal["2D", "3D"]):
+    "Guess good default sampling parameters for the purposes of viewing"
+
+    if mode == "2D":
+        return {"dim": 2, "dtype": torch.float64, "base": 10}
+    else:
+        return {"dim": 3, "dtype": torch.float64, "base": 10}
+
+
+def ipython_show(
+    optics: nn.Module,
+    mode: Literal["2D", "3D"],
+    end: Optional[float] = None,
+    dump: bool = False,
+) -> None:
+
+    sampling = default_show_sampling(optics, mode)
+
+    scene = tlm.viewer.render_sequence(optics, sampling, end)
+
+    if dump:
+        tlm.viewer.dump(scene, ndigits=2)
+
+    tlm.viewer.ipython_display(scene)

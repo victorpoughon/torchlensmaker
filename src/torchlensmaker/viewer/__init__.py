@@ -1,2 +1,2 @@
 from .tlmviewer import *
-from .render_sequence import render_sequence
+from .render_sequence import render_sequence, ipython_show

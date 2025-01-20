@@ -47,7 +47,7 @@ def dump(scene: object, ndigits: int | None = None) -> None:
     print(json.dumps(scene))
 
 
-def show(data: object, ndigits: int | None = None, dump: bool = False) -> None:
+def ipython_display(data: object, ndigits: int | None = None, dump: bool = False) -> None:
     div_id = random_id()
     div_template = get_div_template()
     script_template = get_script_template()
@@ -149,3 +149,5 @@ def render_collisions(points: Tensor, normals: Tensor) -> Any:
     }
 
     return [g1, g2]
+
+
