@@ -7,9 +7,11 @@ from torchlensmaker.physics import *
 
 from torchlensmaker.intersect import *
 from torchlensmaker.optics import *
+from torchlensmaker.optimize import *
 
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
+
 
 # Aliases
 import torch.nn as nn
