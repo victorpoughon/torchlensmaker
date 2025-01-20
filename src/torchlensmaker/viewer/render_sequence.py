@@ -16,6 +16,7 @@ color_blocked = "red"
 
 def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any]:
     t = (end - P[:, 0]) / V[:, 0]
+    t[t < 0] = -t[t < 0] # TODO temp solution for demo
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [tlm.viewer.render_rays(P, ends, color=color)]
 

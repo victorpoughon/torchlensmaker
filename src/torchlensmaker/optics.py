@@ -207,8 +207,9 @@ class OpticalSurface(nn.Module):
         )
 
         # Refract or reflect rays based on the derived class implementation
-        output_rays = refraction(
-            inputs.V[valid], surface_normals, 1.0, 1.5, critical_angle="clamp"
+        output_rays = self.optical_function(
+            inputs.V[valid],
+            surface_normals,
         )
 
         chain_transform = self.chain_transform(dim, dtype)
@@ -220,6 +221,34 @@ class OpticalSurface(nn.Module):
             transforms=list(inputs.transforms) + list(chain_transform),
             blocked=~valid,
         )
+
+
+class ReflectiveSurface(OpticalSurface):
+    def __init__(
+        self,
+        surface: LocalSurface,
+        scale: float = 1.0,
+        anchors: tuple[str, str] = ("origin", "origin"),
+    ):
+        super().__init__(surface, scale, anchors)
+
+    def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
+        return reflection(rays, normals)
+
+
+class RefractiveSurface(OpticalSurface):
+    def __init__(
+        self,
+        surface: LocalSurface,
+        n: tuple[float, float],
+        scale: float = 1.0,
+        anchors: tuple[str, str] = ("origin", "origin"),
+    ):
+        super().__init__(surface, scale, anchors)
+        self.n1, self.n2 = n
+
+    def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
+        return refraction(rays, normals, self.n1, self.n2, critical_angle="clamp")
 
 
 class Gap(nn.Module):
