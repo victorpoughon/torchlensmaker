@@ -5,6 +5,8 @@ import torch.optim as optim
 import math
 from dataclasses import dataclass
 
+import matplotlib.pyplot as plt
+
 import torchlensmaker as tlm
 
 from typing import Any
@@ -22,8 +24,13 @@ def get_all_gradients(model: nn.Module) -> Tensor:
 
 @dataclass
 class OptimizationRecord:
+    num_iter: int
     parameters: dict[str, list[torch.Tensor]]
     loss: torch.Tensor
+    optics: nn.Module
+
+    def plot(self):
+        plot_optimization_record(self)
 
 
 def optimize(
@@ -77,4 +84,25 @@ def optimize(
             L_str = f"L= {loss.item():>6.3f} | grad norm= {torch.linalg.norm(grad)}"
             print(f"{iter_str} {L_str}")
 
-    return OptimizationRecord(parameters_record, loss_record)
+    return OptimizationRecord(num_iter, parameters_record, loss_record, optics)
+
+
+def plot_optimization_record(record):
+
+    optics = record.optics
+    parameters = record.parameters
+    loss = record.loss
+
+    # Plot parameters and loss
+    fig, (ax1, ax2) = plt.subplots(2, 1)
+    epoch_range = torch.arange(0, record.num_iter)
+    ax2.plot(epoch_range, loss.detach(), label="loss")
+    for n, param in optics.named_parameters():
+        if parameters[n][0].dim() == 0:
+            data = torch.stack(parameters[n]).detach().numpy()
+            ax1.plot(epoch_range.detach(), data, label=n)
+    ax1.set_title("parameters")
+    ax1.legend()
+    ax2.set_title("loss")
+    ax2.legend()
+    plt.show()
