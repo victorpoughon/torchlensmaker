@@ -8,5 +8,7 @@ from torchlensmaker.surfaces import *
 from torchlensmaker.transforms import *
 from torchlensmaker.physics import *
 
-import torchlensmaker.tlmviewer.tlmviewer as viewer
 from torchlensmaker.intersect import *
+from torchlensmaker.optics import *
+
+import torchlensmaker.viewer as viewer
