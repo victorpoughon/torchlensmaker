@@ -4,6 +4,12 @@ import torchlensmaker as tlm
 
 from typing import Literal, Any
 
+from torchlensmaker.tensorframe import TensorFrame
+
+
+Tensor = torch.Tensor
+
+
 
 class SurfaceArtist:
     @staticmethod
@@ -21,17 +27,21 @@ class SurfaceArtist:
     @staticmethod
     def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> Any:
 
-        # TODO dim, dtype as argument
-        dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
+        # If rays are not blocked, render simply all rays from collision to collision
+        if outputs.blocked is None:
+            # TODO dim, dtype as argument
+            dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
 
-        if dim == 2:
-            rays_start = inputs.rays.get(["RX", "RY"])
-            rays_end = outputs.rays.get(["RX", "RY"])
+            if dim == 2:
+                rays_start = inputs.rays.get(["RX", "RY"])
+                rays_end = outputs.rays.get(["RX", "RY"])
+            else:
+                rays_start = inputs.rays.get(["RX", "RY", "RZ"])
+                rays_end = outputs.rays.get(["RX", "RY", "RZ"])
+
+            return tlm.viewer.render_rays(rays_start, rays_end)
         else:
-            rays_start = inputs.rays.get(["RX", "RY", "RZ"])
-            rays_end = outputs.rays.get(["RX", "RY", "RZ"])
-
-        return tlm.viewer.render_rays(rays_start, rays_end)
+            return None
 
 
 class JointArtist:
@@ -86,6 +96,7 @@ def render_sequence(optics: nn.Module, sampling: dict[str, Any]) -> Any:
 
             if inputs.rays.numel() > 0:
                 group = artist.render_rays(module, inputs, outputs)
-                scene["data"].append(group)
+                if group:
+                    scene["data"].append(group)
 
     return scene

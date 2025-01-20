@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from dataclasses import dataclass, replace
 
-from typing import Any, Sequence
+from typing import Any, Sequence, Optional
 
 from torchlensmaker.tensorframe import TensorFrame
 from torchlensmaker.transforms import (
@@ -29,7 +29,14 @@ class OpticalData:
     # transform kinematic chain
     transforms: list[TransformBase]
 
+    # TensorFrame of light rays
     rays: TensorFrame
+
+    # None or Tensor of shape (N,)
+    # Mask array indicating which rays from the previous data in the sequence
+    # were blocked by the previous optical element. "blocked" includes hitting
+    # an absorbing surface but also not hitting anything
+    blocked: Optional[Tensor]
 
 
 def default_input(sampling: dict[str, Any]) -> OpticalData:
@@ -45,6 +52,7 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
         sampling=sampling,
         transforms=[IdentityTransform(dim, dtype)],
         rays=rays,
+        blocked=None,
     )
 
 
@@ -218,8 +226,6 @@ class OpticalSurface(nn.Module):
             inputs.transforms + self.surface_transform(dim, dtype)
         )
 
-        # TODO compute rays here
-
         # Intersect rays with surface
         # TODO use tensorframe.get instead?
         P = inputs.rays.data[:, 0:dim]
@@ -228,13 +234,19 @@ class OpticalSurface(nn.Module):
             self.surface, P, V, surface_transform
         )
 
+        # Keep only non blocked rays
+        blocked = ~valid
+        input_rays_valid = inputs.rays.masked(valid)
+        P_valid = P[valid]
+        V_valid = V[valid]
+
         # Verify no weirdness in the data
         assert torch.all(torch.isfinite(collision_points))
         assert torch.all(torch.isfinite(surface_normals))
 
         # A surface always has two opposite normals, so keep the one pointing against the ray
         # i.e. the normal such that dot(normal, ray) < 0
-        dot = torch.sum(surface_normals * V, dim=1)
+        dot = torch.sum(surface_normals * V_valid, dim=1)
         collision_normals = torch.where(
             (dot > 0).unsqueeze(1).expand(-1, dim), -surface_normals, surface_normals
         )
@@ -243,17 +255,17 @@ class OpticalSurface(nn.Module):
         assert torch.all(torch.isfinite(collision_normals))
 
         # Refract or reflect rays based on the derived class implementation
-        output_rays = refraction(V, collision_normals, 1.0, 1.5, critical_angle="clamp")
+        output_rays = refraction(V_valid, collision_normals, 1.0, 1.5, critical_angle="clamp")
 
         if dim == 2:
-            new_rays = inputs.rays.update(
+            new_rays = input_rays_valid.update(
                 RX=collision_points[:, 0],
                 RY=collision_points[:, 1],
                 VX=output_rays[:, 0],
                 VY=output_rays[:, 1],
             )
         else:
-            new_rays = inputs.rays.update(
+            new_rays = input_rays_valid.update(
                 RX=collision_points[:, 0],
                 RY=collision_points[:, 1],
                 RZ=collision_points[:, 2],
@@ -265,7 +277,7 @@ class OpticalSurface(nn.Module):
         output_transform = self.output_transform(dim, dtype)
 
         return replace(
-            inputs, rays=new_rays, transforms=inputs.transforms + output_transform
+            inputs, rays=new_rays, transforms=inputs.transforms + output_transform, blocked=blocked,
         )
 
 
