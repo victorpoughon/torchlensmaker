@@ -9,6 +9,16 @@ from torchlensmaker.tensorframe import TensorFrame
 
 Tensor = torch.Tensor
 
+# Color theme
+color_valid = "#ffa724"
+color_blocked = "red"
+
+
+def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color) -> list[Any]:
+    t = (end - P[:, 0]) / V[:, 0]
+    ends = P + t.unsqueeze(1).expand_as(V) * V
+    return [tlm.viewer.render_rays(P, ends, color=color)]
+
 
 class SurfaceArtist:
     @staticmethod
@@ -28,18 +38,15 @@ class SurfaceArtist:
     @staticmethod
     def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
 
-        color_valid = "#ffa724"
-        color_blocked = "red"
-
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
-            return [tlm.viewer.render_rays(inputs.P, outputs.P, color="#ffa724")]
+            return [tlm.viewer.render_rays(inputs.P, outputs.P, color=color_valid)]
 
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
             group_valid = (
-                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, color="#ffa724")]
+                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, color=color_valid)]
                 if inputs.P[valid].numel() > 0
                 else []
             )
@@ -51,10 +58,8 @@ class SurfaceArtist:
                 transform = tlm.forward_kinematic(chain)
                 target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
 
-                # Render up to the current element join position
-                t = (target[0] - P[:, 0]) / V[:, 0]
-                ends =  P + t.unsqueeze(1).expand_as(V) * V
-                group_blocked = [tlm.viewer.render_rays(P, ends, color=color_blocked)]
+                group_blocked = render_rays_until(P, V, target[0], color=color_blocked)
+                
             else:
                 group_blocked = []
 
@@ -91,14 +96,15 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
         print()
 
 
-def render_sequence(optics: nn.Module, sampling: dict[str, Any]) -> Any:
+def render_sequence(
+    optics: nn.Module, sampling: dict[str, Any], end: float = None
+) -> Any:
     dim, dtype = sampling["dim"], sampling["dtype"]
     execute_list, top_output = tlm.full_forward(optics, tlm.default_input(sampling))
 
     scene = tlm.viewer.new_scene("2D" if dim == 2 else "3D")
 
-    # inspect_stack(execute_list)
-
+    # Render elements
     for module, inputs, outputs in execute_list:
 
         # render chain join position for every module
@@ -113,5 +119,13 @@ def render_sequence(optics: nn.Module, sampling: dict[str, Any]) -> Any:
 
             if inputs.P.numel() > 0:
                 scene["data"].extend(artist.render_rays(module, inputs, outputs))
+
+    # Render output rays
+    if end is not None:
+        scene["data"].extend(
+            render_rays_until(
+                top_output.P, top_output.V, torch.as_tensor(end), color=color_valid
+            )
+        )
 
     return scene
