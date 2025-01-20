@@ -10,39 +10,67 @@ from torchlensmaker.tensorframe import TensorFrame
 Tensor = torch.Tensor
 
 
-
 class SurfaceArtist:
     @staticmethod
-    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> Any:
+    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         chain = inputs.transforms + element.surface_transform(dim, dtype)
         transform = tlm.forward_kinematic(chain)
 
         # TODO find a way to group surfaces together?
-        return tlm.viewer.render_surfaces(
-            [element.surface], [transform], dim=transform.dim, N=10
-        )
+        return [
+            tlm.viewer.render_surfaces(
+                [element.surface], [transform], dim=transform.dim, N=10
+            )
+        ]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> Any:
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
+
+        color_valid = "#ffa724"
+        color_blocked = "red"
 
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
-            return tlm.viewer.render_rays(inputs.P, outputs.P)
+            return [tlm.viewer.render_rays(inputs.P, outputs.P, color="#ffa724")]
+
+        # Else, split into colliding and non colliding rays using blocked mask
         else:
-            return None
+            valid = ~outputs.blocked
+            group_valid = (
+                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, color="#ffa724")]
+                if inputs.P[valid].numel() > 0
+                else []
+            )
+
+            P, V = inputs.P[outputs.blocked], inputs.V[outputs.blocked]
+            if P.numel() > 0:
+                dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
+                chain = inputs.transforms + element.surface_transform(dim, dtype)
+                transform = tlm.forward_kinematic(chain)
+                target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
+
+                # Render up to the current element join position
+                t = (target[0] - P[:, 0]) / V[:, 0]
+                ends =  P + t.unsqueeze(1).expand_as(V) * V
+                group_blocked = [tlm.viewer.render_rays(P, ends, color=color_blocked)]
+            else:
+                group_blocked = []
+
+            return group_valid + group_blocked
+            # Render non blocked rays
 
 
 class JointArtist:
     @staticmethod
-    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> Any:
+    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         transform = tlm.forward_kinematic(inputs.transforms)
         joint = transform.direct_points(torch.zeros((dim,), dtype=dtype))
 
-        return {"type": "points", "data": [joint.tolist()]}
+        return [{"type": "points", "data": [joint.tolist()]}]
 
 
 artists_dict = {
@@ -74,19 +102,16 @@ def render_sequence(optics: nn.Module, sampling: dict[str, Any]) -> Any:
     for module, inputs, outputs in execute_list:
 
         # render chain join position for every module
-        scene["data"].append(JointArtist.render_element(module, inputs, outputs))
+        scene["data"].extend(JointArtist.render_element(module, inputs, outputs))
 
         # find matching artists for this module, use the first one for rendering
         artists = [a for typ, a in artists_dict.items() if isinstance(module, typ)]
 
         if len(artists) > 0:
             artist = artists[0]
-            group = artist.render_element(module, inputs, outputs)
-            scene["data"].append(group)
+            scene["data"].extend(artist.render_element(module, inputs, outputs))
 
             if inputs.P.numel() > 0:
-                group = artist.render_rays(module, inputs, outputs)
-                if group:
-                    scene["data"].append(group)
+                scene["data"].extend(artist.render_rays(module, inputs, outputs))
 
     return scene
