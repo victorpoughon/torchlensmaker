@@ -40,7 +40,7 @@ class SurfaceArtist:
         # TODO find a way to group surfaces together?
         return [
             tlm.viewer.render_surfaces(
-                [element.surface], [transform], dim=transform.dim, N=10
+                [element.surface], [transform], dim=transform.dim, N=100
             )
         ]
 
