@@ -88,7 +88,14 @@ class FocalPointArtist:
     @staticmethod
     def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
         target = inputs.target()
-        return render_rays_until(inputs.P, inputs.V, target[0], color_valid)
+        mean_ray = inputs.P[:, 0].mean()
+        # Focal point is ahed of the rays
+        if target[0] > mean_ray:
+            return render_rays_until(inputs.P, inputs.V, target[0], color_valid)
+        # Focal point is behind the rays
+        else:
+            dist = mean_ray - target[0]
+            return render_rays_until(inputs.P, inputs.V, mean_ray + dist, color_valid)
 
 
 class ApertureArtist:
@@ -119,7 +126,7 @@ class JointArtist:
 artists_dict: Dict[type, type] = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.FocalPoint: FocalPointArtist,
-    #tlm.Aperture: ApertureArtist,
+    # tlm.Aperture: ApertureArtist,
 }
 
 
