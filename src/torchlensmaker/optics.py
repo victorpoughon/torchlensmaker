@@ -207,7 +207,7 @@ class OpticalSurface(nn.Module):
 
         scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
 
-        extent_translate = -self.scale * self.surface.extent_point(dim, dtype)
+        extent_translate = -self.scale * self.surface.extent(dim, dtype)
 
         anchor: Sequence[TransformBase] = (
             [TranslateTransform(extent_translate)]
@@ -220,7 +220,7 @@ class OpticalSurface(nn.Module):
     def chain_transform(self, dim: int, dtype: torch.dtype) -> Sequence[TransformBase]:
         "Additional transform that applies to the next element"
 
-        T = self.surface.extent_point(dim, dtype)
+        T = self.surface.extent(dim, dtype)
 
         # Subtract first anchor, add second anchor
         anchor0 = (

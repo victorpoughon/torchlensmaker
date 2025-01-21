@@ -37,17 +37,17 @@ class LocalSurface:
         """
         raise NotImplementedError
 
-    def extent(self) -> Tensor:
+    def extent_x(self) -> Tensor:
         """
         Extent along the X axis
         i.e. X coordinate of the point on the surface such that |X| is maximized
         """
         raise NotImplementedError
 
-    def extent_point(self, dim: int, dtype: torch.dtype) -> Tensor:
+    def extent(self, dim: int, dtype: torch.dtype) -> Tensor:
         "N-dimensional extent point"
         return torch.cat(
-            (self.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            (self.extent_x().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
             dim=0,
         )
 
@@ -85,7 +85,7 @@ class Plane(LocalSurface):
         valid = self.outline.contains(local_points)
         return t, local_normals, valid
 
-    def extent(self) -> Tensor:
+    def extent_x(self) -> Tensor:
         return torch.as_tensor(0.0, dtype=self.dtype)
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
@@ -204,7 +204,7 @@ class Parabola(ImplicitSurface):
         x = self.a * r**2
         return torch.stack((x, r), dim=-1)
 
-    def extent(self) -> Tensor:
+    def extent_x(self) -> Tensor:
         r = self.outline.max_radius()
         return torch.as_tensor(self.a * r**2, dtype=self.dtype)
 
@@ -258,7 +258,7 @@ class Sphere(ImplicitSurface):
         "Utility function because parameter is stored internally as curvature"
         return torch.div(1.0, self.K)
 
-    def extent(self) -> Tensor:
+    def extent_x(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2
         K = self.K
         return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2))

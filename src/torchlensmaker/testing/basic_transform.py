@@ -39,13 +39,7 @@ def basic_transform(
 
     def makeit(surface: LocalSurface) -> TransformBase:
         # anchor
-        anchor_translate = torch.cat(
-            (
-                surface.extent().unsqueeze(0),
-                torch.zeros(dim - 1, dtype=surface.dtype),
-            ),
-            dim=0,
-        )
+        anchor_translate = surface.extent(dim, dtype)
         transforms: list[TransformBase] = (
             [TranslateTransform(-anchor_translate)] if anchor == "extent" else []
         )

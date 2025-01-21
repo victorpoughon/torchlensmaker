@@ -39,7 +39,7 @@ def anchor_abs(
     if anchor == "origin":
         point = surface.zero(dim, dtype)
     elif anchor == "extent":
-        point = surface.extent_point(dim, dtype)
+        point = surface.extent(dim, dtype)
 
     # Transform it to absolute space
     return transform.direct_points(point)
