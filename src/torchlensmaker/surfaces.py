@@ -44,6 +44,17 @@ class LocalSurface:
         """
         raise NotImplementedError
 
+    def extent_point(self, dim: int, dtype: torch.dtype) -> Tensor:
+        "N-dimensional extent point"
+        return torch.cat(
+            (self.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            dim=0,
+        )
+
+    def zero(self, dim: int, dtype: torch.dtype) -> Tensor:
+        "N-dimensional zero point"
+        return torch.zeros((dim,), dtype=dtype)
+
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         raise NotImplementedError
 
@@ -242,10 +253,10 @@ class Sphere(ImplicitSurface):
             return {"K": self.K}
         else:
             return {}
-    
+
     def radius(self) -> Tensor:
         "Utility function because parameter is stored internally as curvature"
-        return torch.div(1., self.K)
+        return torch.div(1.0, self.K)
 
     def extent(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2

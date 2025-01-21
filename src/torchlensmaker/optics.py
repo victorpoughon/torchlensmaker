@@ -60,8 +60,8 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
     return OpticalData(
         sampling=sampling,
         transforms=[IdentityTransform(dim, dtype)],
-        P=torch.empty((0, dim)),
-        V=torch.empty((0, dim)),
+        P=torch.empty((0, dim), dtype=dtype),
+        V=torch.empty((0, dim), dtype=dtype),
         blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
@@ -207,10 +207,7 @@ class OpticalSurface(nn.Module):
 
         scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
 
-        extent_translate = -self.scale * torch.cat(
-            (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-            dim=0,
-        )
+        extent_translate = -self.scale * self.surface.extent_point(dim, dtype)
 
         anchor: Sequence[TransformBase] = (
             [TranslateTransform(extent_translate)]
@@ -223,10 +220,7 @@ class OpticalSurface(nn.Module):
     def chain_transform(self, dim: int, dtype: torch.dtype) -> Sequence[TransformBase]:
         "Additional transform that applies to the next element"
 
-        T = torch.cat(
-            (self.surface.extent().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-            dim=0,
-        )
+        T = self.surface.extent_point(dim, dtype)
 
         # Subtract first anchor, add second anchor
         anchor0 = (

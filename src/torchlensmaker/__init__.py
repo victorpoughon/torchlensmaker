@@ -1,4 +1,4 @@
-from torchlensmaker.full_forward import full_forward
+from torchlensmaker.full_forward import *
 
 from torchlensmaker.outline import *
 from torchlensmaker.surfaces import *
