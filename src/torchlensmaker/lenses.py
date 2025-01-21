@@ -140,10 +140,14 @@ class BiLens(LensBase):
             inner_thickness, outer_thickness
         )
 
-        self.surface1 = tlm.RefractiveSurface(self.surface, n, anchors=anchors)
+        self.surface1 = tlm.RefractiveSurface(
+            surface,
+            n,
+            anchors=anchors,
+        )
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
-            self.surface,
+            surface,
             (n[1], n[0]),
             scale=-1.0,
             anchors=(anchors[1], anchors[0]),
@@ -171,6 +175,6 @@ class PlanoLens(Lens):
         outer_thickness: Optional[float] = None,
         reverse: bool = False,
     ):
-        plane = tlm.CircularPlane(surface.outline.max_radius())
+        plane = tlm.CircularPlane(2 * surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
         super().__init__(s1, s2, n, inner_thickness, outer_thickness)
