@@ -109,16 +109,16 @@ class LinearTransform(TransformBase):
         self.A_inv = A_inv
 
     def direct_points(self, points: Tensor) -> Tensor:
-        return (self.A @ points.T).T
+        return points @ self.A.T
 
     def direct_vectors(self, vectors: Tensor) -> Tensor:
-        return (self.A @ vectors.T).T
+        return vectors @ self.A.T
 
     def inverse_points(self, points: Tensor) -> Tensor:
-        return (self.A_inv @ points.T).T
+        return points @ self.A_inv.T
 
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
-        return (self.A_inv @ vectors.T).T
+        return vectors @ self.A_inv.T
 
     def hom_matrix(self) -> Tensor:
         A = self.A

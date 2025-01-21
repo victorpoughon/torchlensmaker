@@ -133,6 +133,27 @@ def make_transforms(
     )
 
 
+def test_shapes(make_transforms: tuple[torch.dtype, int, list[TransformBase]]) -> None:
+    "Test that transform functions work for both input shapes (dim,) and (N, dim)"
+
+    dtype, dim, transforms = make_transforms
+    N = 3
+
+    point = torch.rand((dim,), dtype=dtype)
+    points_batched = torch.rand((N, dim), dtype=dtype)
+
+    for t in transforms:
+        assert t.direct_points(point).shape == point.shape
+        assert t.inverse_points(point).shape == point.shape
+        assert t.direct_vectors(point).shape == point.shape
+        assert t.inverse_vectors(point).shape == point.shape
+
+        assert t.direct_points(points_batched).shape == points_batched.shape
+        assert t.inverse_points(points_batched).shape == points_batched.shape
+        assert t.direct_vectors(points_batched).shape == points_batched.shape
+        assert t.inverse_vectors(points_batched).shape == points_batched.shape
+
+
 def test_roundtrip(
     make_transforms: tuple[torch.dtype, int, list[TransformBase]]
 ) -> None:
@@ -200,6 +221,10 @@ def test_hom_matrix(
         f_direct_hom = torch.column_stack(
             (f_direct, torch.ones((points.shape[0], 1), dtype=dtype))
         )
+
+        assert f_hom.shape == hom_points.shape
+        assert f_direct.shape == points.shape
+        assert f_direct_hom.shape == hom_points.shape
 
         assert t.hom_matrix().dtype == dtype
         assert f_hom.dtype == dtype
