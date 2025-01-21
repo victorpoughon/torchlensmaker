@@ -74,19 +74,19 @@ class LensBase(nn.Module):
 
     optics: nn.Sequential
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
     def forward(self, inputs: tlm.OpticalData) -> tlm.OpticalData:
-        return self.optics(inputs)
+        return self.optics(inputs)  # type: ignore
 
     def inner_thickness(self) -> Tensor:
         "Thickness at the center of the lens"
-        return anchor_thickness(self, "origin", 3, torch.float64)
+        return anchor_thickness(self.optics, "origin", 3, torch.float64)
 
     def outer_thickness(self) -> Tensor:
         "Thickness at the outer radius of the lens"
-        return anchor_thickness(self, "extent", 3, torch.float64)
+        return anchor_thickness(self.optics, "extent", 3, torch.float64)
 
 
 class Lens(LensBase):
@@ -94,20 +94,29 @@ class Lens(LensBase):
     A lens made of two refractive surfaces with different shapes
     """
 
+    surface1: tlm.RefractiveSurface
+    surface2: tlm.RefractiveSurface
+
     def __init__(
-        self, surface1, surface2, n, inner_thickness=None, outer_thickness=None
+        self,
+        surface1: tlm.LocalSurface,
+        surface2: tlm.LocalSurface,
+        n: tuple[float, float],
+        inner_thickness: Optional[float] = None,
+        outer_thickness: Optional[float] = None,
     ):
         super().__init__()
-        self.surface1, self.surface2 = surface1, surface2
 
         thickness, anchors = lens_thickness_parametrization(
             inner_thickness, outer_thickness
         )
 
-        self.surface1 = tlm.RefractiveSurface(self.surface1, n, anchors=anchors)
+        self.surface1 = tlm.RefractiveSurface(surface1, n, anchors=anchors)
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
-            self.surface2, tuple(reversed(n)), anchors=tuple(reversed(anchors))
+            surface2,
+            (n[1], n[0]),
+            anchors=(anchors[1], anchors[0]),
         )
 
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
@@ -118,9 +127,14 @@ class BiLens(LensBase):
     A lens made of two mirrored symmetrical refractive surfaces
     """
 
-    def __init__(self, surface, n, inner_thickness=None, outer_thickness=None):
+    def __init__(
+        self,
+        surface: tlm.LocalSurface,
+        n: tuple[float, float],
+        inner_thickness: Optional[float] = None,
+        outer_thickness: Optional[float] = None,
+    ):
         super().__init__()
-        self.surface = surface
 
         thickness, anchors = lens_thickness_parametrization(
             inner_thickness, outer_thickness
@@ -130,9 +144,9 @@ class BiLens(LensBase):
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
             self.surface,
-            tuple(reversed(n)),
+            (n[1], n[0]),
             scale=-1.0,
-            anchors=tuple(reversed(anchors)),
+            anchors=(anchors[1], anchors[0]),
         )
 
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
@@ -152,11 +166,11 @@ class PlanoLens(Lens):
     def __init__(
         self,
         surface: tlm.LocalSurface,
-        n,
-        inner_thickness=None,
-        outer_thickness=None,
-        reverse=False,
+        n: tuple[float, float],
+        inner_thickness: Optional[float] = None,
+        outer_thickness: Optional[float] = None,
+        reverse: bool = False,
     ):
-        plane = tlm.CircularPlane(surface.outline.diameter)
+        plane = tlm.CircularPlane(surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
         super().__init__(s1, s2, n, inner_thickness, outer_thickness)
