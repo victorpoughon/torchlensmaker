@@ -245,7 +245,7 @@ class Sphere(ImplicitSurface):
     
     def radius(self) -> Tensor:
         "Utility function because parameter is stored internally as curvature"
-        return 1./self.K
+        return torch.div(1., self.K)
 
     def extent(self) -> Tensor:
         r2 = self.outline.max_radius() ** 2

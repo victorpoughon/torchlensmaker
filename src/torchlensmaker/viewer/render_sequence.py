@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal, Any, Optional
+from typing import Literal, Any, Optional, Type, Dict, TypeVar
 
 from torchlensmaker.tensorframe import TensorFrame
 
@@ -12,6 +12,7 @@ Tensor = torch.Tensor
 # Color theme
 color_valid = "#ffa724"
 color_blocked = "red"
+color_focal_point = "red"
 
 
 def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any]:
@@ -75,6 +76,21 @@ class SurfaceArtist:
             # Render non blocked rays
 
 
+class FocalPointArtist:
+    @staticmethod
+    def render_element(
+        element: nn.Module, inputs: tlm.OpticalData, _outputs: tlm.OpticalData
+    ) -> list[Any]:
+
+        target = inputs.target().unsqueeze(0)
+        return [tlm.viewer.render_points(target, color_focal_point)]
+
+    @staticmethod
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
+        target = inputs.target()
+        return render_rays_until(inputs.P, inputs.V, target[0], color_valid)
+
+
 class JointArtist:
     @staticmethod
     def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
@@ -86,8 +102,9 @@ class JointArtist:
         return [{"type": "points", "data": [joint.tolist()]}]
 
 
-artists_dict = {
+artists_dict: Dict[type, type] = {
     tlm.OpticalSurface: SurfaceArtist,
+    tlm.FocalPoint: FocalPointArtist,
 }
 
 

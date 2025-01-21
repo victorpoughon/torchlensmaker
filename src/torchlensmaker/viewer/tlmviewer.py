@@ -47,7 +47,9 @@ def dump(scene: object, ndigits: int | None = None) -> None:
     print(json.dumps(scene))
 
 
-def ipython_display(data: object, ndigits: int | None = None, dump: bool = False) -> None:
+def ipython_display(
+    data: object, ndigits: int | None = None, dump: bool = False
+) -> None:
     div_id = random_id()
     div_template = get_div_template()
     script_template = get_script_template()
@@ -136,6 +138,15 @@ def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> Any:
     }
 
 
+def render_points(points: Tensor, color: str = "white") -> Any:
+    assert points.dim() == 2
+    return {
+        "type": "points",
+        "data": points.tolist(),
+        "color": color,
+    }
+
+
 def render_collisions(points: Tensor, normals: Tensor) -> Any:
     g1 = {
         "type": "points",
@@ -149,5 +160,3 @@ def render_collisions(points: Tensor, normals: Tensor) -> Any:
     }
 
     return [g1, g2]
-
-

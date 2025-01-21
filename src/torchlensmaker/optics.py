@@ -47,7 +47,7 @@ class OpticalData:
     # Loss accumulator
     loss: torch.Tensor
 
-    def target(self):
+    def target(self) -> Tensor:
         dim, dtype = self.transforms[0].dim, self.transforms[0].dtype
         transform = forward_kinematic(self.transforms)
         return transform.direct_points(torch.zeros((dim,), dtype=dtype))
@@ -62,15 +62,15 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
         P=torch.empty((0, dim)),
         V=torch.empty((0, dim)),
         blocked=None,
-        loss=torch.tensor(0., dtype=dtype),
+        loss=torch.tensor(0.0, dtype=dtype),
     )
 
 
 class FocalPoint(nn.Module):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
 
-    def forward(self, inputs: OpticalData):
+    def forward(self, inputs: OpticalData) -> OpticalData:
         dim = inputs.sampling["dim"]
         N = inputs.P.shape[0]
 
@@ -79,7 +79,7 @@ class FocalPoint(nn.Module):
         V = inputs.V
 
         # Compute ray-point squared distance distance
-        
+
         # If 2D, pad to 3D with zeros
         if dim == 2:
             X = torch.cat((X, torch.zeros(1)), dim=0)

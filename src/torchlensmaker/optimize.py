@@ -29,20 +29,22 @@ class OptimizationRecord:
     loss: torch.Tensor
     optics: nn.Module
 
-    def plot(self):
+    def plot(self) -> None:
         plot_optimization_record(self)
 
 
 def optimize(
     optics: nn.Module,
-    optimizer: torch.optim.Optimizer,
+    optimizer: optim.Optimizer,
     sampling: dict[str, Any],
     num_iter: int,
     nshow: int = 20,
-) -> None:
+) -> OptimizationRecord:
 
     # Record values for analysis
-    parameters_record = {n: [] for n, _ in optics.named_parameters()}
+    parameters_record: dict[str, list[Tensor]] = {
+        n: [] for n, _ in optics.named_parameters()
+    }
     loss_record = torch.zeros(num_iter)
 
     default_input = tlm.default_input(sampling)
@@ -87,7 +89,7 @@ def optimize(
     return OptimizationRecord(num_iter, parameters_record, loss_record, optics)
 
 
-def plot_optimization_record(record):
+def plot_optimization_record(record: OptimizationRecord) -> None:
 
     optics = record.optics
     parameters = record.parameters
