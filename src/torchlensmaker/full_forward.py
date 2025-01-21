@@ -1,11 +1,22 @@
 import torch.nn as nn
 
-from typing import Any
+from typing import Any, Iterator
+from dataclasses import dataclass
+
+
+@dataclass
+class ModuleEvalContext:
+    module: nn.Module
+    inputs: Any
+    outputs: Any
+
+    def __iter__(self) -> Iterator[Any]:
+        return iter((self.module, self.inputs, self.outputs))
 
 
 def full_forward(
     module: nn.Module, inputs: Any
-) -> tuple[list[tuple[nn.Module, Any, Any]], Any]:
+) -> tuple[list[ModuleEvalContext], Any]:
     """
     Forward evaluate a model, but returns all intermediate inputs and outputs.
 
@@ -35,7 +46,7 @@ def full_forward(
     def hook(mod: nn.Module, inp: Any, out: Any) -> None:
         # inp[0] here restricts us to forward() first argument
         # so this only works with single argument forward() functions
-        execute_list.append((mod, inp[0], out))
+        execute_list.append(ModuleEvalContext(mod, inp[0], out))
 
     # Register forward hooks to every module recursively
     hooks = []
