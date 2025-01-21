@@ -14,6 +14,7 @@ from torchlensmaker.transforms import (
 )
 from torchlensmaker.surfaces import (
     LocalSurface,
+    CircularPlane,
 )
 from torchlensmaker.physics import refraction, reflection
 from torchlensmaker.rot2d import rot2d
@@ -238,13 +239,13 @@ class OpticalSurface(nn.Module):
         return list(anchor0) + list(anchor1)
 
     def forward(self, inputs: OpticalData) -> OpticalData:
+        assert inputs.P.shape[1] == inputs.V.shape[1] == inputs.sampling["dim"]
+
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
         surface_transform = forward_kinematic(
             inputs.transforms + self.surface_transform(dim, dtype)
         )
-
-        assert inputs.P.shape[1] == inputs.V.shape[1] == dim
 
         collision_points, surface_normals, valid = intersect(
             self.surface, inputs.P, inputs.V, surface_transform
@@ -293,6 +294,15 @@ class RefractiveSurface(OpticalSurface):
 
     def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
         return refraction(rays, normals, self.n1, self.n2, critical_angle="clamp")
+
+
+class Aperture(OpticalSurface):
+    def __init__(self, diameter: float):
+        surface = CircularPlane(diameter, dtype=torch.float64)
+        super().__init__(surface, 1.0, ("origin", "origin"))
+
+    def optical_function(self, rays: Tensor, _normals: Tensor) -> Tensor:
+        return rays
 
 
 class Gap(nn.Module):

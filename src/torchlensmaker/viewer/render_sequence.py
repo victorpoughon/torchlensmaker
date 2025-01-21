@@ -91,6 +91,20 @@ class FocalPointArtist:
         return render_rays_until(inputs.P, inputs.V, target[0], color_valid)
 
 
+class ApertureArtist:
+    @staticmethod
+    def render_element(
+        element: nn.Module, inputs: tlm.OpticalData, _outputs: tlm.OpticalData
+    ) -> list[Any]:
+
+        target = inputs.target().unsqueeze(0)
+        return [tlm.viewer.render_points(target, color_focal_point)]
+
+    @staticmethod
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
+        return SurfaceArtist.render_rays(element, inputs, outputs)
+
+
 class JointArtist:
     @staticmethod
     def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
@@ -105,6 +119,7 @@ class JointArtist:
 artists_dict: Dict[type, type] = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.FocalPoint: FocalPointArtist,
+    #tlm.Aperture: ApertureArtist,
 }
 
 
