@@ -19,9 +19,12 @@ import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
 
 
+# Export build123d
+import torchlensmaker.export_build123d as export
+
 __all__ = [
-    # Viewer
     "viewer",
+    "export",
     "show",
     "full_forward",
     "parameter",

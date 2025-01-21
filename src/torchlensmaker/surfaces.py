@@ -182,12 +182,12 @@ class Parabola(ImplicitSurface):
     def __init__(
         self,
         diameter: float,
-        a: float | nn.Parameter,
+        a: int | float | nn.Parameter,
         dtype: torch.dtype = torch.float64,
     ):
         super().__init__(CircularOutline(diameter), dtype)
-
-        self.a = a
+        self.diameter = diameter
+        self.a = torch.as_tensor(a, dtype=dtype)
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.a, nn.Parameter):
@@ -231,10 +231,11 @@ class Sphere(ImplicitSurface):
     def __init__(
         self,
         diameter: float,
-        r: float | nn.Parameter,
+        r: int | float | nn.Parameter,
         dtype: torch.dtype = torch.float64,
     ):
         super().__init__(CircularOutline(diameter), dtype)
+        self.diameter = diameter
 
         assert (
             torch.abs(torch.as_tensor(r)) >= diameter / 2
