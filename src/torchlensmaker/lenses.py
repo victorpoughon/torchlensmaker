@@ -104,6 +104,8 @@ class Lens(LensBase):
         n: tuple[float, float],
         inner_thickness: Optional[float] = None,
         outer_thickness: Optional[float] = None,
+        scale1: float = 1.0,
+        scale2: float = 1.0,
     ):
         super().__init__()
 
@@ -111,11 +113,17 @@ class Lens(LensBase):
             inner_thickness, outer_thickness
         )
 
-        self.surface1 = tlm.RefractiveSurface(surface1, n, anchors=anchors)
+        self.surface1 = tlm.RefractiveSurface(
+            surface1,
+            n,
+            scale=scale1,
+            anchors=anchors,
+        )
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
             surface2,
             (n[1], n[0]),
+            scale=scale2,
             anchors=(anchors[1], anchors[0]),
         )
 
@@ -165,6 +173,8 @@ class PlanoLens(Lens):
     This can be switched with the reverse argument:
     * reverse = False (default):  The curved side is the second surface
     * reverse = True:             The curved side is the first surface
+
+    If reverse is true, the surface is flipped.
     """
 
     def __init__(
@@ -177,4 +187,4 @@ class PlanoLens(Lens):
     ):
         plane = tlm.CircularPlane(2 * surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
-        super().__init__(s1, s2, n, inner_thickness, outer_thickness)
+        super().__init__(s1, s2, n, inner_thickness, outer_thickness, scale1 = -1.0 if reversed else 1.0)
