@@ -9,10 +9,10 @@ import matplotlib.pyplot as plt
 
 import torchlensmaker as tlm
 
-from typing import Any
+from typing import Any, Callable, Optional
 
 Tensor = torch.Tensor
-
+RegularizationFunction = Callable[[nn.Module], Tensor]
 
 def get_all_gradients(model: nn.Module) -> Tensor:
     grads = []
@@ -38,6 +38,7 @@ def optimize(
     optimizer: optim.Optimizer,
     sampling: dict[str, Any],
     num_iter: int,
+    regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
 ) -> OptimizationRecord:
 
@@ -57,6 +58,10 @@ def optimize(
         # Evaluate the model
         outputs = optics(default_input)
         loss = outputs.loss
+
+        # Add regularization function term
+        if regularization is not None:
+            loss = loss + regularization(optics)
 
         if not loss.requires_grad:
             raise RuntimeError(
