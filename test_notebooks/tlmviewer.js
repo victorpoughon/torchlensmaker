@@ -1,1 +1,1 @@
-/home/victor/projects/tlmviewer/dist/tlmviewer.js
+../../tlmviewer/dist/tlmviewer.js
