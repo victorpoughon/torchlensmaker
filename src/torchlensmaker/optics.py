@@ -21,8 +21,9 @@ from torchlensmaker.intersect import intersect
 from torchlensmaker.sampling import (
     sample_line_linspace,
     sample_disk_linspace,
-    rotated_unit,
 )
+from torchlensmaker.rot2d import rotation_matrix_2D
+from torchlensmaker.rot3d import euler_angles_to_matrix
 
 Tensor = torch.Tensor
 
@@ -115,10 +116,7 @@ class PointSourceAtInfinity(nn.Module):
             self.angle_offset = angle_offset
 
     def forward(self, inputs):
-        sampling = inputs.sampling
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
-
-        vect = rotated_unit(-self.angle_offset[0], -self.angle_offset[1], dim, dtype)
 
         N = inputs.sampling["base"]
 
@@ -130,8 +128,9 @@ class PointSourceAtInfinity(nn.Module):
             NX = sample_disk_linspace(N, self.beam_diameter)
 
         # Make the rays P + tV
-        P = torch.column_stack((torch.zeros(NX.shape[0]), NX))
-        V = torch.tile(vect, (P.shape[0], 1))
+        P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
+        unit_vect = torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim-1, dtype=dtype)))
+        V = torch.tile(unit_vect, (P.shape[0], 1))
 
         # Make the rays 'base' coordinate
         base = NX
@@ -291,3 +290,44 @@ class Gap(nn.Module):
             inputs,
             transforms=inputs.transforms + [TranslateTransform(translate_vector)],
         )
+
+
+
+
+def spherical_rotation(angle1: Tensor, angle2: Tensor, dim: int, dtype: torch.dtype):
+    "A two angle rotation, if dim = 2 angle2 is ignored"
+
+    if dim == 2:
+        M = rotation_matrix_2D(angle1)
+        return LinearTransform(M, M.T)
+    else:
+        M = euler_angles_to_matrix(
+            torch.stack((torch.tensor(0, dtype=dtype), angle1, angle2)),
+            "XZY",
+        ).to(
+            dtype=dtype
+        )  # TODO need to support dtype in euler_angles_to_matrix
+        return LinearTransform(M, M.T)
+
+
+class Rotate(nn.Module):
+    "Rotate the given other optical element but don't affect the kinematic chain"
+
+    def __init__(self, element: nn.Module, angle1: float, angle2: float):
+        super().__init__()
+        self.element = element
+        self.angle1 = torch.deg2rad(torch.as_tensor(angle1, dtype=torch.float64))
+        self.angle2 = torch.deg2rad(torch.as_tensor(angle2, dtype=torch.float64))
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+
+        chain = inputs.transforms + [spherical_rotation(self.angle1, self.angle2, dim, dtype)]
+
+        # give that chain to the contained element
+        element_input = replace(inputs, transforms=chain)
+
+        element_output = self.element(element_input)
+
+        # but return original transforms
+        return replace(element_output, transforms=inputs.transforms)
