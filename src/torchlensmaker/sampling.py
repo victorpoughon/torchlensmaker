@@ -11,7 +11,7 @@ def sample_line_random(N: int, diameter: float) -> Tensor:
     return (torch.rand(N) - 0.5) * diameter
 
 
-def sample_disk_random(N: int, diameter: float) -> tuple[Tensor, Tensor]:
+def sample_disk_random(N: int, diameter: float) -> Tensor:
     """
     Sample points on a disk using polar coordinates
 
@@ -35,7 +35,7 @@ def sample_disk_random(N: int, diameter: float) -> tuple[Tensor, Tensor]:
     return torch.column_stack((X, Y))
 
 
-def sample_disk_linspace(N: int, diameter: float) -> tuple[Tensor, Tensor]:
+def sample_disk_linspace(N: int, diameter: float) -> Tensor:
     """
     Sample points on a disk using polar coordinates with linspace distribution
 

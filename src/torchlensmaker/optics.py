@@ -101,7 +101,7 @@ class FocalPoint(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    def __init__(self, beam_diameter, angle_offset=(0.0, 0.0)):
+    def __init__(self, beam_diameter: float):
         """
         Args:
             beam_diameter: diameter of the beam of light
@@ -110,12 +110,7 @@ class PointSourceAtInfinity(nn.Module):
         super().__init__()
         self.beam_diameter = beam_diameter
 
-        if not isinstance(angle_offset, torch.Tensor):
-            self.angle_offset = torch.as_tensor(angle_offset, dtype=torch.float64)
-        else:
-            self.angle_offset = angle_offset
-
-    def forward(self, inputs):
+    def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
         N = inputs.sampling["base"]
@@ -129,7 +124,9 @@ class PointSourceAtInfinity(nn.Module):
 
         # Make the rays P + tV
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
-        unit_vect = torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim-1, dtype=dtype)))
+        unit_vect = torch.cat(
+            (torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype))
+        )
         V = torch.tile(unit_vect, (P.shape[0], 1))
 
         # Make the rays 'base' coordinate
@@ -292,9 +289,7 @@ class Gap(nn.Module):
         )
 
 
-
-
-def spherical_rotation(angle1: Tensor, angle2: Tensor, dim: int, dtype: torch.dtype):
+def spherical_rotation(angle1: Tensor, angle2: Tensor, dim: int, dtype: torch.dtype) -> LinearTransform:
     "A two angle rotation, if dim = 2 angle2 is ignored"
 
     if dim == 2:
@@ -322,12 +317,14 @@ class Rotate(nn.Module):
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
-        chain = inputs.transforms + [spherical_rotation(self.angle1, self.angle2, dim, dtype)]
+        chain = inputs.transforms + [
+            spherical_rotation(self.angle1, self.angle2, dim, dtype)
+        ]
 
         # give that chain to the contained element
         element_input = replace(inputs, transforms=chain)
 
-        element_output = self.element(element_input)
+        element_output: OpticalData = self.element(element_input)
 
         # but return original transforms
         return replace(element_output, transforms=inputs.transforms)

@@ -187,4 +187,4 @@ class PlanoLens(Lens):
     ):
         plane = tlm.CircularPlane(2 * surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
-        super().__init__(s1, s2, n, inner_thickness, outer_thickness, scale1 = -1.0 if reversed else 1.0)
+        super().__init__(s1, s2, n, inner_thickness, outer_thickness, scale1 = -1.0 if reverse else 1.0)
