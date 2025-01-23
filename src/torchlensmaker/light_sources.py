@@ -9,6 +9,7 @@ from torchlensmaker.rot3d import euler_angles_to_matrix
 
 from torchlensmaker.sampling import SampleDisk
 
+from typing import Any
 
 Tensor = torch.Tensor
 
@@ -51,7 +52,31 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
         return torch.matmul(M, unit.view(3, 1)).squeeze(-1)
 
 
-class PointSourceAtInfinity(nn.Module):
+class LightSourceBase(nn.Module):
+    def sample_light_source(
+        self, N: int, dim: int, dtype: torch.dtype
+    ) -> tuple[Tensor, Tensor]:
+        raise NotImplementedError
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        N = inputs.sampling["base"]
+
+        # Get samples from derived class in local frame
+        P, V = self.sample_light_source(N, dim, dtype)
+
+        # Apply kinematic transform
+        tf = forward_kinematic(inputs.transforms)
+        P = tf.direct_points(P)
+        V = tf.direct_vectors(V)
+
+        return inputs.replace(
+            P=torch.cat((inputs.P, P), dim=0),
+            V=torch.cat((inputs.V, V), dim=0),
+        )
+
+
+class PointSourceAtInfinity(LightSourceBase):
     def __init__(self, beam_diameter: float):
         """
         Args:
@@ -61,9 +86,9 @@ class PointSourceAtInfinity(nn.Module):
         super().__init__()
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
-        N = inputs.sampling["base"]
+    def sample_light_source(
+        self, N: int, dim: int, dtype: torch.dtype
+    ) -> tuple[Tensor, Tensor]:
 
         # Sample coordinates other than X on a disk
         NX = SampleDisk.sample(N, self.beam_diameter, dim)
@@ -72,31 +97,18 @@ class PointSourceAtInfinity(nn.Module):
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
         V = torch.tile(unit_vector(dim, dtype), (P.shape[0], 1))
 
-        # Make the rays 'base' coordinate
-        base = NX
-
-        # Apply kinematic transform
-        tf = forward_kinematic(inputs.transforms)
-        P = tf.direct_points(P)
-        V = tf.direct_vectors(V)
-
-        # Concatenate with existing rays
-        # TODO some check that there are no other variables?
-        return inputs.replace(
-            P=torch.cat((inputs.P, P), dim=0),
-            V=torch.cat((inputs.V, V), dim=0),
-        )
+        return P, V
 
 
-class PointSource(nn.Module):
+class PointSource(LightSourceBase):
     def __init__(self, beam_angular_size: float):
         super().__init__()
 
         self.beam_angular_size = torch.deg2rad(to_tensor(beam_angular_size))
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
-        N = inputs.sampling["base"]
+    def sample_light_source(
+        self, N: int, dim: int, dtype: torch.dtype
+    ) -> tuple[Tensor, Tensor]:
 
         # Sample angular direction
         angles = SampleDisk.sample(N, self.beam_angular_size, dim)
@@ -104,12 +116,4 @@ class PointSource(nn.Module):
         V = rotated_unit_vector(angles, dim)
         P = torch.zeros_like(V)
 
-        # Apply kinematic transform
-        tf = forward_kinematic(inputs.transforms)
-        P = tf.direct_points(P)
-        V = tf.direct_vectors(V)
-
-        return inputs.replace(
-            P=torch.cat((inputs.P, P), dim=0),
-            V=torch.cat((inputs.V, V), dim=0),
-        )
+        return P, V
