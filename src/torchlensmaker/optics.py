@@ -301,20 +301,33 @@ class Gap(KinematicElement):
         return TranslateTransform(translate_vector)
 
 
+class Turn(KinematicElement):
+    def __init__(self, angles: tuple[float | int, float | int] | Tensor):
+        super().__init__()
+
+        if not isinstance(angles, torch.Tensor):
+            angles = torch.as_tensor(angles, dtype=torch.float64)
+
+        self.angles = torch.deg2rad(angles)
+
+    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
+        return spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
+
+
 class Rotate(nn.Module):
     "Rotate the given other optical element but don't affect the kinematic chain"
 
-    def __init__(self, element: nn.Module, angle1: float, angle2: float):
+    def __init__(self, element: nn.Module, angles: tuple[float | int, float | int] | Tensor):
         super().__init__()
         self.element = element
-        self.angle1 = torch.deg2rad(torch.as_tensor(angle1, dtype=torch.float64))
-        self.angle2 = torch.deg2rad(torch.as_tensor(angle2, dtype=torch.float64))
+        if not isinstance(angles, torch.Tensor):
+            self.angles = torch.deg2rad(torch.as_tensor(angles, dtype=torch.float64))
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
 
         chain = inputs.transforms + [
-            spherical_rotation(self.angle1, self.angle2, dim, dtype)
+            spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
         ]
 
         # give that chain to the contained element
