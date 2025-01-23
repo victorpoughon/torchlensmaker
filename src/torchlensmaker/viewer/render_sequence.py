@@ -178,25 +178,19 @@ def render_sequence(
     return scene
 
 
-def default_show_sampling(
-    optics: nn.Module, mode: Literal["2D", "3D"]
-) -> dict[str, Any]:
-    "Guess good default sampling parameters for the purposes of viewing"
-
-    if mode == "2D":
-        return {"dim": 2, "dtype": torch.float64, "base": 10}
-    else:
-        return {"dim": 3, "dtype": torch.float64, "base": 10}
-
-
 def ipython_show(
     optics: nn.Module,
     mode: Literal["2D", "3D"],
     end: Optional[float] = None,
+    base: int = 16,
+    object: int = 16,
     dump: bool = False,
 ) -> None:
 
-    sampling = default_show_sampling(optics, mode)
+    if mode == "2D":
+        sampling = {"dim": 2, "dtype": torch.float64, "base": base}
+    else:
+        sampling = {"dim": 3, "dtype": torch.float64, "base": base}
 
     scene = tlm.viewer.render_sequence(optics, sampling, end)
 

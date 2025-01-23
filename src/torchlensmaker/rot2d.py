@@ -17,7 +17,10 @@ def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
     Works with either v or theta batched
     """
 
-    theta = torch.as_tensor(theta)
+    if not isinstance(theta, torch.Tensor):
+        theta = torch.as_tensor(theta, dtype=v.dtype)
+
+    assert v.dtype == theta.dtype, (v.dtype, theta.dtype)
 
     # Store original dimensions
     v_dim = v.dim()

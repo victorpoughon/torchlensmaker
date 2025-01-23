@@ -17,10 +17,12 @@ from torchlensmaker.surfaces import (
     CircularPlane,
 )
 from torchlensmaker.physics import refraction, reflection
-from torchlensmaker.rot2d import rot2d
-from torchlensmaker.rot3d import euler_angles_to_matrix
 from torchlensmaker.intersect import intersect
-
+from torchlensmaker.sampling import (
+    sample_line_linspace,
+    sample_disk_linspace,
+    rotated_unit,
+)
 
 Tensor = torch.Tensor
 
@@ -98,88 +100,53 @@ class FocalPoint(nn.Module):
 
 
 class PointSourceAtInfinity(nn.Module):
-    """
-    A simple light source that models a perfect point at infinity.
-
-    All rays are parallel with possibly some incidence angle
-    """
-
-    def __init__(self, beam_diameter: float, angle1: float = 0.0, angle2: float = 0.0):
+    def __init__(self, beam_diameter, angle_offset=(0.0, 0.0)):
         """
-        beam_diameter: diameter of the beam of parallel light rays
-        angle1: angle of indidence with respect to the principal axis, in degrees
-        angle2: second angle of incidence used in 3D
-
-        samples along the base sampling dimension
+        Args:
+            beam_diameter: diameter of the beam of light
+            angle_offset: incidence angle of the beam (in degrees)
         """
-
         super().__init__()
-        self.beam_diameter = torch.as_tensor(beam_diameter, dtype=torch.float64)
-        self.angle1 = torch.deg2rad(torch.as_tensor(angle1, dtype=torch.float64))
-        self.angle2 = torch.deg2rad(torch.as_tensor(angle2, dtype=torch.float64))
+        self.beam_diameter = beam_diameter
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        # Create new rays by sampling the beam diameter
+        if not isinstance(angle_offset, torch.Tensor):
+            self.angle_offset = torch.as_tensor(angle_offset, dtype=torch.float64)
+        else:
+            self.angle_offset = angle_offset
+
+    def forward(self, inputs):
+        sampling = inputs.sampling
         dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
-        num_rays = inputs.sampling["base"]
-        margin = 0.1  # TODO
 
-        # rays origins
-        D = self.beam_diameter
-        RY = torch.linspace(-D / 2 + margin, D / 2 - margin, num_rays)
+        vect = rotated_unit(-self.angle_offset[0], -self.angle_offset[1], dim, dtype)
 
-        if dim == 3:
-            RZ = RY.clone()
+        N = inputs.sampling["base"]
 
+        # Sample coordinates other than X
         if dim == 2:
-            RX = torch.zeros(num_rays)
-            rays_origins = torch.column_stack((RX, RY))
+            NX = sample_line_linspace(N, self.beam_diameter)
         else:
-            RX = torch.zeros(num_rays * num_rays)
-            prod = torch.cartesian_prod(RY, RZ)
-            rays_origins = torch.column_stack((RX, prod[:, 0], prod[:, 1]))
+            # careful this does not sample exactly N points if N is not a perfect square
+            NX = sample_disk_linspace(N, self.beam_diameter)
 
-        # rays vectors
-        if dim == 2:
-            V = torch.tensor([1.0, 0.0], dtype=dtype)
+        # Make the rays P + tV
+        P = torch.column_stack((torch.zeros(NX.shape[0]), NX))
+        V = torch.tile(vect, (P.shape[0], 1))
 
-            vect = rot2d(V, self.angle1)
-        else:
-            V = torch.tensor([1.0, 0.0, 0.0], dtype=dtype)
-            M = euler_angles_to_matrix(
-                torch.deg2rad(
-                    torch.as_tensor([0.0, self.angle1, self.angle2], dtype=dtype)
-                ),
-                "ZYX",
-            ).to(
-                dtype=dtype
-            )  # TODO need to support dtype in euler_angles_to_matrix
-            vect = V @ M
+        # Make the rays 'base' coordinate
+        base = NX
 
-        assert vect.dtype == dtype
+        # Apply kinematic transform
+        tf = forward_kinematic(inputs.transforms)
+        P = tf.direct_points(P)
+        V = tf.direct_vectors(V)
 
-        if dim == 2:
-            rays_vectors = torch.tile(vect, (num_rays, 1))
-        else:
-            # use the same base dimension twice here
-            # TODO could define different ones
-            rays_vectors = torch.tile(vect, (num_rays * num_rays, 1))
-
-        # transform sources to the chain target
-        transform = forward_kinematic(inputs.transforms)
-        rays_origins = transform.direct_points(rays_origins)
-        rays_vectors = transform.direct_vectors(rays_vectors)
-
-        # normalized coordinate along the base dimension
-        # coord_base = (RY + self.beam_diameter / 2) / self.beam_diameter
-
-        assert rays_origins.shape[1] == dim, rays_origins.shape
-        assert rays_vectors.shape[1] == dim, rays_vectors.shape
-
+        # Concatenate with existing rays
+        # TODO some check that there are no other variables?
         return replace(
             inputs,
-            P=torch.cat((inputs.P, rays_origins), dim=0),
-            V=torch.cat((inputs.V, rays_vectors), dim=0),
+            P=torch.cat((inputs.P, P), dim=0),
+            V=torch.cat((inputs.V, V), dim=0),
         )
 
 
