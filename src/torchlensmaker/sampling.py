@@ -3,12 +3,12 @@ import torch
 Tensor = torch.Tensor
 
 
-def sample_line_linspace(N: int, diameter: float) -> Tensor:
-    return torch.linspace(-diameter / 2, diameter / 2, N)
+def sample_line_linspace(N: int, diameter: torch.Tensor) -> Tensor:
+    return torch.linspace(-diameter / 2, diameter / 2, N, dtype=diameter.dtype)
 
 
-def sample_line_random(N: int, diameter: float) -> Tensor:
-    return (torch.rand(N) - 0.5) * diameter
+def sample_line_random(N: int, diameter: torch.Tensor) -> Tensor:
+    return (torch.rand(N, dtype=diameter.dtype) - 0.5) * diameter
 
 
 def sample_disk_random(N: int, diameter: float) -> Tensor:
