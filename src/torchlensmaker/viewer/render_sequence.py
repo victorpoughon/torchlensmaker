@@ -23,8 +23,14 @@ def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any
     return [tlm.viewer.render_rays(P, ends, color=color)]
 
 
-def render_rays_length(P: Tensor, V: Tensor, length: float, color: str) -> list[Any]:
+def render_rays_length(P: Tensor, V: Tensor, length: float | Tensor, color: str) -> list[Any]:
     "Render rays with fixed length"
+
+    if isinstance(length, Tensor):
+        assert length.dim() in {0, 1}
+
+    if isinstance(length, Tensor) and length.dim() == 1:
+        length = length.unsqueeze(1).expand_as(V)
 
     return [tlm.viewer.render_rays(P, P + length * V, color=color)]
 
@@ -89,11 +95,10 @@ class FocalPointArtist:
     def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
 
         # Distance from ray origin P to target
-        dist = inputs.P - inputs.target()
+        dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
-
         return render_rays_length(inputs.P, inputs.V, t, color_valid)
 
 

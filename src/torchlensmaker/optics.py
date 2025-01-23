@@ -11,6 +11,7 @@ from torchlensmaker.transforms import (
     LinearTransform,
     IdentityTransform,
     forward_kinematic,
+    spherical_rotation,
 )
 from torchlensmaker.surfaces import (
     LocalSurface,
@@ -22,8 +23,7 @@ from torchlensmaker.sampling import (
     sample_line_linspace,
     sample_disk_linspace,
 )
-from torchlensmaker.rot2d import rotation_matrix_2D
-from torchlensmaker.rot3d import euler_angles_to_matrix
+
 
 Tensor = torch.Tensor
 
@@ -262,7 +262,24 @@ class Aperture(OpticalSurface):
         return rays
 
 
-class Gap(nn.Module):
+class KinematicElement(nn.Module):
+    """
+    An element that appends a transform to the kinematic chain
+    """
+
+    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
+        "Transform that gets appended to the kinematic chain by this element"
+        raise NotImplementedError
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        return replace(
+            inputs,
+            transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
+        )
+
+
+class Gap(KinematicElement):
     def __init__(self, offset: float | int | Tensor):
         super().__init__()
         assert isinstance(offset, (float, int, torch.Tensor))
@@ -273,9 +290,7 @@ class Gap(nn.Module):
         # dtype when creating the corresponding transform in forward()
         self.offset = torch.as_tensor(offset, dtype=torch.float64)
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
-
+    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
         translate_vector = torch.cat(
             (
                 self.offset.unsqueeze(0).to(dtype=dtype),
@@ -283,26 +298,7 @@ class Gap(nn.Module):
             )
         )
 
-        return replace(
-            inputs,
-            transforms=inputs.transforms + [TranslateTransform(translate_vector)],
-        )
-
-
-def spherical_rotation(angle1: Tensor, angle2: Tensor, dim: int, dtype: torch.dtype) -> LinearTransform:
-    "A two angle rotation, if dim = 2 angle2 is ignored"
-
-    if dim == 2:
-        M = rotation_matrix_2D(angle1)
-        return LinearTransform(M, M.T)
-    else:
-        M = euler_angles_to_matrix(
-            torch.stack((torch.tensor(0, dtype=dtype), angle1, angle2)),
-            "XZY",
-        ).to(
-            dtype=dtype
-        )  # TODO need to support dtype in euler_angles_to_matrix
-        return LinearTransform(M, M.T)
+        return TranslateTransform(translate_vector)
 
 
 class Rotate(nn.Module):
