@@ -87,15 +87,14 @@ class FocalPointArtist:
 
     @staticmethod
     def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
-        target = inputs.target()
-        mean_ray = inputs.P[:, 0].mean()
-        # Focal point is ahed of the rays
-        if target[0] > mean_ray:
-            return render_rays_until(inputs.P, inputs.V, target[0], color_valid)
-        # Focal point is behind the rays
-        else:
-            dist = mean_ray - target[0]
-            return render_rays_until(inputs.P, inputs.V, mean_ray + dist, color_valid)
+
+        # Distance from ray origin P to target
+        dist = inputs.P - inputs.target()
+
+        # Always draw rays in their positive t direction
+        t = torch.abs(dist)
+
+        return render_rays_length(inputs.P, inputs.V, t, color_valid)
 
 
 class ApertureArtist:
