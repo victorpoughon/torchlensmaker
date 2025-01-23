@@ -8,6 +8,7 @@ from torchlensmaker.intersect import *
 # Optics
 from torchlensmaker.optics import *
 from torchlensmaker.lenses import *
+from torchlensmaker.light_sources import *
 
 # Optimization
 from torchlensmaker.parameter import parameter
