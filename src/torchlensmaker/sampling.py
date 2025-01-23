@@ -1,0 +1,68 @@
+import torch
+
+
+Tensor = torch.Tensor
+
+
+def sample_line_linspace(N: int, diameter: float) -> Tensor:
+    return torch.linspace(-diameter / 2, diameter / 2, N)
+
+
+def sample_line_random(N: int, diameter: float) -> Tensor:
+    return (torch.rand(N) - 0.5) * diameter
+
+
+def sample_disk_random(N: int, diameter: float) -> tuple[Tensor, Tensor]:
+    """
+    Sample points on a disk using polar coordinates
+
+    Args:
+        N: number of samples
+        diameter: diameter of the sampled disk
+
+    Returns:
+        X, Y: X and Y coordinate tensors of the sampled points
+    """
+    # Generate random r (square root for uniform distribution)
+    r = torch.sqrt(torch.rand(N)) * (diameter / 2)
+
+    # Generate random angles
+    theta = torch.rand(N) * 2 * torch.pi
+
+    # Convert polar coordinates to Cartesian coordinates
+    X = r * torch.cos(theta)
+    Y = r * torch.sin(theta)
+
+    return X, Y
+
+
+def sample_disk_linspace(N: int, diameter: float) -> tuple[Tensor, Tensor]:
+    """
+    Sample points on a disk using polar coordinates with linspace distribution
+
+    Args:
+        N: number of samples (should be a perfect square for exactly N samples)
+        diameter: diameter of the sampled disk
+
+    Returns:
+        X, Y: X and Y coordinate tensors of the sampled points
+    """
+    # Determine the grid size
+    grid_size = int(torch.sqrt(torch.tensor(N)).floor())
+
+    # Generate evenly spaced r and angles
+    r = torch.linspace(0, diameter / 2, grid_size)
+    theta = torch.linspace(0, 2 * torch.pi, grid_size)
+
+    # Create a meshgrid of r and theta
+    r, theta = torch.meshgrid(r, theta, indexing="ij")
+
+    # Flatten the meshgrid
+    r = r.flatten()
+    theta = theta.flatten()
+
+    # Convert polar coordinates to Cartesian coordinates
+    X = r * torch.cos(theta)
+    Y = r * torch.sin(theta)
+
+    return X, Y
