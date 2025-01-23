@@ -3,6 +3,16 @@ import torch
 Tensor = torch.Tensor
 
 
+class SampleDisk:
+    @staticmethod
+    def sample(N: int, diameter: Tensor, dim: int) -> Tensor:
+        if dim == 2:
+            return sample_line_linspace(N, diameter)
+        else:
+            # careful this does not sample exactly N points if N in 3D when N is not a perfect square
+            return sample_disk_linspace(N, diameter)
+
+
 def sample_line_linspace(N: int, diameter: torch.Tensor) -> Tensor:
     return torch.linspace(-diameter / 2, diameter / 2, N, dtype=diameter.dtype)
 
@@ -35,7 +45,7 @@ def sample_disk_random(N: int, diameter: float) -> Tensor:
     return torch.column_stack((X, Y))
 
 
-def sample_disk_linspace(N: int, diameter: float) -> Tensor:
+def sample_disk_linspace(N: int, diameter: Tensor) -> Tensor:
     """
     Sample points on a disk using polar coordinates with linspace distribution
 
