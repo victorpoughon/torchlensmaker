@@ -4,7 +4,6 @@ from dataclasses import dataclass, replace
 
 from typing import Any, Sequence, Optional
 
-from torchlensmaker.tensorframe import TensorFrame
 from torchlensmaker.transforms import (
     TransformBase,
     TranslateTransform,
@@ -26,7 +25,8 @@ Tensor = torch.Tensor
 
 @dataclass
 class OpticalData:
-    # sampling information
+
+    # Sampling configuration
     sampling: dict[str, Any]
 
     # Transform kinematic chain
@@ -36,6 +36,11 @@ class OpticalData:
     # Parametric light rays P + tV
     P: Tensor
     V: Tensor
+
+    # Tensors of shape (N, 2|3) or None
+    # Rays variables
+    rays_base: Optional[Tensor]
+    rays_object: Optional[Tensor]
 
     # None or Tensor of shape (N,)
     # Mask array indicating which rays from the previous data in the sequence
@@ -65,6 +70,8 @@ def default_input(sampling: dict[str, Any]) -> OpticalData:
         transforms=[IdentityTransform(dim, dtype)],
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
+        rays_base=None,
+        rays_object=None,
         blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )

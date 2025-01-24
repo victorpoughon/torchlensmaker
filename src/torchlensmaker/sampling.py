@@ -9,7 +9,7 @@ class SampleDisk:
         if dim == 2:
             return sample_line_linspace(N, diameter)
         else:
-            # careful this does not sample exactly N points if N in 3D when N is not a perfect square
+            # careful this does not sample exactly N points in 3D when N is not a perfect square
             return sample_disk_linspace(N, diameter)
 
 
