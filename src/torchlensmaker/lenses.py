@@ -53,7 +53,7 @@ def anchor_thickness(
     # Evaluate the lens stack with zero rays, just to compute the transforms
     # TODO make rays variable dimensions not needed here
     execute_list, _ = tlm.full_forward(
-        lens, tlm.default_input({"dim": dim, "dtype": dtype, "base": 0})
+        lens, tlm.default_input(dim, dtype, {"base": 0})
     )
 
     s1_transform = tlm.forward_kinematic(

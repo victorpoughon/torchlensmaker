@@ -23,7 +23,9 @@ def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any
     return [tlm.viewer.render_rays(P, ends, color=color)]
 
 
-def render_rays_length(P: Tensor, V: Tensor, length: float | Tensor, color: str) -> list[Any]:
+def render_rays_length(
+    P: Tensor, V: Tensor, length: float | Tensor, color: str
+) -> list[Any]:
     "Render rays with fixed length"
 
     if isinstance(length, Tensor):
@@ -149,11 +151,14 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 def render_sequence(
     optics: nn.Module,
+    dim: int,
+    dtype: torch.dtype,
     sampling: dict[str, Any],
     end: Optional[float] = None,
 ) -> Any:
-    dim, dtype = sampling["dim"], sampling["dtype"]
-    execute_list, top_output = tlm.full_forward(optics, tlm.default_input(sampling))
+    execute_list, top_output = tlm.full_forward(
+        optics, tlm.default_input(dim, dtype, sampling)
+    )
 
     scene = tlm.viewer.new_scene("2D" if dim == 2 else "3D")
 
@@ -184,19 +189,17 @@ def render_sequence(
 
 def ipython_show(
     optics: nn.Module,
-    mode: Literal["2D", "3D"],
+    dim: int,
+    dtype: torch.dtype = torch.float64,
+    sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
-    base: int = 16,
-    object: int = 16,
     dump: bool = False,
 ) -> None:
 
-    if mode == "2D":
-        sampling = {"dim": 2, "dtype": torch.float64, "base": base}
-    else:
-        sampling = {"dim": 3, "dtype": torch.float64, "base": base}
+    if sampling is None:
+        sampling = {"base": 10, "object": 5}
 
-    scene = tlm.viewer.render_sequence(optics, sampling, end)
+    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, end)
 
     if dump:
         tlm.viewer.dump(scene, ndigits=2)

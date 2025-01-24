@@ -38,6 +38,8 @@ def optimize(
     optimizer: optim.Optimizer,
     sampling: dict[str, Any],
     num_iter: int,
+    dim: int,
+    dtype: torch.dtype = torch.float64,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
 ) -> OptimizationRecord:
@@ -48,7 +50,7 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
-    default_input = tlm.default_input(sampling)
+    default_input = tlm.default_input(dim, dtype, sampling)
 
     show_every = math.ceil(num_iter / nshow)
 

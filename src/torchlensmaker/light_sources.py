@@ -89,7 +89,7 @@ class LightSourceBase(nn.Module):
         raise NotImplementedError
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        dim, dtype = inputs.dim, inputs.dtype
         N = inputs.sampling["base"]
 
         # Get samples from derived class in local frame

@@ -25,6 +25,10 @@ Tensor = torch.Tensor
 
 @dataclass
 class OpticalData:
+    # dim is 2 or 3
+    # dtype default is torch.float64
+    dim: int
+    dtype: torch.dtype
 
     # Sampling configuration
     sampling: dict[str, Any]
@@ -57,15 +61,16 @@ class OpticalData:
         transform = forward_kinematic(self.transforms)
         return transform.direct_points(torch.zeros((dim,), dtype=dtype))
 
-    def replace(self, /, **changes: Any) -> 'OpticalData':
+    def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
 
 
-
-def default_input(sampling: dict[str, Any]) -> OpticalData:
-    dim, dtype = sampling["dim"], sampling["dtype"]
-
+def default_input(
+    dim: int, dtype: torch.dtype, sampling: dict[str, Any]
+) -> OpticalData:
     return OpticalData(
+        dim=dim,
+        dtype=dtype,
         sampling=sampling,
         transforms=[IdentityTransform(dim, dtype)],
         P=torch.empty((0, dim), dtype=dtype),
@@ -82,7 +87,7 @@ class FocalPoint(nn.Module):
         super().__init__()
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        dim = inputs.sampling["dim"]
+        dim = inputs.dim
         N = inputs.P.shape[0]
 
         X = inputs.target()
@@ -105,8 +110,6 @@ class FocalPoint(nn.Module):
         loss = distance.sum() / N
 
         return replace(inputs, loss=inputs.loss + loss)
-
-
 
 
 class OpticalSurface(nn.Module):
@@ -159,9 +162,9 @@ class OpticalSurface(nn.Module):
         return list(anchor0) + list(anchor1)
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        assert inputs.P.shape[1] == inputs.V.shape[1] == inputs.sampling["dim"]
+        assert inputs.P.shape[1] == inputs.V.shape[1] == inputs.dim
 
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        dim, dtype = inputs.dim, inputs.dtype
 
         surface_transform = forward_kinematic(
             inputs.transforms + self.surface_transform(dim, dtype)
@@ -235,7 +238,7 @@ class KinematicElement(nn.Module):
         raise NotImplementedError
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        dim, dtype = inputs.dim, inputs.dtype
         return replace(
             inputs,
             transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
@@ -280,14 +283,16 @@ class Turn(KinematicElement):
 class Rotate(nn.Module):
     "Rotate the given other optical element but don't affect the kinematic chain"
 
-    def __init__(self, element: nn.Module, angles: tuple[float | int, float | int] | Tensor):
+    def __init__(
+        self, element: nn.Module, angles: tuple[float | int, float | int] | Tensor
+    ):
         super().__init__()
         self.element = element
         if not isinstance(angles, torch.Tensor):
             self.angles = torch.deg2rad(torch.as_tensor(angles, dtype=torch.float64))
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.sampling["dim"], inputs.sampling["dtype"]
+        dim, dtype = inputs.dim, inputs.dtype
 
         chain = inputs.transforms + [
             spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
