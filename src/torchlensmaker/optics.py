@@ -36,24 +36,24 @@ class OpticalData:
     # Transform kinematic chain
     transforms: list[TransformBase]
 
-    # Tensors of shape (N, 2|3)
     # Parametric light rays P + tV
+    # Tensors of shape (N, 2|3)
     P: Tensor
     V: Tensor
 
-    # Tensors of shape (N, 2|3) or None
     # Rays variables
+    # Tensors of shape (N, 2|3) or None
     rays_base: Optional[Tensor]
     rays_object: Optional[Tensor]
 
-    # None or Tensor of shape (N,)
     # Mask array indicating which rays from the previous data in the sequence
     # were blocked by the previous optical element. "blocked" includes hitting
     # an absorbing surface but also not hitting anything
+    # None or Tensor of shape (N,)
     blocked: Optional[Tensor]
 
-    # Tensor of dim 0
     # Loss accumulator
+    # Tensor of dim 0
     loss: torch.Tensor
 
     def target(self) -> Tensor:
