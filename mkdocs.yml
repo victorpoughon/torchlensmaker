@@ -6,6 +6,9 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  font:
+    text: Fira Sans
+    code: Fira Sans Mono
   features:
     - navigation.tabs
     - navigation.sections
@@ -15,23 +18,14 @@ theme:
     # - toc.integrate
   palette:
     - scheme: default
-      primary: orange
-      accent: orange
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    # Palette toggle for dark mode
-    - scheme: slate
-      primary: orange
-      accent: orange
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
+      primary: amber
+      accent: amber
   logo: tlmlogo_black150.png
 
 
 extra_css:
-  - stylesheets/extra.css
+  # - stylesheets/extra.css
+  - stylesheets/header.css
   - stylesheets/jupyter.css
 
 markdown_extensions:

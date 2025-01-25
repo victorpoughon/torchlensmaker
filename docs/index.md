@@ -1,12 +1,24 @@
 ---
 title: Torch Lens Maker
+hide:
+    - navigation
+    - toc
 ---
 
-# Torch Lens Maker
+<style>
+div.md-content {
+  max-width: 860px; 
+  margin: 0 auto;
+
+}
+</style>
+
+<div style="text-align: center; font-weight: bold;">
+<h1 style="font-weight: bold; color: black">Torch Lens Maker</h1>
+</div>
 
 
 Welcome to *Torch Lens Maker*, an open-source Python library for designing optical systems using optimization.
-
 Currently an experimental project, the goal is to be able to design complex real-world optical systems (lenses, mirrors, etc.) using modern and expressive computer code.
 
 * Describe your optical system in Python
