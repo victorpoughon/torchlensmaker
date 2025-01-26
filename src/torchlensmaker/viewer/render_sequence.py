@@ -15,7 +15,9 @@ color_blocked = "red"
 color_focal_point = "red"
 
 
-def render_rays_until(P: Tensor, V: Tensor, end: Tensor, default_color: str) -> list[Any]:
+def render_rays_until(
+    P: Tensor, V: Tensor, end: Tensor, default_color: str
+) -> list[Any]:
     "Render rays until an absolute X coordinate"
 
     t = (end - P[:, 0]) / V[:, 0]
@@ -39,7 +41,9 @@ def render_rays_length(
 
 class SurfaceArtist:
     @staticmethod
-    def render_element(element: nn.Module, inputs: Any, _outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
+    def render_element(
+        element: nn.Module, inputs: Any, _outputs: Any, color_dim: Optional[str] = None
+    ) -> list[Any]:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         chain = inputs.transforms + element.surface_transform(dim, dtype)
@@ -53,17 +57,25 @@ class SurfaceArtist:
         ]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
+    def render_rays(
+        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+    ) -> list[Any]:
 
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
-            return [tlm.viewer.render_rays(inputs.P, outputs.P, default_color=color_valid)]
+            return [
+                tlm.viewer.render_rays(inputs.P, outputs.P, default_color=color_valid)
+            ]
 
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
             group_valid = (
-                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, default_color=color_valid)]
+                [
+                    tlm.viewer.render_rays(
+                        inputs.P[valid], outputs.P, default_color=color_valid
+                    )
+                ]
                 if inputs.P[valid].numel() > 0
                 else []
             )
@@ -75,7 +87,9 @@ class SurfaceArtist:
                 transform = tlm.forward_kinematic(chain)
                 target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
 
-                group_blocked = render_rays_until(P, V, target[0], default_color=color_blocked)
+                group_blocked = render_rays_until(
+                    P, V, target[0], default_color=color_blocked
+                )
 
             else:
                 group_blocked = []
@@ -94,7 +108,9 @@ class FocalPointArtist:
         return [tlm.viewer.render_points(target, color_focal_point)]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
+    def render_rays(
+        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+    ) -> list[Any]:
 
         # Distance from ray origin P to target
         dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
@@ -114,7 +130,9 @@ class ApertureArtist:
         return [tlm.viewer.render_points(target, color_focal_point)]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
+    def render_rays(
+        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+    ) -> list[Any]:
         return SurfaceArtist.render_rays(element, inputs, outputs, color_dim)
 
 
@@ -127,6 +145,22 @@ class JointArtist:
         joint = transform.direct_points(torch.zeros((dim,), dtype=dtype))
 
         return [{"type": "points", "data": [joint.tolist()]}]
+
+
+class EndArtist:
+    def __init__(self, end: float):
+        self.end = end
+
+    def render_rays(
+        self,
+        element: nn.Module,
+        inputs: Any,
+        outputs: Any,
+        color_dim: Optional[str] = None,
+    ) -> list[Any]:
+        return render_rays_length(
+            outputs.P, outputs.V, self.end, default_color=color_valid
+        )
 
 
 artists_dict: Dict[type, type] = {
@@ -177,12 +211,14 @@ def render_sequence(
             scene["data"].extend(artist.render_element(module, inputs, outputs))
 
             if inputs.P.numel() > 0:
-                scene["data"].extend(artist.render_rays(module, inputs, outputs, color_dim))
+                scene["data"].extend(
+                    artist.render_rays(module, inputs, outputs, color_dim)
+                )
 
     # Render output rays
     if end is not None:
         scene["data"].extend(
-            render_rays_length(top_output.P, top_output.V, end, default_color=color_valid)
+            EndArtist(end).render_rays(module, inputs, outputs, color_dim)
         )
 
     return scene

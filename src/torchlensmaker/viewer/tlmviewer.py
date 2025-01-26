@@ -5,7 +5,7 @@ import os.path
 import json
 import torch
 
-from typing import Any
+from typing import Any, Optional
 
 
 import torchlensmaker as tlm
@@ -130,10 +130,20 @@ def render_surfaces(
     }
 
 
-def render_rays(start: Tensor, end: Tensor, default_color: str = "#ffa724") -> Any:
+def render_rays(start: Tensor, end: Tensor, color: Optional[Tensor] = None, default_color: str = "#ffa724") -> Any:
+    
+    assert start.shape == end.shape
+    if color:
+        assert color.shape[0] == start.shape[0]
+        assert color.shape[1] == 3
+        assert color.dtype == torch.uint8
+        data = torch.hstack((start, end, color)).tolist()
+    else:
+        data = torch.hstack((start, end)).tolist()
+
     return {
         "type": "rays",
-        "data": torch.hstack((start, end)).tolist(),
+        "data": data,
         "color": default_color,
     }
 
