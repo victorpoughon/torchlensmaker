@@ -194,6 +194,7 @@ def ipython_show(
     sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
     dump: bool = False,
+    ndigits: int | None = 4,
 ) -> None:
 
     if sampling is None:
@@ -204,4 +205,4 @@ def ipython_show(
     if dump:
         tlm.viewer.dump(scene, ndigits=2)
 
-    tlm.viewer.ipython_display(scene)
+    tlm.viewer.ipython_display(scene, ndigits)

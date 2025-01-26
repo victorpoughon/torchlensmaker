@@ -1,9 +1,9 @@
 async function importtlm() {
     try {
-        return await import("/files/test_notebooks/tlmviewer.js");
+        return await import("/tlmviewer.js");
     } catch (error) {
         console.log("error", error);
-        return await import("/tlmviewer.js");
+        return await import("/files/test_notebooks/tlmviewer.js");
     }
 }
 
