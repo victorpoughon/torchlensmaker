@@ -42,6 +42,10 @@ markdown_extensions:
 plugins:
   - search
   #- mkdocs-jupyter
+  - mkdocs-simple-hooks:
+      hooks:
+        on_post_build: "docs.hooks:copy_get"
+
 
 nav:
   - Overview:
@@ -49,8 +53,8 @@ nav:
     - Installation: installation.md
     - How does it work?: how.md
     - Roadmap: roadmap.md
-  - Examples:
-    - Biconvex Parabola: test_notebooks/biconvex_parabola.md
+  # - Examples:
+  #   - Biconvex Parabola: test_notebooks/biconvex_parabola.md
 
   - Reference:
     - Shapes: reference/shapes.md

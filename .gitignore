@@ -6,3 +6,5 @@ venv/
 .vscode
 html/
 .obsidian
+
+site/
