@@ -24,7 +24,7 @@ theme:
 
 
 extra_css:
-  # - stylesheets/extra.css
+  - stylesheets/extra.css
   - stylesheets/header.css
   - stylesheets/jupyter.css
 
@@ -50,30 +50,7 @@ nav:
     - How does it work?: how.md
     - Roadmap: roadmap.md
   - Examples:
-    - Simple Lenses:
-      - Simple Lenses: examples/executed/simple_lenses.ipynb
-      - Biconvex lens (sphere): examples/executed/Biconvex lens sphere.ipynb
-      - Biconvex lens (parabola): examples/executed/Biconvex lens parabola.ipynb
-      - Biconvex lens (bezier spline): examples/executed/Biconvex lens bezier spline.ipynb
-      - Biconcave diverging lens: examples/executed/Biconcave diverging lens.ipynb
-      - Planoconvex lens (sphere): examples/executed/Planoconvex lens (sphere).ipynb
-      - Planoconvex lens (piecewise line): examples/executed/Planoconvex lens (piecewise line).ipynb
-      - Landscape Singlet Lens: examples/executed/landscape_singlet_lens.ipynb
-
-    - Multiple Lenses:
-      - Variable number of lenses: examples/executed/Multiple Lenses Sequence.ipynb
-      - Triple Lens: examples/executed/Triple Biconvex lens parabola.ipynb
-      - Optimization without tlm.Module: examples/executed/Biconvex Parabola - No tlmModule.ipynb
-      - Moving a lens to focus: examples/executed/Moving a lens to focus.ipynb
-      - Regularization - Equal Thickness Lenses: examples/executed/Regularization - Equal Thickness Lenses.ipynb
-  
-    - Mirrors:
-      - Reflecting Telescope: examples/executed/Reflecting Telescope.ipynb
-      - Concave Mirror: examples/executed/Concave Mirror.ipynb
-    
-    - Optics:
-      - Aperture: examples/executed/Aperture.ipynb
-      - Surface Anchors: examples/executed/Surface anchors.ipynb
+    - Biconvex Parabola: test_notebooks/biconvex_parabola.md
 
   - Reference:
     - Shapes: reference/shapes.md

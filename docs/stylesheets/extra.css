@@ -11,7 +11,7 @@
     line-height: 1.2;
 }
 
-.md-sidebar label span.md-ellipsis {
+.md-sidebar label span.md-ellipsis, label.md-nav__title {
     color: var(--md-default-fg-color);
 }
 
@@ -19,7 +19,9 @@
     font-size: .75em !important;
 }
 
-
+.md-content p {
+    /* font-size: 16px; */
+}
 
 
 /* Center Markdown Tables (requires md_in_html extension) */
