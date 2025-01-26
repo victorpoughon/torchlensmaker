@@ -70,16 +70,6 @@ div#logo-title {
     margin: 0;
 }
 
-#logo-title div {
-    height: 1px;
-    width: 620px;
-    border-radius: 30px;
-    background: rgba(236, 200, 111, 1);
-    margin: 0;
-    margin-top: 8px;
-    box-shadow: 0px 0px 15px 4px rgba(255, 255, 255, 0.4);
-}
-
 #logo-title h1 {
     margin: 0;
     font-size: 80px;

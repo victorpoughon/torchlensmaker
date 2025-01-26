@@ -1,4 +1,4 @@
-![logo](./docs/tlmlogo_title100.png)
+![logo](./docs/logos/logo-title.png)
 
 Welcome to **Torch Lens Maker**, an open-source Python library for designing
 optical systems using optimization. Currently an experimental project, the goal
