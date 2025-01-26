@@ -10,7 +10,7 @@ theme:
     text: Fira Sans
     code: Fira Sans Mono
   features:
-    - navigation.tabs
+    #- navigation.tabs
     - navigation.sections
     - navigation.path
     - navigation.footer
@@ -44,8 +44,8 @@ plugins:
   #- mkdocs-jupyter
 
 nav:
-  - Home:
-    - Overview: index.md
+  - Overview:
+    - Welcome: index.md
     - Installation: installation.md
     - How does it work?: how.md
     - Roadmap: roadmap.md

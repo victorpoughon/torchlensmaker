@@ -1,14 +1,14 @@
 ---
 title: Torch Lens Maker
 hide:
-    - navigation
+    #- navigation
     - toc
 ---
 
 <style>
 div.md-content {
   max-width: 860px; 
-  margin: 0 auto;
+  /* margin: 0 auto; */
 
 }
 </style>
