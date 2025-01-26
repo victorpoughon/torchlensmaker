@@ -15,16 +15,16 @@ color_blocked = "red"
 color_focal_point = "red"
 
 
-def render_rays_until(P: Tensor, V: Tensor, end: Tensor, color: str) -> list[Any]:
+def render_rays_until(P: Tensor, V: Tensor, end: Tensor, default_color: str) -> list[Any]:
     "Render rays until an absolute X coordinate"
 
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
-    return [tlm.viewer.render_rays(P, ends, color=color)]
+    return [tlm.viewer.render_rays(P, ends, default_color=default_color)]
 
 
 def render_rays_length(
-    P: Tensor, V: Tensor, length: float | Tensor, color: str
+    P: Tensor, V: Tensor, length: float | Tensor, default_color: str
 ) -> list[Any]:
     "Render rays with fixed length"
 
@@ -34,12 +34,12 @@ def render_rays_length(
     if isinstance(length, Tensor) and length.dim() == 1:
         length = length.unsqueeze(1).expand_as(V)
 
-    return [tlm.viewer.render_rays(P, P + length * V, color=color)]
+    return [tlm.viewer.render_rays(P, P + length * V, default_color=default_color)]
 
 
 class SurfaceArtist:
     @staticmethod
-    def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
+    def render_element(element: nn.Module, inputs: Any, _outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
 
         dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
         chain = inputs.transforms + element.surface_transform(dim, dtype)
@@ -53,17 +53,17 @@ class SurfaceArtist:
         ]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
 
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
-            return [tlm.viewer.render_rays(inputs.P, outputs.P, color=color_valid)]
+            return [tlm.viewer.render_rays(inputs.P, outputs.P, default_color=color_valid)]
 
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
             group_valid = (
-                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, color=color_valid)]
+                [tlm.viewer.render_rays(inputs.P[valid], outputs.P, default_color=color_valid)]
                 if inputs.P[valid].numel() > 0
                 else []
             )
@@ -75,7 +75,7 @@ class SurfaceArtist:
                 transform = tlm.forward_kinematic(chain)
                 target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
 
-                group_blocked = render_rays_until(P, V, target[0], color=color_blocked)
+                group_blocked = render_rays_until(P, V, target[0], default_color=color_blocked)
 
             else:
                 group_blocked = []
@@ -94,14 +94,14 @@ class FocalPointArtist:
         return [tlm.viewer.render_points(target, color_focal_point)]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
 
         # Distance from ray origin P to target
         dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
-        return render_rays_length(inputs.P, inputs.V, t, color_valid)
+        return render_rays_length(inputs.P, inputs.V, t, default_color=color_valid)
 
 
 class ApertureArtist:
@@ -114,8 +114,8 @@ class ApertureArtist:
         return [tlm.viewer.render_points(target, color_focal_point)]
 
     @staticmethod
-    def render_rays(element: nn.Module, inputs: Any, outputs: Any) -> list[Any]:
-        return SurfaceArtist.render_rays(element, inputs, outputs)
+    def render_rays(element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None) -> list[Any]:
+        return SurfaceArtist.render_rays(element, inputs, outputs, color_dim)
 
 
 class JointArtist:
@@ -154,6 +154,7 @@ def render_sequence(
     dim: int,
     dtype: torch.dtype,
     sampling: dict[str, Any],
+    color_dim: Optional[str] = None,
     end: Optional[float] = None,
 ) -> Any:
     execute_list, top_output = tlm.full_forward(
@@ -176,12 +177,12 @@ def render_sequence(
             scene["data"].extend(artist.render_element(module, inputs, outputs))
 
             if inputs.P.numel() > 0:
-                scene["data"].extend(artist.render_rays(module, inputs, outputs))
+                scene["data"].extend(artist.render_rays(module, inputs, outputs, color_dim))
 
     # Render output rays
     if end is not None:
         scene["data"].extend(
-            render_rays_length(top_output.P, top_output.V, end, color=color_valid)
+            render_rays_length(top_output.P, top_output.V, end, default_color=color_valid)
         )
 
     return scene
@@ -192,6 +193,7 @@ def ipython_show(
     dim: int,
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
+    color_dim: Optional[str] = None,
     end: Optional[float] = None,
     dump: bool = False,
     ndigits: int | None = 4,
@@ -200,7 +202,7 @@ def ipython_show(
     if sampling is None:
         sampling = {"base": 10, "object": 5}
 
-    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, end)
+    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, color_dim, end)
 
     if dump:
         tlm.viewer.dump(scene, ndigits=2)

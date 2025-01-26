@@ -130,11 +130,11 @@ def render_surfaces(
     }
 
 
-def render_rays(start: Tensor, end: Tensor, color: str = "#ffa724") -> Any:
+def render_rays(start: Tensor, end: Tensor, default_color: str = "#ffa724") -> Any:
     return {
         "type": "rays",
         "data": torch.hstack((start, end)).tolist(),
-        "color": color,
+        "color": default_color,
     }
 
 

@@ -21,35 +21,15 @@ div.md-content {
 <h1>Torch Lens Maker</h1>
 </div>
 
-Welcome to *Torch Lens Maker*, an open-source Python library for designing optical systems using optimization.
+Welcome to **Torch Lens Maker**, an open-source Python library for designing optical systems using optimization.
 Currently an experimental project, the goal is to be able to design complex real-world optical systems (lenses, mirrors, etc.) using modern and expressive computer code.
 
-* Describe your optical system in Python
-* Sample the problem space with light rays, wavelengths, elements positions, etc.
-* Analyse with magnification plots, spot diagrams, and more
-* Wrap any value with `tlm.Parameter()` to make it optimizable
-* Optimize parameters for maximum optical performance
-* Export 3D models in any format
-
 ```python
-import torchlensmaker as tlm
-
-shape = tlm.CircularArc(height=60., r=70.)
-
-optics = tlm.OpticalSequence(
-    tlm.ObjectAtInfinity(beam_diameter=40, angular_size=15),
-    tlm.Gap(10.),
-    tlm.SymmetricLens(shape, (1.0, 1.5), outer_thickness=5.),
-    tlm.Gap(60.0),
-    tlm.Image(height=10),
-)
-
-tlm.render_plt(optics, sampling={"rays": 30, "object": 5}, color_dim="object")
+example1 here
 ```
 
-![image1](./image1.png)
 
-The core of the project is differentiable raytracing: collision detection and the laws of optics implemented in [PyTorch](https://pytorch.org/). PyTorch provides world-class automatic differentiation, and access to state-of-the-art numerical optimization algorithms. Export to 3D models is done with [build123d](https://build123d.readthedocs.io/en/latest/).
+The core of the project is differentiable geometric optics: collision detection and the laws of optics implemented in [PyTorch](https://pytorch.org/). PyTorch provides world-class automatic differentiation, and access to state-of-the-art numerical optimization algorithms. Export to 3D models is done with [build123d](https://build123d.readthedocs.io/en/latest/).
 
 The key idea is that there is a strong analogy to be made between layers of a neural network, and optical elements in an optical system. If we have a compound optical system made of a series of lenses, mirrors, etc., we can pretend that each optical element is the layer of a neural network. The data flowing through this network are not images, sounds, or text, but rays of light. Each layer affects light rays depending on its internal parameters describing its surface shape, and following the very much non-linear Snell's law. Inference, or the forward model, is the optical simulation where given some input light, we compute the image formed. Training, or optimization, is finding the best shapes for lenses to focus light where we want it.
 
