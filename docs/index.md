@@ -13,10 +13,13 @@ div.md-content {
 }
 </style>
 
-<div style="text-align: center; font-weight: bold;">
-<h1 style="font-weight: bold; color: black">Torch Lens Maker</h1>
-</div>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Lilita+One&display=swap" rel="stylesheet">
 
+<div id="logo-title">
+<h1>Torch Lens Maker</h1>
+</div>
 
 Welcome to *Torch Lens Maker*, an open-source Python library for designing optical systems using optimization.
 Currently an experimental project, the goal is to be able to design complex real-world optical systems (lenses, mirrors, etc.) using modern and expressive computer code.

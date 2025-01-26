@@ -14,7 +14,7 @@ theme:
     - navigation.sections
     - navigation.path
     - navigation.footer
-    - content.action.edit
+    # - content.action.edit
     # - toc.integrate
   palette:
     - scheme: default
@@ -28,6 +28,7 @@ extra_css:
   - stylesheets/extra.css
   - stylesheets/header.css
   - stylesheets/jupyter.css
+  - stylesheets/logo.css
 
 markdown_extensions:
   - pymdownx.highlight:
