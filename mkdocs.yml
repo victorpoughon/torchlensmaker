@@ -21,6 +21,7 @@ theme:
       primary: amber
       accent: amber
   logo: tlmlogo_black150.png
+  favicon: tlmlogo_black150.png
 
 
 extra_css:
