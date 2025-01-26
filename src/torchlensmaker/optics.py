@@ -180,15 +180,28 @@ class OpticalSurface(nn.Module):
             surface_normals,
         )
 
+        # Filter ray variables with valid collisions
+        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
+        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
+
         chain_transform = self.chain_transform(dim, dtype)
 
         return replace(
             inputs,
             P=collision_points,
             V=output_rays,
+            rays_base=new_rays_base,
+            rays_object=new_rays_object,
             transforms=list(inputs.transforms) + list(chain_transform),
             blocked=~valid,
         )
+
+
+def filter_optional_tensor(t: Optional[Tensor], valid: Tensor) -> Optional[Tensor]:
+    if t is None:
+        return None
+    else:
+        return t[valid]
 
 
 class ReflectiveSurface(OpticalSurface):

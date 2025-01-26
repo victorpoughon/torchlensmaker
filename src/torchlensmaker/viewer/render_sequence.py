@@ -6,6 +6,7 @@ from typing import Literal, Any, Optional, Type, Dict, TypeVar
 
 from torchlensmaker.tensorframe import TensorFrame
 
+import matplotlib as mpl
 
 Tensor = torch.Tensor
 
@@ -26,7 +27,11 @@ def render_rays_until(
 
 
 def render_rays_length(
-    P: Tensor, V: Tensor, length: float | Tensor, default_color: str
+    P: Tensor,
+    V: Tensor,
+    length: float | Tensor,
+    color_data: Optional[Tensor] = None,
+    default_color: str = color_valid,
 ) -> list[Any]:
     "Render rays with fixed length"
 
@@ -36,7 +41,47 @@ def render_rays_length(
     if isinstance(length, Tensor) and length.dim() == 1:
         length = length.unsqueeze(1).expand_as(V)
 
-    return [tlm.viewer.render_rays(P, P + length * V, default_color=default_color)]
+    return [
+        tlm.viewer.render_rays(
+            P, P + length * V, color_data=color_data, default_color=default_color
+        )
+    ]
+
+
+def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
+    if color_dim == "base":
+        return data.rays_base
+    elif color_dim == "object":
+        return data.rays_object
+    else:
+        raise RuntimeError(f"Unknown color dimension '{color_dim}'")
+
+
+def color_rays(data: tlm.OpticalData, color_dim: Optional[str]) -> Optional[Tensor]:
+    if color_dim is None:
+        return None
+
+    color_tensor = color_rays_tensor(data, color_dim)
+
+    assert color_tensor.dim() in {1, 2}
+    if color_tensor.dim() == 2:
+        assert color_tensor.shape[1] in {1, 2}
+
+    # Ray variables that we use for coloring can be 2D when simulating in 3D
+    # TODO more configurability here
+
+    if color_tensor.dim() == 1:
+        var = color_tensor
+    else:
+        var = color_tensor[:, 0]  # TODO
+
+    # normalize color variable to [0, 1]
+    c = (var - var.min()) / (var.max() - var.min())
+    print(c.min(), c.max())
+
+    # convert to rgb using color map
+    cmap = mpl.colormaps["rainbow"]
+    return torch.tensor(cmap(c))
 
 
 class SurfaceArtist:
@@ -70,10 +115,14 @@ class SurfaceArtist:
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
+            color_data = color_rays(inputs, color_dim)[valid]
             group_valid = (
                 [
                     tlm.viewer.render_rays(
-                        inputs.P[valid], outputs.P, default_color=color_valid
+                        inputs.P[valid],
+                        outputs.P,
+                        color_data=color_data,
+                        default_color=color_valid,
                     )
                 ]
                 if inputs.P[valid].numel() > 0
@@ -159,7 +208,11 @@ class EndArtist:
         color_dim: Optional[str] = None,
     ) -> list[Any]:
         return render_rays_length(
-            outputs.P, outputs.V, self.end, default_color=color_valid
+            outputs.P,
+            outputs.V,
+            self.end,
+            color_data=color_rays(outputs, color_dim),
+            default_color=color_valid,
         )
 
 

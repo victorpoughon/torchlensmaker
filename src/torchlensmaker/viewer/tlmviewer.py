@@ -130,14 +130,17 @@ def render_surfaces(
     }
 
 
-def render_rays(start: Tensor, end: Tensor, color: Optional[Tensor] = None, default_color: str = "#ffa724") -> Any:
+def render_rays(start: Tensor, end: Tensor, color: Optional[Tensor] = None, color_data: Optional[Tensor] = None, default_color: str = "#ffa724") -> Any:
     
     assert start.shape == end.shape
-    if color:
-        assert color.shape[0] == start.shape[0]
-        assert color.shape[1] == 3
-        assert color.dtype == torch.uint8
-        data = torch.hstack((start, end, color)).tolist()
+    if color_data is not None:
+        assert color_data.shape[0] == start.shape[0], (color_data.shape, start.shape)
+        assert color_data.shape[1] in {3, 4}
+        
+        # Convert to 8 bit color and drop alpha channel
+        color_uint8 = (255*color_data).to(dtype=torch.uint8)[:, :3]
+
+        data = torch.hstack((start, end, color_uint8)).tolist()
     else:
         data = torch.hstack((start, end)).tolist()
 
