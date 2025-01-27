@@ -6,9 +6,10 @@ edit_uri: edit/main/docs/
 
 theme:
   name: material
+  custom_dir: docs/overrides
   font:
     text: Fira Sans
-    code: Fira Sans Mono
+    code: Fira Code
   features:
     #- navigation.tabs
     - navigation.sections
