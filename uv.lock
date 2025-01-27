@@ -343,6 +343,15 @@ wheels = [
 ]
 
 [[package]]
+name = "colorcet"
+version = "3.1.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5f/c3/ae78e10b7139d6b7ce080d2e81d822715763336aa4229720f49cb3b3e15b/colorcet-3.1.0.tar.gz", hash = "sha256:2921b3cd81a2288aaf2d63dbc0ce3c26dcd882e8c389cc505d6886bf7aa9a4eb", size = 2183107 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c6/c6/9963d588cc3d75d766c819e0377a168ef83cf3316a92769971527a1ad1de/colorcet-3.1.0-py3-none-any.whl", hash = "sha256:2a7d59cc8d0f7938eeedd08aad3152b5319b4ba3bcb7a612398cc17a384cb296", size = 260286 },
+]
+
+[[package]]
 name = "comm"
 version = "0.2.2"
 source = { registry = "https://pypi.org/simple" }
@@ -1430,6 +1439,20 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/92/6e/05d7e0e35598bd0d423167295f978005912a2dcd137c88ebf36e34047dc7/nbstripout-0.8.1.tar.gz", hash = "sha256:eaac8b6b4e729e8dfe1e5df2c0f8ba44abc5a17a65448f0480141f80be230bb1", size = 26399 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/cf/91/93b459c456b0e4389b2b3ddb3b82cd401d022691334a0f06e92c2046e780/nbstripout-0.8.1-py2.py3-none-any.whl", hash = "sha256:79a8c8da488d98c54c112fa87185045f0271a97d84f1d46918d6a3ee561b30e7", size = 16329 },
+]
+
+[[package]]
+name = "nbstripout-fast"
+version = "1.0.4"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/ea/acb44d2c0b9f6f43cf1a55cb019712b8664279b9e80ce081c274110b279e/nbstripout_fast-1.0.4.tar.gz", hash = "sha256:cf30a3a40874714fc0124cac9c15a3532cb01ec74c2977bbced4b035dabfa04d", size = 24280 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fb/0b/a836da967d4bae1804c04ab2bfa68fa54ee5ce21e966dcac666264153703/nbstripout_fast-1.0.4-py3-none-macosx_11_0_arm64.whl", hash = "sha256:7dc6be725d3d2d90455db5d97241e70377859e4d3ba55101f0cc1c1672d585b7", size = 1059115 },
+    { url = "https://files.pythonhosted.org/packages/f9/8d/35a740272174a457dfd47eb3b2ca8294ab2ec6e3f6fe7ee14df20052e57a/nbstripout_fast-1.0.4-py3-none-manylinux_2_17_i686.manylinux2014_i686.whl", hash = "sha256:f49d46db17e013782c3b09b3ff15959c0a1d20223901e874c8dceeb377441ece", size = 1251407 },
+    { url = "https://files.pythonhosted.org/packages/a4/08/c18c28a6b98dfeabb358bb9a61d6551495d0083108af507556c45e672185/nbstripout_fast-1.0.4-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:c3e26e2ed4ab174de3c8b9a8c9ab3173189630f31407988727088529e964c0e8", size = 1183476 },
+    { url = "https://files.pythonhosted.org/packages/f9/3a/950ccc609595970b7a88fcc50d3bab6ff61259324c6a056d148145b84588/nbstripout_fast-1.0.4-py3-none-musllinux_1_1_x86_64.whl", hash = "sha256:56c2ff216d89949c27d5c8a259c1cc55fb31e86a79392c7384aa624f41f39fd7", size = 1234298 },
+    { url = "https://files.pythonhosted.org/packages/ef/00/388e5ce50bddbfd7eda04774d9c6070b0e61b9ebbd9fd22e8106a1b4ec00/nbstripout_fast-1.0.4-py3-none-win32.whl", hash = "sha256:9dd8b5f82f83f372aae8f8f2443cba4a1527231e5ebdc1659680f3fc36556478", size = 866118 },
+    { url = "https://files.pythonhosted.org/packages/38/d3/83085064ace94f8fc4ec75830cec406d86bffed4959d41fbe68c07c1dcca/nbstripout_fast-1.0.4-py3-none-win_amd64.whl", hash = "sha256:34339c3e43e8686fcab4ea4bdad5cba2217f6ddf5a1a6cf0be154e9c56a76e83", size = 933846 },
 ]
 
 [[package]]
@@ -2578,6 +2601,7 @@ version = "0.0.1"
 source = { editable = "." }
 dependencies = [
     { name = "build123d" },
+    { name = "colorcet" },
     { name = "matplotlib" },
     { name = "notebook" },
     { name = "torch" },
@@ -2593,12 +2617,14 @@ docs = [
 test = [
     { name = "nbmake" },
     { name = "nbstripout" },
+    { name = "nbstripout-fast" },
     { name = "pytest" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "build123d", git = "https://github.com/victorpoughon/build123d.git?rev=fix_async_display" },
+    { name = "colorcet", specifier = ">=3" },
     { name = "jupytext", marker = "extra == 'docs'", specifier = "<=1.16.3" },
     { name = "matplotlib", specifier = "~=3.9.2" },
     { name = "mkdocs", marker = "extra == 'docs'" },
@@ -2606,6 +2632,7 @@ requires-dist = [
     { name = "mkdocs-simple-hooks", marker = "extra == 'docs'", specifier = ">=0.1.5" },
     { name = "nbmake", marker = "extra == 'test'", specifier = "~=1.5.4" },
     { name = "nbstripout", marker = "extra == 'test'" },
+    { name = "nbstripout-fast", marker = "extra == 'test'" },
     { name = "notebook", specifier = ">=7" },
     { name = "pytest", marker = "extra == 'test'", specifier = "~=8.3.3" },
     { name = "torch", specifier = "~=2.4.1" },

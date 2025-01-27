@@ -7,6 +7,7 @@ from typing import Literal, Any, Optional, Type, Dict, TypeVar
 from torchlensmaker.tensorframe import TensorFrame
 
 import matplotlib as mpl
+import colorcet as cc
 
 Tensor = torch.Tensor
 
@@ -14,6 +15,8 @@ Tensor = torch.Tensor
 color_valid = "#ffa724"
 color_blocked = "red"
 color_focal_point = "red"
+
+default_colormap = cc.cm.CET_I2
 
 
 def render_rays_until(
@@ -57,7 +60,11 @@ def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
         raise RuntimeError(f"Unknown color dimension '{color_dim}'")
 
 
-def color_rays(data: tlm.OpticalData, color_dim: Optional[str]) -> Optional[Tensor]:
+def color_rays(
+    data: tlm.OpticalData,
+    color_dim: Optional[str],
+    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+) -> Optional[Tensor]:
     if color_dim is None:
         return None
 
@@ -77,11 +84,9 @@ def color_rays(data: tlm.OpticalData, color_dim: Optional[str]) -> Optional[Tens
 
     # normalize color variable to [0, 1]
     c = (var - var.min()) / (var.max() - var.min())
-    print(c.min(), c.max())
 
     # convert to rgb using color map
-    cmap = mpl.colormaps["rainbow"]
-    return torch.tensor(cmap(c))
+    return torch.tensor(colormap(c))
 
 
 class SurfaceArtist:
@@ -103,7 +108,11 @@ class SurfaceArtist:
 
     @staticmethod
     def render_rays(
-        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+        element: nn.Module,
+        inputs: Any,
+        outputs: Any,
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
 
         # If rays are not blocked, render simply all rays from collision to collision
@@ -115,7 +124,7 @@ class SurfaceArtist:
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
-            color_data = color_rays(inputs, color_dim)[valid]
+            color_data = color_rays(inputs, color_dim, colormap)[valid]
             group_valid = (
                 [
                     tlm.viewer.render_rays(
@@ -158,7 +167,11 @@ class FocalPointArtist:
 
     @staticmethod
     def render_rays(
-        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+        element: nn.Module,
+        inputs: Any,
+        outputs: Any,
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
 
         # Distance from ray origin P to target
@@ -180,9 +193,13 @@ class ApertureArtist:
 
     @staticmethod
     def render_rays(
-        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+        element: nn.Module,
+        inputs: Any,
+        outputs: Any,
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
-        return SurfaceArtist.render_rays(element, inputs, outputs, color_dim)
+        return SurfaceArtist.render_rays(element, inputs, outputs, color_dim, colormap)
 
 
 class JointArtist:
@@ -206,12 +223,13 @@ class EndArtist:
         inputs: Any,
         outputs: Any,
         color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
         return render_rays_length(
             outputs.P,
             outputs.V,
             self.end,
-            color_data=color_rays(outputs, color_dim),
+            color_data=color_rays(outputs, color_dim, colormap),
             default_color=color_valid,
         )
 
@@ -242,6 +260,7 @@ def render_sequence(
     dtype: torch.dtype,
     sampling: dict[str, Any],
     color_dim: Optional[str] = None,
+    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     end: Optional[float] = None,
 ) -> Any:
     execute_list, top_output = tlm.full_forward(
@@ -265,13 +284,13 @@ def render_sequence(
 
             if inputs.P.numel() > 0:
                 scene["data"].extend(
-                    artist.render_rays(module, inputs, outputs, color_dim)
+                    artist.render_rays(module, inputs, outputs, color_dim, colormap)
                 )
 
     # Render output rays
     if end is not None:
         scene["data"].extend(
-            EndArtist(end).render_rays(module, inputs, outputs, color_dim)
+            EndArtist(end).render_rays(module, inputs, outputs, color_dim, colormap)
         )
 
     return scene
@@ -283,6 +302,7 @@ def ipython_show(
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
     color_dim: Optional[str] = None,
+    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     end: Optional[float] = None,
     dump: bool = False,
     ndigits: int | None = 4,
@@ -291,7 +311,9 @@ def ipython_show(
     if sampling is None:
         sampling = {"base": 10, "object": 5}
 
-    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, color_dim, end)
+    scene = tlm.viewer.render_sequence(
+        optics, dim, dtype, sampling, color_dim, colormap, end
+    )
 
     if dump:
         tlm.viewer.dump(scene, ndigits=2)
