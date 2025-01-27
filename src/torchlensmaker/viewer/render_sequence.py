@@ -80,7 +80,8 @@ def color_rays(
     if color_tensor.dim() == 1:
         var = color_tensor
     else:
-        var = color_tensor[:, 0]  # TODO
+        # TODO 2D colormap?
+        var = torch.linalg.vector_norm(color_tensor, dim=1)
 
     # normalize color variable to [0, 1]
     c = (var - var.min()) / (var.max() - var.min())
@@ -124,7 +125,7 @@ class SurfaceArtist:
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
-            color_data = color_rays(inputs, color_dim, colormap)[valid]
+            color_data = color_rays(inputs, color_dim, colormap)[valid] if color_dim is not None else None
             group_valid = (
                 [
                     tlm.viewer.render_rays(
