@@ -1,4 +1,5 @@
 import torch
+import numpy as np
 
 from typing import Any, Optional
 
@@ -32,6 +33,7 @@ def sampleND(
         sampler = {
             "random": RandomDiskSampler,
             "linear": LinearDiskSampler,
+            "uniform": UniformDiskSampler,
         }[name]
 
     if dim == 2:
@@ -116,3 +118,41 @@ class RandomDiskSampler:
         Y = r * torch.sin(theta)
 
         return torch.column_stack((X, Y))
+
+
+def uniform_disk_sampling(N, diameter):
+    M = np.floor((-np.pi + np.sqrt(np.pi**2 - 4 * np.pi * (1 - N))) / (2 * np.pi))
+    if M == 0:
+        M = 1
+    alpha = (N - 1) / (np.pi * M * (M + 1))
+    R = np.arange(1, M + 1)
+    S = 2 * np.pi * alpha * R
+
+    # If we're off, subtract the difference from the last element
+    S = np.round(S)
+    S[-1] -= S.sum() - (N - 1)
+    S = S.astype(int)
+
+    # List of sample points, start with the origin point
+    points = [np.zeros((1, 2))]
+
+    for s, r in zip(S, R):
+        theta = np.linspace(-np.pi, np.pi, s + 1)[:-1]
+        radius = r / M * diameter / 2
+        points.append(np.column_stack((radius * np.cos(theta), radius * np.sin(theta))))
+
+    return torch.tensor(np.vstack(points))
+
+
+class UniformDiskSampler:
+    @staticmethod
+    def sample1d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        return torch.linspace(-diameter / 2, diameter / 2, N, dtype=dtype)
+
+    @staticmethod
+    def sample2d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        return uniform_disk_sampling(N, diameter)
