@@ -1,77 +1,118 @@
 import torch
 
+from typing import Any, Optional
+
 Tensor = torch.Tensor
 
 
-class SampleDisk:
+class Sampler:
     @staticmethod
-    def sample(N: int, diameter: Tensor, dim: int) -> Tensor:
-        if dim == 2:
-            return sample_line_linspace(N, diameter)
-        else:
-            # careful this does not sample exactly N points in 3D when N is not a perfect square
-            return sample_disk_linspace(N, diameter)
+    def sample1d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        raise NotImplementedError
+
+    @staticmethod
+    def sample2d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        raise NotImplementedError
 
 
-def sample_line_linspace(N: int, diameter: torch.Tensor) -> Tensor:
-    return torch.linspace(-diameter / 2, diameter / 2, N, dtype=diameter.dtype)
+def sampleND(
+    name: Optional[str],
+    N: int,
+    diameter: float,
+    dim: int,
+    dtype: torch.dtype = torch.float64,
+) -> Tensor:
+    if name is None:
+        sampler = LinearDiskSampler
+    else:
+        sampler = {
+            "random": RandomDiskSampler,
+            "linear": LinearDiskSampler,
+        }[name]
+
+    if dim == 2:
+        return sampler.sample2d(N, diameter, dtype)
+    elif dim == 1:
+        return sampler.sample1d(N, diameter, dtype)
 
 
-def sample_line_random(N: int, diameter: torch.Tensor) -> Tensor:
-    return (torch.rand(N, dtype=diameter.dtype) - 0.5) * diameter
+class LinearDiskSampler:
+    @staticmethod
+    def sample1d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        return torch.linspace(-diameter / 2, diameter / 2, N, dtype=dtype)
+
+    @staticmethod
+    def sample2d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        """
+        Sample points on a disk using polar coordinates with linspace distribution.
+
+        Careful this does not sample exactly N points when N is not a perfect square.
+
+        Args:
+            N: number of samples (should be a perfect square for exactly N samples)
+            diameter: diameter of the sampled disk
+
+        Returns:
+            P: tensor of the sampled 2D points
+        """
+        # Determine the grid size
+        grid_size = int(torch.sqrt(torch.tensor(N, dtype=dtype)).floor())
+
+        # Generate evenly spaced r and angles
+        r = torch.linspace(0, diameter / 2, grid_size, dtype=dtype)
+        theta = torch.linspace(0, 2 * torch.pi, grid_size, dtype=dtype)
+
+        # Create a meshgrid of r and theta
+        r, theta = torch.meshgrid(r, theta, indexing="ij")
+
+        # Flatten the meshgrid
+        r = r.flatten()
+        theta = theta.flatten()
+
+        # Convert polar coordinates to Cartesian coordinates
+        X = r * torch.cos(theta)
+        Y = r * torch.sin(theta)
+
+        return torch.column_stack((X, Y))
 
 
-def sample_disk_random(N: int, diameter: float) -> Tensor:
-    """
-    Sample points on a disk using polar coordinates
+class RandomDiskSampler:
+    @staticmethod
+    def sample1d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        return (torch.rand(N, dtype=dtype) - 0.5) * diameter
 
-    Args:
-        N: number of samples
-        diameter: diameter of the sampled disk
+    @staticmethod
+    def sample2d(
+        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
+        """
+        Sample points randomly on a disk using polar coordinates
 
-    Returns:
-        P: tensor of the sampled 2D points
-    """
-    # Generate random r (square root for uniform distribution)
-    r = torch.sqrt(torch.rand(N)) * (diameter / 2)
+        Args:
+            N: number of samples
+            diameter: diameter of the sampled disk
 
-    # Generate random angles
-    theta = torch.rand(N) * 2 * torch.pi
+        Returns:
+            P: tensor of the sampled 2D points
+        """
+        # Generate random r (square root for uniform distribution)
+        r = torch.sqrt(torch.rand(N, dtype=dtype)) * (diameter / 2)
 
-    # Convert polar coordinates to Cartesian coordinates
-    X = r * torch.cos(theta)
-    Y = r * torch.sin(theta)
+        # Generate random angles
+        theta = torch.rand(N, dtype=dtype) * 2 * torch.pi
 
-    return torch.column_stack((X, Y))
+        # Convert polar coordinates to Cartesian coordinates
+        X = r * torch.cos(theta)
+        Y = r * torch.sin(theta)
 
-
-def sample_disk_linspace(N: int, diameter: Tensor) -> Tensor:
-    """
-    Sample points on a disk using polar coordinates with linspace distribution
-
-    Args:
-        N: number of samples (should be a perfect square for exactly N samples)
-        diameter: diameter of the sampled disk
-
-    Returns:
-        P: tensor of the sampled 2D points
-    """
-    # Determine the grid size
-    grid_size = int(torch.sqrt(torch.tensor(N)).floor())
-
-    # Generate evenly spaced r and angles
-    r = torch.linspace(0, diameter / 2, grid_size)
-    theta = torch.linspace(0, 2 * torch.pi, grid_size)
-
-    # Create a meshgrid of r and theta
-    r, theta = torch.meshgrid(r, theta, indexing="ij")
-
-    # Flatten the meshgrid
-    r = r.flatten()
-    theta = theta.flatten()
-
-    # Convert polar coordinates to Cartesian coordinates
-    X = r * torch.cos(theta)
-    Y = r * torch.sin(theta)
-
-    return torch.column_stack((X, Y))
+        return torch.column_stack((X, Y))

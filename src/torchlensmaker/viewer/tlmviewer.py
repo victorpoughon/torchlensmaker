@@ -135,7 +135,7 @@ def render_rays(start: Tensor, end: Tensor, color: Optional[Tensor] = None, colo
     assert start.shape == end.shape
     if color_data is not None:
         assert color_data.shape[0] == start.shape[0], (color_data.shape, start.shape)
-        assert color_data.shape[1] in {3, 4}
+        assert color_data.shape[1] in {3, 4}, color_data.shape
         
         # Convert to 8 bit color and drop alpha channel
         color_uint8 = (255*color_data).to(dtype=torch.uint8)[:, :3]

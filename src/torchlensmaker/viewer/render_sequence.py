@@ -70,15 +70,18 @@ def color_rays(
 
     color_tensor = color_rays_tensor(data, color_dim)
 
-    assert color_tensor.dim() in {1, 2}
-    if color_tensor.dim() == 2:
-        assert color_tensor.shape[1] in {1, 2}
+    # unsqueeze to 2D
+    if color_tensor.dim() == 1:
+        color_tensor = color_tensor.unsqueeze(1)
+
+    assert color_tensor.dim() == 2
+    assert color_tensor.shape[1] in {1, 2}
 
     # Ray variables that we use for coloring can be 2D when simulating in 3D
     # TODO more configurability here
 
-    if color_tensor.dim() == 1:
-        var = color_tensor
+    if color_tensor.shape[1] == 1:
+        var = color_tensor[:, 0]
     else:
         # TODO 2D colormap?
         var = torch.linalg.vector_norm(color_tensor, dim=1)

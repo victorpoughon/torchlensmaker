@@ -7,7 +7,7 @@ from torchlensmaker.transforms import forward_kinematic
 from torchlensmaker.rot2d import rot2d
 from torchlensmaker.rot3d import euler_angles_to_matrix
 
-from torchlensmaker.sampling import SampleDisk
+from torchlensmaker.sampling import sampleND, Sampler, LinearDiskSampler, RandomDiskSampler
 
 from typing import Any, Optional
 
@@ -77,8 +77,8 @@ def cartesian_prod2d(A, B):
 
     A = torch.repeat_interleave(A, M, dim=0)
     B = torch.tile(B, (N, 1))
-    
-    assert A.shape == B.shape == (M*N, D)
+
+    assert A.shape == B.shape == (M * N, D)
     return A, B
 
 
@@ -92,7 +92,9 @@ class LightSourceBase(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         # Get samples from derived class in local frame
-        P, V, rays_base, rays_object = self.sample_light_source(inputs.sampling, dim, dtype)
+        P, V, rays_base, rays_object = self.sample_light_source(
+            inputs.sampling, dim, dtype
+        )
 
         # Apply kinematic transform
         tf = forward_kinematic(inputs.transforms)
@@ -122,7 +124,7 @@ class PointSourceAtInfinity(LightSourceBase):
     ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
-        NX = SampleDisk.sample(sampling["base"], self.beam_diameter, dim)
+        NX = sampleND(sampling.get("sampler", None), sampling["base"], self.beam_diameter, dim - 1, dtype)
 
         # Make the rays P + tV
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
@@ -142,7 +144,7 @@ class PointSource(LightSourceBase):
     ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
 
         # Sample angular direction
-        angles = SampleDisk.sample(sampling["base"], self.beam_angular_size, dim)
+        angles = sampleND(sampling.get("sampler", None), sampling["base"], self.beam_angular_size, dim - 1, dtype)
 
         V = rotated_unit_vector(angles, dim)
         P = torch.zeros_like(V)
@@ -161,11 +163,11 @@ class ObjectAtInfinity(LightSourceBase):
     ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
-        NX = SampleDisk.sample(sampling["base"], self.beam_diameter, dim)
+        NX = sampleND(sampling.get("sampler", None), sampling["base"], self.beam_diameter, dim - 1, dtype)
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
 
         # Sample angular direction
-        angles = SampleDisk.sample(sampling["object"], self.angular_size, dim)
+        angles = sampleND(sampling.get("sampler", None), sampling["object"], self.angular_size, dim - 1, dtype)
         V = rotated_unit_vector(angles, dim)
 
         # Cartesian product
@@ -186,11 +188,11 @@ class Object(LightSourceBase):
     ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
-        NX = SampleDisk.sample(sampling["object"], self.object_diameter, dim)
+        NX = sampleND(sampling.get("sampler", None), sampling["object"], self.object_diameter, dim - 1, dtype)
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
 
         # Sample angular direction
-        angles = SampleDisk.sample(sampling["base"], self.beam_angular_size, dim)
+        angles = sampleND(sampling.get("sampler", None), sampling["base"], self.beam_angular_size, dim - 1, dtype)
         V = rotated_unit_vector(angles, dim)
 
         # Cartesian product
