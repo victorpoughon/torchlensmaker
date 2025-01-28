@@ -86,6 +86,16 @@ def default_input(
     )
 
 
+def linear_magnification(object_coordinates, image_coordinates):
+    T, V = object_coordinates, image_coordinates
+
+    # Fit linear magnification with least square and compute residuals
+    mag = torch.sum(T * V) / torch.sum(T**2)
+    residuals = V - mag * T
+
+    return mag, residuals
+
+
 class KinematicElement(nn.Module):
     """
     Skeleton element that appends a transform to the kinematic chain
@@ -172,6 +182,7 @@ class SurfaceMixin:
         return intersect(self.surface, inputs.P, inputs.V, surface_transform)
 
 
+# f(x) = y
 class ImagePlane(SurfaceMixin, nn.Module):
     def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
         super().__init__(surface=CircularPlane(diameter, dtype))
@@ -187,6 +198,12 @@ class ImagePlane(SurfaceMixin, nn.Module):
         # For a plane it's easy though
         rays_image = collision_points[:, 1:]
 
+        rays_object = inputs.rays_object
+
+        mag, res = linear_magnification(rays_object, rays_image)
+
+        loss = torch.sum(torch.pow(res, 2))
+
         # Filter ray variables with valid collisions
         new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
         new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
@@ -199,7 +216,7 @@ class ImagePlane(SurfaceMixin, nn.Module):
             rays_base=new_rays_base,
             rays_object=new_rays_object,
             rays_image=rays_image,
-            #blocked=~valid,
+            loss=loss,
         )
 
 
