@@ -82,6 +82,30 @@ def default_input(
     )
 
 
+class KinematicElement(nn.Module):
+    """
+    An element that appends a transform to the kinematic chain
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
+        "Transform that gets appended to the kinematic chain by this element"
+        raise NotImplementedError
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        dim, dtype = inputs.dim, inputs.dtype
+        return replace(
+            inputs,
+            transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
+        )
+
+
+# Alias for convenience
+Sequential = nn.Sequential
+
+
 class FocalPoint(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -239,23 +263,6 @@ class Aperture(OpticalSurface):
 
     def optical_function(self, rays: Tensor, _normals: Tensor) -> Tensor:
         return rays
-
-
-class KinematicElement(nn.Module):
-    """
-    An element that appends a transform to the kinematic chain
-    """
-
-    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
-        "Transform that gets appended to the kinematic chain by this element"
-        raise NotImplementedError
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.dim, inputs.dtype
-        return replace(
-            inputs,
-            transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
-        )
 
 
 class Gap(KinematicElement):
