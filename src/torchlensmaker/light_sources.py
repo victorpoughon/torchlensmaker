@@ -57,18 +57,18 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
         return torch.matmul(M, unit.view(3, 1)).squeeze(-1)
 
 
-def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Tensor:
+def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:
+    "something something monad"
+
     if a is None and b is None:
         return None
-
-    if a is not None and b is not None:
-        return torch.cat((a, b), dim=0)
-
-    if a is None:
-        return b
-
-    if b is None:
-        return a
+    else:
+        if a is None:
+            return b
+        elif b is None:
+            return a
+        else:
+            return torch.cat((a, b), dim=0)
 
 
 def cartesian_prod2d(A, B):
