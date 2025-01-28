@@ -22,6 +22,8 @@ from torchlensmaker.intersect import intersect
 
 Tensor = torch.Tensor
 
+# Alias for convenience
+Sequential = nn.Sequential
 
 @dataclass
 class OpticalData:
@@ -45,6 +47,7 @@ class OpticalData:
     # Tensors of shape (N, 2|3) or None
     rays_base: Optional[Tensor]
     rays_object: Optional[Tensor]
+    rays_image: Optional[Tensor]
 
     # Mask array indicating which rays from the previous data in the sequence
     # were blocked by the previous optical element. "blocked" includes hitting
@@ -77,6 +80,7 @@ def default_input(
         V=torch.empty((0, dim), dtype=dtype),
         rays_base=None,
         rays_object=None,
+        rays_image=None,
         blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
@@ -99,7 +103,7 @@ class KinematicElement(nn.Module):
         )
 
 
-class SurfaceElement(nn.Module):
+class SurfaceMixin:
     """
     Mixin to hold a reference to a scaled and anchored surface and automatically
     registers any of its parameters. Also provides the intersect_surface() function.
@@ -168,8 +172,35 @@ class SurfaceElement(nn.Module):
         return intersect(self.surface, inputs.P, inputs.V, surface_transform)
 
 
-# Alias for convenience
-Sequential = nn.Sequential
+class ImagePlane(SurfaceMixin, nn.Module):
+    def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
+        super().__init__(surface=CircularPlane(diameter, dtype))
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+
+        # Intersect with the image surface
+        collision_points, surface_normals, valid = self.intersect_surface(inputs)
+
+        # Compute image surface coordinates here
+        # To make this work with any surface, we would need a way to compute
+        # surface coordinates for points on a surface, for any surface
+        # For a plane it's easy though
+        rays_image = collision_points[:, 1:]
+
+        # Filter ray variables with valid collisions
+        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
+        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
+
+        # Compute loss
+        # could separate loss from imagesurface
+
+        return replace(
+            inputs,
+            rays_base=new_rays_base,
+            rays_object=new_rays_object,
+            rays_image=rays_image,
+            #blocked=~valid,
+        )
 
 
 class FocalPoint(nn.Module):
@@ -202,12 +233,10 @@ class FocalPoint(nn.Module):
         return replace(inputs, loss=inputs.loss + loss)
 
 
-class OpticalSurface(SurfaceElement):
+class OpticalSurface(SurfaceMixin, nn.Module):
     "Skeleton element for a kinematic and optical surface"
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        assert inputs.P.shape[1] == inputs.V.shape[1] == inputs.dim
-
         dim, dtype = inputs.dim, inputs.dtype
 
         collision_points, surface_normals, valid = self.intersect_surface(inputs)

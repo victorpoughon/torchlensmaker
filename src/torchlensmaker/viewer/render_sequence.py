@@ -241,6 +241,7 @@ class EndArtist:
 artists_dict: Dict[type, type] = {
     tlm.OpticalSurface: SurfaceArtist,
     tlm.FocalPoint: FocalPointArtist,
+    tlm.ImagePlane: SurfaceArtist,
     # tlm.Aperture: ApertureArtist,
 }
 
