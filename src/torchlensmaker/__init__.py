@@ -19,6 +19,7 @@ from torchlensmaker.optimize import optimize
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
 
+from torchlensmaker.plot_magnification import plot_magnification
 
 # Export build123d
 import torchlensmaker.export_build123d as export
