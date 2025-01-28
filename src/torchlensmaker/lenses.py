@@ -114,15 +114,15 @@ class Lens(LensBase):
         )
 
         self.surface1 = tlm.RefractiveSurface(
-            surface1,
             n,
+            surface1,
             scale=scale1,
             anchors=anchors,
         )
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
-            surface2,
             (n[1], n[0]),
+            surface2,
             scale=scale2,
             anchors=(anchors[1], anchors[0]),
         )
@@ -149,14 +149,14 @@ class BiLens(LensBase):
         )
 
         self.surface1 = tlm.RefractiveSurface(
-            surface,
             n,
+            surface,
             anchors=anchors,
         )
         self.gap = tlm.Gap(thickness)
         self.surface2 = tlm.RefractiveSurface(
-            surface,
             (n[1], n[0]),
+            surface,
             scale=-1.0,
             anchors=(anchors[1], anchors[0]),
         )

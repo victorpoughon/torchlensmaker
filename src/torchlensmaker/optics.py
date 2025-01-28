@@ -84,11 +84,8 @@ def default_input(
 
 class KinematicElement(nn.Module):
     """
-    An element that appends a transform to the kinematic chain
+    Skeleton element that appends a transform to the kinematic chain
     """
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
 
     def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
         "Transform that gets appended to the kinematic chain by this element"
@@ -100,6 +97,75 @@ class KinematicElement(nn.Module):
             inputs,
             transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
         )
+
+
+class SurfaceElement(nn.Module):
+    """
+    Mixin to hold a reference to a scaled and anchored surface and automatically
+    registers any of its parameters. Also provides the intersect_surface() function.
+    """
+
+    def __init__(
+        self,
+        surface: LocalSurface,
+        scale: float = 1.0,
+        anchors: tuple[str, str] = ("origin", "origin"),
+        **kwargs: Any,
+    ):
+        super().__init__(**kwargs)
+        self.surface = surface
+        self.scale = scale
+        self.anchors = anchors
+
+        # If surface has parameters, register them
+        for name, p in surface.parameters().items():
+            self.register_parameter(name, p)
+
+    def kinematic_transform(
+        self, dim: int, dtype: torch.dtype
+    ) -> Sequence[TransformBase]:
+        "Additional transform that applies to the next element"
+
+        T = self.surface.extent(dim, dtype)
+
+        # Subtract first anchor, add second anchor
+        anchor0 = (
+            [TranslateTransform(-self.scale * T)] if self.anchors[0] == "extent" else []
+        )
+        anchor1 = (
+            [TranslateTransform(self.scale * T)] if self.anchors[1] == "extent" else []
+        )
+
+        return list(anchor0) + list(anchor1)
+
+    def surface_transform(
+        self, dim: int, dtype: torch.dtype
+    ) -> Sequence[TransformBase]:
+        "Additional transform that applies to the surface"
+
+        S = self.scale * torch.eye(dim, dtype=dtype)
+        S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
+
+        scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
+
+        extent_translate = -self.scale * self.surface.extent(dim, dtype)
+
+        anchor: Sequence[TransformBase] = (
+            [TranslateTransform(extent_translate)]
+            if self.anchors[0] == "extent"
+            else []
+        )
+
+        return list(anchor) + list(scale)
+
+    def intersect_surface(self, inputs: OpticalData) -> tuple[Tensor, Tensor, Tensor]:
+        dim, dtype = inputs.dim, inputs.dtype
+
+        surface_transform = forward_kinematic(
+            inputs.transforms + self.surface_transform(dim, dtype)
+        )
+
+        return intersect(self.surface, inputs.P, inputs.V, surface_transform)
 
 
 # Alias for convenience
@@ -136,67 +202,15 @@ class FocalPoint(nn.Module):
         return replace(inputs, loss=inputs.loss + loss)
 
 
-class OpticalSurface(nn.Module):
-    def __init__(
-        self,
-        surface: LocalSurface,
-        scale: float = 1.0,
-        anchors: tuple[str, str] = ("origin", "origin"),
-    ):
-        super().__init__()
-        self.surface = surface
-        self.scale = scale
-        self.anchors = anchors
-
-        # If surface has parameters, register them
-        for name, p in surface.parameters().items():
-            self.register_parameter(name, p)
-
-    def surface_transform(self, dim: int, dtype: torch.dtype) -> list[TransformBase]:
-        "Additional transform that applies to the surface"
-
-        S = self.scale * torch.eye(dim, dtype=dtype)
-        S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
-
-        scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
-
-        extent_translate = -self.scale * self.surface.extent(dim, dtype)
-
-        anchor: Sequence[TransformBase] = (
-            [TranslateTransform(extent_translate)]
-            if self.anchors[0] == "extent"
-            else []
-        )
-
-        return list(anchor) + list(scale)
-
-    def chain_transform(self, dim: int, dtype: torch.dtype) -> Sequence[TransformBase]:
-        "Additional transform that applies to the next element"
-
-        T = self.surface.extent(dim, dtype)
-
-        # Subtract first anchor, add second anchor
-        anchor0 = (
-            [TranslateTransform(-self.scale * T)] if self.anchors[0] == "extent" else []
-        )
-        anchor1 = (
-            [TranslateTransform(self.scale * T)] if self.anchors[1] == "extent" else []
-        )
-
-        return list(anchor0) + list(anchor1)
+class OpticalSurface(SurfaceElement):
+    "Skeleton element for a kinematic and optical surface"
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         assert inputs.P.shape[1] == inputs.V.shape[1] == inputs.dim
 
         dim, dtype = inputs.dim, inputs.dtype
 
-        surface_transform = forward_kinematic(
-            inputs.transforms + self.surface_transform(dim, dtype)
-        )
-
-        collision_points, surface_normals, valid = intersect(
-            self.surface, inputs.P, inputs.V, surface_transform
-        )
+        collision_points, surface_normals, valid = self.intersect_surface(inputs)
 
         # Refract or reflect rays based on the derived class implementation
         output_rays = self.optical_function(
@@ -208,7 +222,8 @@ class OpticalSurface(nn.Module):
         new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
         new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
 
-        chain_transform = self.chain_transform(dim, dtype)
+        # Apply surface kinematic transform to the chain
+        new_transforms = inputs.transforms + list(self.kinematic_transform(dim, dtype))
 
         return replace(
             inputs,
@@ -216,7 +231,7 @@ class OpticalSurface(nn.Module):
             V=output_rays,
             rays_base=new_rays_base,
             rays_object=new_rays_object,
-            transforms=list(inputs.transforms) + list(chain_transform),
+            transforms=new_transforms,
             blocked=~valid,
         )
 
@@ -229,14 +244,6 @@ def filter_optional_tensor(t: Optional[Tensor], valid: Tensor) -> Optional[Tenso
 
 
 class ReflectiveSurface(OpticalSurface):
-    def __init__(
-        self,
-        surface: LocalSurface,
-        scale: float = 1.0,
-        anchors: tuple[str, str] = ("origin", "origin"),
-    ):
-        super().__init__(surface, scale, anchors)
-
     def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
         return reflection(rays, normals)
 
@@ -244,8 +251,8 @@ class ReflectiveSurface(OpticalSurface):
 class RefractiveSurface(OpticalSurface):
     def __init__(
         self,
-        surface: LocalSurface,
         n: tuple[float, float],
+        surface: LocalSurface,
         scale: float = 1.0,
         anchors: tuple[str, str] = ("origin", "origin"),
     ):
