@@ -1,22 +1,18 @@
 import torch
 import numpy as np
 
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 Tensor = torch.Tensor
 
 
 class Sampler:
     @staticmethod
-    def sample1d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample1d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         raise NotImplementedError
 
     @staticmethod
-    def sample2d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample2d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         raise NotImplementedError
 
 
@@ -27,6 +23,7 @@ def sampleND(
     dim: int,
     dtype: torch.dtype = torch.float64,
 ) -> Tensor:
+    sampler: Type[Sampler]
     if name is None:
         sampler = LinearDiskSampler
     else:
@@ -40,19 +37,17 @@ def sampleND(
         return sampler.sample2d(N, diameter, dtype)
     elif dim == 1:
         return sampler.sample1d(N, diameter, dtype)
+    else:
+        raise RuntimeError(f"sampleND: dim must be 1 or 2, got {dim}")
 
 
-class LinearDiskSampler:
+class LinearDiskSampler(Sampler):
     @staticmethod
-    def sample1d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample1d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         return torch.linspace(-diameter / 2, diameter / 2, N, dtype=dtype)
 
     @staticmethod
-    def sample2d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample2d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         """
         Sample points on a disk using polar coordinates with linspace distribution.
 
@@ -86,17 +81,13 @@ class LinearDiskSampler:
         return torch.column_stack((X, Y))
 
 
-class RandomDiskSampler:
+class RandomDiskSampler(Sampler):
     @staticmethod
-    def sample1d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample1d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         return (torch.rand(N, dtype=dtype) - 0.5) * diameter
 
     @staticmethod
-    def sample2d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample2d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         """
         Sample points randomly on a disk using polar coordinates
 
@@ -120,7 +111,7 @@ class RandomDiskSampler:
         return torch.column_stack((X, Y))
 
 
-def uniform_disk_sampling(N, diameter):
+def uniform_disk_sampling(N: int, diameter: float, dtype: torch.dtype) -> Tensor:
     M = np.floor((-np.pi + np.sqrt(np.pi**2 - 4 * np.pi * (1 - N))) / (2 * np.pi))
     if M == 0:
         M = 1
@@ -141,18 +132,14 @@ def uniform_disk_sampling(N, diameter):
         radius = r / M * diameter / 2
         points.append(np.column_stack((radius * np.cos(theta), radius * np.sin(theta))))
 
-    return torch.tensor(np.vstack(points))
+    return torch.tensor(np.vstack(points), dtype=dtype)
 
 
-class UniformDiskSampler:
+class UniformDiskSampler(Sampler):
     @staticmethod
-    def sample1d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
+    def sample1d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
         return torch.linspace(-diameter / 2, diameter / 2, N, dtype=dtype)
 
     @staticmethod
-    def sample2d(
-        N: int, diameter: Tensor, dtype: torch.dtype = torch.float64
-    ) -> Tensor:
-        return uniform_disk_sampling(N, diameter)
+    def sample2d(N: int, diameter: float, dtype: torch.dtype = torch.float64) -> Tensor:
+        return uniform_disk_sampling(N, diameter, dtype)
