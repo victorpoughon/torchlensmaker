@@ -306,7 +306,7 @@ def ipython_show(
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
     color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    colormap: mpl.colors.Colormap = default_colormap,
     end: Optional[float] = None,
     dump: bool = False,
     ndigits: int | None = 4,
