@@ -71,7 +71,7 @@ def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:
             return torch.cat((a, b), dim=0)
 
 
-def cartesian_prod2d(A, B):
+def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
     """
     Cartesian product of 2 batched coordinate tensors of shape (N, D) and (M, D)
     returns 2 Tensors of shape ( N*M , D )
