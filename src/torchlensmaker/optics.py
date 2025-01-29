@@ -211,39 +211,40 @@ class ImagePlane(SurfaceMixin, nn.Module):
     def forward(self, inputs: OpticalData) -> OpticalData:
 
         # Intersect with the image surface
-        collision_points, surface_normals, valid = self.intersect_surface(inputs)
+        # collision_points, surface_normals, valid = self.intersect_surface(inputs)
+        collision_points, surface_normals, valid = intersect(self.surface, inputs.P, inputs.V, forward_kinematic(inputs.transforms))
+
+        # Filter ray variables with valid collisions
+        valid_rays_base = filter_optional_tensor(inputs.rays_base, valid)
+        valid_rays_object = filter_optional_tensor(inputs.rays_object, valid)
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
         rays_image = collision_points[:, 1:]
-
-        rays_object = inputs.rays_object
+        rays_object = valid_rays_object
 
         if rays_object is None:
             raise RuntimeError("Missing object coordinates on rays (required to compute image magnification)")
-        
+
+        # Compute loss
+        # could separate loss from imagesurface
+
+        assert rays_object.shape == rays_image.shape, (rays_object.shape, rays_image.shape)
         mag, res = linear_magnification(rays_object, rays_image)
 
         if self.magnification is not None:
             loss = (self.magnification - mag) ** 2 + torch.sum(torch.pow(res, 2))
         else:
             loss = torch.sum(torch.pow(res, 2))
-
-        # Filter ray variables with valid collisions
-        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
-        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
-
-        # Compute loss
-        # could separate loss from imagesurface
-
+        
         return replace(
             inputs,
             P=collision_points,
             V=inputs.V[valid],
-            rays_base=new_rays_base,
-            rays_object=new_rays_object,
+            rays_base=valid_rays_base,
+            rays_object=valid_rays_object,
             rays_image=rays_image,
             loss=loss,
             blocked=~valid,
