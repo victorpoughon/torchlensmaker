@@ -1,154 +1,212 @@
-# Torchlensmaker roadmap and TODOs
+# Torch Lens Maker - Project Roadmap
 
 
-## Finger work - small tasks
+## v0.1
 
-* Update all examples to not use tlm.Module, except one for demoing custom module
+### TLM
+
+* Surfaces:
+    * Asphere
+    * Linear Spline
+
+* Spot diagram
+
+* Wavelength support:
+    * Improve index of refraction handling with 'material' support. Surface defines "next material" property.
+    * Wavelength light source: samples rays by duplicating existing rays and adding wavelength variable
+    * Material models: function of (wavelength, material) -> index of refraction
+    * Update refractive surface to read wavelength variable if it exists
+
+* Examples:
+    * Double Gauss
+    * Landscape single (narrative)
+    * Non rotationally symmetric example
+    * Petzval
+    * Optimizing surface and position jointly
+
+* Test notebooks:
+    * Regularization
+    * Snell's Window
+    * tlm.parameter() on inner / outer thickness
+    * tlm.parameter() on surface diameter
+
+* Rendering:
+    * Better rendering of Aperture
+    * Better rendering of ImagePlane
+    * Rename end= argument
+    * Smart non-zero default for end= argument if no focal element
+
+### TLMVIEWER
+
+* Embed in static html
+* Load data from external source
+* Version number in build artifact
+* Available on cdnjs and npm
+
+### DOC
+
+* Review and document sign convention
+* List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
+* Embed tlmviewer
+* Automatic build of examples
+* Automatic build of test_notebooks (a bit hidden from main doc)
 
 
-## The big stuff
+### PROJECT
 
-* Wavelength support
+* copyright / license headers
+* pip install torchlensmaker
+
+## Post v0.1
+
+* f-number
+
+* Convert between surfaces by fitting them
+
+* tlm.parameter() on material index of refraction
+
+* More unit tests and coverage tool
+
+* mypy --strict
+
+* Examples:
+    * Custom nn.Module to group a subsequence / parameters
+    * Custom nn.Module for advanced OpticalData manipulation
+    * How rainbows work
+    * https://en.wikipedia.org/wiki/Petzval_lens
+    * https://en.wikipedia.org/wiki/Rapid_Rectilinear
+    * https://en.wikipedia.org/wiki/Cooke_triplet
+    * mars rover / hubble repair mission / space cameras
+    * x ray lens with weird concentric stuff
+    * Pink Floyd prism
+    * Refractive telescope
+    * Microscope
+    * Binoculars
+    * Periscope
+    * Scanning mirror
+    * Depth of Field in photography
+
+* GPU demo and test
+
+* Better float32 coverage
+
+* Improve Outline support:
+    * More outlines
+    * Clearer 2D/3D behavior
+
+* Plot of surface shape evolution during optimization
+
+* Surfaces:
+    * Cubic Bezier Spline
+
+* Optimization:
+    * LR scheduler
+    * Caching of best minimum
+    * Per parameter learning rate adapted to parameter scale. Example: one parabola coefficient, one distance
+    * detect when optimization leads to parameter out of domain with nice error message.
+for example, setup an impossibly short focal length with a spherical lens
+    * detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
+    * better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
+
+* Regularization and loss functions:
+    * Negative collision regularization (regularization on t value of collision)
+
+* Constraints on parameters:
+    * Min / Max constraint on coordinate
+    * Min / Max constraint on derived coordinate: distance from principal axis (radial)
+    * Combine absolute positioning and relative positioning with constraints to make absolute with constraints
 
 
+* Color rays based on contribution to loss function
 
-## New example notebooks ideas
+* Optical elements:
+    * HideRays: utility to hide rays until a certain distance
+    * Debug: debug info about optical data
+    * AbsolutePosition: Fixed absolute positioning
 
-* rainbow: 2D and 3D
+* OpticalSurface
+    * add error_on_no_collision option, by default drop
+    * add error_on_negative_collision, by default allow
+
+* Newton's method solver: detect convergence before max iter with tolerance parameter
+* Netwon's method: better default chosen with a representative test
+
+* Multiple configuration support (a new ray dimension) zoom lenses, etc.
+
+* Rendering:
+    * add option for light sources: draw rays a bit before their origins to see them better
+
+### TLMVIEWER
+
+* Animate rays
+
+* Group elements:
+    * Support arbitrary grouping of elements
+    * Support tags in elements
+    * Side bar with tree view of model
+    * Toggle buttons in tree view of model
+    * Toggle buttons for tags
+
+* Camera selection button
+
+* Multiple view in one (2D / 3D toggle button)
+
+
+## Various stuff / brainstorming
+
 * abbe number
 * airy disk
-* Cooke triplet
 * what is an image
-* https://en.wikipedia.org/wiki/Petzval_lens
-* https://en.wikipedia.org/wiki/Rapid_Rectilinear
-* dispersion demo, "pink floyd" prism
-* pinhole camera model
 * refractive telescope
 * anchors demo
 * lens inner vs outer thickness
 * sharing shapes between surfaces
 * using free parameters (offset along x)
-* custom lens with manually making RefractiveSurface
-
-* Optimizing a lens thickness
-* Optimizing a lens shape
-* Optimizing multiple things: lens shape, thickness, distance between lenses
-* Resampling shapes
-
 * Avoiding surface collisions during optimization / aka rays "negative collisions":
     * allow it or use regression
 * Avoiding non colliding rays during optimization
 * Avoiding "negative collisions" during optimization
-* Regularization
-
-* Image and object
-* ray diagrams
-
-* depth of field explanation
-
 * focal length changes if you flip a plano convex lens (contrary to what textbook says)
-
-* mars rover / hubble repair mission / space cameras
-* x ray lens with weird concentric stuff
-
-
-## Various stuff
-
-* optimize for index of refraction of a material
-* handle refractive index in optical data
-* lenses only given their inner refractive index
-* refractive surface sets the next index of refraction and get the previous from input
-
-* per parameter learning rate adapted to parameter scale
-    * example: one parabola coefficient, one distance
-
-*  more tests:
+* optical elements unit tests:
     lens maker equation
     setup a stack, call forward, check loss value aginst expected
     check loss is differentiable, and gradient is finite
-
-* cleanup regression term / prior support
-
 * Imaging applications
     * Image formation with a thin lens, equation 1/u - 1/v = 1/f
 
-* Review and document sign convention
-
-* Constraints on parameters
-
-* Regularization API
-
-* fix surface drawing during optimization
-
-* tlm.AbsolutePosition : Fixed absolute positioning, ignore previous stack positioning
 * make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
-* improve piecewiseline: implement proper intersect_batch
-* convert / resample between profile shapes
+
 * faster example notebooks, improve convergence
 * port pulaski code to new lib
-* multiple configuration support (a new data dimension?) zoom lenses, etc.
+
 * diffuse reflection
-* chromatic aberation, wavelength support
-* better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
+
+
 * inspiration from https://phydemo.app/ray-optics/
 * cemented lenses: doublet, etc.
 
-* in rendering: enable rendering single element if no focal points, some trick for last / first elements if no rays drawing
-
-* custom tlm.Parameter to enforce float32 without need for trailing dot in user code
-
 * support radial weighting in loss function. so residuals further from the optical axis can have less weight
 
-* compute f number
 
-* doc: glossary of terms
-* doc: sign convention
+## Evaluation plots and analysis tools
 
-## Evaluation plots
+* Spot diagram:
+    * Chromatic support: image of a point source emitting a mixture of wavelengths
 
-* Spot diagram: image of a point source / geometric PSF
-* Spot diagram (chromatic): image of a point source emitting a mixture of wavelengths
-* Ray error plot: focal loss as a function of 1 or 2 configuration
+* Ray error plot:
+    * Loss as a function of 1 or 2 variables
+    * histograming on a variable / show ray distribution over some variables
 
-* add option to see number of rays at each stage
-* add option to see aperture/spread of beam at each stage
-* find intermediate images
+* Loss plot:
+    * plot loss function of 1 or 2 variables
 
-* optical aberations and concepts: coma, astigmatism, petzval field curvature, etc...
+* Sequence analysis:
+    * Number of valid rays at each stage
+    * Angular aperture/spread of beam at each stage
 
-* Support color_dim magnification plot
-* Loss plot: plot loss function of a variable
+* Find intermediate images
 
-
-## Rays not colliding with surface
-
-2. OpticalSurface: add error_on_no_collision option, by default drop
-3. OpticalSurface: add error_on_negative_collision, by default allow
-4. Factor shape.collide() default impl in BaseShape
-    Surface provides override to add transform
-
-
-## Negative collisions, aka surfaces collisions
-
-* Remove / make optional detection in OpticalSurface (negative ts is nominal)
-* Add collisions points / rays origins / rays vectors accumulator lists to data pipe
-* Add ts computation function to be used as regression terms during optimization
-
-
-## Ranges for parameters
-
-With clever internal reparametrization or regularization, can implement optimizable gaps with ranges.
-e.g.:
-- offset with maximum radial distance
-- gap/shift with min/max
-
-Can combine absolute positioning and relative positioning with constraints to make absolute with constraints
-
-
-## New SVG rendering
-
-* Add custom svg rendering, using maybe svg.py or equivalent, and a custom ipython _repr_javascript_ to allow pan / zoom etc.
-* Possibly use a JS library like https://github.com/bumbu/svg-pan-zoom#demos
+* Measure optical aberations and concepts: coma, astigmatism, petzval field curvature, etc...
 
 ## 3D export and display improvements
 
@@ -160,66 +218,8 @@ Can combine absolute positioning and relative positioning with constraints to ma
 
 * export full optical stack
 
-## Images and Objects
+* Focal length measurement
 
-add source_coordinate tensor to OpticalData
-
-> Normalized parametric coordinate of the ray's source point on the shape that emitted the ray
-> source_coordinates
-
-add tlm.Object (= multiple point sources, varying height)
-add tlm.ObjectAtInfinity (= multiple points sources at infinity, varying angles)
-
-move loss compute to optical elements
-
-add tlm.Image = on surface distance or multi point squared point line distance
-add tlm.ImageAtInfinity
-
-make ray error plot by histograming on source_coordinate
-
-add render option for sources: draw rays a bit before their origins to see them better
-> ray_draw_start = -1.5
-
-## Thoughts about sampling
-
-* elements definition are sampling free. they define the space.
-* When evaluating for either rendering or optimization, then the space is sampled to create rays.
-
-* add sampling distribution parameter? linspace, random-uniform, random-normal
-
-piecewise line: need more rays to work
-
-* add back_distance render option to light sources rendering (useful for object at infinity)
-
-## Newton solver improvements
-
-* add parameters with good default
-* detect convergence before max iter
-
-## Training improvements
-
-detect when optimization leads to parameter out of domain with nice error message.
-for example, setup an impossibly short focal length with a spherical lens
-
-detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
-
-multiple loss function for image / focal point:
-- ray point distance
-- on shape distance
-
-## Focal length measurement
-
-* be able to measure focal lengths in different ways that make sense for optics (front, back, etc): choose a reference point on the lens
-* position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.
-
-
-## Parametric coordinates
-
-t:
-shape parametric coordinate
-valid on shape.domain()
-domain is anything the shape wants but must be:
-0 indicates center
-finite value for domain maximum
-
-## Support for double precision floats
+    * principal points, etc.
+    * be able to measure focal lengths in different ways that make sense for optics (front, back, etc: choose a reference point on the lens
+    * position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.
