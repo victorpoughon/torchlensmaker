@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 
 from typing import Any, Sequence, Optional
 
+from torchlensmaker.tensor_manip import to_tensor
 from torchlensmaker.transforms import (
     TransformBase,
     TranslateTransform,
@@ -24,6 +25,7 @@ Tensor = torch.Tensor
 
 # Alias for convenience
 Sequential = nn.Sequential
+
 
 @dataclass
 class OpticalData:
@@ -183,8 +185,24 @@ class SurfaceMixin:
 
 
 class ImagePlane(SurfaceMixin, nn.Module):
-    def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
+    """
+    Linear magnification circular image plane
+
+    Loss function with a target magnification:
+        L = (target_magnification - current_magnification)**2 + sum(residuals**2)
+
+    Without:
+        L = sum(residuals**2)
+    """
+
+    def __init__(
+        self,
+        diameter: float,
+        magnification: Optional[int | float | Tensor] = None,
+        dtype: torch.dtype = torch.float64,
+    ):
         super().__init__(surface=CircularPlane(diameter, dtype))
+        self.magnification = to_tensor(magnification) if magnification is not None else None
 
     def forward(self, inputs: OpticalData) -> OpticalData:
 
@@ -201,7 +219,10 @@ class ImagePlane(SurfaceMixin, nn.Module):
 
         mag, res = linear_magnification(rays_object, rays_image)
 
-        loss = torch.sum(torch.pow(res, 2))
+        if self.magnification is not None:
+            loss = (self.magnification - mag)**2 + torch.sum(torch.pow(res, 2))
+        else:
+            loss = torch.sum(torch.pow(res, 2))
 
         # Filter ray variables with valid collisions
         new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
