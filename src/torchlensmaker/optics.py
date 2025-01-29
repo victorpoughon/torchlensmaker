@@ -88,7 +88,9 @@ def default_input(
     )
 
 
-def linear_magnification(object_coordinates, image_coordinates):
+def linear_magnification(
+    object_coordinates: Tensor, image_coordinates: Tensor
+) -> tuple[Tensor, Tensor]:
     T, V = object_coordinates, image_coordinates
 
     # Fit linear magnification with least square and compute residuals
@@ -178,7 +180,7 @@ class SurfaceMixin:
         dim, dtype = inputs.dim, inputs.dtype
 
         surface_transform = forward_kinematic(
-            inputs.transforms + self.surface_transform(dim, dtype)
+            inputs.transforms + list(self.surface_transform(dim, dtype))
         )
 
         return intersect(self.surface, inputs.P, inputs.V, surface_transform)
@@ -202,7 +204,9 @@ class ImagePlane(SurfaceMixin, nn.Module):
         dtype: torch.dtype = torch.float64,
     ):
         super().__init__(surface=CircularPlane(diameter, dtype))
-        self.magnification = to_tensor(magnification) if magnification is not None else None
+        self.magnification = (
+            to_tensor(magnification) if magnification is not None else None
+        )
 
     def forward(self, inputs: OpticalData) -> OpticalData:
 
@@ -217,10 +221,13 @@ class ImagePlane(SurfaceMixin, nn.Module):
 
         rays_object = inputs.rays_object
 
+        if rays_object is None:
+            raise RuntimeError("Missing object coordinates on rays (required to compute image magnification)")
+        
         mag, res = linear_magnification(rays_object, rays_image)
 
         if self.magnification is not None:
-            loss = (self.magnification - mag)**2 + torch.sum(torch.pow(res, 2))
+            loss = (self.magnification - mag) ** 2 + torch.sum(torch.pow(res, 2))
         else:
             loss = torch.sum(torch.pow(res, 2))
 
