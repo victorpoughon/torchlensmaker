@@ -17,11 +17,15 @@
     * Material models: function of (wavelength, material) -> index of refraction
     * Update refractive surface to read wavelength variable if it exists
 
+* Cemented lenses: doublet, etc.
+
 * Examples:
     * Double Gauss
-    * Landscape single (narrative)
+    * Landscape singlet (narrative)
     * Non rotationally symmetric example
     * Petzval
+    * Cooke triplet
+    * Ernostar 1928
     * Optimizing surface and position jointly
 
 * Test notebooks:
@@ -35,6 +39,7 @@
     * Better rendering of ImagePlane
     * Rename end= argument
     * Smart non-zero default for end= argument if no focal element
+    * Show/Hide invalid rays -- should that trace back up the stack?
 
 ### TLMVIEWER
 
@@ -57,16 +62,17 @@
 * copyright / license headers
 * pip install torchlensmaker
 
+
+
+
+
 ## Post v0.1
 
+* GPU port and performance benchmarks
 * f-number
-
 * Convert between surfaces by fitting them
-
 * tlm.parameter() on material index of refraction
-
 * More unit tests and coverage tool
-
 * mypy --strict
 
 * Examples:
@@ -76,6 +82,7 @@
     * https://en.wikipedia.org/wiki/Petzval_lens
     * https://en.wikipedia.org/wiki/Rapid_Rectilinear
     * https://en.wikipedia.org/wiki/Cooke_triplet
+    * https://pbr-book.org/3ed-2018/Camera_Models/Realistic_Cameras
     * mars rover / hubble repair mission / space cameras
     * x ray lens with weird concentric stuff
     * Pink Floyd prism
@@ -86,20 +93,18 @@
     * Scanning mirror
     * Depth of Field in photography
 
-* GPU demo and test
-
 * Better float32 coverage
 
 * Improve Outline support:
     * More outlines
     * Clearer 2D/3D behavior
 
-* Plot of surface shape evolution during optimization
 
 * Surfaces:
     * Cubic Bezier Spline
 
 * Optimization:
+    * More tweaking options for loss function: radial weighting, wavelength weighting, etc.
     * LR scheduler
     * Caching of best minimum
     * Per parameter learning rate adapted to parameter scale. Example: one parabola coefficient, one distance
@@ -107,6 +112,7 @@
 for example, setup an impossibly short focal length with a spherical lens
     * detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
     * better plotting of parameters during optimization (vector shaped parameters, eg piecewiseline)
+    * Plot of surface shape evolution during optimization
 
 * Regularization and loss functions:
     * Negative collision regularization (regularization on t value of collision)
@@ -115,7 +121,7 @@ for example, setup an impossibly short focal length with a spherical lens
     * Min / Max constraint on coordinate
     * Min / Max constraint on derived coordinate: distance from principal axis (radial)
     * Combine absolute positioning and relative positioning with constraints to make absolute with constraints
-
+    * Implement constraints with reparameterizaion or gradient projection
 
 * Color rays based on contribution to loss function
 
@@ -128,17 +134,21 @@ for example, setup an impossibly short focal length with a spherical lens
     * add error_on_no_collision option, by default drop
     * add error_on_negative_collision, by default allow
 
-* Newton's method solver: detect convergence before max iter with tolerance parameter
-* Netwon's method: better default chosen with a representative test
+* Newton's method solver:
+    * detect convergence before max iter with tolerance parameter
+    * better default chosen with a representative test
 
 * Multiple configuration support (a new ray dimension) zoom lenses, etc.
 
 * Rendering:
     * add option for light sources: draw rays a bit before their origins to see them better
+    * Move colormap and color_dim picker to tlmviewer
 
 ### TLMVIEWER
 
 * Animate rays
+
+* Animate camera
 
 * Group elements:
     * Support arbitrary grouping of elements
@@ -156,15 +166,13 @@ for example, setup an impossibly short focal length with a spherical lens
 
 * abbe number
 * airy disk
-* what is an image
-* refractive telescope
 * anchors demo
 * lens inner vs outer thickness
 * sharing shapes between surfaces
 * using free parameters (offset along x)
 * Avoiding surface collisions during optimization / aka rays "negative collisions":
     * allow it or use regression
-* Avoiding non colliding rays during optimization
+* Avoiding non colliding rays (blocked) during optimization
 * Avoiding "negative collisions" during optimization
 * focal length changes if you flip a plano convex lens (contrary to what textbook says)
 * optical elements unit tests:
@@ -177,16 +185,10 @@ for example, setup an impossibly short focal length with a spherical lens
 * make Lens class change the target to center of lens with an argument, i.e. anchors for Lens?
 
 * faster example notebooks, improve convergence
-* port pulaski code to new lib
 
 * diffuse reflection
 
-
 * inspiration from https://phydemo.app/ray-optics/
-* cemented lenses: doublet, etc.
-
-* support radial weighting in loss function. so residuals further from the optical axis can have less weight
-
 
 ## Evaluation plots and analysis tools
 
@@ -204,6 +206,11 @@ for example, setup an impossibly short focal length with a spherical lens
     * Number of valid rays at each stage
     * Angular aperture/spread of beam at each stage
 
+* Focal length measurement
+    * principal points, optical center, etc.
+    * be able to measure focal lengths in different ways that make sense for optics (front, back, etc: choose a reference point on the lens
+    * position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.
+
 * Find intermediate images
 
 * Measure optical aberations and concepts: coma, astigmatism, petzval field curvature, etc...
@@ -212,14 +219,4 @@ for example, setup an impossibly short focal length with a spherical lens
 
 * 3d export for bezier spline
 * 3d export for piecewise line
-
-* EITHER display 3D models with https://github.com/bernhard-42/three-cad-viewer
-* OR use stock build123d viewer, customize it
-
 * export full optical stack
-
-* Focal length measurement
-
-    * principal points, etc.
-    * be able to measure focal lengths in different ways that make sense for optics (front, back, etc: choose a reference point on the lens
-    * position a lens relative to its center, or other points on the lens: front, back, center, nodes, etc.

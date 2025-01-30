@@ -210,9 +210,11 @@ class ImagePlane(SurfaceMixin, nn.Module):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
 
+        if inputs.V.shape[0] == 0:
+            return inputs
+
         # Intersect with the image surface
-        # collision_points, surface_normals, valid = self.intersect_surface(inputs)
-        collision_points, surface_normals, valid = intersect(self.surface, inputs.P, inputs.V, forward_kinematic(inputs.transforms))
+        collision_points, surface_normals, valid = self.intersect_surface(inputs)
 
         # Filter ray variables with valid collisions
         valid_rays_base = filter_optional_tensor(inputs.rays_base, valid)
