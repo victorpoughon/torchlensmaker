@@ -1,4 +1,5 @@
 import torch
+from copy import copy
 
 Tensor = torch.Tensor
 
@@ -6,6 +7,9 @@ Tensor = torch.Tensor
 class MaterialModel:
     def __init__(self, name: str):
         self.name = name
+    
+    def is_dispersive(self) -> bool:
+        raise NotImplementedError
 
     def refractive_index(self, W: Tensor) -> Tensor:
         "Refractive index function of wavelength (in nm)"
@@ -16,6 +20,9 @@ class NonDispersiveMaterial(MaterialModel):
     def __init__(self, name: str, n: float):
         super().__init__(name)
         self.n = n
+    
+    def is_dispersive(self):
+        return False
 
     def refractive_index(self, W: Tensor) -> Tensor:
         return torch.full_like(W, self.n)
@@ -31,6 +38,9 @@ class CauchyMaterial(MaterialModel):
         self.B = B
         self.C = C
         self.D = D
+
+    def is_dispersive(self):
+        return True
 
     def refractive_index(self, W: Tensor) -> Tensor:
         Wmicro = W/1000
@@ -74,6 +84,14 @@ default_material_models = [
     CauchyMaterial("BaF10", 1.6700, 0.00743),
     CauchyMaterial("SF10", 1.7280, 0.013420),
 ]
+
+# Generate -nd suffix versions for "non dispersive" alternatives
+# by taking the refractive index at 500nm
+for model in copy(default_material_models):
+    if model.is_dispersive():
+        name = model.name + "-nd"
+        n = model.refractive_index(torch.tensor(500))
+        default_material_models.append(NonDispersiveMaterial(name, n))
 
 default_material_models_dict = {model.name: model for model in default_material_models}
 

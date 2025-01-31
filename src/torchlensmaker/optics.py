@@ -304,17 +304,20 @@ class OpticalSurface(SurfaceMixin, nn.Module):
 
         collision_points, surface_normals, valid = self.intersect_surface(inputs)
 
+        # TODO support critical_angle="drop" correctly
+
+        # Filter ray variables with valid collisions
+        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
+        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
+        new_rays_wavelength = filter_optional_tensor(inputs.rays_wavelength, valid)
+
         # Refract or reflect rays based on the derived class implementation
         output_rays, new_material = self.optical_function(
             inputs.V[valid],
             surface_normals,
             inputs.material,
-            inputs.rays_wavelength,
+            new_rays_wavelength,
         )
-
-        # Filter ray variables with valid collisions
-        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
-        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
 
         # Apply surface kinematic transform to the chain
         new_transforms = inputs.transforms + list(self.kinematic_transform(dim, dtype))
@@ -325,6 +328,7 @@ class OpticalSurface(SurfaceMixin, nn.Module):
             V=output_rays,
             rays_base=new_rays_base,
             rays_object=new_rays_object,
+            rays_wavelength=new_rays_wavelength,
             material=new_material,
             transforms=new_transforms,
             blocked=~valid,
@@ -352,35 +356,36 @@ class RefractiveSurface(OpticalSurface):
         critical_angle: RefractionCriticalAngleMode = "drop",
     ):
         super().__init__(surface, scale, anchors)
-        self.material = get_material_model(material)
+        self.material = get_material_model(material) if material is not None else None
         self.critical_angle = critical_angle
 
     def optical_function(
         self,
         rays: Tensor,
         normals: Tensor,
-        material: MaterialModel,
+        input_material: MaterialModel,
         wavelengths: Optional[Tensor],
     ) -> tuple[Tensor, MaterialModel]:
-        material1 = material
-        material2 = self.material
+
+        if rays.shape[0] == 0:
+            return rays, self.material
 
         if wavelengths is None:
-            if not isinstance(material1, NonDispersiveMaterial) or not isinstance(
-                material2, NonDispersiveMaterial
+            if not isinstance(input_material, NonDispersiveMaterial) or not isinstance(
+                self.material, NonDispersiveMaterial
             ):
                 raise RuntimeError(
                     f"Cannot compute refraction with dispersive material "
-                    "because optical data has no wavelength variable "
-                    "(got materials {material1} and {material2})"
+                    f"because optical data has no wavelength variable "
+                    f"(got materials {input_material} and {self.material})"
                 )
 
-            n1 = material1.n
-            n2 = material2.n
+            n1 = input_material.n
+            n2 = self.material.n
 
         else:
-            n1 = material1.refractive_index(wavelengths)
-            n2 = material2.refractive_index(wavelengths)
+            n1 = input_material.refractive_index(wavelengths)
+            n2 = self.material.refractive_index(wavelengths)
 
         return (
             refraction(rays, normals, n1, n2, critical_angle=self.critical_angle),

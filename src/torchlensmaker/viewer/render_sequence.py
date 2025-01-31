@@ -325,7 +325,8 @@ def ipython_show(
 ) -> None:
 
     if sampling is None:
-        sampling = {"base": 10, "object": 5}
+        # TODO figure out a better default based on stack content?
+        sampling = {"base": 10, "object": 5, "wavelength": 8}
 
     scene = tlm.viewer.render_sequence(
         optics, dim, dtype, sampling, color_dim, colormap, end

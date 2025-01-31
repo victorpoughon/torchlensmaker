@@ -289,7 +289,14 @@ class ChromaticRange(nn.Module):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         if inputs.rays_wavelength is not None:
-            raise RuntimeError("Rays already have wavelength data")
+            raise RuntimeError(
+                "Rays already have wavelength data. Cannot apply ChromaticRange()."
+            )
+
+        if "wavelength" not in inputs.sampling:
+            raise RuntimeError(
+                "Missing 'wavelength' key in sampling configuration. Cannot apply ChromaticRange()."
+            )
 
         # TODO option to offset along the base or object coordinate
 
