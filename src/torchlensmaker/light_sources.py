@@ -15,6 +15,9 @@ from torchlensmaker.sampling import (
     RandomDiskSampler,
 )
 
+from torchlensmaker.materials import MaterialModel, get_material_model
+
+
 from typing import Any, Optional
 
 Tensor = torch.Tensor
@@ -50,6 +53,10 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
 
 
 class LightSourceBase(nn.Module):
+    def __init__(self, material: str | MaterialModel = "air"):
+        super().__init__()
+        self.material = get_material_model(material)
+
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
     ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
@@ -73,17 +80,18 @@ class LightSourceBase(nn.Module):
             V=torch.cat((inputs.V, V), dim=0),
             rays_base=cat_optional(inputs.rays_base, rays_base),
             rays_object=cat_optional(inputs.rays_object, rays_object),
+            material=self.material,
         )
 
 
 class PointSourceAtInfinity(LightSourceBase):
-    def __init__(self, beam_diameter: float):
+    def __init__(self, beam_diameter: float, **kwargs: Any):
         """
         Args:
             beam_diameter: diameter of the beam of light
             angle_offset: incidence angle of the beam (in degrees)
         """
-        super().__init__()
+        super().__init__(**kwargs)
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
 
     def sample_light_source(
@@ -107,8 +115,8 @@ class PointSourceAtInfinity(LightSourceBase):
 
 
 class PointSource(LightSourceBase):
-    def __init__(self, beam_angular_size: float):
-        super().__init__()
+    def __init__(self, beam_angular_size: float, **kwargs: Any):
+        super().__init__(**kwargs)
 
         self.beam_angular_size = torch.deg2rad(to_tensor(beam_angular_size))
 
@@ -132,8 +140,8 @@ class PointSource(LightSourceBase):
 
 
 class ObjectAtInfinity(LightSourceBase):
-    def __init__(self, beam_diameter: float, angular_size: float):
-        super().__init__()
+    def __init__(self, beam_diameter: float, angular_size: float, **kwargs: Any):
+        super().__init__(**kwargs)
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
         self.angular_size: Tensor = torch.deg2rad(to_tensor(angular_size))
 
@@ -169,8 +177,8 @@ class ObjectAtInfinity(LightSourceBase):
 
 
 class Object(LightSourceBase):
-    def __init__(self, beam_angular_size: float, object_diameter: float):
-        super().__init__()
+    def __init__(self, beam_angular_size: float, object_diameter: float, **kwargs: Any):
+        super().__init__(**kwargs)
         self.beam_angular_size: Tensor = torch.deg2rad(to_tensor(beam_angular_size))
         self.object_diameter: Tensor = to_tensor(object_diameter)
 
@@ -203,3 +211,75 @@ class Object(LightSourceBase):
         NX, angles = cartesian_prod2d(NX, angles)
 
         return P, V, angles, NX
+
+
+class Monochromatic(nn.Module):
+    def __init__(self, wavelength: float | int):
+        super().__init__()
+        self.wavelength = wavelength
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        if inputs.rays_wavelength is not None:
+            raise RuntimeError("Rays already have wavelength data")
+
+        return inputs.replace(
+            rays_wavelength=torch.full_like(inputs.P[:, 0], self.wavelength)
+        )
+
+
+def cartesian_wavelength(inputs, ray_var):
+    "Add wavelength var by doing cartesian product with existing vars"
+
+    N = inputs.P.shape[0]
+    M = ray_var.shape[0]
+
+    new_P = torch.repeat_interleave(inputs.P, M, dim=0)
+    new_V = torch.repeat_interleave(inputs.V, M, dim=0)
+    new_rays_base = torch.repeat_interleave(inputs.rays_base, M, dim=0) if inputs.rays_base is not None else None
+    new_rays_object = torch.repeat_interleave(inputs.rays_object, M, dim=0) if inputs.rays_object is not None else None
+
+    new_var = torch.tile(ray_var, (N,))
+
+    return inputs.replace(
+        P=new_P,
+        V=new_V,
+        rays_base=new_rays_base,
+        rays_object=new_rays_object,
+        rays_wavelength=new_var,
+    )
+
+
+class Multichromatic(nn.Module):
+    def __init__(self, wavelengths: list[float | int]):
+        super().__init__()
+        self.wavelengths = to_tensor(wavelengths)
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        if inputs.rays_wavelength is not None:
+            raise RuntimeError("Rays already have wavelength data")
+
+        chromatic_space = self.wavelengths
+
+        return cartesian_wavelength(inputs, chromatic_space)
+
+
+class ChromaticRange(nn.Module):
+    def __init__(self, wmin: float | int, wmax: float | int):
+        super().__init__()
+        self.wmin, self.wmax = wmin, wmax
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        if inputs.rays_wavelength is not None:
+            raise RuntimeError("Rays already have wavelength data")
+
+        # TODO option to offset along the base or object coordinate
+
+        chromatic_space = self.wmin + sampleND(
+            inputs.sampling.get("sampler", None),
+            inputs.sampling["wavelength"],
+            self.wmax - self.wmin,
+            1,
+            inputs.dtype,
+        )
+
+        return cartesian_wavelength(inputs, chromatic_space)

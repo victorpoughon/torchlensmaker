@@ -9,7 +9,9 @@
     * Asphere
     * Linear Spline
 
-* Spot diagram
+* Analysis:
+    * Spot diagram
+    * Ray distribution visu
 
 * Wavelength support:
     * Improve index of refraction handling with 'material' support. Surface defines "next material" property.
@@ -47,6 +49,10 @@
 * Load data from external source
 * Version number in build artifact
 * Available on cdnjs and npm
+* Show/Hide kinematic chain
+* Show/Hide blocked rays
+* nicer surfaces rendering: lights? etc.
+* Move colormap and color_dim picker to tlmviewer
 
 ### DOC
 
@@ -142,7 +148,6 @@ for example, setup an impossibly short focal length with a spherical lens
 
 * Rendering:
     * add option for light sources: draw rays a bit before their origins to see them better
-    * Move colormap and color_dim picker to tlmviewer
 
 ### TLMVIEWER
 
@@ -160,6 +165,8 @@ for example, setup an impossibly short focal length with a spherical lens
 * Camera selection button
 
 * Multiple view in one (2D / 3D toggle button)
+
+* Display stack info per layer (number of rays, aperture diameter, etc.)
 
 
 ## Various stuff / brainstorming

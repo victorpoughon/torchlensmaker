@@ -56,6 +56,9 @@ def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
         return data.rays_base
     elif color_dim == "object":
         return data.rays_object
+    elif color_dim == "wavelength":
+        return data.rays_wavelength
+    # TODO check that returned tensor is not None?
     else:
         raise RuntimeError(f"Unknown color dimension '{color_dim}'")
 
@@ -87,7 +90,12 @@ def color_rays(
         var = torch.linalg.vector_norm(color_tensor, dim=1)
 
     # normalize color variable to [0, 1]
-    c = (var - var.min()) / (var.max() - var.min())
+    # unless the data range is too small, then use 0.5
+    denom = (var.max() - var.min())
+    if denom > 1e-4:
+        c = (var - var.min()) / denom
+    else:
+        c = torch.full_like(var, 0.5)
 
     # convert to rgb using color map
     return torch.tensor(colormap(c))
