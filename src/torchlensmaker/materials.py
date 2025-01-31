@@ -33,11 +33,12 @@ class CauchyMaterial(MaterialModel):
         self.D = D
 
     def refractive_index(self, W: Tensor) -> Tensor:
+        Wmicro = W/1000
         return (
-            torch.full_like(W, self.A)
-            + self.B / torch.pow(W, 2)
-            + self.C / torch.pow(W, 4)
-            + self.D / torch.pow(W, 6)
+            torch.full_like(Wmicro, self.A)
+            + self.B / torch.pow(Wmicro, 2)
+            + self.C / torch.pow(Wmicro, 4)
+            + self.D / torch.pow(Wmicro, 6)
         )
 
     def __str__(self) -> str:
@@ -60,10 +61,10 @@ default_material_models = [
     # Water refractive index in dependence on temperature and wavelength:
     # A simple approximation. Proceedings of SPIE
     # The International Society for Optical Engineering. 5068. 10.1117/12.518857.
-    CauchyMaterial("water20C", 1.31984, 5190.553, -2.56169, 9.39388),
-    CauchyMaterial("water80C", 1.31044, 5057.2226, -2.61394, 9.65879),
-    CauchyMaterial("water", 1.31984, 5190.553, -2.56169, 9.39388),
-    CauchyMaterial("Tea Earl Grey Hot", 1.31044, 5057.2226, -2.61394, 9.65879),
+    CauchyMaterial("water20C", 1.31984, 0.005190553),
+    CauchyMaterial("water80C", 1.31044, 0.0050572226,),
+    CauchyMaterial("water", 1.31984, 0.005190553,),
+    CauchyMaterial("Tea Earl Grey Hot", 1.31044, 0.0050572226),
     
     # https://en.wikipedia.org/wiki/Cauchy%27s_equation
     CauchyMaterial("Fused Silica", 1.4580, 0.00354),
@@ -71,7 +72,7 @@ default_material_models = [
     CauchyMaterial("K5", 1.5220, 0.00459),
     CauchyMaterial("BaK4", 1.5690, 0.00531),
     CauchyMaterial("BaF10", 1.6700, 0.00743),
-    CauchyMaterial("SF10", 1.7280, 13420),
+    CauchyMaterial("SF10", 1.7280, 0.013420),
 ]
 
 default_material_models_dict = {model.name: model for model in default_material_models}

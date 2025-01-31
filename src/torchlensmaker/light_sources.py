@@ -84,6 +84,17 @@ class LightSourceBase(nn.Module):
         )
 
 
+class RaySource(LightSourceBase):
+    def sample_light_source(
+        self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
+    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+
+        P = torch.zeros(1, dim, dtype=dtype)
+        V = unit_vector(dim, dtype).unsqueeze(0)
+
+        return P, V, None, None
+
+
 class PointSourceAtInfinity(LightSourceBase):
     def __init__(self, beam_diameter: float, **kwargs: Any):
         """
@@ -235,8 +246,16 @@ def cartesian_wavelength(inputs, ray_var):
 
     new_P = torch.repeat_interleave(inputs.P, M, dim=0)
     new_V = torch.repeat_interleave(inputs.V, M, dim=0)
-    new_rays_base = torch.repeat_interleave(inputs.rays_base, M, dim=0) if inputs.rays_base is not None else None
-    new_rays_object = torch.repeat_interleave(inputs.rays_object, M, dim=0) if inputs.rays_object is not None else None
+    new_rays_base = (
+        torch.repeat_interleave(inputs.rays_base, M, dim=0)
+        if inputs.rays_base is not None
+        else None
+    )
+    new_rays_object = (
+        torch.repeat_interleave(inputs.rays_object, M, dim=0)
+        if inputs.rays_object is not None
+        else None
+    )
 
     new_var = torch.tile(ray_var, (N,))
 

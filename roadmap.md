@@ -41,10 +41,13 @@
     * Better rendering of ImagePlane
     * Rename end= argument
     * Smart non-zero default for end= argument if no focal element
-    * Show/Hide invalid rays -- should that trace back up the stack?
+    * Show/Hide invalid rays -- should that trace back up the stack?$
+    * smart default sampling dict for show() function
 
 ### TLMVIEWER
 
+* Set viewer width/height from json
+* Set default controls value from json (and corresponding python arguments to tlm.show)
 * Embed in static html
 * Load data from external source
 * Version number in build artifact
@@ -135,6 +138,7 @@ for example, setup an impossibly short focal length with a spherical lens
     * HideRays: utility to hide rays until a certain distance
     * Debug: debug info about optical data
     * AbsolutePosition: Fixed absolute positioning
+    * ChromaticFilter: Filter rays based on wavelength
 
 * OpticalSurface
     * add error_on_no_collision option, by default drop
@@ -168,6 +172,7 @@ for example, setup an impossibly short focal length with a spherical lens
 
 * Display stack info per layer (number of rays, aperture diameter, etc.)
 
+* Slider to display a % of total number of rays
 
 ## Various stuff / brainstorming
 

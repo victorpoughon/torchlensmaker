@@ -305,6 +305,9 @@ def render_sequence(
         scene["data"].extend(
             EndArtist(end).render_rays(module, inputs, outputs, color_dim, colormap)
         )
+    
+    # Render output join
+    scene["data"].extend(JointArtist.render_element(module, outputs, outputs))
 
     return scene
 

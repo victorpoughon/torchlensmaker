@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 
 from typing import Any, Sequence, Optional
 
-from torchlensmaker.tensor_manip import to_tensor
+from torchlensmaker.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.transforms import (
     TransformBase,
     TranslateTransform,
@@ -17,7 +17,12 @@ from torchlensmaker.surfaces import (
     LocalSurface,
     CircularPlane,
 )
-from torchlensmaker.physics import refraction, reflection
+from torchlensmaker.materials import (
+    MaterialModel,
+    NonDispersiveMaterial,
+    get_material_model,
+)
+from torchlensmaker.physics import refraction, reflection, RefractionCriticalAngleMode
 from torchlensmaker.intersect import intersect
 
 
@@ -50,6 +55,10 @@ class OpticalData:
     rays_base: Optional[Tensor]
     rays_object: Optional[Tensor]
     rays_image: Optional[Tensor]
+    rays_wavelength: Optional[Tensor]
+
+    # Material model for this batch of rays
+    material: MaterialModel
 
     # Mask array indicating which rays from the previous data in the sequence
     # were blocked by the previous optical element. "blocked" includes hitting
@@ -83,6 +92,8 @@ def default_input(
         rays_base=None,
         rays_object=None,
         rays_image=None,
+        rays_wavelength=None,
+        material=get_material_model("vacuum"),
         blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
@@ -228,19 +239,21 @@ class ImagePlane(SurfaceMixin, nn.Module):
         rays_object = valid_rays_object
 
         if rays_object is None:
-            raise RuntimeError("Missing object coordinates on rays (required to compute image magnification)")
+            raise RuntimeError(
+                "Missing object coordinates on rays (required to compute image magnification)"
+            )
 
         # Compute loss
         # could separate loss from imagesurface
 
-        assert rays_object.shape == rays_image.shape, (rays_object.shape, rays_image.shape)
+        assert rays_object.shape == rays_image.shape
         mag, res = linear_magnification(rays_object, rays_image)
 
         if self.magnification is not None:
             loss = (self.magnification - mag) ** 2 + torch.sum(torch.pow(res, 2))
         else:
             loss = torch.sum(torch.pow(res, 2))
-        
+
         return replace(
             inputs,
             P=collision_points,
@@ -292,9 +305,11 @@ class OpticalSurface(SurfaceMixin, nn.Module):
         collision_points, surface_normals, valid = self.intersect_surface(inputs)
 
         # Refract or reflect rays based on the derived class implementation
-        output_rays = self.optical_function(
+        output_rays, new_material = self.optical_function(
             inputs.V[valid],
             surface_normals,
+            inputs.material,
+            inputs.rays_wavelength,
         )
 
         # Filter ray variables with valid collisions
@@ -310,36 +325,67 @@ class OpticalSurface(SurfaceMixin, nn.Module):
             V=output_rays,
             rays_base=new_rays_base,
             rays_object=new_rays_object,
+            material=new_material,
             transforms=new_transforms,
             blocked=~valid,
         )
 
 
-def filter_optional_tensor(t: Optional[Tensor], valid: Tensor) -> Optional[Tensor]:
-    if t is None:
-        return None
-    else:
-        return t[valid]
-
-
 class ReflectiveSurface(OpticalSurface):
-    def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
-        return reflection(rays, normals)
+    def optical_function(
+        self,
+        rays: Tensor,
+        normals: Tensor,
+        material: MaterialModel,
+        _wavelengths: Optional[Tensor],
+    ) -> tuple[Tensor, MaterialModel]:
+        return reflection(rays, normals), material
 
 
 class RefractiveSurface(OpticalSurface):
     def __init__(
         self,
-        n: tuple[float, float],
         surface: LocalSurface,
+        material=str | MaterialModel,
         scale: float = 1.0,
         anchors: tuple[str, str] = ("origin", "origin"),
+        critical_angle: RefractionCriticalAngleMode = "drop",
     ):
         super().__init__(surface, scale, anchors)
-        self.n1, self.n2 = n
+        self.material = get_material_model(material)
+        self.critical_angle = critical_angle
 
-    def optical_function(self, rays: Tensor, normals: Tensor) -> Tensor:
-        return refraction(rays, normals, self.n1, self.n2, critical_angle="clamp")
+    def optical_function(
+        self,
+        rays: Tensor,
+        normals: Tensor,
+        material: MaterialModel,
+        wavelengths: Optional[Tensor],
+    ) -> tuple[Tensor, MaterialModel]:
+        material1 = material
+        material2 = self.material
+
+        if wavelengths is None:
+            if not isinstance(material1, NonDispersiveMaterial) or not isinstance(
+                material2, NonDispersiveMaterial
+            ):
+                raise RuntimeError(
+                    f"Cannot compute refraction with dispersive material "
+                    "because optical data has no wavelength variable "
+                    "(got materials {material1} and {material2})"
+                )
+
+            n1 = material1.n
+            n2 = material2.n
+
+        else:
+            n1 = material1.refractive_index(wavelengths)
+            n2 = material2.refractive_index(wavelengths)
+
+        return (
+            refraction(rays, normals, n1, n2, critical_angle=self.critical_angle),
+            self.material,
+        )
 
 
 class Aperture(OpticalSurface):
@@ -347,8 +393,14 @@ class Aperture(OpticalSurface):
         surface = CircularPlane(diameter, dtype=torch.float64)
         super().__init__(surface, 1.0, ("origin", "origin"))
 
-    def optical_function(self, rays: Tensor, _normals: Tensor) -> Tensor:
-        return rays
+    def optical_function(
+        self,
+        rays: Tensor,
+        _normals: Tensor,
+        material: MaterialModel,
+        _wavelengths: Optional[Tensor],
+    ) -> tuple[Tensor, MaterialModel]:
+        return rays, material
 
 
 class Gap(KinematicElement):
