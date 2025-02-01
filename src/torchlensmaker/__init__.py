@@ -10,6 +10,8 @@ from torchlensmaker.optics import *
 from torchlensmaker.lenses import *
 from torchlensmaker.light_sources import *
 
+from torchlensmaker.materials import *
+
 # Optimization
 from torchlensmaker.parameter import parameter
 from torchlensmaker.full_forward import *
