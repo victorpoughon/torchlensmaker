@@ -13,12 +13,6 @@
     * Spot diagram
     * Ray distribution visu
 
-* Wavelength support:
-    * Improve index of refraction handling with 'material' support. Surface defines "next material" property.
-    * Wavelength light source: samples rays by duplicating existing rays and adding wavelength variable
-    * Material models: function of (wavelength, material) -> index of refraction
-    * Update refractive surface to read wavelength variable if it exists
-
 * Cemented lenses: doublet, etc.
 
 * Examples:
