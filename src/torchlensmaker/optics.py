@@ -302,25 +302,39 @@ class OpticalSurface(SurfaceMixin, nn.Module):
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.dim, inputs.dtype
 
-        collision_points, surface_normals, valid = self.intersect_surface(inputs)
-
-        # TODO support critical_angle="drop" correctly
+        collision_points, surface_normals, valid_collisions = self.intersect_surface(inputs)
 
         # Filter ray variables with valid collisions
-        new_rays_base = filter_optional_tensor(inputs.rays_base, valid)
-        new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
-        new_rays_wavelength = filter_optional_tensor(inputs.rays_wavelength, valid)
+        new_rays_base = filter_optional_tensor(inputs.rays_base, valid_collisions)
+        new_rays_object = filter_optional_tensor(inputs.rays_object, valid_collisions)
+        new_rays_wavelength = filter_optional_tensor(inputs.rays_wavelength, valid_collisions)
 
         # Refract or reflect rays based on the derived class implementation
         output_rays, new_material = self.optical_function(
-            inputs.V[valid],
+            inputs.V[valid_collisions],
             surface_normals,
             inputs.material,
             new_rays_wavelength,
         )
 
+        # output_rays contain nan if there is total internal reflection
+        valid_optical = torch.isfinite(output_rays).all(dim=1)
+        if (~valid_optical).sum() != 0:
+            print("valid optical contains some False")
+        combined_mask = torch.full_like(valid_collisions, False)
+        combined_mask[valid_collisions] = True
+        combined_mask[valid_collisions][~valid_optical] = False
+        
+        # Filter again to remove total internal reflection (if any)
+        new_rays_base = filter_optional_tensor(inputs.rays_base, combined_mask)
+        new_rays_object = filter_optional_tensor(inputs.rays_object, combined_mask)
+        new_rays_wavelength = filter_optional_tensor(inputs.rays_wavelength, combined_mask)
+        collision_points = collision_points[valid_optical]
+        output_rays = output_rays[valid_optical]
+
         # Apply surface kinematic transform to the chain
         new_transforms = inputs.transforms + list(self.kinematic_transform(dim, dtype))
+            
 
         return replace(
             inputs,
@@ -331,7 +345,7 @@ class OpticalSurface(SurfaceMixin, nn.Module):
             rays_wavelength=new_rays_wavelength,
             material=new_material,
             transforms=new_transforms,
-            blocked=~valid,
+            blocked=~valid_collisions,
         )
 
 
@@ -387,8 +401,10 @@ class RefractiveSurface(OpticalSurface):
             n1 = input_material.refractive_index(wavelengths)
             n2 = self.material.refractive_index(wavelengths)
 
+        refracted, valid = refraction(rays, normals, n1, n2, critical_angle=self.critical_angle)
+
         return (
-            refraction(rays, normals, n1, n2, critical_angle=self.critical_angle),
+            refracted,
             self.material,
         )
 
@@ -441,6 +457,35 @@ class Turn(KinematicElement):
 
     def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
         return spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
+
+
+class Offset(nn.Module):
+    "Offset the given optical element but don't affect the kinematic chain"
+
+    def __init__(self, element: nn.Module, x=0, y=0, z=0):
+        super().__init__()
+        self.element = element
+        self.x = to_tensor(x)
+        self.y = to_tensor(y)
+        self.z = to_tensor(z)
+
+    def forward(self, inputs: OpticalData) -> OpticalData:
+        dim, dtype = inputs.dim, inputs.dtype
+
+        if dim == 2:
+            T = torch.stack((self.x, self.y), dim=0)
+        else:
+            T = torch.stack((self.x, self.y, self.z), dim=0)
+
+        chain = inputs.transforms + [TranslateTransform(T)]
+
+        # give that chain to the contained element
+        element_input = replace(inputs, transforms=chain)
+
+        element_output: OpticalData = self.element(element_input)
+
+        # but return original transforms
+        return replace(element_output, transforms=inputs.transforms)
 
 
 class Rotate(nn.Module):
