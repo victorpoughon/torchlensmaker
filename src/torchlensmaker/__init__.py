@@ -21,7 +21,9 @@ from torchlensmaker.optimize import optimize
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import ipython_show as show
 
+# Plots
 from torchlensmaker.plot_magnification import plot_magnification
+from torchlensmaker.plot_material_model import plot_material_models
 
 # Export build123d
 import torchlensmaker.export_build123d as export
