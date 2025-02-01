@@ -23,7 +23,7 @@ def render_rays_until(
     P: Tensor, V: Tensor, end: Tensor, default_color: str
 ) -> list[Any]:
     "Render rays until an absolute X coordinate"
-
+    assert end.dim() == 0
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [tlm.viewer.render_rays(P, ends, default_color=default_color)]
@@ -101,7 +101,7 @@ def color_rays(
     return torch.tensor(colormap(c))
 
 
-class SurfaceArtist:
+class KinematicSurfaceArtist:
     @staticmethod
     def render_element(
         element: nn.Module, inputs: Any, _outputs: Any, color_dim: Optional[str] = None
@@ -117,6 +117,28 @@ class SurfaceArtist:
                 [element.surface], [transform], dim=transform.dim, N=100
             )
         ]
+
+    @staticmethod
+    def render_rays(
+        element: nn.Module,
+        inputs: Any,
+        outputs: Any,
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ) -> list[Any]:
+        return []
+
+
+class CollisionSurfaceArtist:
+    @staticmethod
+    def render_element(
+        element: nn.Module, inputs: Any, outputs: Any, color_dim: Optional[str] = None
+    ) -> list[Any]:
+
+        points = outputs.P
+        normals = outputs.normals
+        
+        return tlm.viewer.render_collisions(points, normals)
 
     @staticmethod
     def render_rays(
@@ -152,13 +174,8 @@ class SurfaceArtist:
 
             P, V = inputs.P[outputs.blocked], inputs.V[outputs.blocked]
             if P.numel() > 0:
-                dim, dtype = inputs.transforms[0].dim, inputs.transforms[0].dtype
-                chain = inputs.transforms + element.surface_transform(dim, dtype)
-                transform = tlm.forward_kinematic(chain)
-                target = transform.direct_points(torch.zeros(1, dim, dtype=dtype))[0]
-
                 group_blocked = render_rays_until(
-                    P, V, target[0], default_color=color_blocked
+                    P, V, inputs.target()[0], default_color=color_blocked
                 )
 
             else:
@@ -194,26 +211,6 @@ class FocalPointArtist:
         return render_rays_length(inputs.P, inputs.V, t, default_color=color_valid)
 
 
-class ApertureArtist:
-    @staticmethod
-    def render_element(
-        element: nn.Module, inputs: tlm.OpticalData, _outputs: tlm.OpticalData
-    ) -> list[Any]:
-
-        target = inputs.target().unsqueeze(0)
-        return [tlm.viewer.render_points(target, color_focal_point)]
-
-    @staticmethod
-    def render_rays(
-        element: nn.Module,
-        inputs: Any,
-        outputs: Any,
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
-    ) -> list[Any]:
-        return SurfaceArtist.render_rays(element, inputs, outputs, color_dim, colormap)
-
-
 class JointArtist:
     @staticmethod
     def render_element(element: nn.Module, inputs: Any, _outputs: Any) -> list[Any]:
@@ -247,10 +244,9 @@ class EndArtist:
 
 
 artists_dict: Dict[type, type] = {
-    tlm.OpticalSurface: SurfaceArtist,
     tlm.FocalPoint: FocalPointArtist,
-    tlm.ImagePlane: SurfaceArtist,
-    # tlm.Aperture: ApertureArtist,
+    tlm.KinematicSurface: KinematicSurfaceArtist,
+    tlm.CollisionSurface: CollisionSurfaceArtist,
 }
 
 

@@ -113,7 +113,6 @@ class Lens(LensBase):
         self,
         surface1: tlm.LocalSurface,
         surface2: tlm.LocalSurface,
-        n: tuple[float, float],
         inner_thickness: Optional[float] = None,
         outer_thickness: Optional[float] = None,
         scale1: float = 1.0,
@@ -193,13 +192,13 @@ class PlanoLens(Lens):
     def __init__(
         self,
         surface: tlm.LocalSurface,
-        n: tuple[float, float],
         inner_thickness: Optional[float] = None,
         outer_thickness: Optional[float] = None,
         reverse: bool = False,
+        **kwargs: Any,
     ):
         plane = tlm.CircularPlane(2 * surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
         super().__init__(
-            s1, s2, n, inner_thickness, outer_thickness, scale1=-1.0 if reverse else 1.0
+            s1, s2, inner_thickness, outer_thickness, scale1=-1.0 if reverse else 1.0, **kwargs,
         )

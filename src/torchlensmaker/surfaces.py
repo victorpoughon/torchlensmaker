@@ -134,9 +134,12 @@ class ImplicitSurface(LocalSurface):
         local_points = P + t.unsqueeze(1).expand_as(V) * V
 
         if dim == 2:
-            local_normals = self.f_grad(local_points)
+            grad = self.f_grad(local_points)
         else:
-            local_normals = self.F_grad(local_points)
+            grad = self.F_grad(local_points)
+
+        # Normalize gradient to make normal vectors
+        local_normals = torch.nn.functional.normalize(grad, dim=1)
 
         # If there is no intersection, newton's method won't converge
         # and points will not be on the surface
