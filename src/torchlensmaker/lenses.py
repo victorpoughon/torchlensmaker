@@ -46,6 +46,10 @@ def anchor_abs(
     # Transform it to absolute space
     return transform.direct_points(point)
 
+# Lens:
+# - KinematicSurface(CollisionSurface, RefractiveBoundary)
+# - Gap
+# - KinematicSurface(CollisionSurface, RefractiveBoundary)
 
 def anchor_thickness(
     lens: nn.Sequential, anchor: Anchor, dim: int, dtype: torch.dtype
@@ -60,7 +64,8 @@ def anchor_thickness(
         execute_list[0].inputs.transforms + lens[0].surface_transform(dim, dtype)
     )
     s2_transform = tlm.forward_kinematic(
-        execute_list[2].inputs.transforms + lens[2].surface_transform(dim, dtype)
+        # TODO need a better indexing method here
+        execute_list[-2].inputs.transforms + lens[2].surface_transform(dim, dtype)
     )
 
     a1 = anchor_abs(lens[0].surface, s1_transform, anchor)

@@ -549,7 +549,7 @@ class ImageBoundaryLoss(nn.Module):
 
 
 class ImagePlane(KinematicSurface):
-    def __init__(self, diameter, magnification):
+    def __init__(self, diameter, magnification=None):
         surface = CircularPlane(diameter, dtype=torch.float64)  ## TODO dtype
         element = nn.Sequential(
             CollisionSurface(surface),
