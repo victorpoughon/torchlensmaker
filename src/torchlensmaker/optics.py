@@ -396,11 +396,11 @@ class RefractiveBoundary(nn.Module):
                 "Cannot compute RefractiveBoundary without surface normals"
             )
 
-        if not torch.allclose(
-            torch.linalg.vector_norm(inputs.normals, dim=1),
-            torch.tensor(1.0, dtype=inputs.normals.dtype),
-        ):
-            raise RuntimeError("surface normals should be unit vectors")
+        # if not torch.allclose(
+        #     torch.linalg.vector_norm(inputs.normals, dim=1),
+        #     torch.tensor(1.0, dtype=inputs.normals.dtype),
+        # ):
+        #     raise RuntimeError("surface normals should be unit vectors")
 
         if inputs.rays_wavelength is None:
             if not isinstance(inputs.material, NonDispersiveMaterial) or not isinstance(

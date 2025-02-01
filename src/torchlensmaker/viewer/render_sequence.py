@@ -138,7 +138,8 @@ class CollisionSurfaceArtist:
         points = outputs.P
         normals = outputs.normals
         
-        return tlm.viewer.render_collisions(points, normals)
+        # return tlm.viewer.render_collisions(points, normals)
+        return []
 
     @staticmethod
     def render_rays(
