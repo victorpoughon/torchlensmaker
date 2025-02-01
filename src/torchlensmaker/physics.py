@@ -61,6 +61,8 @@ def refraction(
 
     Returns:
         unit vectors of the refracted rays, shape (C, 2)
+        valid: boolean teansor of shape (N,) indicating which rays are not
+               beyond the critical angle
     """
 
     assert rays.dim() == 2 and rays.shape[1] in {2, 3}
@@ -79,29 +81,27 @@ def refraction(
     eta = n1 / n2
     R_perp = eta.unsqueeze(1) * (rays + cos_theta_i * normals)
 
+    # Radicand of R_para and critical angle mask
+    radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
+    valid = (radicand >= 0.0).squeeze(1)
+
     # Compute R_para, depending on critical angle option
     if critical_angle == "nan":
-        R_para = (
-            -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normals
-        )
-
-        return normalize(R_perp + R_para)
-
-    elif critical_angle == "clamp":
-        radicand = torch.clamp(
-            1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True), min=0.0, max=None
-        )
         R_para = -torch.sqrt(radicand) * normals
 
-        return normalize(R_perp + R_para)
+        return normalize(R_perp + R_para), valid
+
+    elif critical_angle == "clamp":
+        radicand = torch.clamp(radicand, min=0.0, max=None)
+        R_para = -torch.sqrt(radicand) * normals
+
+        return normalize(R_perp + R_para), valid
 
     elif critical_angle == "drop":
-        radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
-        valid = (radicand >= 0.0).squeeze(1)
         R_para = -torch.sqrt(radicand[valid, :]) * normals[valid, :]
         R_perp = R_perp[valid, :]
 
-        return normalize(R_perp + R_para)
+        return normalize(R_perp + R_para), valid
 
     elif critical_angle == "reflect":
         radicand = 1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)
@@ -112,7 +112,7 @@ def refraction(
         R = R_perp + R_para
 
         R[~valid] = reflection(rays, normals)[~valid]
-        return normalize(R)
+        return normalize(R), valid
 
     else:
         raise ValueError(
