@@ -46,30 +46,34 @@ def anchor_abs(
     # Transform it to absolute space
     return transform.direct_points(point)
 
+
 # Lens:
 # - KinematicSurface(CollisionSurface, RefractiveBoundary)
 # - Gap
 # - KinematicSurface(CollisionSurface, RefractiveBoundary)
 
+
 def anchor_thickness(
-    lens: nn.Sequential, anchor: Anchor, dim: int, dtype: torch.dtype
+    lens: nn.Module, anchor: Anchor, dim: int, dtype: torch.dtype
 ) -> Tensor:
     "Thickness of a lens at an anchor"
 
     # Evaluate the lens stack with zero rays, just to compute the transforms
-    # TODO make rays variable dimensions not needed here
-    execute_list, _ = tlm.full_forward(lens, tlm.default_input(dim, dtype, sampling={}))
+    input_tree, output_tree = tlm.forward_tree(
+        lens, tlm.default_input(dim, dtype, sampling={})
+    )
 
     s1_transform = tlm.forward_kinematic(
-        execute_list[0].inputs.transforms + lens[0].surface_transform(dim, dtype)
+        input_tree[lens.surface1].transforms
+        + lens.surface1.surface_transform(dim, dtype)
     )
     s2_transform = tlm.forward_kinematic(
-        # TODO need a better indexing method here
-        execute_list[-2].inputs.transforms + lens[2].surface_transform(dim, dtype)
+        input_tree[lens.surface2].transforms
+        + lens.surface2.surface_transform(dim, dtype)
     )
 
-    a1 = anchor_abs(lens[0].surface, s1_transform, anchor)
-    a2 = anchor_abs(lens[2].surface, s2_transform, anchor)
+    a1 = anchor_abs(lens.surface1.surface, s1_transform, anchor)
+    a2 = anchor_abs(lens.surface2.surface, s2_transform, anchor)
 
     return torch.linalg.vector_norm(a1 - a2)  # type: ignore
 
@@ -89,21 +93,16 @@ class LensMaterialsMixin:
 class LensBase(LensMaterialsMixin, nn.Module):
     "A base class to share common lens functions"
 
-    optics: nn.Sequential
-
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-    def forward(self, inputs: tlm.OpticalData) -> tlm.OpticalData:
-        return self.optics(inputs)  # type: ignore
-
     def inner_thickness(self) -> Tensor:
         "Thickness at the center of the lens"
-        return anchor_thickness(self.optics, "origin", 3, torch.float64)
+        return anchor_thickness(self, "origin", 3, torch.float64)
 
     def outer_thickness(self) -> Tensor:
         "Thickness at the outer radius of the lens"
-        return anchor_thickness(self.optics, "extent", 3, torch.float64)
+        return anchor_thickness(self, "extent", 3, torch.float64)
 
 
 class Lens(LensBase):
@@ -144,8 +143,11 @@ class Lens(LensBase):
             anchors=(anchors[1], anchors[0]),
         )
 
-        # TODO this registers the children twice, kinda
-        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+    def forward(self, inputs):
+        out = self.surface1(inputs)
+        out = self.gap(out)
+        out = self.surface2(out)
+        return out
 
 
 class BiLens(LensBase):
@@ -179,7 +181,11 @@ class BiLens(LensBase):
             anchors=(anchors[1], anchors[0]),
         )
 
-        self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
+    def forward(self, inputs):
+        out = self.surface1(inputs)
+        out = self.gap(out)
+        out = self.surface2(out)
+        return out
 
 
 class PlanoLens(Lens):
@@ -206,5 +212,10 @@ class PlanoLens(Lens):
         plane = tlm.CircularPlane(2 * surface.outline.max_radius())
         s1, s2 = (surface, plane) if reverse else (plane, surface)
         super().__init__(
-            s1, s2, inner_thickness, outer_thickness, scale1=-1.0 if reverse else 1.0, **kwargs,
+            s1,
+            s2,
+            inner_thickness,
+            outer_thickness,
+            scale1=-1.0 if reverse else 1.0,
+            **kwargs,
         )
