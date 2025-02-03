@@ -369,7 +369,7 @@ class ReflectiveBoundary(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         if inputs.P.shape[0] == 0:
-            return inputs.replace(material=self.material)
+            return inputs
 
         if inputs.normals is None:
             raise RuntimeError(

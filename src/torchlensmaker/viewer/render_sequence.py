@@ -111,7 +111,10 @@ class KinematicSurfaceArtist:
         colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
 
-        dim, dtype = input_tree[module].transforms[0].dim, input_tree[module].transforms[0].dtype
+        dim, dtype = (
+            input_tree[module].transforms[0].dim,
+            input_tree[module].transforms[0].dtype,
+        )
         chain = input_tree[module].transforms + module.surface_transform(dim, dtype)
         transform = tlm.forward_kinematic(chain)
 
@@ -222,11 +225,15 @@ class FocalPointArtist:
     ) -> list[Any]:
 
         # Distance from ray origin P to target
-        dist = torch.linalg.vector_norm(input_tree[module].P - input_tree[module].target(), dim=1)
+        dist = torch.linalg.vector_norm(
+            input_tree[module].P - input_tree[module].target(), dim=1
+        )
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
-        return render_rays_length(input_tree[module].P, input_tree[module].V, t, default_color=color_valid)
+        return render_rays_length(
+            input_tree[module].P, input_tree[module].V, t, default_color=color_valid
+        )
 
 
 def render_joints(
@@ -236,7 +243,10 @@ def render_joints(
     color_dim: Optional[str] = None,
     colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
 ) -> list[Any]:
-    dim, dtype = input_tree[module].transforms[0].dim, input_tree[module].transforms[0].dtype
+    dim, dtype = (
+        input_tree[module].transforms[0].dim,
+        input_tree[module].transforms[0].dtype,
+    )
 
     # Final transform list
     tflist = output_tree[module].transforms
@@ -244,7 +254,7 @@ def render_joints(
     points = []
 
     for i in range(len(tflist)):
-        tf = tlm.forward_kinematic(tflist[:i+1])
+        tf = tlm.forward_kinematic(tflist[: i + 1])
         joint = tf.direct_points(torch.zeros((dim,), dtype=dtype))
 
         points.append(joint.tolist())
@@ -284,7 +294,9 @@ class SequentialArtist:
     ) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(render_module(child, input_tree, output_tree, color_dim, colormap))
+            nodes.extend(
+                render_module(child, input_tree, output_tree, color_dim, colormap)
+            )
         return nodes
 
     @staticmethod
@@ -297,7 +309,9 @@ class SequentialArtist:
     ) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(render_rays(child, input_tree, output_tree, color_dim, colormap))
+            nodes.extend(
+                render_rays(child, input_tree, output_tree, color_dim, colormap)
+            )
         return nodes
 
 
@@ -311,8 +325,12 @@ class LensArtist:
         colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
         nodes = []
-        nodes.extend(render_module(module.surface1, input_tree, output_tree, color_dim, colormap))
-        nodes.extend(render_module(module.surface2, input_tree, output_tree, color_dim, colormap))
+        nodes.extend(
+            render_module(module.surface1, input_tree, output_tree, color_dim, colormap)
+        )
+        nodes.extend(
+            render_module(module.surface2, input_tree, output_tree, color_dim, colormap)
+        )
         return nodes
 
     @staticmethod
@@ -324,8 +342,42 @@ class LensArtist:
         colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
     ) -> list[Any]:
         nodes = []
-        nodes.extend(render_rays(module.surface1, input_tree, output_tree, color_dim, colormap))
-        nodes.extend(render_rays(module.surface2, input_tree, output_tree, color_dim, colormap))
+        nodes.extend(
+            render_rays(module.surface1, input_tree, output_tree, color_dim, colormap)
+        )
+        nodes.extend(
+            render_rays(module.surface2, input_tree, output_tree, color_dim, colormap)
+        )
+        return nodes
+
+
+class SubTransformArtist:
+    @staticmethod
+    def render_module(
+        module: nn.Module,
+        input_tree: dict[nn.Module, tlm.OpticalData],
+        output_tree: dict[nn.Module, tlm.OpticalData],
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ) -> list[Any]:
+        nodes = []
+        nodes.extend(
+            render_module(module.element, input_tree, output_tree, color_dim, colormap)
+        )
+        return nodes
+
+    @staticmethod
+    def render_rays(
+        module: nn.Module,
+        input_tree: dict[nn.Module, tlm.OpticalData],
+        output_tree: dict[nn.Module, tlm.OpticalData],
+        color_dim: Optional[str] = None,
+        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ) -> list[Any]:
+        nodes = []
+        nodes.extend(
+            render_rays(module.element, input_tree, output_tree, color_dim, colormap)
+        )
         return nodes
 
 
@@ -333,6 +385,8 @@ artists_dict: Dict[type, type] = {
     nn.Sequential: SequentialArtist,
     tlm.FocalPoint: FocalPointArtist,
     tlm.LensBase: LensArtist,
+    tlm.Offset: SubTransformArtist,
+    tlm.Rotate: SubTransformArtist,
     tlm.KinematicSurface: KinematicSurfaceArtist,
     tlm.CollisionSurface: CollisionSurfaceArtist,
 }
@@ -368,7 +422,9 @@ def render_module(
     nodes = []
 
     # Render element itself
-    nodes.extend(artist.render_module(module, input_tree, output_tree, color_dim, colormap))
+    nodes.extend(
+        artist.render_module(module, input_tree, output_tree, color_dim, colormap)
+    )
 
     return nodes
 
@@ -390,9 +446,12 @@ def render_rays(
     nodes = []
 
     # Render rays
-    nodes.extend(artist.render_rays(module, input_tree, output_tree, color_dim, colormap))
+    nodes.extend(
+        artist.render_rays(module, input_tree, output_tree, color_dim, colormap)
+    )
 
     return nodes
+
 
 def render_sequence(
     optics: nn.Module,
@@ -420,12 +479,16 @@ def render_sequence(
     )
 
     # Render kinematic chain joints
-    scene["data"].extend(render_joints(optics, input_tree, output_tree, color_dim, colormap))
+    scene["data"].extend(
+        render_joints(optics, input_tree, output_tree, color_dim, colormap)
+    )
 
     # Render output rays with end argument
     if end is not None:
         scene["data"].extend(
-            EndArtist(end).render_rays(optics, input_tree, output_tree, color_dim, colormap)
+            EndArtist(end).render_rays(
+                optics, input_tree, output_tree, color_dim, colormap
+            )
         )
 
     return scene
