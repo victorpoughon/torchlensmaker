@@ -19,14 +19,24 @@ color_focal_point = "red"
 default_colormap = cc.cm.CET_I2
 
 
+LAYER_VALID_RAYS = 1
+LAYER_BLOCKED_RAYS = 2
+LAYER_OUTPUT_RAYS = 3
+LAYER_JOINTS = 4
+
+
 def render_rays_until(
-    P: Tensor, V: Tensor, end: Tensor, default_color: str
+    P: Tensor,
+    V: Tensor,
+    end: Tensor,
+    default_color: str,
+    layer: Optional[int] = None,
 ) -> list[Any]:
     "Render rays until an absolute X coordinate"
     assert end.dim() == 0
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
-    return [tlm.viewer.render_rays(P, ends, default_color=default_color)]
+    return [tlm.viewer.render_rays(P, ends, default_color=default_color, layer=layer)]
 
 
 def render_rays_length(
@@ -35,6 +45,7 @@ def render_rays_length(
     length: float | Tensor,
     color_data: Optional[Tensor] = None,
     default_color: str = color_valid,
+    layer: Optional[int] = None,
 ) -> list[Any]:
     "Render rays with fixed length"
 
@@ -46,7 +57,11 @@ def render_rays_length(
 
     return [
         tlm.viewer.render_rays(
-            P, P + length * V, color_data=color_data, default_color=default_color
+            P,
+            P + length * V,
+            color_data=color_data,
+            default_color=default_color,
+            layer=layer,
         )
     ]
 
@@ -165,7 +180,12 @@ class CollisionSurfaceArtist:
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
             return [
-                tlm.viewer.render_rays(inputs.P, outputs.P, default_color=color_valid)
+                tlm.viewer.render_rays(
+                    inputs.P,
+                    outputs.P,
+                    default_color=color_valid,
+                    layer=LAYER_VALID_RAYS,
+                )
             ]
 
         # Else, split into colliding and non colliding rays using blocked mask
@@ -183,6 +203,7 @@ class CollisionSurfaceArtist:
                         outputs.P,
                         color_data=color_data,
                         default_color=color_valid,
+                        layer=LAYER_VALID_RAYS,
                     )
                 ]
                 if inputs.P[valid].numel() > 0
@@ -192,7 +213,11 @@ class CollisionSurfaceArtist:
             P, V = inputs.P[outputs.blocked], inputs.V[outputs.blocked]
             if P.numel() > 0:
                 group_blocked = render_rays_until(
-                    P, V, inputs.target()[0], default_color=color_blocked
+                    P,
+                    V,
+                    inputs.target()[0],
+                    default_color=color_blocked,
+                    layer=LAYER_BLOCKED_RAYS,
                 )
 
             else:
@@ -259,7 +284,7 @@ def render_joints(
 
         points.append(joint.tolist())
 
-    return [{"type": "points", "data": points}]
+    return [{"type": "points", "data": points, "layers": [LAYER_JOINTS]}]
 
 
 class EndArtist:
@@ -280,6 +305,7 @@ class EndArtist:
             self.end,
             color_data=color_rays(output_tree[module], color_dim, colormap),
             default_color=color_valid,
+            layer=LAYER_OUTPUT_RAYS,
         )
 
 

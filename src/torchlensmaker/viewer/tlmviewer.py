@@ -130,26 +130,36 @@ def render_surfaces(
     }
 
 
-def render_rays(start: Tensor, end: Tensor, color: Optional[Tensor] = None, color_data: Optional[Tensor] = None, default_color: str = "#ffa724") -> Any:
-    
+def render_rays(
+    start: Tensor,
+    end: Tensor,
+    color_data: Optional[Tensor] = None,
+    default_color: str = "#ffa724",
+    layer: Optional[int] = None,
+) -> Any:
+
     assert start.shape == end.shape
     if color_data is not None:
         assert color_data.shape[0] == start.shape[0], (color_data.shape, start.shape)
         assert color_data.shape[1] in {3, 4}, color_data.shape
-        
+
         # Convert to 8 bit color and drop alpha channel
-        color_uint8 = (255*color_data).to(dtype=torch.uint8)[:, :3]
+        color_uint8 = (255 * color_data).to(dtype=torch.uint8)[:, :3]
 
         data = torch.hstack((start, end, color_uint8)).tolist()
     else:
         data = torch.hstack((start, end)).tolist()
 
-    return {
+    node = {
         "type": "rays",
         "data": data,
         "color": default_color,
     }
 
+    if layer is not None:
+        node.update(layers=[layer])
+
+    return node
 
 def render_points(points: Tensor, color: str = "white") -> Any:
     assert points.dim() == 2

@@ -42,7 +42,6 @@
 
 Archi change:
 * prio artist system
-* layer system
 * lens cosmetic edge
 
 
@@ -51,23 +50,8 @@ Archi change:
 * Load data from external source
 * Version number in build artifact
 * Available on cdnjs and npm
-* Show/Hide kinematic chain
-* Show/Hide blocked rays
 
-====
-
-Lens rendering:
-- Some prio system on obj render
-- lens deleguates its rendering to its surfaces but adds a little cosmetic outer edge and some tooltip info (name of lens, type etc)
-
-maybe the issue is blanket use of full_forward which doesnt allow for proper overrides:
-- use non recursive loop on stack instead
-- but I need to call forward for intermediate rays etc
-
-idea:
-- iterate stack for surfaces rendering > natural recursive overwrite
-- can't do that, need optical data for rendering surfaces for transforms
-- full forward for rendering opticaldata
+* Show/Hide cosmetic edges
 
 
 ### DOC
@@ -83,7 +67,6 @@ idea:
 
 * copyright / license headers
 * pip install torchlensmaker
-
 
 
 ## Post v0.1
