@@ -40,16 +40,35 @@
 
 ### TLMVIEWER
 
+Archi change:
+* prio artist system
+* layer system
+* lens cosmetic edge
+
+
 * Set viewer width/height from json
-* Set default controls value from json (and corresponding python arguments to tlm.show)
 * Embed in static html
 * Load data from external source
 * Version number in build artifact
 * Available on cdnjs and npm
 * Show/Hide kinematic chain
 * Show/Hide blocked rays
-* nicer surfaces rendering: lights? etc.
-* Move colormap and color_dim picker to tlmviewer
+
+====
+
+Lens rendering:
+- Some prio system on obj render
+- lens deleguates its rendering to its surfaces but adds a little cosmetic outer edge and some tooltip info (name of lens, type etc)
+
+maybe the issue is blanket use of full_forward which doesnt allow for proper overrides:
+- use non recursive loop on stack instead
+- but I need to call forward for intermediate rays etc
+
+idea:
+- iterate stack for surfaces rendering > natural recursive overwrite
+- can't do that, need optical data for rendering surfaces for transforms
+- full forward for rendering opticaldata
+
 
 ### DOC
 
@@ -64,8 +83,6 @@
 
 * copyright / license headers
 * pip install torchlensmaker
-
-
 
 
 
@@ -162,11 +179,38 @@ for example, setup an impossibly short focal length with a spherical lens
 
 * Camera selection button
 
-* Multiple view in one (2D / 3D toggle button)
+* Multiple scene in one file (2D / 3D toggle button or scene dropdown menu)
 
 * Display stack info per layer (number of rays, aperture diameter, etc.)
 
 * Slider to display a % of total number of rays
+
+
+post-v1:
+* Set default controls value from json (and corresponding python arguments to tlm.show)
+* nicer surfaces rendering: lights? etc.
+* Move colormap and color_dim picker to tlmviewer
+* multiple scenes in one file
+* set camera view to: XY / XZ / YZ
+
+Layers:
+- Optical Surfaces (refraction / reflection)
+- Valid rays
+- blocked rays
+- output rays
+- optical axis
+- other axes
+- skybox
+- grid
+- kinematic chain
+- light source (surface marker)
+- aperture (surface marker)
+
+Surfaces tooltip:
+- material
+- type of surface
+- parameter values
+
 
 ## Various stuff / brainstorming
 
