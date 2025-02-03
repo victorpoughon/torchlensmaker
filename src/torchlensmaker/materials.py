@@ -64,6 +64,40 @@ class CauchyMaterial(MaterialModel):
         return f"{type(self).__name__}(name={repr(self.name)}, A={self.A}, B={self.B}, C={self.C}, D={self.D})"
 
 
+class SellmeierMaterial(MaterialModel):
+    def __init__(
+        self,
+        B1: float,
+        B2: float,
+        B3: float,
+        C1: float,
+        C2: float,
+        C3: float,
+        name: str = default_material_model_name,
+    ):
+        super().__init__(name)
+        self.B1, self.B2, self.B3 = B1, B2, B3
+        self.C1, self.C2, self.C3 = C1, C2, C3
+
+    def is_dispersive(self):
+        return True
+
+    def refractive_index(self, W) -> Tensor:
+        # wavelength in micrometers
+        Wm = W / 1000
+        W2 = torch.pow(Wm, 2)
+
+        return torch.sqrt(
+            1
+            + (self.B1 * W2) / (W2 - self.C1)
+            + (self.B2 * W2) / (W2 - self.C2)
+            + (self.B3 * W2) / (W2 - self.C3)
+        )
+
+    def __str__(self) -> str:
+        return f"{type(self).__name__}(name={repr(self.name)}, B1={self.B1}, B2={self.B2}, B3={self.B3}, C1={self.C1}, C2={self.C2}, C3={self.C3}"
+
+
 # TODO add:
 # SellmeierMaterial
 # LinearSegmentedMaterial
