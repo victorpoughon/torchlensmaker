@@ -144,6 +144,7 @@ class Lens(LensBase):
             anchors=(anchors[1], anchors[0]),
         )
 
+        # TODO this registers the children twice, kinda
         self.optics = nn.Sequential(self.surface1, self.gap, self.surface2)
 
 

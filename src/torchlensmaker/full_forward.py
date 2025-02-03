@@ -14,9 +14,7 @@ class ModuleEvalContext:
         return iter((self.module, self.inputs, self.outputs))
 
 
-def full_forward(
-    module: nn.Module, inputs: Any
-) -> tuple[list[ModuleEvalContext], Any]:
+def full_forward(module: nn.Module, inputs: Any) -> tuple[list[ModuleEvalContext], Any]:
     """
     Forward evaluate a model, but returns all intermediate inputs and outputs.
 
@@ -61,3 +59,32 @@ def full_forward(
             h.remove()
 
     return execute_list, outputs
+
+
+def forward_tree(
+    module: nn.Module, inputs: Any
+) -> tuple[dict[nn.Module, Any], dict[nn.Module, Any]]:
+
+    input_tree: dict[nn.Module, Any] = {}
+    output_tree: dict[nn.Module, Any] = {}
+
+    # Define the forward hook
+    def hook(mod: nn.Module, inp: Any, out: Any) -> None:
+        # inp[0] here restricts us to forward() first argument
+        # so this only works with single argument forward() functions
+        input_tree[mod] = inp[0]
+        output_tree[mod] = out
+
+    # Register forward hooks to every module recursively
+    hooks = []
+    for mod in module.modules():
+        hooks.append(mod.register_forward_hook(hook))
+
+    # Evaluate the full model, then remove all hooks
+    try:
+        _ = module(inputs)
+    finally:
+        for h in hooks:
+            h.remove()
+
+    return input_tree, output_tree
