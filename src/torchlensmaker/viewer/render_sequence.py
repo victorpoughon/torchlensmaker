@@ -68,8 +68,11 @@ def ray_variables_dict(
         if tensor is not None:
             d[name] = filter_optional_mask(tensor, valid)
 
-    update(data.rays_base, "base")
-    update(data.rays_object, "object")
+    # TODO no support for 2D colormaps in tlmviewer yet
+    # but base and object are 2D variables in 3D
+    if data.dim == 2:
+        update(data.rays_base, "base")
+        update(data.rays_object, "object")
     update(data.rays_wavelength, "wavelength")
 
     return d

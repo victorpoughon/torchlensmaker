@@ -143,17 +143,15 @@ def render_rays(
     for var in variables.values():
         assert var.shape[0] == start.shape[0]
 
-    var_tensors = tuple(
-        var.unsqueeze(1) for var in variables.values()
-    )
+    points = torch.hstack((start, end)).tolist()
 
-    data = torch.hstack((start, end) + var_tensors).tolist()
+    variables_lists = {name: t.tolist() for name, t in variables.items()}
 
     node = {
         "type": "rays",
-        "data": data,
+        "points": points,
         "color": default_color,
-        "variables": list(variables.keys()),
+        "variables": variables_lists,
         "domain": domain,
     }
 
