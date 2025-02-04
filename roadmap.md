@@ -48,8 +48,9 @@
 * Load data from external source
 * Version number in build artifact
 * Available on cdnjs and npm
-
 * Show/Hide cosmetic edges
+* Set default gui values from json (+python arguments to show)
+* Default to object dim if it exists
 
 
 ### DOC
