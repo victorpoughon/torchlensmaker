@@ -2,14 +2,15 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal, Any, Optional, Type, Dict, TypeVar, Iterable
+from typing import Literal, Any, Optional, Type, Dict, TypeVar, Iterable, Generic
 from collections import defaultdict
 from dataclasses import dataclass
 
 from torchlensmaker.tensorframe import TensorFrame
+from torchlensmaker.tensor_manip import filter_optional_mask
 
 import matplotlib as mpl
-import colorcet as cc
+
 
 Tensor = torch.Tensor
 
@@ -17,8 +18,6 @@ Tensor = torch.Tensor
 color_valid = "#ffa724"
 color_blocked = "red"
 color_focal_point = "red"
-
-default_colormap = cc.cm.CET_I2 # TODO remove
 
 
 LAYER_VALID_RAYS = 1
@@ -29,38 +28,59 @@ LAYER_JOINTS = 4
 
 @dataclass
 class RayVariables:
-    "Available ray variables and their min/max range"
+    "Available ray variables and their min/max domain"
 
-    variables: set[str]
-    mins: dict[str, float]
-    maxs: dict[str, float]
+    variables: list[str]
+    domain: dict[str, list[float]]
 
     @classmethod
-    def from_optical_data(cls, optical_data: Iterable[tlm.OpticalData]) -> 'RayVariables':
-        variables = set()
-        mins = defaultdict(lambda: float("+inf"))
-        maxs = defaultdict(lambda: float("-inf"))
+    def from_optical_data(
+        cls, optical_data: Iterable[tlm.OpticalData]
+    ) -> "RayVariables":
+        variables: set[str] = set()
+        domain: defaultdict[str, list[float]] = defaultdict(
+            lambda: [float("+inf"), float("-inf")]
+        )
 
-        def update(var: Tensor, name: str) -> None:
+        def update(var: Optional[Tensor], name: str) -> None:
             if var is not None:
                 variables.add(name)
-                if var.min() < mins[name]:
-                    mins[name] = var.min()
-                if var.max() > maxs[name]:
-                    maxs[name] = var.max()
+                if var.min() < domain[name][0]:
+                    domain[name][0] = var.min().item()
+                if var.max() > domain[name][1]:
+                    domain[name][1] = var.max().item()
 
         for inputs in optical_data:
             update(inputs.rays_base, "base")
             update(inputs.rays_object, "object")
             update(inputs.rays_wavelength, "wavelength")
-        
-        return cls(variables, dict(mins), dict(maxs))
+
+        return cls(list(variables), dict(domain))
+
+
+def ray_variables_dict(
+    data: tlm.OpticalData, variables: list[str], valid: Optional[Tensor] = None
+) -> dict[str, Tensor]:
+    "Convert ray variables from an OpticalData object to a dict of Tensors"
+    d = {}
+
+    def update(tensor: Optional[Tensor], name: str) -> None:
+        if tensor is not None:
+            d[name] = filter_optional_mask(tensor, valid)
+
+    update(data.rays_base, "base")
+    update(data.rays_object, "object")
+    update(data.rays_wavelength, "wavelength")
+
+    return d
 
 
 def render_rays_until(
     P: Tensor,
     V: Tensor,
     end: Tensor,
+    variables: dict[str, Tensor],
+    domain: dict[str, list[float]],
     default_color: str,
     layer: Optional[int] = None,
 ) -> list[Any]:
@@ -68,14 +88,24 @@ def render_rays_until(
     assert end.dim() == 0
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
-    return [tlm.viewer.render_rays(P, ends, default_color=default_color, layer=layer)]
+    return [
+        tlm.viewer.render_rays(
+            P,
+            ends,
+            variables=variables,
+            domain=domain,
+            default_color=default_color,
+            layer=layer,
+        )
+    ]
 
 
 def render_rays_length(
     P: Tensor,
     V: Tensor,
     length: float | Tensor,
-    color_data: Optional[Tensor] = None,
+    variables: dict[str, Tensor],
+    domain: dict[str, list[float]],
     default_color: str = color_valid,
     layer: Optional[int] = None,
 ) -> list[Any]:
@@ -91,61 +121,12 @@ def render_rays_length(
         tlm.viewer.render_rays(
             P,
             P + length * V,
-            color_data=color_data,
+            variables=variables,
+            domain=domain,
             default_color=default_color,
             layer=layer,
         )
     ]
-
-
-def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
-    if color_dim == "base":
-        return data.rays_base
-    elif color_dim == "object":
-        return data.rays_object
-    elif color_dim == "wavelength":
-        return data.rays_wavelength
-    # TODO check that returned tensor is not None?
-    else:
-        raise RuntimeError(f"Unknown color dimension '{color_dim}'")
-
-
-def color_rays(
-    data: tlm.OpticalData,
-    color_dim: Optional[str],
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
-) -> Optional[Tensor]:
-    if color_dim is None:
-        return None
-
-    color_tensor = color_rays_tensor(data, color_dim)
-
-    # unsqueeze to 2D
-    if color_tensor.dim() == 1:
-        color_tensor = color_tensor.unsqueeze(1)
-
-    assert color_tensor.dim() == 2
-    assert color_tensor.shape[1] in {1, 2}
-
-    # Ray variables that we use for coloring can be 2D when simulating in 3D
-    # TODO more configurability here
-
-    if color_tensor.shape[1] == 1:
-        var = color_tensor[:, 0]
-    else:
-        # TODO 2D colormap?
-        var = torch.linalg.vector_norm(color_tensor, dim=1)
-
-    # normalize color variable to [0, 1]
-    # unless the data range is too small, then use 0.5
-    denom = var.max() - var.min()
-    if denom > 1e-4:
-        c = (var - var.min()) / denom
-    else:
-        c = torch.full_like(var, 0.5)
-
-    # convert to rgb using color map
-    return torch.tensor(colormap(c))
 
 
 class KinematicSurfaceArtist:
@@ -154,8 +135,7 @@ class KinematicSurfaceArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
 
         dim, dtype = (
@@ -177,10 +157,9 @@ class KinematicSurfaceArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
-        return render_rays(module.element, input_tree, output_tree, color_dim, colormap)
+        return render_rays(module.element, input_tree, output_tree, ray_variables)
 
 
 class CollisionSurfaceArtist:
@@ -189,8 +168,7 @@ class CollisionSurfaceArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
 
         points = output_tree[module].P
@@ -204,8 +182,7 @@ class CollisionSurfaceArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         inputs = input_tree[module]
         outputs = output_tree[module]
@@ -215,6 +192,8 @@ class CollisionSurfaceArtist:
                 tlm.viewer.render_rays(
                     inputs.P,
                     outputs.P,
+                    variables=ray_variables_dict(inputs, ray_variables.variables),
+                    domain=ray_variables.domain,
                     default_color=color_valid,
                     layer=LAYER_VALID_RAYS,
                 )
@@ -223,17 +202,16 @@ class CollisionSurfaceArtist:
         # Else, split into colliding and non colliding rays using blocked mask
         else:
             valid = ~outputs.blocked
-            color_data = (
-                color_rays(inputs, color_dim, colormap)[valid]
-                if color_dim is not None
-                else None
-            )
+
             group_valid = (
                 [
                     tlm.viewer.render_rays(
                         inputs.P[valid],
                         outputs.P,
-                        color_data=color_data,
+                        variables=ray_variables_dict(
+                            inputs, ray_variables.variables, valid
+                        ),
+                        domain=ray_variables.domain,
                         default_color=color_valid,
                         layer=LAYER_VALID_RAYS,
                     )
@@ -248,6 +226,10 @@ class CollisionSurfaceArtist:
                     P,
                     V,
                     inputs.target()[0],
+                    variables=ray_variables_dict(
+                        inputs, ray_variables.variables, outputs.blocked
+                    ),
+                    domain=ray_variables.domain,
                     default_color=color_blocked,
                     layer=LAYER_BLOCKED_RAYS,
                 )
@@ -256,7 +238,6 @@ class CollisionSurfaceArtist:
                 group_blocked = []
 
             return group_valid + group_blocked
-            # Render non blocked rays
 
 
 class FocalPointArtist:
@@ -265,8 +246,7 @@ class FocalPointArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
 
         target = input_tree[module].target().unsqueeze(0)
@@ -277,19 +257,24 @@ class FocalPointArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
+        inputs = input_tree[module]
 
         # Distance from ray origin P to target
         dist = torch.linalg.vector_norm(
-            input_tree[module].P - input_tree[module].target(), dim=1
+            inputs.P - inputs.target(), dim=1
         )
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
         return render_rays_length(
-            input_tree[module].P, input_tree[module].V, t, default_color=color_valid
+            inputs.P,
+            inputs.V,
+            t,
+            variables=ray_variables_dict(inputs, ray_variables.variables),
+            domain=ray_variables.domain,
+            default_color=color_valid,
         )
 
 
@@ -297,8 +282,7 @@ def render_joints(
     module: nn.Module,
     input_tree: dict[nn.Module, tlm.OpticalData],
     output_tree: dict[nn.Module, tlm.OpticalData],
-    color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ray_variables: RayVariables,
 ) -> list[Any]:
     dim, dtype = (
         input_tree[module].transforms[0].dim,
@@ -328,14 +312,14 @@ class EndArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         return render_rays_length(
             output_tree[module].P,
             output_tree[module].V,
             self.end,
-            color_data=color_rays(output_tree[module], color_dim, colormap),
+            variables=ray_variables_dict(output_tree[module], ray_variables.variables),
+            domain=ray_variables.domain,
             default_color=color_valid,
             layer=LAYER_OUTPUT_RAYS,
         )
@@ -347,14 +331,11 @@ class SequentialArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(
-                render_module(child, input_tree, output_tree, color_dim, colormap)
-            )
+            nodes.extend(render_module(child, input_tree, output_tree, ray_variables))
         return nodes
 
     @staticmethod
@@ -362,14 +343,11 @@ class SequentialArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(
-                render_rays(child, input_tree, output_tree, color_dim, colormap)
-            )
+            nodes.extend(render_rays(child, input_tree, output_tree, ray_variables))
         return nodes
 
 
@@ -379,15 +357,14 @@ class LensArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         nodes.extend(
-            render_module(module.surface1, input_tree, output_tree, color_dim, colormap)
+            render_module(module.surface1, input_tree, output_tree, ray_variables)
         )
         nodes.extend(
-            render_module(module.surface2, input_tree, output_tree, color_dim, colormap)
+            render_module(module.surface2, input_tree, output_tree, ray_variables)
         )
         return nodes
 
@@ -396,15 +373,14 @@ class LensArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         nodes.extend(
-            render_rays(module.surface1, input_tree, output_tree, color_dim, colormap)
+            render_rays(module.surface1, input_tree, output_tree, ray_variables)
         )
         nodes.extend(
-            render_rays(module.surface2, input_tree, output_tree, color_dim, colormap)
+            render_rays(module.surface2, input_tree, output_tree, ray_variables)
         )
         return nodes
 
@@ -415,12 +391,11 @@ class SubTransformArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         nodes.extend(
-            render_module(module.element, input_tree, output_tree, color_dim, colormap)
+            render_module(module.element, input_tree, output_tree, ray_variables)
         )
         return nodes
 
@@ -429,12 +404,11 @@ class SubTransformArtist:
         module: nn.Module,
         input_tree: dict[nn.Module, tlm.OpticalData],
         output_tree: dict[nn.Module, tlm.OpticalData],
-        color_dim: Optional[str] = None,
-        colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+        ray_variables: RayVariables,
     ) -> list[Any]:
         nodes = []
         nodes.extend(
-            render_rays(module.element, input_tree, output_tree, color_dim, colormap)
+            render_rays(module.element, input_tree, output_tree, ray_variables)
         )
         return nodes
 
@@ -467,11 +441,12 @@ def render_module(
     module: nn.Module,
     input_tree: dict[nn.Module, tlm.OpticalData],
     output_tree: dict[nn.Module, tlm.OpticalData],
-    color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ray_variables: RayVariables,
 ) -> list[Any]:
     # find matching artists for this module, use the first one for rendering
-    artists = [a for typ, a in artists_dict.items() if isinstance(module, typ)]
+    artists: list[Any] = [
+        a for typ, a in artists_dict.items() if isinstance(module, typ)
+    ]
 
     if len(artists) == 0:
         return []
@@ -480,9 +455,7 @@ def render_module(
     nodes = []
 
     # Render element itself
-    nodes.extend(
-        artist.render_module(module, input_tree, output_tree, color_dim, colormap)
-    )
+    nodes.extend(artist.render_module(module, input_tree, output_tree, ray_variables))
 
     return nodes
 
@@ -491,11 +464,12 @@ def render_rays(
     module: nn.Module,
     input_tree: dict[nn.Module, tlm.OpticalData],
     output_tree: dict[nn.Module, tlm.OpticalData],
-    color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    ray_variables: RayVariables,
 ) -> list[Any]:
     # find matching artists for this module, use the first one for rendering
-    artists = [a for typ, a in artists_dict.items() if isinstance(module, typ)]
+    artists: list[Any] = [
+        a for typ, a in artists_dict.items() if isinstance(module, typ)
+    ]
 
     if len(artists) == 0:
         return []
@@ -504,9 +478,7 @@ def render_rays(
     nodes = []
 
     # Render rays
-    nodes.extend(
-        artist.render_rays(module, input_tree, output_tree, color_dim, colormap)
-    )
+    nodes.extend(artist.render_rays(module, input_tree, output_tree, ray_variables))
 
     return nodes
 
@@ -516,8 +488,6 @@ def render_sequence(
     dim: int,
     dtype: torch.dtype,
     sampling: dict[str, Any],
-    color_dim: Optional[str] = None, # TODO remove
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap, # TODO remove
     end: Optional[float] = None,
 ) -> Any:
     input_tree, output_tree = tlm.forward_tree(
@@ -531,26 +501,18 @@ def render_sequence(
     scene = tlm.viewer.new_scene("2D" if dim == 2 else "3D")
 
     # Render the top level module
-    scene["data"].extend(
-        render_module(optics, input_tree, output_tree, color_dim, colormap)
-    )
+    scene["data"].extend(render_module(optics, input_tree, output_tree, ray_variables))
 
     # Render rays
-    scene["data"].extend(
-        render_rays(optics, input_tree, output_tree, color_dim, colormap)
-    )
+    scene["data"].extend(render_rays(optics, input_tree, output_tree, ray_variables))
 
     # Render kinematic chain joints
-    scene["data"].extend(
-        render_joints(optics, input_tree, output_tree, color_dim, colormap)
-    )
+    scene["data"].extend(render_joints(optics, input_tree, output_tree, ray_variables))
 
     # Render output rays with end argument
     if end is not None:
         scene["data"].extend(
-            EndArtist(end).render_rays(
-                optics, input_tree, output_tree, color_dim, colormap
-            )
+            EndArtist(end).render_rays(optics, input_tree, output_tree, ray_variables)
         )
 
     return scene
@@ -561,8 +523,6 @@ def ipython_show(
     dim: int,
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
-    color_dim: Optional[str] = None,
-    colormap: mpl.colors.Colormap = default_colormap,
     end: Optional[float] = None,
     dump: bool = False,
     ndigits: int | None = 4,
@@ -572,9 +532,7 @@ def ipython_show(
         # TODO figure out a better default based on stack content?
         sampling = {"base": 10, "object": 5, "wavelength": 8}
 
-    scene = tlm.viewer.render_sequence(
-        optics, dim, dtype, sampling, color_dim, colormap, end
-    )
+    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, end)
 
     if dump:
         tlm.viewer.dump(scene, ndigits=2)

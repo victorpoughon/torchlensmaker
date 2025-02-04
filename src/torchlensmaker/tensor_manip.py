@@ -30,8 +30,15 @@ def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:
 def filter_optional_tensor(t: Optional[Tensor], valid: Tensor) -> Optional[Tensor]:
     if t is None:
         return None
-    else:
-        return t[valid]
+
+    return t[valid]
+
+
+def filter_optional_mask(t: Tensor, valid: Optional[Tensor]) -> Tensor:
+    if valid is None:
+        return t
+
+    return t[valid]
 
 
 def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
