@@ -40,10 +40,8 @@
 
 ### TLMVIEWER
 
-Archi change:
-* prio artist system
-* lens cosmetic edge
 
+* lens cosmetic edge
 
 * Set viewer width/height from json
 * Embed in static html
@@ -67,7 +65,7 @@ Archi change:
 
 * copyright / license headers
 * pip install torchlensmaker
-
+* nice roadmap
 
 ## Post v0.1
 
