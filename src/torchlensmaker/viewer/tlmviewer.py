@@ -133,8 +133,8 @@ def render_surfaces(
 def render_rays(
     start: Tensor,
     end: Tensor,
-    variables: dict[str, Tensor],
-    domain: dict[str, list[float]],
+    variables: dict[str, Tensor] = {},
+    domain: dict[str, list[float]] = {},
     default_color: str = "#ffa724",
     layer: Optional[int] = None,
 ) -> Any:
