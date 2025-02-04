@@ -2,7 +2,9 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal, Any, Optional, Type, Dict, TypeVar
+from typing import Literal, Any, Optional, Type, Dict, TypeVar, Iterable
+from collections import defaultdict
+from dataclasses import dataclass
 
 from torchlensmaker.tensorframe import TensorFrame
 
@@ -16,13 +18,43 @@ color_valid = "#ffa724"
 color_blocked = "red"
 color_focal_point = "red"
 
-default_colormap = cc.cm.CET_I2
+default_colormap = cc.cm.CET_I2 # TODO remove
 
 
 LAYER_VALID_RAYS = 1
 LAYER_BLOCKED_RAYS = 2
 LAYER_OUTPUT_RAYS = 3
 LAYER_JOINTS = 4
+
+
+@dataclass
+class RayVariables:
+    "Available ray variables and their min/max range"
+
+    variables: set[str]
+    mins: dict[str, float]
+    maxs: dict[str, float]
+
+    @classmethod
+    def from_optical_data(cls, optical_data: Iterable[tlm.OpticalData]) -> 'RayVariables':
+        variables = set()
+        mins = defaultdict(lambda: float("+inf"))
+        maxs = defaultdict(lambda: float("-inf"))
+
+        def update(var: Tensor, name: str) -> None:
+            if var is not None:
+                variables.add(name)
+                if var.min() < mins[name]:
+                    mins[name] = var.min()
+                if var.max() > maxs[name]:
+                    maxs[name] = var.max()
+
+        for inputs in optical_data:
+            update(inputs.rays_base, "base")
+            update(inputs.rays_object, "object")
+            update(inputs.rays_wavelength, "wavelength")
+        
+        return cls(variables, dict(mins), dict(maxs))
 
 
 def render_rays_until(
@@ -484,13 +516,17 @@ def render_sequence(
     dim: int,
     dtype: torch.dtype,
     sampling: dict[str, Any],
-    color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    color_dim: Optional[str] = None, # TODO remove
+    colormap: mpl.colors.LinearSegmentedColormap = default_colormap, # TODO remove
     end: Optional[float] = None,
 ) -> Any:
     input_tree, output_tree = tlm.forward_tree(
         optics, tlm.default_input(dim, dtype, sampling)
     )
+
+    # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
+    ray_variables = RayVariables.from_optical_data(input_tree.values())
+    print("ray variables", ray_variables)
 
     scene = tlm.viewer.new_scene("2D" if dim == 2 else "3D")
 
