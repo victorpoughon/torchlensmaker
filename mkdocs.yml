@@ -4,6 +4,7 @@ repo_name: victorpoughon/torchlensmaker
 repo_url: https://github.com/victorpoughon/torchlensmaker
 edit_uri: edit/main/docs/
 
+
 theme:
   name: material
   custom_dir: docs/overrides
@@ -21,8 +22,8 @@ theme:
     - scheme: default
       primary: amber
       accent: amber
-  logo: tlmlogo_black150.png
-  favicon: tlmlogo_black150.png
+  logo: logos/tlmlogo_black150.png
+  favicon: logos/tlmlogo_black150.png
 
 
 extra_css:

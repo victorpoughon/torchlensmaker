@@ -2,25 +2,26 @@
 
 div#logo-title {
     font-family: Lilita One, sans-serif;
-    width: 770px;
-    height: 182px;
+    width: 470px;
+    height: 95px;
     box-sizing: border-box;
     border-radius: 20px;
     box-shadow: 8px 10px 12px 0px rgba(0, 0, 0, 0.6);
-    padding: 40px 60px;
     background: black;
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
     position: relative;
-    margin: 0;
-    margin-bottom: 50px;
+    margin: 0 auto;
+    margin-bottom: 40px;
 }
 
 #logo-title h1 {
     margin: 0;
-    font-size: 80px;
+    font-size: 45px;
     text-align: center;
+    display: inline-block;
 
     background: linear-gradient(
         -90deg,
