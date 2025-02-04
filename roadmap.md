@@ -35,7 +35,6 @@
     * Better rendering of ImagePlane
     * Rename end= argument
     * Smart non-zero default for end= argument if no focal element
-    * Show/Hide invalid rays -- should that trace back up the stack?$
     * smart default sampling dict for show() function
 
 ### TLMVIEWER
@@ -169,9 +168,7 @@ for example, setup an impossibly short focal length with a spherical lens
 
 
 post-v1:
-* Set default controls value from json (and corresponding python arguments to tlm.show)
 * nicer surfaces rendering: lights? etc.
-* Move colormap and color_dim picker to tlmviewer
 * multiple scenes in one file
 * set camera view to: XY / XZ / YZ
 
