@@ -20,8 +20,8 @@ theme:
     # - toc.integrate
   palette:
     - scheme: default
-      primary: amber
-      accent: amber
+      primary: orange
+      accent: orange
   logo: logos/tlmlogo_black150.png
   favicon: logos/tlmlogo_black150.png
 

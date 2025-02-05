@@ -1,14 +1,17 @@
 
+Hello! My name is Victor, I'm the author of this project. You can find contact
+info on [my personal website](https://victorpoughon.fr). Feel free to reach out 😊
+
 ## The origin of this project
 
 The origin of this project is double:
 
 ### I wanted to learn Optics
 
-I attended online classes and read textbooks. While fun, I've been sometimes
-frustrated by approximations and general lack of rigor in the way the field is
-being taught. As someone with a strong software background, but a total noob in
-optics, approximations like sin(x) = x seem to make sense if you're Isaac Newton
+I have been teaching myself optics, and I've been sometimes frustrated by
+approximations and general lack of rigor in the way the field is being taught.
+As someone with a strong software background, but a total noob in optics,
+approximations like sin(x) = x seem to make sense if you're Isaac Newton
 designing a telescope with pen and paper in the 17th century, but today I think
 non linear optimization has gotten so remarkably powerful that we should start
 there. Teaching optics with ideal equations like 1/u + 1/v = 1/f or the lens
@@ -32,7 +35,10 @@ Still, I think it's more subtle than that (sometimes they don't converge, and
 still an image is formed)! My best understanding of it actually came when I
 implemented the `Image` class in _Torch Lens Maker_.
 
-(As an aside, I think the question "what is an image?" might be to optics experts the same as "what is money?" is to economists).
+!!! idea
+
+    Did you ever ask "What is money?" to an economist? It's really fun isn't it?
+    Next time, try asking "What is an image?" to an optics expert.
 
 ### Recurse Center
 

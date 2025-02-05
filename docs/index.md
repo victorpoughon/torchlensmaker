@@ -7,7 +7,7 @@ hide:
 
 <style>
 div.md-content {
-  max-width: 860px;
+  max-width: 900px;
   /* margin: 0 auto; */
 
 }
