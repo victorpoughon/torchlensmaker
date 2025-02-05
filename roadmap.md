@@ -36,7 +36,7 @@
     * Rename end= argument
     * Smart non-zero default for end= argument if no focal element
     * smart default sampling dict for show() function
-    * show() arguments to set default gui state
+    * show() arguments to set default gui state (pink floyd example -> wavelength)
 
 ### TLMVIEWER
 

@@ -22,7 +22,7 @@ def get_script_template() -> str:
 
 
 def get_div_template() -> str:
-    return "<div data-jp-suppress-context-menu id='$div_id' class='tlmviewer'></div>"
+    return "<div data-jp-suppress-context-menu id='$div_id' class='tlmviewer' style='width: 100%; aspect-ratio: 16 / 9;'></div>"
 
 
 def random_id() -> str:
