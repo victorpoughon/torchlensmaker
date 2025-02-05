@@ -41,11 +41,9 @@
 ### TLMVIEWER
 
 * lens cosmetic edge
-* Embed in static html
-* Load data from external source
+* Show/Hide cosmetic edges
 * Version number in build artifact
 * Available on cdnjs and npm
-* Show/Hide cosmetic edges
 * Set default gui values from json (+python arguments to show)
 
 
@@ -53,7 +51,6 @@
 
 * Review and document sign and axis convention
 * List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
-* Embed tlmviewer
 * Automatic build of examples
 * Automatic build of test_notebooks (a bit hidden from main doc)
 
