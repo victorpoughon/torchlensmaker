@@ -16,7 +16,7 @@
 }
 
 .md-typeset code {
-    font-size: .75em !important;
+    font-size: .7em !important;
 }
 
 .md-content p {
@@ -31,4 +31,8 @@
 .md-typeset .center-table :is(td,th):not([align]) {
     /* Reset alignment for table cells */
     text-align: initial;
+}
+
+.tlmviewer {
+    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
 }

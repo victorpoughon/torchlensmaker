@@ -12,4 +12,4 @@ const tlmviewer = module.tlmviewer;
 
 const data = '$data';
     
-tlmviewer(document.getElementById("$div_id"), data);    
+tlmviewer.embed(document.getElementById("$div_id"), data);    

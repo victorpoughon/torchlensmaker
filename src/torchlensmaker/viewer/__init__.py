@@ -1,7 +1,7 @@
 from .tlmviewer import *
-from .render_sequence import render_sequence, ipython_show
+from .render_sequence import show, export_json
 
 __all__ = [
-    'render_sequence',
-    'ipython_show',
+    "show",
+    "export_json",
 ]

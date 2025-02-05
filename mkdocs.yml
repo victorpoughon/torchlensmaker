@@ -25,13 +25,6 @@ theme:
   logo: logos/tlmlogo_black150.png
   favicon: logos/tlmlogo_black150.png
 
-
-extra_css:
-  - stylesheets/extra.css
-  - stylesheets/header.css
-  - stylesheets/jupyter.css
-  - stylesheets/logo.css
-
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
@@ -42,6 +35,21 @@ markdown_extensions:
   - pymdownx.superfences
   - md_in_html
   - attr_list
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+
+extra_javascript:
+  - javascript/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
+
+extra_css:
+  - stylesheets/extra.css
+  - stylesheets/header.css
+  - stylesheets/jupyter.css
+  - stylesheets/logo.css
+  - https://unpkg.com/katex@0/dist/katex.min.css
 
 plugins:
   - search

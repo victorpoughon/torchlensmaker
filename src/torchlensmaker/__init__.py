@@ -19,7 +19,7 @@ from torchlensmaker.optimize import optimize
 
 # Viewer
 import torchlensmaker.viewer as viewer
-from torchlensmaker.viewer import ipython_show as show
+from torchlensmaker.viewer import show, export_json
 
 # Plots
 from torchlensmaker.plot_magnification import plot_magnification
@@ -32,6 +32,7 @@ __all__ = [
     "viewer",
     "export",
     "show",
+    "export_json",
     "full_forward",
     "parameter",
 ]

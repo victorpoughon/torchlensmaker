@@ -10,7 +10,7 @@ from torchlensmaker.tensorframe import TensorFrame
 from torchlensmaker.tensor_manip import filter_optional_mask
 
 import matplotlib as mpl
-
+import json
 
 Tensor = torch.Tensor
 
@@ -265,9 +265,7 @@ class FocalPointArtist:
         inputs = input_tree[module]
 
         # Distance from ray origin P to target
-        dist = torch.linalg.vector_norm(
-            inputs.P - inputs.target(), dim=1
-        )
+        dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
@@ -520,23 +518,61 @@ def render_sequence(
     return scene
 
 
-def ipython_show(
+def default_sampling(
+    optics: nn.Module,
+    dim: int,
+    dtype: torch.dtype = torch.float64,
+) -> dict[str, Any]:
+    "Default sampling values"
+
+    # TODO could be improved by looking at stack content, etc.
+    return {"base": 10, "object": 5, "wavelength": 8}
+
+
+def truncate_scene(scene, ndigits: int) -> Any:
+    json_data = json.dumps(scene, allow_nan=False)
+    scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+
+    return scene
+
+
+def show(
     optics: nn.Module,
     dim: int,
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
-    dump: bool = False,
-    ndigits: int | None = 4,
+    ndigits: int | None = 8,
 ) -> None:
+    "Render an optical stack and show it with ipython display"
+
+    if sampling is None:
+        sampling = default_sampling(optics, dim, dtype)
+
+    scene = render_sequence(optics, dim, dtype, sampling, end)
+
+    tlm.viewer.ipython_display(scene, ndigits)
+
+
+def export_json(
+    optics: nn.Module,
+    filename: str,
+    dim: int = 2,
+    dtype: torch.dtype = torch.float64,
+    sampling: Optional[Dict[str, Any]] = None,
+    end: Optional[float] = None,
+    ndigits: int | None = 8,
+) -> None:
+    "Render and export an optical stack to a tlmviewer json file"
 
     if sampling is None:
         # TODO figure out a better default based on stack content?
         sampling = {"base": 10, "object": 5, "wavelength": 8}
 
-    scene = tlm.viewer.render_sequence(optics, dim, dtype, sampling, end)
+    scene = render_sequence(optics, dim, dtype, sampling, end)
 
-    if dump:
-        tlm.viewer.dump(scene, ndigits=2)
+    if ndigits is not None:
+        scene = truncate_scene(scene, ndigits)
 
-    tlm.viewer.ipython_display(scene, ndigits)
+    with open(filename, "w") as f:
+        json.dump(scene, f)
