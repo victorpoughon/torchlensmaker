@@ -41,8 +41,6 @@
 ### TLMVIEWER
 
 * lens cosmetic edge
-
-* Set viewer width/height from json
 * Embed in static html
 * Load data from external source
 * Version number in build artifact
