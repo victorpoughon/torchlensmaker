@@ -36,9 +36,9 @@
     * Rename end= argument
     * Smart non-zero default for end= argument if no focal element
     * smart default sampling dict for show() function
+    * show() arguments to set default gui state
 
 ### TLMVIEWER
-
 
 * lens cosmetic edge
 
@@ -49,12 +49,11 @@
 * Available on cdnjs and npm
 * Show/Hide cosmetic edges
 * Set default gui values from json (+python arguments to show)
-* Default to object dim if it exists
 
 
 ### DOC
 
-* Review and document sign convention
+* Review and document sign and axis convention
 * List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
 * Embed tlmviewer
 * Automatic build of examples
