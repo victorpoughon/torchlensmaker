@@ -1,4 +1,4 @@
-![logo](./docs/logos/logo-title.png)
+[<img src="./docs/logos/logo-title.png">](https://github.com/victorpoughon/torchlensmaker)
 
 Welcome to **Torch Lens Maker**, an open-source Python library for designing
 optical systems using optimization. Currently an experimental project, the goal

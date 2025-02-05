@@ -38,6 +38,8 @@ markdown_extensions:
   - admonition
   - pymdownx.arithmatex:
       generic: true
+  - toc:
+      permalink: "#"
 
 extra_javascript:
   - javascript/katex.js
@@ -63,8 +65,7 @@ nav:
   - Overview:
     - Welcome: index.md
     - Installation: installation.md
-    - How does it work?: how.md
-    - Roadmap: roadmap.md
+    - About: about.md
   # - Examples:
   #   - Biconvex Parabola: test_notebooks/biconvex_parabola.md
 
