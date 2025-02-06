@@ -65,7 +65,6 @@ nav:
   - Overview:
     - Welcome: index.md
     - Installation: installation.md
-    - Features: features.md
     - About: about.md
   - Examples:
     - Cooke Triplet: examples/cooke_triplet.md

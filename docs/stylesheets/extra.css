@@ -7,6 +7,12 @@
     font-weight: bold;
 }
 
+.md-typeset h3 {
+    color: var(--md-default-fg-color);
+    font-weight: bold;
+    font-size: .8rem;
+}
+
 .md-typeset ul {
     line-height: 1.2;
 }
