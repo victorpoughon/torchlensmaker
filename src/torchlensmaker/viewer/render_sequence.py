@@ -490,6 +490,7 @@ def render_sequence(
     dtype: torch.dtype,
     sampling: dict[str, Any],
     end: Optional[float] = None,
+    title: str = "",
 ) -> Any:
     input_tree, output_tree = tlm.forward_tree(
         optics, tlm.default_input(dim, dtype, sampling)
@@ -514,6 +515,9 @@ def render_sequence(
         scene["data"].extend(
             EndArtist(end).render_rays(optics, input_tree, output_tree, ray_variables)
         )
+
+    if title is not "":
+        scene["title"] = title
 
     return scene
 
@@ -542,6 +546,7 @@ def show(
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
+    title: str = "",
     ndigits: int | None = 8,
 ) -> None:
     "Render an optical stack and show it with ipython display"
@@ -549,9 +554,17 @@ def show(
     if sampling is None:
         sampling = default_sampling(optics, dim, dtype)
 
-    scene = render_sequence(optics, dim, dtype, sampling, end)
+    scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
     tlm.viewer.ipython_display(scene, ndigits)
+
+
+def show2d(*args, **kwargs):
+    return show(*args, **kwargs, dim=2)
+
+
+def show3d(*args, **kwargs):
+    return show(*args, **kwargs, dim=3)
 
 
 def export_json(
@@ -561,6 +574,7 @@ def export_json(
     dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
+    title: str = "",
     ndigits: int | None = 8,
 ) -> None:
     "Render and export an optical stack to a tlmviewer json file"
@@ -569,7 +583,7 @@ def export_json(
         # TODO figure out a better default based on stack content?
         sampling = {"base": 10, "object": 5, "wavelength": 8}
 
-    scene = render_sequence(optics, dim, dtype, sampling, end)
+    scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
     if ndigits is not None:
         scene = truncate_scene(scene, ndigits)

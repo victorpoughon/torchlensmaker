@@ -43,7 +43,7 @@ optics = tlm.Sequential(
     tlm.ImagePlane(50),
 )
 
-tlm.show(optics, dim=2)
+tlm.show2d(optics, title="Landscape Lens")
 ```
 
 <div class="tlmviewer" data-url="/examples/landscape.json"></div>
