@@ -54,8 +54,7 @@ tlm.show(optics, dim=2)
 The core of the project is differentiable geometric optics: 3D collision
 detection and the laws of optics implemented in [PyTorch](https://pytorch.org/).
 PyTorch provides world-class automatic differentiation, and access to
-state-of-the-art numerical optimization algorithms with GPU support. Export of
-3D models is done with [build123d](https://build123d.readthedocs.io/en/latest/).
+state-of-the-art numerical optimization algorithms with GPU support.
 
 The key idea is that there is a strong analogy to be made between layers of a
 neural network, and optical elements in a so-called "sequential" optical system.
@@ -107,23 +106,6 @@ The ultimate goal of _Torch Lens Maker_ is to be to _Zemax OpticStudio_ what _Op
 **Geometric Optics:**
 Light propagates as rays that travel in a straight line.
 If they hit a surface, they can reflect, refract or stop.
-
-<!-- **Rotational Symmetry:** The real-world 3D system being modeled must be
-symmetric around the principal optical axis. This allows the simulation to
-happen in 2D but generalize correctly to 3D. Rays that lie in a plane that does
-not contain the principal axis (sometimes called *skew ray*s) are ignored.
-
-Note that I personally still don't fully understand [how ray diagrams generalize
-to
-3D](https://physics.stackexchange.com/questions/836037/in-optics-how-do-2d-ray-diagrams-generalize-to-3d).
-If you are really good at optics and are reading this, please consider posting
-an answer there!
-
-(By the way full 3D differentiable optics [has been done
-before](https://github.com/vccimaging/DiffOptics), and that paper has been a
-strong inspiration for this project, so huge thank you to the authors for
-publishing that work. In particular, differentiable collision detection with
-Newton's method used in torchlensmaker comes from there.) -->
 
 **No approximations:** The so-called _paraxial approximation_ ($\sin(x) =
 \tan(x) = x$), the _thin lens equation_ and other approximations are very widely

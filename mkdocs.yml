@@ -64,8 +64,8 @@ plugins:
 nav:
   - Overview:
     - Welcome: index.md
-    - Features: features.md
     - Installation: installation.md
+    - Features: features.md
     - About: about.md
   - Examples:
     - Landscape: examples/landscape.md
