@@ -15,6 +15,14 @@ window.addEventListener("load", (event) => {
 <h1>Torch Lens Maker</h1>
 </div>
 
+![GitHub commit activity](https://img.shields.io/github/commit-activity/w/victorpoughon/torchlensmaker)
+![GitHub License](https://img.shields.io/github/license/victorpoughon/torchlensmaker)
+![PRs-Welcome](https://img.shields.io/badge/PRs-Welcome-green?logo=ticktick&logoColor=green)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=Python&logoColor=yellow)
+![Static Badge](https://img.shields.io/badge/PyTorch-powered-red?logo=PyTorch)
+![GitHub Repo stars](https://img.shields.io/github/stars/victorpoughon/torchlensmaker?style=social)
+
+
 Welcome to **Torch Lens Maker**, an open-source Python library for geometric
 optics based on [PyTorch](https://pytorch.org/). Currently a very experimental
 project, the ultimate goal is to be able to design complex real-world optical

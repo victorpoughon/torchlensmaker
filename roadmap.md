@@ -26,7 +26,6 @@
 
 * Test notebooks:
     * Regularization
-    * Snell's Window
     * tlm.parameter() on inner / outer thickness
     * tlm.parameter() on surface diameter
 
@@ -51,8 +50,6 @@
 
 * Review and document sign and axis convention
 * List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
-* Automatic build of examples
-* Automatic build of test_notebooks (a bit hidden from main doc)
 
 
 ### PROJECT
@@ -60,6 +57,8 @@
 * copyright / license headers
 * pip install torchlensmaker
 * nice roadmap
+
+############
 
 ## Post v0.1
 
