@@ -12,12 +12,9 @@ theme:
     # text: Fira Sans
     code: Fira Code
   features:
-    #- navigation.tabs
     - navigation.sections
     - navigation.path
     - navigation.footer
-    # - content.action.edit
-    # - toc.integrate
   palette:
     - scheme: default
       primary: orange
@@ -48,7 +45,8 @@ extra_javascript:
 
 extra_css:
   - stylesheets/extra.css
-  - stylesheets/header.css
+  # - stylesheets/header-rainbow.css
+  - stylesheets/header-brick.css
   - stylesheets/jupyter.css
   - stylesheets/logo.css
   - https://unpkg.com/katex@0/dist/katex.min.css
