@@ -24,6 +24,7 @@ div#logo-title {
     text-align: center;
     display: inline-block;
 
+    /* background: rgb(255, 255, 255); */
     background: linear-gradient(
         -90deg,
         rgba(56, 109, 249, 0.9) 0%,
@@ -38,6 +39,8 @@ div#logo-title {
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
+
+    /* text-transform: uppercase; */
 }
 
 @media screen and (min-width: 1200px) {

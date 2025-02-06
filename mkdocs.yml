@@ -9,7 +9,7 @@ theme:
   name: material
   custom_dir: docs/overrides
   font:
-    text: Fira Sans
+    # text: Fira Sans
     code: Fira Code
   features:
     #- navigation.tabs
@@ -76,6 +76,7 @@ nav:
     - Reflecting Telescope: examples/reflecting_telescope.md
     - Triple Biconvex: examples/triple_biconvex.md
     - Variable Lens Sequence: examples/variable_lens_sequence.md
+    - Snell's Window: examples/snells_window.md
 
   - Reference:
     - Shapes: reference/shapes.md

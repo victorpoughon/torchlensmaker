@@ -80,7 +80,7 @@ def export_notebook(filename: Path, output_folder: Path, skip: bool) -> None:
     "Export a single notebook"
     root = filename.stem
 
-    if os.path.exists(output_folder / (root + ".md")):
+    if skip and os.path.exists(output_folder / (root + ".md")):
         print(f".. skiping (destination exists) {filename}")
         return
     else:
