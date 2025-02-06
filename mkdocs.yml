@@ -68,9 +68,17 @@ nav:
     - Features: features.md
     - About: about.md
   - Examples:
-    - Landscape: examples/landscape.md
-  #   - Biconvex Parabola: test_notebooks/biconvex_parabola.md
+    - Cooke Triplet: examples/cooke_triplet.md
+    - Double Gauss: examples/double_gauss.md
+    - Landscape Lens: examples/landscape.md
+    - Pinhole Camera: examples/pinhole_camera.md
+    - Pink Floyd: examples/pink_floyd.md
+    - Reflecting Telescope: examples/reflecting_telescope.md
+    - Triple Biconvex: examples/triple_biconvex.md
+    - Variable Lens Sequence: examples/variable_lens_sequence.md
 
   - Reference:
     - Shapes: reference/shapes.md
     - Lenses: reference/lenses.md
+  
+  - Test notebooks: test_notebooks.md
