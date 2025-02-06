@@ -1,27 +1,41 @@
 # Torch Lens Maker - Project Roadmap
 
-
 ## v0.1
+
+* Asphere
+* Spot diagram
+
+* More and better examples
+    * Rainbow
+    * Ernostar 1928
+    * Astigmatism example?
+
+* format the roadmap
+
+* copyright / license headers
+* pip install torchlensmaker
+
+* tlmviewer: version number in build artifact
+* tlmviewer: available on cdnjs and npm
+* tlmviewer works after just 'pip install torchlensmaker'
+
+## v0.2
 
 ### TLM
 
 * Surfaces:
-    * Asphere
     * Linear Spline
+    * Bezier Spline
 
 * Analysis:
-    * Spot diagram
     * Ray distribution visu
 
 * Cemented lenses: doublet, etc.
 
 * Examples:
-    * Double Gauss
-    * Landscape singlet (narrative)
     * Non rotationally symmetric example
+    * Astigmatism (composing implicit functions?)
     * Petzval
-    * Cooke triplet
-    * Ernostar 1928
     * Optimizing surface and position jointly
 
 * Test notebooks:
@@ -41,8 +55,7 @@
 
 * lens cosmetic edge
 * Show/Hide cosmetic edges
-* Version number in build artifact
-* Available on cdnjs and npm
+
 * Set default gui values from json (+python arguments to show)
 
 
@@ -50,17 +63,11 @@
 
 * Review and document sign and axis convention
 * List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
+* Custom Elements: how to write a simple debug element
+* Handling total internal reflection
 
 
-### PROJECT
-
-* copyright / license headers
-* pip install torchlensmaker
-* nice roadmap
-
-############
-
-## Post v0.1
+## Post v0.2
 
 * GPU port and performance benchmarks
 * f-number
