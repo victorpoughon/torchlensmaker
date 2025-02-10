@@ -77,7 +77,7 @@ def plot_magnification(
     """
 
     # Evaluate the optical stack
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
+    output = optics(tlm.default_input(sampling=sampling, dim=2, dtype=torch.float64))
 
     # Extract object and image coordinate (called T and V)
     T = output.rays_object

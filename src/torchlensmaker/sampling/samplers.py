@@ -9,6 +9,9 @@ Tensor = torch.Tensor
 from torchlensmaker.tensor_manip import to_tensor
 
 class Sampler:
+    def size(self) -> int:
+        return NotImplementedError
+
     def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         raise NotImplementedError
 
@@ -20,6 +23,9 @@ class RandomUniformSampler(Sampler):
     def __init__(self, N: int):
         super().__init__()
         self.N = N
+
+    def size(self) -> int:
+        return self.N
 
     def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         return (torch.rand(self.N, dtype=dtype) - 0.5) * diameter
@@ -42,6 +48,9 @@ class RandomNormalSampler(Sampler):
         super().__init__()
         self.N = N
         self.std = std
+
+    def size(self) -> int:
+        return self.N
 
     def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         t = torch.zeros((self.N,), dtype=dtype)
@@ -93,6 +102,9 @@ class DenseSampler(Sampler):
         super().__init__()
         self.N = N
 
+    def size(self) -> int:
+        return self.N
+
     def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         return torch.linspace(-diameter / 2, diameter / 2, self.N, dtype=dtype)
 
@@ -106,6 +118,9 @@ class ExactSampler(Sampler):
         if self.values.dim() == 1:
             self.values = self.values.unsqueeze(1)
         assert self.values.dim() == 2
+
+    def size(self) -> int:
+        return self.values.shape[0]
     
     def sample1d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         assert self.values.shape[1] == 1

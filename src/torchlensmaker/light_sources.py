@@ -94,11 +94,6 @@ class RaySource(LightSourceBase):
 
 class PointSourceAtInfinity(LightSourceBase):
     def __init__(self, beam_diameter: float, **kwargs: Any):
-        """
-        Args:
-            beam_diameter: diameter of the beam of light
-            angle_offset: incidence angle of the beam (in degrees)
-        """
         super().__init__(**kwargs)
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
 

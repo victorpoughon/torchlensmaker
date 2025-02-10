@@ -542,9 +542,9 @@ def truncate_scene(scene, ndigits: int) -> Any:
 
 def show(
     optics: nn.Module,
-    dim: int,
-    dtype: torch.dtype = torch.float64,
     sampling: Optional[Dict[str, Any]] = None,
+    dim: int = 2,
+    dtype: torch.dtype = torch.float64,
     end: Optional[float] = None,
     title: str = "",
     ndigits: int | None = 8,
@@ -560,11 +560,13 @@ def show(
 
 
 def show2d(*args, **kwargs):
-    return show(*args, **kwargs, dim=2)
+    kwargs['dim'] = 2
+    return show(*args, **kwargs)
 
 
 def show3d(*args, **kwargs):
-    return show(*args, **kwargs, dim=3)
+    kwargs['dim'] = 3
+    return show(*args, **kwargs)
 
 
 def export_json(
