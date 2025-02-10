@@ -69,6 +69,8 @@
 
 ## Post v0.2
 
+* focal point: "collide" rays and update them, so that end= works as expected when rendering
+* aperture spot detection and sampling marginal rays
 * GPU port and performance benchmarks
 * f-number
 * Convert between surfaces by fitting them

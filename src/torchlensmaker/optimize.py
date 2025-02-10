@@ -50,7 +50,7 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
-    default_input = tlm.default_input(dim, dtype, sampling)
+    default_input = tlm.default_input(sampling, dim, dtype)
 
     show_every = math.ceil(num_iter / nshow)
 

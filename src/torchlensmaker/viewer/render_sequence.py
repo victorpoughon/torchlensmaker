@@ -493,7 +493,7 @@ def render_sequence(
     title: str = "",
 ) -> Any:
     input_tree, output_tree = tlm.forward_tree(
-        optics, tlm.default_input(dim, dtype, sampling)
+        optics, tlm.default_input(sampling, dim, dtype)
     )
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer

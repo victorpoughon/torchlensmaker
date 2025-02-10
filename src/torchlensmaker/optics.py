@@ -25,6 +25,8 @@ from torchlensmaker.materials import (
 from torchlensmaker.physics import refraction, reflection, RefractionCriticalAngleMode
 from torchlensmaker.intersect import intersect
 
+from torchlensmaker.sampling.samplers import Sampler, init_sampling
+
 
 Tensor = torch.Tensor
 
@@ -40,7 +42,7 @@ class OpticalData:
     dtype: torch.dtype
 
     # Sampling configuration
-    sampling: dict[str, Any]
+    sampling: dict[str, Sampler]
 
     # Transform kinematic chain
     transforms: list[TransformBase]
@@ -85,12 +87,14 @@ class OpticalData:
 
 
 def default_input(
-    dim: int, dtype: torch.dtype, sampling: dict[str, Any]
+    sampling: dict[str, Any],
+    dim: int,
+    dtype: torch.dtype = torch.float64,
 ) -> OpticalData:
     return OpticalData(
         dim=dim,
         dtype=dtype,
-        sampling=sampling,
+        sampling=init_sampling(sampling),
         transforms=[IdentityTransform(dim, dtype)],
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
@@ -231,6 +235,9 @@ class Offset(nn.Module):
 class Rotate(nn.Module):
     "Rotate the given other optical element but don't affect the kinematic chain"
 
+    # TODO should split 2D and 3D rotation
+    # so that when a 3D rotation is used, 2D mode is properly undefined
+    # instead of ignoring the second angle
     def __init__(
         self, element: nn.Module, angles: tuple[float | int, float | int] | Tensor
     ):

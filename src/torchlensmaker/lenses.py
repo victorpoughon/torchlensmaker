@@ -60,7 +60,7 @@ def anchor_thickness(
 
     # Evaluate the lens stack with zero rays, just to compute the transforms
     input_tree, output_tree = tlm.forward_tree(
-        lens, tlm.default_input(dim, dtype, sampling={})
+        lens, tlm.default_input(sampling={}, dim=dim, dtype=dtype)
     )
 
     s1_transform = tlm.forward_kinematic(

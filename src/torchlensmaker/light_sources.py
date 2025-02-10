@@ -8,11 +8,8 @@ from torchlensmaker.transforms import forward_kinematic
 from torchlensmaker.rot2d import rot2d
 from torchlensmaker.rot3d import euler_angles_to_matrix
 
-from torchlensmaker.sampling import (
+from torchlensmaker.sampling.samplers import (
     sampleND,
-    Sampler,
-    LinearDiskSampler,
-    RandomDiskSampler,
 )
 
 from torchlensmaker.materials import MaterialModel, get_material_model
@@ -111,7 +108,6 @@ class PointSourceAtInfinity(LightSourceBase):
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
-            sampling.get("sampler", None),
             sampling["base"],
             self.beam_diameter,
             dim - 1,
@@ -137,7 +133,6 @@ class PointSource(LightSourceBase):
 
         # Sample angular direction
         angles = sampleND(
-            sampling.get("sampler", None),
             sampling["base"],
             self.beam_angular_size,
             dim - 1,
@@ -162,7 +157,6 @@ class ObjectAtInfinity(LightSourceBase):
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
-            sampling.get("sampler", None),
             sampling["base"],
             self.beam_diameter,
             dim - 1,
@@ -172,7 +166,6 @@ class ObjectAtInfinity(LightSourceBase):
 
         # Sample angular direction
         angles = sampleND(
-            sampling.get("sampler", None),
             sampling["object"],
             self.angular_size,
             dim - 1,
@@ -199,7 +192,6 @@ class Object(LightSourceBase):
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
-            sampling.get("sampler", None),
             sampling["object"],
             self.object_diameter,
             dim - 1,
@@ -209,7 +201,6 @@ class Object(LightSourceBase):
 
         # Sample angular direction
         angles = sampleND(
-            sampling.get("sampler", None),
             sampling["base"],
             self.beam_angular_size,
             dim - 1,
@@ -301,7 +292,6 @@ class ChromaticRange(nn.Module):
         # TODO option to offset along the base or object coordinate
 
         chromatic_space = self.wmin + sampleND(
-            inputs.sampling.get("sampler", None),
             inputs.sampling["wavelength"],
             self.wmax - self.wmin,
             1,
