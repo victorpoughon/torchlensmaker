@@ -6,6 +6,7 @@ from typing import Any, Optional, Type, Sequence
 
 Tensor = torch.Tensor
 
+from torchlensmaker.tensor_manip import to_tensor
 
 class Sampler:
     def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -99,16 +100,20 @@ class DenseSampler(Sampler):
         return uniform_disk_sampling(self.N, diameter, dtype)
 
 
-class ListSampler(Sampler):
-    def __init__(self, values: Sequence[float]):
-        self.values = values
+class ExactSampler(Sampler):
+    def __init__(self, values: Sequence[float | int]):
+        self.values = to_tensor(values)
+        if self.values.dim() == 1:
+            self.values = self.values.unsqueeze(1)
+        assert self.values.dim() == 2
     
     def sample1d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        return torch.tensor(self.values, dtype=dtype)
+        assert self.values.shape[1] == 1
+        return self.values.to(dtype=dtype)
 
     def sample2d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        # TODO handle 3D separatly? same issue as Rotate element
-        ...
+        assert self.values.shape[1] == 2
+        return self.values.to(dtype=dtype)
 
 
 def sampleND(
@@ -134,7 +139,7 @@ def init_sampling(sampling: dict[str, Any]) -> dict[str, Sampler]:
         if isinstance(value, (float, int)):
             output[name] = DenseSampler(value)
         elif isinstance(value, (list, tuple)):
-            output[name] = ListSampler(value)
+            output[name] = ExactSampler(value)
         else:
             output[name] = value
     
@@ -157,3 +162,9 @@ def random_normal(N: int, std: float):
     "Random (truncated) normal sampling"
 
     return RandomNormalSampler(N, std)
+
+
+def exact(values: Sequence[float | int]):
+    "Exact sampling at the provided coordinates"
+
+    return ExactSampler(values)
