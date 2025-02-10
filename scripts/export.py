@@ -29,7 +29,7 @@ def main():
         description="export notebooks to markdown for inclusion in the docs",
     )
 
-    parser.add_argument("filepath")
+    parser.add_argument("filepaths", nargs='+')
     parser.add_argument(
         "-s",
         "--skip",
@@ -45,24 +45,26 @@ def main():
 
     args = parser.parse_args()
 
-    dir_path = Path(__file__).resolve().parent.parts
-    fullpath = Path(args.filepath).resolve().parts
+    for filepath in args.filepaths:
 
-    if Path(args.filepath).is_file():
-        output_folder_relative = Path(fullpath[-2])
-        output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
-        print(f"Exporting notebook {args.filepath} to {output_folder}")
-        export_notebook(Path(args.filepath), output_folder, args.skip)
-    elif Path(args.filepath).is_dir():
-        output_folder_relative = Path(fullpath[-1])
-        output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
-        print(f"Exporting all notebooks in {args.filepath} to {output_folder}")
-        export_all(Path(args.filepath), output_folder, args.skip)
-    
-    # Print markdown list if requested
-    if args.print_md_list:
-        print("Markdown format list:")
-        print_md_list(output_folder_relative)
+        dir_path = Path(__file__).resolve().parent.parts
+        fullpath = Path(filepath).resolve().parts
+
+        if Path(filepath).is_file():
+            output_folder_relative = Path(fullpath[-2])
+            output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
+            print(f"Exporting notebook {filepath} to {output_folder}")
+            export_notebook(Path(filepath), output_folder, args.skip)
+        elif Path(filepath).is_dir():
+            output_folder_relative = Path(fullpath[-1])
+            output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
+            print(f"Exporting all notebooks in {filepath} to {output_folder}")
+            export_all(Path(filepath), output_folder, args.skip)
+        
+        # Print markdown list if requested
+        if args.print_md_list:
+            print("Markdown format list:")
+            print_md_list(output_folder_relative)
 
 
 def export_all(filename: Path, output_folder: Path, skip: bool) -> None:
