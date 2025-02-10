@@ -74,6 +74,7 @@ nav:
     - Triple Biconvex: examples/triple_biconvex.md
     - Variable Lens Sequence: examples/variable_lens_sequence.md
     - Snell's Window: examples/snells_window.md
+    - Magnifying Glass: examples/magnifying_glass.md
 
   - Reference:
     - Shapes: reference/shapes.md

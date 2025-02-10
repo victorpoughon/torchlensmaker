@@ -19,6 +19,8 @@
 * tlmviewer: available on cdnjs and npm
 * tlmviewer works after just 'pip install torchlensmaker'
 
+* funding doc
+
 ## v0.2
 
 ### TLM
