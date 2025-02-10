@@ -11,5 +11,7 @@ const module = await importtlm();
 const tlmviewer = module.tlmviewer;
 
 const data = '$data';
-    
-tlmviewer.embed(document.getElementById("$div_id"), data);    
+
+setTimeout(() => {
+    tlmviewer.embed(document.getElementById("$div_id"), data);    
+}, 0);

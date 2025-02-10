@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.tensor_manip import cat_optional, cartesian_prod2d, to_tensor
+from torchlensmaker.tensor_manip import cat_optional, cartesian_prod2d_optional, to_tensor
 from torchlensmaker.optics import OpticalData
 
 from torchlensmaker.transforms import forward_kinematic
@@ -21,6 +21,7 @@ Tensor = torch.Tensor
 
 
 def unit_vector(dim: int, dtype: torch.dtype) -> Tensor:
+    "Unit vector along the X axis"
     return torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype)))
 
 
@@ -67,6 +68,10 @@ class LightSourceBase(nn.Module):
             inputs.sampling, dim, dtype
         )
 
+        # Cartesian product
+        P, V = cartesian_prod2d_optional(P, V)
+        rays_base, rays_object = cartesian_prod2d_optional(rays_base, rays_object)
+
         # Apply kinematic transform
         tf = forward_kinematic(inputs.transforms)
         P = tf.direct_points(P)
@@ -111,7 +116,7 @@ class PointSourceAtInfinity(LightSourceBase):
 
         # Make the rays P + tV
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
-        V = torch.tile(unit_vector(dim, dtype), (P.shape[0], 1))
+        V = unit_vector(dim, dtype).unsqueeze(0)
 
         return P, V, NX, None
 
@@ -135,7 +140,7 @@ class PointSource(LightSourceBase):
         )
 
         V = rotated_unit_vector(angles, dim)
-        P = torch.zeros_like(V)
+        P = torch.zeros((1, dim), dtype=dtype)
 
         return P, V, angles, None
 
@@ -168,10 +173,6 @@ class ObjectAtInfinity(LightSourceBase):
         )
         V = rotated_unit_vector(angles, dim)
 
-        # Cartesian product
-        P, V = cartesian_prod2d(P, V)
-        NX, angles = cartesian_prod2d(NX, angles)
-
         return P, V, NX, angles
 
 
@@ -202,10 +203,6 @@ class Object(LightSourceBase):
             dtype,
         )
         V = rotated_unit_vector(angles, dim)
-
-        # Cartesian product
-        P, V = cartesian_prod2d(P, V)
-        NX, angles = cartesian_prod2d(NX, angles)
 
         return P, V, angles, NX
 

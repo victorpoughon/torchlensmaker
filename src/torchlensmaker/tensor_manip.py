@@ -62,3 +62,16 @@ def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
     assert PA.shape == (M * N, D)
     assert PB.shape == (M * N, E)
     return PA, PB
+
+
+def cartesian_prod2d_optional(A: Optional[Tensor], B: Optional[Tensor]) -> tuple[Optional[Tensor], Optional[Tensor]]:
+    """
+    Optional version of cartesian_prod2d
+    If any tensor is None, returns both tensors unmodified.
+    Else, returns normal cartesian_prod2d()
+    """
+
+    if A is None or B is None:
+        return A, B
+    else:
+        return cartesian_prod2d(A, B)
