@@ -14,16 +14,6 @@ from typing import Optional, Any
 Tensor = torch.Tensor
 
 
-def get_var(data: tlm.OpticalData, name: str) -> Optional[Tensor]:
-    if name == "base":
-        return data.var_base
-    elif name == "object":
-        return data.var_object
-    elif name == "wavelength":
-        return data.var_wavelength
-    else:
-        raise RuntimeError
-
 
 def spot_diagram(
     optics: nn.Module,
@@ -69,8 +59,8 @@ def spot_diagram(
     # Get the "non cartesian producted" sampling variables
     # by evaluating the stack
     output_full = optics(tlm.default_input(sampling, dim=3, dtype=dtype))
-    var_row = get_var(output_full, row) if row is not None else None
-    var_col = get_var(output_full, col) if col is not None else None
+    var_row = output_full.get_var_optional(row) if row is not None else None
+    var_col = output_full.get_var_optional(col) if col is not None else None
 
     # Some error checking
     if row is not None and var_row is None:

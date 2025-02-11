@@ -78,6 +78,26 @@ class OpticalData:
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
 
+    def get_var_optional(self, name: str) -> Optional[Tensor]:
+        if name == "base":
+            return self.var_base
+        elif name == "object":
+            return self.var_object
+        elif name == "wavelength":
+            return self.var_wavelength
+        else:
+            raise RuntimeError("Unknown ray variable '{color_dim}'")
+
+    def get_rays(self, color_dim: str) -> Tensor:
+        if color_dim == "base" and self.rays_base is not None:
+            return self.rays_base
+        elif color_dim == "object" and self.rays_object is not None:
+            return self.rays_object
+        elif color_dim == "wavelength" and self.rays_wavelength is not None:
+            return self.rays_wavelength
+        else:
+            raise RuntimeError(f"Unknown or unavailable ray variable '{color_dim}'")
+
 
 def default_input(
     sampling: dict[str, Any],

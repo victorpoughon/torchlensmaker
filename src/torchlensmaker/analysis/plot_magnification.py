@@ -17,25 +17,13 @@ from torchlensmaker.analysis.colors import (
 Tensor = torch.Tensor
 
 
-def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
-    if color_dim == "base" and data.rays_base is not None:
-        return data.rays_base
-    elif color_dim == "object" and data.rays_object is not None:
-        return data.rays_object
-    elif color_dim == "wavelength" and data.rays_wavelength is not None:
-        return data.rays_wavelength
-    # TODO check that returned tensor is not None?
-    else:
-        raise RuntimeError(f"Unknown are unavailable color dimension '{color_dim}'")
-
-
 def color_rays(
     data: tlm.OpticalData,
     color_dim: str,
     colormap: LinearSegmentedColormap = default_colormap,
 ) -> Tensor:
 
-    color_tensor = color_rays_tensor(data, color_dim)
+    color_tensor = data.get_rays(color_dim)
 
     # unsqueeze to 2D
     if color_tensor.dim() == 1:
