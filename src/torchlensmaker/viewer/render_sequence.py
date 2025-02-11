@@ -531,7 +531,7 @@ def default_sampling(
     "Default sampling values"
 
     # TODO could be improved by looking at stack content, etc.
-    return {"base": 10, "object": 5, "wavelength": 8}
+    return {"base": 10, "object": 5, "wavelength": 3}
 
 
 def truncate_scene(scene, ndigits: int) -> Any:

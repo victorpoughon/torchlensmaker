@@ -29,8 +29,6 @@ def plot_magnification(
     The system must compute object and image coordinates
     """
 
-    sampling = tlm.init_sampling(sampling)
-
     # Evaluate the optical stack
     output = optics(tlm.default_input(sampling=sampling, dim=2, dtype=torch.float64))
 

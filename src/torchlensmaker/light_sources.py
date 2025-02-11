@@ -213,21 +213,6 @@ class Object(LightSourceBase):
         return P, V, angles, NX
 
 
-class Monochromatic(nn.Module):
-    def __init__(self, wavelength: float | int):
-        super().__init__()
-        self.wavelength = wavelength
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        if inputs.rays_wavelength is not None:
-            raise RuntimeError("Rays already have wavelength data")
-
-        return inputs.replace(
-            rays_wavelength=torch.full_like(inputs.P[:, 0], self.wavelength),
-            var_wavelength=torch.tensor([self.wavelength], dtype=inputs.dtype),
-        )
-
-
 def cartesian_wavelength(inputs, ray_var):
     "Add wavelength var by doing cartesian product with existing vars"
 
@@ -258,46 +243,35 @@ def cartesian_wavelength(inputs, ray_var):
     )
 
 
-class Multichromatic(nn.Module):
-    def __init__(self, wavelengths: list[float | int]):
+class Wavelength(nn.Module):
+    def __init__(self, min_wavelength: float | int, max_wavelength: float | int):
         super().__init__()
-        self.wavelengths = to_tensor(wavelengths)
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        if inputs.rays_wavelength is not None:
-            raise RuntimeError("Rays already have wavelength data")
-
-        chromatic_space = self.wavelengths
-
-        return cartesian_wavelength(inputs, chromatic_space).replace(
-            var_wavelength=chromatic_space
-        )
-
-
-class ChromaticRange(nn.Module):
-    def __init__(self, wmin: float | int, wmax: float | int):
-        super().__init__()
-        self.wmin, self.wmax = wmin, wmax
+        self.min, self.max = min_wavelength, max_wavelength
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         if inputs.rays_wavelength is not None:
             raise RuntimeError(
-                "Rays already have wavelength data. Cannot apply ChromaticRange()."
+                "Rays already have wavelength data. Cannot apply Wavelength()."
             )
 
         if "wavelength" not in inputs.sampling:
             raise RuntimeError(
-                "Missing 'wavelength' key in sampling configuration. Cannot apply ChromaticRange()."
+                "Missing 'wavelength' key in sampling configuration. Cannot apply Wavelength()."
             )
 
-        # TODO option to offset along the base or object coordinate
-
-        chromatic_space = self.wmin + sampleND(
-            inputs.sampling["wavelength"],
-            self.wmax - self.wmin,
-            1,
-            inputs.dtype,
+        chromatic_space = (
+            self.min
+            + (self.max - self.min) / 2
+            + sampleND(
+                inputs.sampling["wavelength"],
+                self.max - self.min,
+                1,
+                inputs.dtype,
+            )
         )
+        print("min", self.min)
+        print("max", self.max)
+        print("chromatic space", chromatic_space)
 
         return cartesian_wavelength(inputs, chromatic_space).replace(
             var_wavelength=chromatic_space

@@ -20,6 +20,7 @@ def spot_diagram(
     sampling: dict[str, Any],
     row: Optional[str] = None,
     col: Optional[str] = None,
+    grid: bool = False,
     color_dim: Optional[str] = None,
     colormap: LinearSegmentedColormap = default_colormap,
     dtype: torch.dtype = torch.float64,
@@ -95,6 +96,41 @@ def spot_diagram(
                 else:
                     spot_sampling[index_row][index_col][name] = sampler
 
+    # Compute image coordinates for each spot
+    spot_coords: list[list[Tensor]] = []
+    # spot_coords: Tensor = torch.zeros((nrows, ncols, N, 2))
+    for index_row in range(nrows):
+        spot_coords.append([])
+        for index_col in range(ncols):
+            # Evaluate model with the current row/col spot sampling dict
+            output = optics(
+                tlm.default_input(
+                    spot_sampling[index_row][index_col], dim=3, dtype=dtype
+                )
+            )
+            
+            # Get 2D image plane coordinates
+            coords = output.rays_image.detach()
+            assert coords.ndim == 2
+            assert coords.shape[1] == 2
+            spot_coords[-1].append(coords)
+    del coords
+    del output
+    
+    # Tensor of shape [nrows, ncols, N, 2]
+    # N is the product of the sizes of all non row/col dimensions
+    # The last dimensions is 2 for the Y and Z axes of the image plane
+    spot_tensor = torch.stack([torch.stack(row, dim=0) for row in spot_coords], dim=0)
+    assert spot_tensor.shape[0] == nrows
+    assert spot_tensor.shape[1] == ncols
+    assert spot_tensor.shape[3] == 2
+
+    # Compute Y and Z min/max bounds over every spot
+    # this is important so that every spot is drawn at the same scale
+    #spot_range_Y = [torch.min(spot_tensor[:, :, :, 0]), torch.max(spot_tensor[:, :, :, 0])]
+    #spot_range_Z = [torch.min(spot_tensor[:, :, :, 1]), torch.max(spot_tensor[:, :, :, 1])]
+    #print(spot_range_Y, spot_range_Z)
+
     fig, axes = plt.subplots(nrows, ncols, squeeze=False, **fig_kw)
 
     fig.suptitle("Spot Diagram")
@@ -102,20 +138,9 @@ def spot_diagram(
     # Plot image coordinate as points
     for index_row in range(nrows):
         for index_col in range(ncols):
+            coords = spot_tensor[index_row, index_col, :, :]
 
-            # Evaluate model with this spot sampling dict
-            output = optics(
-                tlm.default_input(
-                    spot_sampling[index_row][index_col], dim=3, dtype=dtype
-                )
-            )
-
-            # Get 2D image plane coordinates
-            coords = output.rays_image.detach().numpy()
-            assert coords.ndim == 2
-            assert coords.shape[1] == 2
-
-            # Plot image coordinate as points
+            # Plot image coordinates as points
             ax = axes[index_row][index_col]
             ax.scatter(coords[:, 1], coords[:, 0], s=0.5, marker=".")
 
@@ -124,4 +149,7 @@ def spot_diagram(
         ax.set_ylabel("Y")
         ax.set_aspect("equal")
         ax.set_title("Spot Diagram")
-        ax.grid()
+        if grid:
+            ax.grid()
+    
+    return fig, axes

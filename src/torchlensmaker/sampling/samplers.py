@@ -118,19 +118,17 @@ class DenseSampler(Sampler):
 class ExactSampler(Sampler):
     def __init__(self, values: Sequence[float | int] | Tensor):
         self.values = to_tensor(values)
-        if self.values.dim() == 1:
-            self.values = self.values.unsqueeze(1)
-        assert self.values.dim() == 2
 
     def size(self) -> int:
         return self.values.shape[0]
     
     def sample1d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        assert self.values.shape[1] == 1, self.values.shape
+        assert self.values.dim() == 1
         return self.values.to(dtype=dtype)
 
     def sample2d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        assert self.values.shape[1] == 2
+        assert self.values.dim() == 2
+        assert self.values.shape[1] == 2, self.values.shape
         return self.values.to(dtype=dtype)
 
 

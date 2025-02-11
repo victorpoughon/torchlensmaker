@@ -99,7 +99,6 @@ class SellmeierMaterial(MaterialModel):
 
 
 # TODO add:
-# SellmeierMaterial
 # LinearSegmentedMaterial
 
 
