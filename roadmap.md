@@ -74,6 +74,7 @@
 
 ## Post v0.2
 
+* composing distance functions? https://iquilezles.org/articles/distfunctions/. Interesting for composing surfaces (ex: add astigmatism)
 * focal point: "collide" rays and update them, so that end= works as expected when rendering
 * aperture spot detection and sampling marginal rays
 * GPU port and performance benchmarks
