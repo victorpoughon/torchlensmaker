@@ -41,7 +41,7 @@ class OpticalData:
     dim: int
     dtype: torch.dtype
 
-    # Sampling configuration
+    # Sampling configuration for each variable
     sampling: dict[str, Sampler]
 
     # Transform kinematic chain
@@ -53,7 +53,7 @@ class OpticalData:
     V: Tensor
 
     # Surface normals at the rays origin
-    # Present if rays collided with a surface
+    # Present if rays collided with a surface in the previous element
     normals: Optional[Tensor]
 
     # Rays variables
@@ -62,6 +62,13 @@ class OpticalData:
     rays_object: Optional[Tensor]
     rays_image: Optional[Tensor]
     rays_wavelength: Optional[Tensor]
+
+    # Basis of each sampling variable
+    # Tensors of shape (*, 2|3)
+    # number of rows is the size of each sampling dimension
+    var_base: Optional[Tensor]
+    var_object: Optional[Tensor]
+    var_wavelength: Optional[Tensor]
 
     # Material model for this batch of rays
     material: MaterialModel
@@ -103,6 +110,9 @@ def default_input(
         rays_object=None,
         rays_image=None,
         rays_wavelength=None,
+        var_base=None,
+        var_object=None,
+        var_wavelength=None,
         material=get_material_model("vacuum"),
         blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),

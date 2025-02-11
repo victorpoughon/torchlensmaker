@@ -18,6 +18,9 @@ class Sampler:
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         raise NotImplementedError
 
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}(size={repr(self.size())})"
+
 
 class RandomUniformSampler(Sampler):
     def __init__(self, N: int):
@@ -113,7 +116,7 @@ class DenseSampler(Sampler):
 
 
 class ExactSampler(Sampler):
-    def __init__(self, values: Sequence[float | int]):
+    def __init__(self, values: Sequence[float | int] | Tensor):
         self.values = to_tensor(values)
         if self.values.dim() == 1:
             self.values = self.values.unsqueeze(1)
@@ -173,13 +176,13 @@ def random_uniform(N: int) -> Sampler:
     return RandomUniformSampler(N)
 
 
-def random_normal(N: int, std: float):
+def random_normal(N: int, std: float) -> Sampler:
     "Random (truncated) normal sampling"
 
     return RandomNormalSampler(N, std)
 
 
-def exact(values: Sequence[float | int]):
+def exact(values: Sequence[float | int] | Tensor) -> Sampler:
     "Exact sampling at the provided coordinates"
 
     return ExactSampler(values)

@@ -1,7 +1,11 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.tensor_manip import cat_optional, cartesian_prod2d_optional, to_tensor
+from torchlensmaker.tensor_manip import (
+    cat_optional,
+    cartesian_prod2d_optional,
+    to_tensor,
+)
 from torchlensmaker.optics import OpticalData
 
 from torchlensmaker.transforms import forward_kinematic
@@ -64,13 +68,13 @@ class LightSourceBase(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         # Get samples from derived class in local frame
-        P, V, rays_base, rays_object = self.sample_light_source(
+        P, V, var_base, var_object = self.sample_light_source(
             inputs.sampling, dim, dtype
         )
 
         # Cartesian product
         P, V = cartesian_prod2d_optional(P, V)
-        rays_base, rays_object = cartesian_prod2d_optional(rays_base, rays_object)
+        rays_base, rays_object = cartesian_prod2d_optional(var_base, var_object)
 
         # Apply kinematic transform
         tf = forward_kinematic(inputs.transforms)
@@ -82,6 +86,8 @@ class LightSourceBase(nn.Module):
             V=torch.cat((inputs.V, V), dim=0),
             rays_base=cat_optional(inputs.rays_base, rays_base),
             rays_object=cat_optional(inputs.rays_object, rays_object),
+            var_base=var_base,
+            var_object=var_object,
             material=self.material,
         )
 
@@ -217,7 +223,8 @@ class Monochromatic(nn.Module):
             raise RuntimeError("Rays already have wavelength data")
 
         return inputs.replace(
-            rays_wavelength=torch.full_like(inputs.P[:, 0], self.wavelength)
+            rays_wavelength=torch.full_like(inputs.P[:, 0], self.wavelength),
+            var_wavelength=torch.tensor([self.wavelength], dtype=inputs.dtype),
         )
 
 
@@ -262,7 +269,9 @@ class Multichromatic(nn.Module):
 
         chromatic_space = self.wavelengths
 
-        return cartesian_wavelength(inputs, chromatic_space)
+        return cartesian_wavelength(inputs, chromatic_space).replace(
+            var_wavelength=chromatic_space
+        )
 
 
 class ChromaticRange(nn.Module):
@@ -290,4 +299,6 @@ class ChromaticRange(nn.Module):
             inputs.dtype,
         )
 
-        return cartesian_wavelength(inputs, chromatic_space)
+        return cartesian_wavelength(inputs, chromatic_space).replace(
+            var_wavelength=chromatic_space
+        )

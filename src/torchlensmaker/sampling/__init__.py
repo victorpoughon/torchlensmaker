@@ -3,6 +3,8 @@ from .samplers import (
     random_uniform,
     random_normal,
     exact,
+    init_sampling,
+    Sampler,
 )
 
 __all__ = [
@@ -10,4 +12,6 @@ __all__ = [
     "random_uniform",
     "random_normal",
     "exact",
+    "init_sampling",
+    "Sampler",
 ]
