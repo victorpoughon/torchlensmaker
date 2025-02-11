@@ -6,6 +6,7 @@ from torchlensmaker.transforms import *
 from torchlensmaker.intersect import *
 
 # Optics
+from torchlensmaker.optical_data import *
 from torchlensmaker.optics import *
 from torchlensmaker.lenses import *
 from torchlensmaker.light_sources import *

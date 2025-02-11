@@ -1,15 +1,13 @@
 import torch
 import torch.nn as nn
-from dataclasses import dataclass, replace
 
-from typing import Any, Sequence, Optional
+from typing import Any, Sequence, Optional, TypeAlias
 
 from torchlensmaker.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.transforms import (
     TransformBase,
     TranslateTransform,
     LinearTransform,
-    IdentityTransform,
     forward_kinematic,
     spherical_rotation,
 )
@@ -25,98 +23,13 @@ from torchlensmaker.materials import (
 from torchlensmaker.physics import refraction, reflection, RefractionCriticalAngleMode
 from torchlensmaker.intersect import intersect
 
-from torchlensmaker.sampling.samplers import Sampler, init_sampling
-
+from torchlensmaker.optical_data import OpticalData
 
 Tensor = torch.Tensor
 
 # Alias for convenience
-Sequential = nn.Sequential
+Sequential: TypeAlias = nn.Sequential
 
-
-@dataclass
-class OpticalData:
-    # dim is 2 or 3
-    # dtype default is torch.float64
-    dim: int
-    dtype: torch.dtype
-
-    # Sampling configuration for each variable
-    sampling: dict[str, Sampler]
-
-    # Transform kinematic chain
-    transforms: list[TransformBase]
-
-    # Parametric light rays P + tV
-    # Tensors of shape (N, 2|3)
-    P: Tensor
-    V: Tensor
-
-    # Surface normals at the rays origin
-    # Present if rays collided with a surface in the previous element
-    normals: Optional[Tensor]
-
-    # Rays variables
-    # Tensors of shape (N, 2|3) or None
-    rays_base: Optional[Tensor]
-    rays_object: Optional[Tensor]
-    rays_image: Optional[Tensor]
-    rays_wavelength: Optional[Tensor]
-
-    # Basis of each sampling variable
-    # Tensors of shape (*, 2|3)
-    # number of rows is the size of each sampling dimension
-    var_base: Optional[Tensor]
-    var_object: Optional[Tensor]
-    var_wavelength: Optional[Tensor]
-
-    # Material model for this batch of rays
-    material: MaterialModel
-
-    # Mask array indicating which rays from the previous data in the sequence
-    # were blocked by the previous optical element. "blocked" includes hitting
-    # an absorbing surface but also not hitting anything
-    # None or Tensor of shape (N,)
-    blocked: Optional[Tensor]
-
-    # Loss accumulator
-    # Tensor of dim 0
-    loss: torch.Tensor
-
-    def tf(self) -> TransformBase:
-        return forward_kinematic(self.transforms)
-
-    def target(self) -> Tensor:
-        return self.tf().direct_points(torch.zeros((self.dim,), dtype=self.dtype))
-
-    def replace(self, /, **changes: Any) -> "OpticalData":
-        return replace(self, **changes)
-
-
-def default_input(
-    sampling: dict[str, Any],
-    dim: int,
-    dtype: torch.dtype = torch.float64,
-) -> OpticalData:
-    return OpticalData(
-        dim=dim,
-        dtype=dtype,
-        sampling=init_sampling(sampling),
-        transforms=[IdentityTransform(dim, dtype)],
-        P=torch.empty((0, dim), dtype=dtype),
-        V=torch.empty((0, dim), dtype=dtype),
-        normals=None,
-        rays_base=None,
-        rays_object=None,
-        rays_image=None,
-        rays_wavelength=None,
-        var_base=None,
-        var_object=None,
-        var_wavelength=None,
-        material=get_material_model("vacuum"),
-        blocked=None,
-        loss=torch.tensor(0.0, dtype=dtype),
-    )
 
 
 def linear_magnification(
@@ -142,8 +55,7 @@ class KinematicElement(nn.Module):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.dim, inputs.dtype
-        return replace(
-            inputs,
+        return inputs.replace(
             transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
         )
 
@@ -175,7 +87,7 @@ class FocalPoint(nn.Module):
 
         loss = distance.sum() / N
 
-        return replace(inputs, loss=inputs.loss + loss)
+        return inputs.replace(loss=inputs.loss + loss)
 
 
 class Gap(KinematicElement):
@@ -234,12 +146,12 @@ class Offset(nn.Module):
         chain = inputs.transforms + [TranslateTransform(T)]
 
         # give that chain to the contained element
-        element_input = replace(inputs, transforms=chain)
+        element_input = inputs.replace(transforms=chain)
 
         element_output: OpticalData = self.element(element_input)
 
         # but return original transforms
-        return replace(element_output, transforms=inputs.transforms)
+        return element_output.replace(transforms=inputs.transforms)
 
 
 class Rotate(nn.Module):
@@ -264,12 +176,12 @@ class Rotate(nn.Module):
         ]
 
         # give that chain to the contained element
-        element_input = replace(inputs, transforms=chain)
+        element_input = inputs.replace(transforms=chain)
 
         element_output: OpticalData = self.element(element_input)
 
         # but return original transforms
-        return replace(element_output, transforms=inputs.transforms)
+        return element_output.replace(transforms=inputs.transforms)
 
 
 class KinematicSurface(nn.Module):
@@ -337,15 +249,14 @@ class KinematicSurface(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         # give the surface transform to the contained element
-        element_input = replace(
-            inputs, transforms=inputs.transforms + self.surface_transform(dim, dtype)
+        element_input = inputs.replace(
+            transforms=inputs.transforms + self.surface_transform(dim, dtype)
         )
 
         element_output: OpticalData = self.element(element_input)
 
         # but return kinematic transform
-        return replace(
-            element_output,
+        return element_output.replace(
             transforms=inputs.transforms + self.kinematic_transform(dim, dtype),
         )
 
@@ -369,8 +280,7 @@ class CollisionSurface(nn.Module):
         new_rays_object = filter_optional_tensor(inputs.rays_object, valid)
         new_rays_wavelength = filter_optional_tensor(inputs.rays_wavelength, valid)
 
-        return replace(
-            inputs,
+        return inputs.replace(
             P=collision_points,
             V=inputs.V[valid],
             normals=surface_normals,
@@ -453,8 +363,7 @@ class RefractiveBoundary(nn.Module):
             new_rays_object = inputs.rays_object
             new_rays_wavelength = inputs.rays_wavelength
 
-        return replace(
-            inputs,
+        return inputs.replace(
             P=new_P,
             V=refracted,
             normals=None,

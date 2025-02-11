@@ -2,15 +2,16 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-import matplotlib as mpl
+
 import matplotlib.pyplot as plt
 
 from typing import Dict, Any, Optional
 
-from torchlensmaker.viewer.render_sequence import color_valid # TODO move this to common color file?
-
-import colorcet as cc
-default_colormap = cc.cm.CET_I2
+from torchlensmaker.analysis.colors import (
+    LinearSegmentedColormap,
+    default_colormap,
+    color_valid,
+)
 
 
 Tensor = torch.Tensor
@@ -31,7 +32,7 @@ def color_rays_tensor(data: tlm.OpticalData, color_dim: str) -> Tensor:
 def color_rays(
     data: tlm.OpticalData,
     color_dim: str,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    colormap: LinearSegmentedColormap = default_colormap,
 ) -> Tensor:
 
     color_tensor = color_rays_tensor(data, color_dim)
@@ -69,7 +70,7 @@ def plot_magnification(
     optics: nn.Module,
     sampling: Dict[str, Any],
     color_dim: Optional[str] = None,
-    colormap: mpl.colors.LinearSegmentedColormap = default_colormap,
+    colormap: LinearSegmentedColormap = default_colormap,
 ) -> None:
     """
     Compute and plot magnification data for the given optical system

@@ -4,6 +4,11 @@ import torchlensmaker as tlm
 
 import matplotlib.pyplot as plt
 
+from torchlensmaker.analysis.colors import (
+    LinearSegmentedColormap,
+    default_colormap,
+)
+
 from typing import Optional, Any
 
 Tensor = torch.Tensor
@@ -26,6 +31,7 @@ def spot_diagram(
     row: Optional[str] = None,
     col: Optional[str] = None,
     color_dim: Optional[str] = None,
+    colormap: LinearSegmentedColormap = default_colormap,
     dtype: torch.dtype = torch.float64,
     **fig_kw: Any,
 ) -> None:
@@ -34,6 +40,7 @@ def spot_diagram(
 
     Args:
         optics: the optical model to analyse
+
         sampling: sampling configuration
 
         row: string (optional)

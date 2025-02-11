@@ -9,15 +9,16 @@ from dataclasses import dataclass
 from torchlensmaker.tensorframe import TensorFrame
 from torchlensmaker.tensor_manip import filter_optional_mask
 
+from torchlensmaker.analysis.colors import (
+    color_valid,
+    color_focal_point,
+    color_blocked,
+)
+
 import matplotlib as mpl
 import json
 
 Tensor = torch.Tensor
-
-# Color theme
-color_valid = "#ffa724"
-color_blocked = "red"
-color_focal_point = "red"
 
 
 LAYER_VALID_RAYS = 1
