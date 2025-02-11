@@ -126,7 +126,7 @@ class ExactSampler(Sampler):
         return self.values.shape[0]
     
     def sample1d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        assert self.values.shape[1] == 1
+        assert self.values.shape[1] == 1, self.values.shape
         return self.values.to(dtype=dtype)
 
     def sample2d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
