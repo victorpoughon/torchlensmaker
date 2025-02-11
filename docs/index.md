@@ -35,7 +35,7 @@ import torchlensmaker as tlm
 
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
-    tlm.Multichromatic([450, 600, 750]),
+    tlm.Wavelength(400, 800),
     tlm.Gap(15),
     tlm.RefractiveSurface(tlm.Sphere(diameter=25, r=-45.759), material="BK7"),
     tlm.Gap(3.419),
