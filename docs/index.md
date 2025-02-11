@@ -24,7 +24,8 @@ window.addEventListener("load", (event) => {
 
 
 Welcome to **Torch Lens Maker**, an open-source Python library for geometric
-optics based on [PyTorch](https://pytorch.org/). Currently a very experimental
+optics based on [PyTorch](https://pytorch.org/). Currently a
+<em style='background-color: #b6d6a9;; padding: .15em .25em; white-space: nowrap;'>very experimental</em>
 project, the ultimate goal is to be able to design complex real-world optical
 systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
 numerical optimization.

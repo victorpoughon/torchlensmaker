@@ -15,6 +15,7 @@ documentation.
 * [test_notebooks/refract_debug.md](test_notebooks/refract_debug.md)
 * [test_notebooks/test_tlmviewer.md](test_notebooks/test_tlmviewer.md)
 * [test_notebooks/colormaps.md](test_notebooks/colormaps.md)
+* [test_notebooks/spot_diagram.md](test_notebooks/spot_diagram.md)
 * [test_notebooks/concave_mirror.md](test_notebooks/concave_mirror.md)
 * [test_notebooks/regularization_equal_thickness.md](test_notebooks/regularization_equal_thickness.md)
 * [test_notebooks/light_sources.md](test_notebooks/light_sources.md)
@@ -38,4 +39,5 @@ documentation.
 * [test_notebooks/biconvex_parabola.md](test_notebooks/biconvex_parabola.md)
 * [test_notebooks/landscape_singlet_lens.md](test_notebooks/landscape_singlet_lens.md)
 * [test_notebooks/test_full_forward.md](test_notebooks/test_full_forward.md)
+
 
