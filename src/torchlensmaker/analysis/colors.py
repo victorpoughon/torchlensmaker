@@ -11,6 +11,7 @@ from torchlensmaker.optical_data import OpticalData
 color_valid = "#ffa724"
 color_blocked = "red"
 color_focal_point = "red"
+color_spot_diagram = "coral"
 
 # Default colormap*
 LinearSegmentedColormap: TypeAlias = mpl.colors.LinearSegmentedColormap

@@ -9,6 +9,7 @@ from torchlensmaker.analysis.colors import (
     default_colormap,
     color_valid,
     color_rays,
+    color_spot_diagram,
 )
 
 from typing import Optional, Any
@@ -33,6 +34,7 @@ def spot_diagram(
     col: Optional[str] = None,
     scale: bool = True,
     grid: bool = False,
+    color_dim: Optional[str] = None,
     colormap: LinearSegmentedColormap = default_colormap,
     dtype: torch.dtype = torch.float64,
     **fig_kw: Any,
@@ -112,8 +114,10 @@ def spot_diagram(
 
     # Compute image coordinates, and color data for each spot
     spot_coords: list[list[Tensor]] = []
+    spot_colors: list[list[Tensor]] = []
     for index_row in range(nrows):
         spot_coords.append([])
+        spot_colors.append([])
         for index_col in range(ncols):
             # Evaluate model with the current row/col spot sampling dict
             output = optics(
@@ -127,8 +131,20 @@ def spot_diagram(
             assert coords.ndim == 2
             assert coords.shape[1] == 2
             spot_coords[-1].append(coords)
+
+            # Get color data
+            spot_colors[-1].append(
+                color_rays(output, color_dim, colormap)
+                if color_dim is not None
+                else color_spot_diagram
+            )
     del coords
     del output
+
+    # Potential issue here is that spots don't all have the same number of points
+    # if there are no blocked rays, the number of points is the same for all spots,
+    # and it's the product of the sizes of all non row/col dimensions
+    # but if there are blocked rays, then that number can be less, or even zero.
 
     # spot_tensor :: [nrows, ncols, N, 2]
     # N is the product of the sizes of all non row/col dimensions
@@ -158,7 +174,7 @@ def spot_diagram(
                 coords[:, 1],
                 coords[:, 0],
                 s=0.5,
-                c="coral",
+                c=spot_colors[index_row][index_col],
                 marker=".",
             )
 
