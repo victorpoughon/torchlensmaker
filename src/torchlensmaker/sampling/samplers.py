@@ -12,7 +12,7 @@ class Sampler:
     def size(self) -> int:
         return NotImplementedError
 
-    def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         raise NotImplementedError
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -30,8 +30,8 @@ class RandomUniformSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        return (torch.rand(self.N, dtype=dtype) - 0.5) * diameter
+    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+        return (torch.rand(self.N, dtype=dtype)) * (upper - lower) + lower
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         # Generate random r (square root for uniform distribution)
@@ -55,9 +55,9 @@ class RandomNormalSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         t = torch.zeros((self.N,), dtype=dtype)
-        nn.init.trunc_normal_(t, mean=0.0, std=self.std, a=-diameter/2, b=diameter/2)
+        nn.init.trunc_normal_(t, mean=0.0, std=self.std, a=lower, b=upper)
         return t
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -108,8 +108,8 @@ class DenseSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
-        return torch.linspace(-diameter / 2, diameter / 2, self.N, dtype=dtype)
+    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+        return torch.linspace(lower, upper, self.N, dtype=dtype)
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         return uniform_disk_sampling(self.N, diameter, dtype)
@@ -122,12 +122,15 @@ class ExactSampler(Sampler):
     def size(self) -> int:
         return self.values.shape[0]
     
-    def sample1d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         assert self.values.dim() == 1
+        assert torch.all(self.values.min() >= lower)
+        assert torch.all(self.values.max() <= upper)
         return self.values.to(dtype=dtype)
 
     def sample2d(self, _diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         assert self.values.dim() == 2
+        # TODO assert values within diameter?
         assert self.values.shape[1] == 2, self.values.shape
         return self.values.to(dtype=dtype)
 
@@ -142,7 +145,7 @@ def sampleND(
     if dim == 2:
         return sampler.sample2d(diameter, dtype)
     elif dim == 1:
-        return sampler.sample1d(diameter, dtype)
+        return sampler.sample1d(-diameter/2, diameter/2, dtype)
     else:
         raise RuntimeError(f"sampleND: dim must be 1 or 2, got {dim}")
 

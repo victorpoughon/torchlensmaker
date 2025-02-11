@@ -244,9 +244,9 @@ def cartesian_wavelength(inputs, ray_var):
 
 
 class Wavelength(nn.Module):
-    def __init__(self, min_wavelength: float | int, max_wavelength: float | int):
+    def __init__(self, lower: float | int, upper: float | int):
         super().__init__()
-        self.min, self.max = min_wavelength, max_wavelength
+        self.lower, self.upper = lower, upper
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         if inputs.rays_wavelength is not None:
@@ -259,19 +259,7 @@ class Wavelength(nn.Module):
                 "Missing 'wavelength' key in sampling configuration. Cannot apply Wavelength()."
             )
 
-        chromatic_space = (
-            self.min
-            + (self.max - self.min) / 2
-            + sampleND(
-                inputs.sampling["wavelength"],
-                self.max - self.min,
-                1,
-                inputs.dtype,
-            )
-        )
-        print("min", self.min)
-        print("max", self.max)
-        print("chromatic space", chromatic_space)
+        chromatic_space = inputs.sampling["wavelength"].sample1d(self.lower, self.upper, inputs.dtype)
 
         return cartesian_wavelength(inputs, chromatic_space).replace(
             var_wavelength=chromatic_space
