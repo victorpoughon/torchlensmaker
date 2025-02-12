@@ -272,6 +272,7 @@ class Sphere(ImplicitSurface):
     def samples2D(self, N: int) -> Tensor:
         # Use the angular parameterization of the circle so that samples are
         # smoother, especially for high curvature circles.
+        # TODO isnt this kinda broken for K=0?
         R = 1 / self.K
         theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
         theta = torch.linspace(0.0, theta_max, N)
@@ -361,7 +362,7 @@ def intersect_newton(
     t = init_t
 
     with torch.no_grad():
-        for _ in range(20):  # TODO parameters for newton iterations
+        for _ in range(20):  # TODO add parameters for newton iterations
             # TODO warning if stopping due to max iter (didn't converge)
             delta = newton_delta(surface, P, V, t)
             # TODO early stop if delta is small enough
@@ -371,3 +372,110 @@ def intersect_newton(
     t = t - newton_delta(surface, P, V, t)
 
     return t
+
+
+class Asphere(ImplicitSurface):
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter,
+        K: int | float | nn.Parameter,
+        A4: int | float | nn.Parameter,
+        dtype: torch.dtype = torch.float64,
+    ):
+        super().__init__(CircularOutline(diameter), dtype)
+        self.diameter = diameter
+
+        self.C: torch.Tensor
+        if isinstance(R, nn.Parameter):
+            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=dtype))
+        else:
+            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
+        assert self.C.dim() == 0
+
+        self.K = to_tensor(K)
+        self.A4 = to_tensor(A4)
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        possible = {
+            "C": self.C,  # curvature
+            "K": self.K,
+            "A4": self.A4,
+        }
+        return {
+            name: value
+            for name, value in possible.items()
+            if isinstance(value, nn.Parameter)
+        }
+
+    def extent_x(self) -> Tensor:
+        r2 = self.outline.max_radius() ** 2
+        C, K, A4 = self.C, self.K, self.A4
+        C2 = torch.pow(C, 2)
+        return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
+
+    def samples2D(self, N: int) -> Tensor:
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+
+        Y = torch.linspace(0, 1, N) * self.outline.max_radius()
+        r2 = torch.pow(Y, 2)
+        X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
+            r2, 2
+        )
+
+        return torch.stack((X, Y), dim=-1)
+
+    def f(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+        return (
+            torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
+            + A4 * torch.pow(r2, 2)
+            - x
+        )
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+
+        xgrad = -torch.ones_like(x)
+        rgrad = torch.div(
+            C * r, torch.sqrt(1 - (1 + K) * r2 * C2)
+        ) + 4 * A4 * torch.pow(r, 3)
+
+        return torch.stack((xgrad, rgrad), dim=-1)
+
+    def F(self, points: Tensor) -> Tensor:
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+        r2 = y**2 + z**2
+
+        return (
+            torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
+            + A4 * torch.pow(r2, 2)
+            - x
+        )
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+        r2 = y**2 + z**2
+
+        denom = torch.sqrt(1 - (1 + K) * r2 * C2)
+        coeffs_term = 4 * A4 * r2
+
+        return torch.stack(
+            (
+                -torch.ones_like(x),
+                (C * y) / denom + y * coeffs_term,
+                (C * z) / denom + z * coeffs_term,
+            ),
+            dim=-1,
+        )
