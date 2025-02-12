@@ -40,8 +40,28 @@
     width: 100%;
     height: 500px;
     background: black;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
 }
 
 .md-content a, .md-banner a {
     text-decoration: underline;
+}
+
+.hl-green {
+    background-color: #9cd594;
+    padding: .15em .25em;
+    white-space: nowrap;
+}
+
+.hl-aqua {
+    background-color: #82d6bf;
+    padding: .15em .25em;
+    white-space: nowrap;
+}
+
+.hl-red {
+    background-color: hsl(0, 51%, 67%);
+    padding: .15em .25em;
+    white-space: nowrap;
 }

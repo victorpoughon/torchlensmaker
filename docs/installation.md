@@ -1,12 +1,21 @@
 # Installation
 
-TODO
+TODO distribute with pip
 
+## tlmviewer
 
-## How to build documentation locally
+The 3D web viewer [tlmviewer](https://github.com/victorpoughon/tlmviewer) is written in TypeScript and built as a standard npm package. It can be used:
 
-Install the package in dev mode including optional dependencies:
+* as an interactive widget from a Jupyter Notebook:
 
+```python title="python"
+tlm.show2d(optics, title="Landscape Lens")
 ```
-pip install -e '.[docs]'
+
+* embeded statically in an HTML page:
+
+```html title="HTML"
+<div class="tlmviewer" data-url="/examples/landscape.json"></div>
 ```
+
+TODO how to use it with tlm

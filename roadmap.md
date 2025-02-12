@@ -2,9 +2,6 @@
 
 ## v0.1
 
-* Asphere
-* Spot diagram
-
 * More and better examples
     * Rainbow
     * Ernostar 1928

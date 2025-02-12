@@ -63,6 +63,7 @@ nav:
   - Overview:
     - Welcome: index.md
     - Installation: installation.md
+    - Design Overview: design_principles.md
     - About: about.md
   - Examples:
     - Cooke Triplet: examples/cooke_triplet.md
