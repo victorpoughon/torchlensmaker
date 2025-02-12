@@ -70,6 +70,7 @@
 * List page: lenses ("simple_lenses" / cemented lenses / making your own lens)
 * Custom Elements: how to write a simple debug element
 * Handling total internal reflection
+* plausible analytics
 
 
 ## Post v0.2
