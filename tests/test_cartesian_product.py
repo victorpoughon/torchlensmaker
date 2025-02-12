@@ -1,5 +1,5 @@
 import torch
-from torchlensmaker.tensor_manip import cartesian_prod2d
+from torchlensmaker.core.tensor_manip import cartesian_prod2d
 import itertools
 
 

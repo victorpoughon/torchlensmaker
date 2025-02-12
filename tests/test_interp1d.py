@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from torchlensmaker.interp1d import interp1d
+from torchlensmaker.core.interp1d import interp1d
 
 
 def test_grad() -> None:

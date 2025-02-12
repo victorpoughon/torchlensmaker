@@ -6,7 +6,7 @@ from typing import Any, Optional, Type, Sequence
 
 Tensor = torch.Tensor
 
-from torchlensmaker.tensor_manip import to_tensor
+from torchlensmaker.core.tensor_manip import to_tensor
 
 class Sampler:
     def size(self) -> int:

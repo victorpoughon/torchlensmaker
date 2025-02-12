@@ -6,8 +6,7 @@ from typing import Literal, Any, Optional, Type, Dict, TypeVar, Iterable, Generi
 from collections import defaultdict
 from dataclasses import dataclass
 
-from torchlensmaker.tensorframe import TensorFrame
-from torchlensmaker.tensor_manip import filter_optional_mask
+from torchlensmaker.core.tensor_manip import filter_optional_mask
 
 from torchlensmaker.analysis.colors import (
     color_valid,

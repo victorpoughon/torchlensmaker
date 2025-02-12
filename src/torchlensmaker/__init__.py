@@ -1,28 +1,27 @@
 # Core
-from torchlensmaker.physics import *
-from torchlensmaker.outline import *
-from torchlensmaker.surfaces import *
-from torchlensmaker.transforms import *
-from torchlensmaker.intersect import *
+from torchlensmaker.core.physics import *
+from torchlensmaker.core.outline import *
+from torchlensmaker.core.surfaces import *
+from torchlensmaker.core.transforms import *
+from torchlensmaker.core.intersect import *
+from torchlensmaker.core.full_forward import *
 
 # Optics
 from torchlensmaker.optical_data import *
 from torchlensmaker.optics import *
 from torchlensmaker.lenses import *
 from torchlensmaker.light_sources import *
-
 from torchlensmaker.materials import *
+from torchlensmaker.sampling import *
 
 # Optimization
 from torchlensmaker.parameter import parameter
-from torchlensmaker.full_forward import *
 from torchlensmaker.optimize import optimize
 
 # Viewer
 import torchlensmaker.viewer as viewer
 from torchlensmaker.viewer import show, show2d, show3d, export_json
 
-from torchlensmaker.sampling import *
 
 # Analysis
 from torchlensmaker.analysis.plot_magnification import plot_magnification

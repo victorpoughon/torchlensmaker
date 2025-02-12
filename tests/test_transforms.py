@@ -3,7 +3,7 @@ import typing
 
 import torch
 
-from torchlensmaker.transforms import (
+from torchlensmaker.core.transforms import (
     IdentityTransform,
     TransformBase,
     TranslateTransform,
@@ -11,15 +11,15 @@ from torchlensmaker.transforms import (
     ComposeTransform,
 )
 
-from torchlensmaker.surfaces import (
+from torchlensmaker.core.surfaces import (
     Sphere,
     Parabola,
     SquarePlane,
     CircularPlane,
 )
 
-from torchlensmaker.rot3d import euler_angles_to_matrix
-from torchlensmaker.rot2d import rotation_matrix_2D
+from torchlensmaker.core.rot3d import euler_angles_to_matrix
+from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.testing.basic_transform import basic_transform
 
 

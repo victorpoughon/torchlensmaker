@@ -4,7 +4,7 @@ from dataclasses import dataclass, replace
 
 from typing import Any, Optional, TypeAlias
 
-from torchlensmaker.transforms import (
+from torchlensmaker.core.transforms import (
     TransformBase,
     IdentityTransform,
     forward_kinematic,

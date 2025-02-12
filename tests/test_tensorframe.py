@@ -1,5 +1,5 @@
 import torch
-from torchlensmaker.tensorframe import TensorFrame
+from torchlensmaker.core.tensorframe import TensorFrame
 
 
 def test_print() -> None:

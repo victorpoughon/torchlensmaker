@@ -7,8 +7,14 @@ import torch
 
 from typing import Any, Optional
 
+from torchlensmaker.core.surfaces import (
+    LocalSurface,
+    ImplicitSurface,
+)
 
-import torchlensmaker as tlm
+from torchlensmaker.core.transforms import (
+    TransformBase
+)
 
 Tensor = torch.Tensor
 
@@ -79,8 +85,8 @@ def new_scene(mode: str) -> Any:
 
 
 def process_surface(
-    surface: tlm.surfaces.ImplicitSurface,
-    transform: tlm.TransformBase,
+    surface: ImplicitSurface,
+    transform: TransformBase,
     dim: int,
     N: int = 100,
 ) -> object:
@@ -119,8 +125,8 @@ def process_surface(
 
 
 def render_surfaces(
-    surfaces: list[tlm.LocalSurface],
-    transforms: list[tlm.TransformBase],
+    surfaces: list[LocalSurface],
+    transforms: list[TransformBase],
     dim: int,
     N: int = 100,
 ) -> Any:

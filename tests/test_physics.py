@@ -1,5 +1,5 @@
 import torch
-from torchlensmaker.physics import (
+from torchlensmaker.core.physics import (
     refraction,
     reflection,
 )
@@ -8,6 +8,7 @@ from torch.nn.functional import normalize
 import itertools
 import pytest
 
+# TODO test reflection
 
 @pytest.fixture
 def random_rays_2D():

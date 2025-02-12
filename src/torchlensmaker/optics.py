@@ -3,15 +3,15 @@ import torch.nn as nn
 
 from typing import Any, Sequence, Optional, TypeAlias
 
-from torchlensmaker.tensor_manip import to_tensor, filter_optional_tensor
-from torchlensmaker.transforms import (
+from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
+from torchlensmaker.core.transforms import (
     TransformBase,
     TranslateTransform,
     LinearTransform,
     forward_kinematic,
     spherical_rotation,
 )
-from torchlensmaker.surfaces import (
+from torchlensmaker.core.surfaces import (
     LocalSurface,
     CircularPlane,
 )
@@ -20,8 +20,8 @@ from torchlensmaker.materials import (
     NonDispersiveMaterial,
     get_material_model,
 )
-from torchlensmaker.physics import refraction, reflection, RefractionCriticalAngleMode
-from torchlensmaker.intersect import intersect
+from torchlensmaker.core.physics import refraction, reflection, RefractionCriticalAngleMode
+from torchlensmaker.core.intersect import intersect
 
 from torchlensmaker.optical_data import OpticalData
 

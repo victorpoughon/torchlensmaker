@@ -1,12 +1,16 @@
-import torch
-import torchlensmaker as tlm
 import pytest
 
+import torch
 import math
+
+from torchlensmaker.core.outline import (
+    SquareOutline,
+    CircularOutline,
+)
 
 
 def test_square_outline() -> None:
-    outline = tlm.SquareOutline(5.0)
+    outline = SquareOutline(5.0)
 
     assert outline.max_radius() == pytest.approx(math.sqrt(2) * 5 / 2)
 
@@ -25,7 +29,7 @@ def test_square_outline() -> None:
 
 
 def test_circular_outline() -> None:
-    outline = tlm.CircularOutline(5.0)
+    outline = CircularOutline(5.0)
 
     assert outline.max_radius() == 5.0 / 2
 

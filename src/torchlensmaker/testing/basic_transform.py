@@ -1,8 +1,8 @@
 import torch
 
-from torchlensmaker.surfaces import LocalSurface
+from torchlensmaker.core.surfaces import LocalSurface
 
-from torchlensmaker.transforms import (
+from torchlensmaker.core.transforms import (
     TransformBase,
     LinearTransform,
     TranslateTransform,
@@ -11,8 +11,8 @@ from torchlensmaker.transforms import (
 
 from typing import Callable
 
-from torchlensmaker.rot3d import euler_angles_to_matrix
-from torchlensmaker.rot2d import rotation_matrix_2D
+from torchlensmaker.core.rot3d import euler_angles_to_matrix
+from torchlensmaker.core.rot2d import rotation_matrix_2D
 
 
 def basic_transform(

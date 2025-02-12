@@ -1,16 +1,16 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.tensor_manip import (
+from torchlensmaker.core.tensor_manip import (
     cat_optional,
     cartesian_prod2d_optional,
     to_tensor,
 )
 from torchlensmaker.optics import OpticalData
 
-from torchlensmaker.transforms import forward_kinematic
-from torchlensmaker.rot2d import rot2d
-from torchlensmaker.rot3d import euler_angles_to_matrix
+from torchlensmaker.core.transforms import forward_kinematic
+from torchlensmaker.core.rot2d import rot2d
+from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
 from torchlensmaker.sampling.samplers import (
     sampleND,

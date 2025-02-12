@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.outline import (
+from torchlensmaker.core.outline import (
     Outline,
     SquareOutline,
     CircularOutline,
