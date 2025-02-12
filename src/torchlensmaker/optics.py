@@ -113,16 +113,19 @@ class Gap(KinematicElement):
 
 
 class Turn(KinematicElement):
+    "Apply a rotation (in degrees) to the kinematic chain"
+
     def __init__(self, angles: tuple[float | int, float | int] | Tensor):
         super().__init__()
 
         if not isinstance(angles, torch.Tensor):
             angles = torch.as_tensor(angles, dtype=torch.float64)
 
-        self.angles = torch.deg2rad(angles)
+        self.angles = angles
 
     def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
-        return spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
+        radangles = torch.deg2rad(self.angles)
+        return spherical_rotation(radangles[0], radangles[1], dim, dtype)
 
 
 class Offset(nn.Module):
