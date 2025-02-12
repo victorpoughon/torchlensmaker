@@ -23,7 +23,7 @@ def full_forward(module: nn.Module, inputs: Any) -> tuple[list[ModuleEvalContext
         > outputs = model(inputs)
 
     except that all intermediate layers inputs and outputs are returned as a
-    list of tree element tuples (module, inputs, outputs):
+    list of three element tuples (module, inputs, outputs):
 
         > execute_list, output = full_forward(model, inputs)
         > for module, inputs, outputs in execute_list:
@@ -64,6 +64,27 @@ def full_forward(module: nn.Module, inputs: Any) -> tuple[list[ModuleEvalContext
 def forward_tree(
     module: nn.Module, inputs: Any
 ) -> tuple[dict[nn.Module, Any], dict[nn.Module, Any]]:
+    """
+    Forward evaluate a model, but returns all intermediate inputs and outputs,
+    in the form two dictionaries indexed by the modules.
+
+    This is kind of like normal forward evaluation of a model, except that all
+    intermediate layers inputs and outputs are returned as a two dictionaries:
+
+        > input_tree, output_tree = tlm.forward_tree(inputs)
+        > print(input_tree[module1])
+        > print(output_tree[module2])
+
+    Warning: Doesnt work if any modules are duplicated, because indexing of the
+    returned dictionaries needs to be unique.
+
+    Args:
+        module: PyTorch nn.Module to evaluate
+        inputs: input data to the module
+
+    Returns:
+        input_tree, output_tree: inputs and outputs dictionaries
+    """
 
     input_tree: dict[nn.Module, Any] = {}
     output_tree: dict[nn.Module, Any] = {}
