@@ -7,6 +7,8 @@ from torchlensmaker.core.outline import (
     CircularOutline,
 )
 
+from torchlensmaker.core.tensor_manip import to_tensor
+
 from typing import Iterable
 
 # shorter for type annotations
@@ -190,10 +192,7 @@ class Parabola(ImplicitSurface):
     ):
         super().__init__(CircularOutline(diameter), dtype)
         self.diameter = diameter
-        if not isinstance(a, nn.Parameter):
-            self.a = torch.as_tensor(a, dtype=dtype)
-        else:
-            self.a = a
+        self.a = to_tensor(a, default_dtype=dtype)
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.a, nn.Parameter):
