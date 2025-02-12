@@ -8,6 +8,7 @@ documentation.
 * [test_notebooks/demo_collision_detection_2D.md](test_notebooks/demo_collision_detection_2D.md)
 * [test_notebooks/material_models.md](test_notebooks/material_models.md)
 * [test_notebooks/readme_example1.md](test_notebooks/readme_example1.md)
+* [test_notebooks/inverse_kinematics.md](test_notebooks/inverse_kinematics.md)
 * [test_notebooks/better_tree_forward.md](test_notebooks/better_tree_forward.md)
 * [test_notebooks/demo_dispersion.md](test_notebooks/demo_dispersion.md)
 * [test_notebooks/demo_collision_detection_3D.md](test_notebooks/demo_collision_detection_3D.md)
@@ -39,5 +40,6 @@ documentation.
 * [test_notebooks/biconvex_parabola.md](test_notebooks/biconvex_parabola.md)
 * [test_notebooks/landscape_singlet_lens.md](test_notebooks/landscape_singlet_lens.md)
 * [test_notebooks/test_full_forward.md](test_notebooks/test_full_forward.md)
+
 
 

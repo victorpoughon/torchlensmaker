@@ -155,8 +155,9 @@ arbitrary translation or rotation kinematic tree is possible.
 This effectively defines what robotics calls a [forward kinematic
 chain](https://en.wikipedia.org/wiki/Forward_kinematics). When optimizing not
 just surface shapes, but also the transforms themselves (like gap size or lens
-tilt), the library can be effectively be used as an inverse kinematic solver.
+tilt), the library can be effectively used as an [inverse kinematic
+solver](/test_notebooks/inverse_kinematics/).
 
 This is useful for example when optimizing the surface shape of a two lens
 system, and still wanting the second lens to be at a fixed distance from the
-outer edge of the first one. As in this example TODO link example here.
+outer edge of the first one.

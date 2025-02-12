@@ -17,9 +17,9 @@ non linear optimization has gotten so remarkably powerful that we should start
 there. Teaching optics with ideal equations like 1/u + 1/v = 1/f or the lens
 maker equation that are never true in real life is in my opinion misleading. At
 least to me it was super confusing until I let go of it and embraced the non
-linearity of Snell's law! Those equations should be presented as the
-over-simplified approximate but historically useful model that they are, not as
-Chapter 1 of how lenses work. It's not! Spherical aberration is not part of
+linearity of Snell's law! In my opinion, those equations should be presented as
+the over-simplified approximate but historically useful model that they are, not
+as Chapter 1 of how lenses work. It's not! Spherical aberration is not part of
 physics, it's part of engineering. It's a consequence of solving a non linear
 system too approximately!
 
@@ -29,11 +29,11 @@ Lens Maker_ is a learning project for me. Every time I add a new feature it
 deepens my understanding of the physics of it. For example, what is an image? I
 know what an image is for a computer, it's a 2D grid of pixel data... right?
 Yeah sure, but in optics it's totally different! I have not yet found an optics
-textbook that rigorously defines what an image is. The best I got was in a Khan
+textbook that satisfyingly defines what an image is. The best I got was in a Khan
 Academy video where it was said "an image is where rays of light converge".
 Still, I think it's more subtle than that (sometimes they don't converge, and
 still an image is formed)! My best understanding of it actually came when I
-implemented the `Image` class in _Torch Lens Maker_.
+implemented the `ImagePlane` class.
 
 !!! idea
 
@@ -55,12 +55,15 @@ open-source tooling. Let's do the same for optics!
 
 ## Funding
 
-!!! tip
+I've been working on this project for a few months now on my own time. I'd love
+to keep working on it as much as possible!
 
-    I am looking for sponsorship, contracting or donations to be able to keep
-    working on this project. If you are interested in sponsoring open-source
-    development of _Torch Lens Maker_, please reach out or make a donation! Thank
-    you!
+I am looking for sponsorship, contracting or donations to be able to keep
+working on this project. If you are interested in sponsoring open-source
+development of Torch Lens Maker, please reach out or make a donation! Thank
+you!
+
+You can find contact info on [my personal website](https://victorpoughon.fr/).
 
 ## Roadmap
 
