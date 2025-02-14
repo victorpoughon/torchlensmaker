@@ -265,9 +265,9 @@ class Sphere(ImplicitSurface):
         return torch.div(1.0, self.K)
 
     def extent_x(self) -> Tensor:
-        r2 = self.outline.max_radius() ** 2
+        r = self.outline.max_radius()
         K = self.K
-        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2))
+        return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
     def samples2D(self, N: int) -> Tensor:
         # Use the angular parameterization of the circle so that samples are
