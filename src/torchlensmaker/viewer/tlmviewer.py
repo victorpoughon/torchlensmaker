@@ -139,10 +139,10 @@ def render_surfaces(
 def render_rays(
     start: Tensor,
     end: Tensor,
+    layer: int,
     variables: dict[str, Tensor] = {},
     domain: dict[str, list[float]] = {},
     default_color: str = "#ffa724",
-    layer: Optional[int] = None,
 ) -> Any:
 
     assert start.shape == end.shape

@@ -87,7 +87,7 @@ def render_rays_until(
     variables: dict[str, Tensor],
     domain: dict[str, list[float]],
     default_color: str,
-    layer: Optional[int] = None,
+    layer: int,
 ) -> list[Any]:
     "Render rays until an absolute X coordinate"
     assert end.dim() == 0
@@ -112,8 +112,8 @@ def render_rays_length(
     length: float | Tensor,
     variables: dict[str, Tensor],
     domain: dict[str, list[float]],
+    layer: int,
     default_color: str = color_valid,
-    layer: Optional[int] = None,
 ) -> list[Any]:
     "Render rays with fixed length"
 
@@ -276,6 +276,7 @@ class FocalPointArtist:
             inputs.P,
             inputs.V,
             t,
+            layer=LAYER_VALID_RAYS,
             variables=ray_variables_dict(inputs, ray_variables.variables),
             domain=ray_variables.domain,
             default_color=color_valid,
