@@ -128,8 +128,12 @@ class ImplicitSurface(LocalSurface):
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
         dim = P.shape[1]
-        # Initial guess is the intersection of rays with the X=0 plane
-        init_t = -P[:, 0] / V[:, 0]
+
+        # Initial guess is the intersection of rays with the X=0 or Y=O plane,
+        # depending on if rays are mostly vertical or mostly horizontal
+        init_x = -P[:, 0] / V[:, 0]
+        init_y = -P[:, 1] / V[:, 1]
+        init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
 
         t = intersect_newton(self, P, V, init_t)
 
