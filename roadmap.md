@@ -64,6 +64,7 @@
 * Set default gui values from json (+python arguments to show)
 
 * bug: after some number of cell outputs, tlmviewer apears white; Idea: detect if we are in jupyter interactive notebook (if loading from /files), if yes, use fixed viewport size
+* bug: slowdown after multiple rerun of jupyter cell
 
 ### DOC
 
