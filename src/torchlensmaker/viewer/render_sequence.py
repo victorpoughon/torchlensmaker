@@ -14,6 +14,8 @@ from torchlensmaker.analysis.colors import (
     color_blocked,
 )
 
+import torchlensmaker.viewer as viewer
+
 import matplotlib as mpl
 import json
 
@@ -45,9 +47,9 @@ class RayVariables:
         def update(var: Optional[Tensor], name: str) -> None:
             if var is not None:
                 variables.add(name)
-                if var.min() < domain[name][0]:
+                if var.numel() > 0 and var.min() < domain[name][0]:
                     domain[name][0] = var.min().item()
-                if var.max() > domain[name][1]:
+                if var.numel() > 0 and var.max() > domain[name][1]:
                     domain[name][1] = var.max().item()
 
         for inputs in optical_data:
@@ -89,10 +91,11 @@ def render_rays_until(
 ) -> list[Any]:
     "Render rays until an absolute X coordinate"
     assert end.dim() == 0
+    # div by zero here for vertical rays
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [
-        tlm.viewer.render_rays(
+        viewer.render_rays(
             P,
             ends,
             variables=variables,
@@ -121,7 +124,7 @@ def render_rays_length(
         length = length.unsqueeze(1).expand_as(V)
 
     return [
-        tlm.viewer.render_rays(
+        viewer.render_rays(
             P,
             P + length * V,
             variables=variables,
@@ -150,7 +153,7 @@ class KinematicSurfaceArtist:
 
         # TODO find a way to group surfaces together?
         return [
-            tlm.viewer.render_surfaces(
+            viewer.render_surfaces(
                 [module.surface], [transform], dim=transform.dim, N=100
             )
         ]
@@ -177,7 +180,7 @@ class CollisionSurfaceArtist:
         points = output_tree[module].P
         normals = output_tree[module].normals
 
-        # return tlm.viewer.render_collisions(points, normals)
+        # return viewer.render_collisions(points, normals)
         return []
 
     @staticmethod
@@ -192,7 +195,7 @@ class CollisionSurfaceArtist:
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
             return [
-                tlm.viewer.render_rays(
+                viewer.render_rays(
                     inputs.P,
                     outputs.P,
                     variables=ray_variables_dict(inputs, ray_variables.variables),
@@ -208,7 +211,7 @@ class CollisionSurfaceArtist:
 
             group_valid = (
                 [
-                    tlm.viewer.render_rays(
+                    viewer.render_rays(
                         inputs.P[valid],
                         outputs.P,
                         variables=ray_variables_dict(
@@ -253,7 +256,7 @@ class FocalPointArtist:
     ) -> list[Any]:
 
         target = input_tree[module].target().unsqueeze(0)
-        return [tlm.viewer.render_points(target, color_focal_point)]
+        return [viewer.render_points(target, color_focal_point)]
 
     @staticmethod
     def render_rays(
@@ -499,7 +502,7 @@ def render_sequence(
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables = RayVariables.from_optical_data(input_tree.values())
 
-    scene = tlm.viewer.new_scene("2D" if dim == 2 else "3D")
+    scene = viewer.new_scene("2D" if dim == 2 else "3D")
 
     # Render the top level module
     scene["data"].extend(render_module(optics, input_tree, output_tree, ray_variables))
@@ -516,7 +519,7 @@ def render_sequence(
             EndArtist(end).render_rays(optics, input_tree, output_tree, ray_variables)
         )
 
-    if title is not "":
+    if title != "":
         scene["title"] = title
 
     return scene
@@ -548,6 +551,7 @@ def show(
     end: Optional[float] = None,
     title: str = "",
     ndigits: int | None = 8,
+    return_scene: bool = False,
 ) -> None:
     "Render an optical stack and show it with ipython display"
 
@@ -556,16 +560,18 @@ def show(
 
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
-    tlm.viewer.ipython_display(scene, ndigits)
+    viewer.ipython_display(scene, ndigits)
+
+    return scene if return_scene else None
 
 
 def show2d(*args, **kwargs):
-    kwargs['dim'] = 2
+    kwargs["dim"] = 2
     return show(*args, **kwargs)
 
 
 def show3d(*args, **kwargs):
-    kwargs['dim'] = 3
+    kwargs["dim"] = 3
     return show(*args, **kwargs)
 
 

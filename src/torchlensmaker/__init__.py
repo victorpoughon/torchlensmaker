@@ -19,8 +19,8 @@ from torchlensmaker.parameter import parameter
 from torchlensmaker.optimize import optimize
 
 # Viewer
-import torchlensmaker.viewer as viewer
-from torchlensmaker.viewer import show, show2d, show3d, export_json
+import torchlensmaker.viewer.tlmviewer as viewer
+from torchlensmaker.viewer.render_sequence import *
 
 
 # Analysis
@@ -30,14 +30,3 @@ from torchlensmaker.analysis.spot_diagram import spot_diagram
 
 # Export build123d
 import torchlensmaker.export_build123d as export
-
-__all__ = [
-    "viewer",
-    "export",
-    "show",
-    "show2d",
-    "show3d",
-    "export_json",
-    "full_forward",
-    "parameter",
-]
