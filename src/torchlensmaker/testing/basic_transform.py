@@ -51,7 +51,7 @@ def basic_transform(
 
         # rotate
         if dim == 2:
-            Mr = rotation_matrix_2D(torch.as_tensor(thetas, dtype=dtype))
+            Mr = rotation_matrix_2D(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)))
         else:
             Mr = euler_angles_to_matrix(
                 torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
