@@ -5,9 +5,9 @@
 * More and better examples
     * Rainbow
     * Ernostar 1928
-    * Astigmatism example?
+    * promote some existing test_notebooks
+    * asphere example
 
-* format the roadmap
 
 * copyright / license headers
 * pip install torchlensmaker
@@ -16,9 +16,11 @@
 * tlmviewer: available on cdnjs and npm
 * tlmviewer works after just 'pip install torchlensmaker'
 
-* funding doc
+* funding doc / github sponsor / ko-fi
 
 * project news channels (bluesky? mastodon?)
+
+* format the roadmap
 
 ## v0.2
 
@@ -27,6 +29,7 @@
 * Surfaces:
     * Linear Spline
     * Bezier Spline
+
 
 * Analysis:
     * Ray distribution visu
@@ -38,6 +41,7 @@
     * Astigmatism (composing implicit functions?)
     * Petzval
     * Optimizing surface and position jointly
+    * Astigmatism example
 
 * Test notebooks:
     * Regularization
@@ -72,6 +76,7 @@
 
 ## Post v0.2
 
+* "Try it live" button: pyodide / jupyterlite / etc.
 * composing distance functions? https://iquilezles.org/articles/distfunctions/. Interesting for composing surfaces (ex: add astigmatism)
 * focal point: "collide" rays and update them, so that end= works as expected when rendering
 * aperture spot detection and sampling marginal rays
