@@ -318,6 +318,150 @@ class Sphere(ImplicitSurface):
         )
 
 
+class Sphere3(ImplicitSurface):
+    def __init__(
+        self,
+        diameter: float,
+        r: int | float | nn.Parameter,
+        dtype: torch.dtype = torch.float64,
+    ):
+        super().__init__(CircularOutline(diameter), dtype)
+        self.diameter = diameter
+
+        assert (
+            torch.abs(torch.as_tensor(r)) >= diameter / 2
+        ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
+
+        self.K: torch.Tensor
+        if isinstance(r, nn.Parameter):
+            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=dtype))
+        else:
+            self.K = torch.as_tensor(1.0 / r, dtype=dtype)
+
+        assert self.K.dim() == 0
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        if isinstance(self.K, nn.Parameter):
+            return {"K": self.K}
+        else:
+            return {}
+
+    def radius(self) -> Tensor:
+        "Utility function because parameter is stored internally as curvature"
+        return torch.div(1.0, self.K)
+
+    def extent_x(self) -> Tensor:
+        r = self.outline.max_radius()
+        K = self.K
+        return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
+
+    def samples2D(self, N: int) -> Tensor:
+        # Use the angular parameterization of the circle so that samples are
+        # smoother, especially for high curvature circles.
+        # TODO isnt this kinda broken for K=0?
+        R = 1 / self.K
+        theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+        theta = torch.linspace(0.0, theta_max, N)
+
+        if R > 0:
+            theta = theta + torch.pi
+
+        X = torch.abs(R) * torch.cos(theta) + R
+        Y = torch.abs(R) * torch.sin(theta)
+
+        return torch.stack((X, Y), dim=-1)
+
+    def f(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K = self.K
+        R = self.radius()
+        center = torch.tensor([1 / K, 0.0])
+        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+
+        # normal vectors to the sector lines
+        def norm(v):
+            return torch.stack((v[1], -v[0]), dim=-1)
+
+        LA = norm(A - center)
+        LB = norm(center - B)
+        center_vect = center - points
+
+        zone_cone = torch.logical_and(
+            torch.sum(LA * center_vect, dim=1) > 0,
+            torch.sum(LB * center_vect, dim=1) > 0
+        )
+
+        zone_A = torch.logical_and(
+            torch.sum(LA * center_vect, dim=1) < 0,
+            r > 0
+        )
+
+        full_circle = torch.linalg.norm(points - center, dim=1) - R
+        dist_A = torch.linalg.norm(points - A, dim=1)
+        dist_B = torch.linalg.norm(points - B, dim=1)
+
+        return torch.where(zone_cone, full_circle, torch.where(zone_A, dist_A, dist_B))
+
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        x, r = points[:, 0], points[:, 1]
+        r2 = torch.pow(r, 2)
+        K = self.K
+        R = self.radius()
+        center = torch.tensor([1 / K, 0.0])
+        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+
+        # normal vectors to the sector lines
+        def norm(v):
+            return torch.stack((v[1], -v[0]), dim=-1)
+
+        LA = norm(A - center)
+        LB = norm(center - B)
+        center_vect = center - points
+
+        zone_cone = torch.logical_and(
+            torch.sum(LA * center_vect, dim=1) > 0,
+            torch.sum(LB * center_vect, dim=1) > 0
+        )
+
+        zone_A = torch.logical_and(
+            torch.sum(LA * center_vect, dim=1) < 0,
+            r > 0
+        )
+
+        dist_center = (points - center) / torch.linalg.norm(points - center, dim=1).unsqueeze(1)
+        full_circle = dist_center # abs?
+        dist_A = (points - A) / torch.linalg.norm(points - A, dim=1).unsqueeze(1)
+        dist_B = (points - B) / torch.linalg.norm(points - B, dim=1).unsqueeze(1)
+
+        return torch.where(zone_cone.unsqueeze(1), full_circle, torch.where(zone_A.unsqueeze(1), dist_A, dist_B))
+
+    def F(self, points: Tensor) -> Tensor:
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        K = self.K
+        r2 = y**2 + z**2
+        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2)) - x
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        K = self.K
+        r2 = y**2 + z**2
+        denom = torch.sqrt(1 - r2 * K**2)
+        return torch.stack(
+            (-torch.ones_like(x), (K * y) / denom, (K * z) / denom), dim=-1
+        )
+
 def newton_delta(surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
     "Compute the delta for one step of Newton's method"
 
