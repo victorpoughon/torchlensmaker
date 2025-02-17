@@ -125,15 +125,20 @@ class ImplicitSurface(LocalSurface):
             self.outline.contains(points), torch.abs(F(points)) < tol
         )
 
-    def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-
-        dim = P.shape[1]
-
+    def init_newton(self, P: Tensor, V: Tensor) -> Tensor:
         # Initial guess is the intersection of rays with the X=0 or Y=O plane,
         # depending on if rays are mostly vertical or mostly horizontal
         init_x = -P[:, 0] / V[:, 0]
         init_y = -P[:, 1] / V[:, 1]
         init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
+
+        return init_t
+
+    def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+
+        dim = P.shape[1]
+
+        init_t = self.init_newton(P, V)
 
         t = intersect_newton(self, P, V, init_t)
 
@@ -293,14 +298,73 @@ class Sphere(ImplicitSurface):
         x, r = points[:, 0], points[:, 1]
         r2 = torch.pow(r, 2)
         K = self.K
-        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2)) - x
+
+        # For points beyond the half-diameter
+        # use the distance to the edge point
+        center = torch.tensor([1 / K, 0.0])
+        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+
+        radicand = 1 - r2 * K**2
+        safe_radicand = torch.clamp(radicand, min=0.0)
+        circle = torch.div(K * r2, 1 + torch.sqrt(safe_radicand)) - x
+
+        top_fallback = torch.linalg.vector_norm(points - A, dim=1)
+        bottom_fallback = torch.linalg.vector_norm(points - B, dim=1)
+
+        max_r = self.outline.max_radius()
+        return torch.where(
+            torch.abs(r) < max_r,
+            circle,
+            torch.where(r > 0, top_fallback, bottom_fallback),
+        )
 
     def f_grad(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
         r2 = torch.pow(r, 2)
         K = self.K
-        denom = torch.sqrt(1 - r2 * K**2)
-        return torch.stack((-torch.ones_like(x), (K * r) / denom), dim=-1)
+
+        # For points beyond the half-diameter
+        # use the distance to the edge point
+        center = torch.tensor([1 / K, 0.0])
+        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+
+        normA = torch.linalg.vector_norm(points - A, dim=1)
+        normB = torch.linalg.vector_norm(points - B, dim=1)
+
+        top_fallback = torch.stack((
+            (points[:, 0] - A[0]) / normA,
+            (points[:, 1] - A[1]) / normA
+        ), dim=1)
+        bottom_fallback = torch.stack((
+            (points[:, 0] - B[0]) / normB,
+            (points[:, 1] - B[1]) / normB
+        ), dim=1)
+
+        max_r = self.outline.max_radius()
+
+        radicand = 1 - r2 * K**2
+        safe_radicand = torch.clamp(radicand, min=1e-3)
+        grady = torch.div((K * r), torch.sqrt(safe_radicand))
+
+        circle = torch.stack((-torch.ones_like(x), grady), dim=-1)
+
+        assert circle.shape == top_fallback.shape == bottom_fallback.shape
+
+        return torch.where(
+            (torch.abs(r) < max_r).unsqueeze(1).expand(-1, 2),
+            circle,
+            torch.where(r.unsqueeze(1).expand(-1, 2) > 0, top_fallback, bottom_fallback),
+        )
 
     def F(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
@@ -394,20 +458,16 @@ class Sphere3(ImplicitSurface):
 
         zone_cone = torch.logical_and(
             torch.sum(LA * center_vect, dim=1) > 0,
-            torch.sum(LB * center_vect, dim=1) > 0
+            torch.sum(LB * center_vect, dim=1) > 0,
         )
 
-        zone_A = torch.logical_and(
-            torch.sum(LA * center_vect, dim=1) < 0,
-            r > 0
-        )
+        zone_A = torch.logical_and(torch.sum(LA * center_vect, dim=1) < 0, r > 0)
 
         full_circle = torch.linalg.norm(points - center, dim=1) - R
         dist_A = torch.linalg.norm(points - A, dim=1)
         dist_B = torch.linalg.norm(points - B, dim=1)
 
         return torch.where(zone_cone, full_circle, torch.where(zone_A, dist_A, dist_B))
-
 
     def f_grad(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
@@ -432,20 +492,23 @@ class Sphere3(ImplicitSurface):
 
         zone_cone = torch.logical_and(
             torch.sum(LA * center_vect, dim=1) > 0,
-            torch.sum(LB * center_vect, dim=1) > 0
+            torch.sum(LB * center_vect, dim=1) > 0,
         )
 
-        zone_A = torch.logical_and(
-            torch.sum(LA * center_vect, dim=1) < 0,
-            r > 0
-        )
+        zone_A = torch.logical_and(torch.sum(LA * center_vect, dim=1) < 0, r > 0)
 
-        dist_center = (points - center) / torch.linalg.norm(points - center, dim=1).unsqueeze(1)
-        full_circle = dist_center # abs?
+        dist_center = (points - center) / torch.linalg.norm(
+            points - center, dim=1
+        ).unsqueeze(1)
+        full_circle = dist_center  # abs?
         dist_A = (points - A) / torch.linalg.norm(points - A, dim=1).unsqueeze(1)
         dist_B = (points - B) / torch.linalg.norm(points - B, dim=1).unsqueeze(1)
 
-        return torch.where(zone_cone.unsqueeze(1), full_circle, torch.where(zone_A.unsqueeze(1), dist_A, dist_B))
+        return torch.where(
+            zone_cone.unsqueeze(1),
+            full_circle,
+            torch.where(zone_A.unsqueeze(1), dist_A, dist_B),
+        )
 
     def F(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
@@ -462,6 +525,7 @@ class Sphere3(ImplicitSurface):
             (-torch.ones_like(x), (K * y) / denom, (K * z) / denom), dim=-1
         )
 
+
 def newton_delta(surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
     "Compute the delta for one step of Newton's method"
 
@@ -474,6 +538,10 @@ def newton_delta(surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> T
     else:
         F = surface.F(points)
         F_grad = surface.F_grad(points)
+
+    # TODO check here that F_grad is not nan
+    # print("f", torch.all(torch.isfinite(F)))
+    # print("f grad", torch.all(torch.isfinite(F_grad)))
 
     # Denominator will be zero if F_grad and V are orthogonal
     denom = torch.sum(F_grad * V, dim=1)
