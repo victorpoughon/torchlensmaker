@@ -5,6 +5,7 @@ from torchlensmaker.core.surfaces import *
 from torchlensmaker.core.transforms import *
 from torchlensmaker.core.intersect import *
 from torchlensmaker.core.full_forward import *
+from torchlensmaker.core.collision_detection import *
 
 # Optics
 from torchlensmaker.optical_data import *

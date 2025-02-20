@@ -9,6 +9,8 @@ from torchlensmaker.core.outline import (
 
 from torchlensmaker.core.tensor_manip import to_tensor
 
+from torchlensmaker.core.collision_detection import CollisionAlgorithm, Newton
+
 from typing import Iterable
 
 # shorter for type annotations
@@ -20,7 +22,7 @@ class LocalSurface:
     Defines a surface in a local reference frame
     """
 
-    def __init__(self, outline: Outline, dtype: torch.dtype):
+    def __init__(self, outline: Outline, dtype: torch.dtype = torch.float64):
         self.outline = outline
         self.dtype = dtype
 
@@ -113,8 +115,9 @@ class ImplicitSurface(LocalSurface):
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, outline: Outline, dtype: torch.dtype):
-        super().__init__(outline, dtype)
+    def __init__(self, collision: CollisionAlgorithm=Newton(15, 0.8), **kwargs):
+        super().__init__(**kwargs)
+        self.collision_algorithm = collision
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         dim = points.shape[1]
@@ -125,7 +128,7 @@ class ImplicitSurface(LocalSurface):
             self.outline.contains(points), torch.abs(F(points)) < tol
         )
 
-    def init_newton(self, P: Tensor, V: Tensor) -> Tensor:
+    def init_t(self, P: Tensor, V: Tensor) -> Tensor:
         # Initial guess is the intersection of rays with the X=0 or Y=O plane,
         # depending on if rays are mostly vertical or mostly horizontal
         init_x = -P[:, 0] / V[:, 0]
@@ -138,9 +141,9 @@ class ImplicitSurface(LocalSurface):
 
         dim = P.shape[1]
 
-        init_t = self.init_newton(P, V)
+        init_t = self.init_t(P, V)
 
-        t = intersect_newton(self, P, V, init_t)
+        t = self.collision_algorithm(self, P, V, init_t)
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
 
@@ -197,11 +200,11 @@ class Parabola(ImplicitSurface):
         self,
         diameter: float,
         a: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        **kwargs,
     ):
-        super().__init__(CircularOutline(diameter), dtype)
+        super().__init__(CircularOutline(diameter), **kwargs)
         self.diameter = diameter
-        self.a = to_tensor(a, default_dtype=dtype)
+        self.a = to_tensor(a, default_dtype=self.dtype)
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.a, nn.Parameter):
@@ -246,9 +249,9 @@ class Sphere(ImplicitSurface):
         self,
         diameter: float,
         r: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        **kwargs
     ):
-        super().__init__(CircularOutline(diameter), dtype)
+        super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
         assert (
@@ -257,9 +260,9 @@ class Sphere(ImplicitSurface):
 
         self.K: torch.Tensor
         if isinstance(r, nn.Parameter):
-            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=dtype))
+            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=self.dtype))
         else:
-            self.K = torch.as_tensor(1.0 / r, dtype=dtype)
+            self.K = torch.as_tensor(1.0 / r, dtype=self.dtype)
 
         assert self.K.dim() == 0
 
@@ -387,9 +390,9 @@ class Sphere3(ImplicitSurface):
         self,
         diameter: float,
         r: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        **kwargs,
     ):
-        super().__init__(CircularOutline(diameter), dtype)
+        super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
         assert (
@@ -398,9 +401,9 @@ class Sphere3(ImplicitSurface):
 
         self.K: torch.Tensor
         if isinstance(r, nn.Parameter):
-            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=dtype))
+            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=self.dtype))
         else:
-            self.K = torch.as_tensor(1.0 / r, dtype=dtype)
+            self.K = torch.as_tensor(1.0 / r, dtype=self.dtype)
 
         assert self.K.dim() == 0
 
@@ -524,70 +527,6 @@ class Sphere3(ImplicitSurface):
         return torch.stack(
             (-torch.ones_like(x), (K * y) / denom, (K * z) / denom), dim=-1
         )
-
-
-def newton_delta(surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
-    "Compute the delta for one step of Newton's method"
-
-    dim = P.shape[1]
-    points = P + t.unsqueeze(1).expand_as(V) * V
-
-    if dim == 2:
-        F = surface.f(points)
-        F_grad = surface.f_grad(points)
-    else:
-        F = surface.F(points)
-        F_grad = surface.F_grad(points)
-
-    # TODO check here that F_grad is not nan
-    # print("f", torch.all(torch.isfinite(F)))
-    # print("f grad", torch.all(torch.isfinite(F_grad)))
-
-    # Denominator will be zero if F_grad and V are orthogonal
-    denom = torch.sum(F_grad * V, dim=1)
-
-    return F / denom
-
-
-def intersect_newton(
-    surface: ImplicitSurface, P: Tensor, V: Tensor, init_t: Tensor
-) -> Tensor:
-    """
-    Collision detection of parametric rays with implicit surface using Newton's
-    method.
-
-    Rays are defined by P + tV where P are origin points, and V and unit length
-    direction vectors.
-
-    Args:
-        P: tensor (N, 2|3), rays origin points
-        V: tensor (N, 2|3), rays unit vectors
-        init_t: tensor (N,), initial value for t
-
-    Returns:
-        t: tensor (N,), t values after Newton iterations
-    """
-
-    assert isinstance(P, Tensor) and P.dim() == 2
-    assert isinstance(V, Tensor) and V.dim() == 2
-    assert P.shape == V.shape
-    dim = P.shape[1]
-    assert dim == 2 or dim == 3
-
-    # Initialize solutions t
-    t = init_t
-
-    with torch.no_grad():
-        for _ in range(20):  # TODO add parameters for newton iterations
-            # TODO warning if stopping due to max iter (didn't converge)
-            delta = newton_delta(surface, P, V, t)
-            # TODO early stop if delta is small enough
-            t = t - delta
-
-    # One newton iteration for backwards pass
-    t = t - newton_delta(surface, P, V, t)
-
-    return t
 
 
 class Asphere(ImplicitSurface):
