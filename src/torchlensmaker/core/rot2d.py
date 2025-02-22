@@ -49,3 +49,7 @@ def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
         v_rotated = v_rotated.squeeze(0)
 
     return v_rotated
+
+
+def perpendicular2d(v):
+    return torch.stack((v[:, 1], -v[:, 0]), dim=-1)

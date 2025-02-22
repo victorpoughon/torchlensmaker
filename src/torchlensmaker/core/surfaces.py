@@ -7,6 +7,10 @@ from torchlensmaker.core.outline import (
     CircularOutline,
 )
 
+from torchlensmaker.core.sphere_sampling import (
+    sphere_samples_angular,
+    sphere_samples_linear,
+)
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from torchlensmaker.core.collision_detection import CollisionAlgorithm, Newton
@@ -62,6 +66,10 @@ class LocalSurface:
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         raise NotImplementedError
 
+    def testname(self) -> str:
+        "A string for identification in test cases"
+        raise NotImplementedError
+
 
 class Plane(LocalSurface):
     "X=0 plane"
@@ -102,6 +110,9 @@ class SquarePlane(Plane):
     def __init__(self, side_length: float, dtype: torch.dtype = torch.float64):
         super().__init__(SquareOutline(side_length), dtype)
 
+    def testname(self) -> str:
+        return f"SquarePlane-{self.side_length}"
+
 
 class CircularPlane(Plane):
     "aka disk"
@@ -109,13 +120,16 @@ class CircularPlane(Plane):
     def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
         super().__init__(CircularOutline(diameter), dtype)
 
+    def testname(self) -> str:
+        return f"CircularPlane-{self.diameter}"
+
 
 class ImplicitSurface(LocalSurface):
     """
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, collision: CollisionAlgorithm=Newton(15, 0.8), **kwargs):
+    def __init__(self, collision: CollisionAlgorithm = Newton(15, 0.8), **kwargs):
         super().__init__(**kwargs)
         self.collision_algorithm = collision
 
@@ -245,12 +259,23 @@ class Parabola(ImplicitSurface):
 
 
 class Sphere(ImplicitSurface):
-    def __init__(
-        self,
-        diameter: float,
-        r: int | float | nn.Parameter,
-        **kwargs
-    ):
+    """
+    A section of a sphere, parameterized by curvature.
+    Curvature is the inverse of radius: C = 1/R.
+
+    This parameterization is useful because it enables clean representation of
+    an infinite radius section of sphere (which is really a plane), and also
+    enables changing the sign of C during optimization.
+
+    In 2D, this surface is an arc of circle.
+    In 3D, this surface is a section of a sphere (wikipedia call it a "spherical cap")
+
+    For high curvature arcs (close to a half circle), it's better to use the
+    Sphere2 class which uses radius parameterization and polar distance
+    functions.
+    """
+
+    def __init__(self, diameter: float, r: int | float | nn.Parameter, **kwargs):
         super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
@@ -265,6 +290,10 @@ class Sphere(ImplicitSurface):
             self.K = torch.as_tensor(1.0 / r, dtype=self.dtype)
 
         assert self.K.dim() == 0
+
+    def testname(self) -> str:
+        R = 1 / self.K
+        return f"Sphere-{self.diameter:.2f}-{R:.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.K, nn.Parameter):
@@ -281,21 +310,37 @@ class Sphere(ImplicitSurface):
         K = self.K
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
-    def samples2D(self, N: int) -> Tensor:
-        # Use the angular parameterization of the circle so that samples are
-        # smoother, especially for high curvature circles.
-        # TODO isnt this kinda broken for K=0?
-        R = 1 / self.K
-        theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
-        theta = torch.linspace(0.0, theta_max, N)
+    def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        if self.K * self.diameter < 0.1:
+            # If the curvature is low, use linear sampling along the y axis
+            return sphere_samples_linear(
+                curvature=self.K, start=0.0, end=self.outline.max_radius(), N=N
+            )
+        else:
+            # Else, use the angular parameterization of the circle so that
+            # samples are smoother, especially for high curvature circles.
+            R = 1 / self.K
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            return sphere_samples_angular(radius=R, start=0.0, end=theta_max, N=N)
 
-        if R > 0:
-            theta = theta + torch.pi
-
-        X = torch.abs(R) * torch.cos(theta) + R
-        Y = torch.abs(R) * torch.sin(theta)
-
-        return torch.stack((X, Y), dim=-1)
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        "Like samples2D but on the entire domain"
+        if self.K * self.diameter < 0.1:
+            # If the curvature is low, use linear sampling along the y axis
+            return sphere_samples_linear(
+                curvature=self.K,
+                start=-self.outline.max_radius() + epsilon,
+                end=self.outline.max_radius() - epsilon,
+                N=N,
+            )
+        else:
+            # Else, use the angular parameterization of the circle so that
+            # samples are smoother, especially for high curvature circles.
+            R = 1 / self.K
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            return sphere_samples_angular(
+                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
+            )
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
@@ -320,8 +365,11 @@ class Sphere(ImplicitSurface):
         bottom_fallback = torch.linalg.vector_norm(points - B, dim=1)
 
         max_r = self.outline.max_radius()
+
+        zone_mask = torch.abs(r) <= max_r
+
         return torch.where(
-            torch.abs(r) < max_r,
+            zone_mask,
             circle,
             torch.where(r > 0, top_fallback, bottom_fallback),
         )
@@ -344,29 +392,33 @@ class Sphere(ImplicitSurface):
         normA = torch.linalg.vector_norm(points - A, dim=1)
         normB = torch.linalg.vector_norm(points - B, dim=1)
 
-        top_fallback = torch.stack((
-            (points[:, 0] - A[0]) / normA,
-            (points[:, 1] - A[1]) / normA
-        ), dim=1)
-        bottom_fallback = torch.stack((
-            (points[:, 0] - B[0]) / normB,
-            (points[:, 1] - B[1]) / normB
-        ), dim=1)
+        top_fallback = torch.stack(
+            ((points[:, 0] - A[0]) / normA, (points[:, 1] - A[1]) / normA), dim=1
+        )
+        bottom_fallback = torch.stack(
+            ((points[:, 0] - B[0]) / normB, (points[:, 1] - B[1]) / normB), dim=1
+        )
 
         max_r = self.outline.max_radius()
 
         radicand = 1 - r2 * K**2
-        safe_radicand = torch.clamp(radicand, min=1e-3)
+
+        # clamp to a non zero epsilon to avoid both sqrt(<0) and div by zero
+        safe_radicand = torch.clamp(radicand, min=1e-4)
         grady = torch.div((K * r), torch.sqrt(safe_radicand))
 
         circle = torch.stack((-torch.ones_like(x), grady), dim=-1)
 
         assert circle.shape == top_fallback.shape == bottom_fallback.shape
 
+        zone_mask = torch.abs(r) <= max_r
+
         return torch.where(
-            (torch.abs(r) < max_r).unsqueeze(1).expand(-1, 2),
+            zone_mask.unsqueeze(1).expand(-1, 2),
             circle,
-            torch.where(r.unsqueeze(1).expand(-1, 2) > 0, top_fallback, bottom_fallback),
+            torch.where(
+                r.unsqueeze(1).expand(-1, 2) > 0, top_fallback, bottom_fallback
+            ),
         )
 
     def F(self, points: Tensor) -> Tensor:
@@ -407,6 +459,10 @@ class Sphere3(ImplicitSurface):
 
         assert self.K.dim() == 0
 
+    def testname(self) -> str:
+        R = 1 / self.K
+        return f"Sphere3-{self.diameter:.2f}-{R:.2f}"
+
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.K, nn.Parameter):
             return {"K": self.K}
@@ -422,21 +478,37 @@ class Sphere3(ImplicitSurface):
         K = self.K
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
-    def samples2D(self, N: int) -> Tensor:
-        # Use the angular parameterization of the circle so that samples are
-        # smoother, especially for high curvature circles.
-        # TODO isnt this kinda broken for K=0?
-        R = 1 / self.K
-        theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
-        theta = torch.linspace(0.0, theta_max, N)
+    def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        if self.K * self.diameter < 0.1:
+            # If the curvature is low, use linear sampling along the y axis
+            return sphere_samples_linear(
+                curvature=self.K, start=0.0, end=self.outline.max_radius(), N=N
+            )
+        else:
+            # Else, use the angular parameterization of the circle so that
+            # samples are smoother, especially for high curvature circles.
+            R = 1 / self.K
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            return sphere_samples_angular(radius=R, start=0.0, end=theta_max, N=N)
 
-        if R > 0:
-            theta = theta + torch.pi
-
-        X = torch.abs(R) * torch.cos(theta) + R
-        Y = torch.abs(R) * torch.sin(theta)
-
-        return torch.stack((X, Y), dim=-1)
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        "Like samples2D but on the entire domain"
+        if self.K * self.diameter < 0.1:
+            # If the curvature is low, use linear sampling along the y axis
+            return sphere_samples_linear(
+                curvature=self.K,
+                start=-self.outline.max_radius() + epsilon,
+                end=self.outline.max_radius() - epsilon,
+                N=N,
+            )
+        else:
+            # Else, use the angular parameterization of the circle so that
+            # samples are smoother, especially for high curvature circles.
+            R = 1 / self.K
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            return sphere_samples_angular(
+                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
+            )
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
