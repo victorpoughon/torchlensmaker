@@ -22,6 +22,12 @@
 
 * format the roadmap
 
+* set gui options from python
+
+* different ray category for non colliding with surface and total internal
+
+* Sphere class and surfaces testing
+
 ## v0.2
 
 ### TLM
@@ -65,6 +71,9 @@
 
 * bug: after some number of cell outputs, tlmviewer apears white; Idea: detect if we are in jupyter interactive notebook (if loading from /files), if yes, use fixed viewport size
 * bug: slowdown after multiple rerun of jupyter cell
+
+* dont show legend div if title is empty
+* default bbox zoom for 3D view
 
 ### DOC
 

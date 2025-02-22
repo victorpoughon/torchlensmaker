@@ -4,7 +4,7 @@ import torch
 
 Tensor = torch.Tensor
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from torchlensmaker.core.surfaces import ImplicitSurface
 
@@ -29,14 +29,21 @@ def surface_f(
 class CollisionAlgorithm:
     """Iterative collision detection for implicit surfaces"""
 
-    def __init__(self, num_iter: float):
-        self.num_iter = num_iter
-        # TODO maximum step size
+    def __init__(self, max_iter: float, max_delta: Optional[float]):
+        self.max_iter = max_iter
+        self.max_delta = max_delta
 
     def delta(
         self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
     ) -> Tensor:
         raise NotImplementedError
+
+    def clamped_delta(self, surface, P, V, t) -> Tensor:
+        delta = self.delta(surface, P, V, t)
+        if self.max_delta is not None:
+            return torch.clamp(delta, min=-self.max_delta, max=self.max_delta)
+        else:
+            return delta
 
     def __call__(
         self,
@@ -57,20 +64,19 @@ class CollisionAlgorithm:
         t = init_t
 
         if history:
-            t_history = torch.empty((P.shape[0], self.num_iter + 2))
+            t_history = torch.empty((P.shape[0], self.max_iter + 2))
             t_history[:, 0] = init_t
 
         with torch.no_grad():
-            for i in range(self.num_iter):
-                delta = self.delta(surface, P, V, t)
-                # TODO early stop if delta is small enough
+            for i in range(self.max_iter):
+                delta = self.clamped_delta(surface, P, V, t)
                 t = t - delta
 
                 if history:
                     t_history[:, i + 1] = t
 
         # One iteration for backwards pass
-        t = t - self.delta(surface, P, V, t)
+        t = t - self.clamped_delta(surface, P, V, t)
 
         if history:
             t_history[:, -1] = t
@@ -96,8 +102,8 @@ def newton_delta(
 
 
 class Newton(CollisionAlgorithm):
-    def __init__(self, num_iter: int, damping: float):
-        super().__init__(num_iter)
+    def __init__(self, damping: float, **kwargs):
+        super().__init__(**kwargs)
         self.damping = damping
 
     def delta(
@@ -106,7 +112,7 @@ class Newton(CollisionAlgorithm):
         return newton_delta(surface, P, V, t, self.damping)
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.num_iter}, {self.damping})"
+        return f"{type(self).__name__}({self.damping}, {self.max_iter})"
 
 
 def gd_delta(
@@ -125,8 +131,8 @@ def gd_delta(
 
 
 class GD(CollisionAlgorithm):
-    def __init__(self, num_iter: int, step_size: float):
-        super().__init__(num_iter)
+    def __init__(self, step_size: float, **kwargs):
+        super().__init__(**kwargs)
         self.step_size = step_size
 
     def delta(
@@ -135,7 +141,7 @@ class GD(CollisionAlgorithm):
         return gd_delta(surface, P, V, t, self.step_size)
     
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.num_iter}, {self.step_size})"
+        return f"{type(self).__name__}({self.step_size}, {self.max_iter})"
 
 
 def lm_delta(
@@ -154,8 +160,8 @@ def lm_delta(
 
 
 class LM(CollisionAlgorithm):
-    def __init__(self, num_iter: int, damping: float):
-        super().__init__(num_iter)
+    def __init__(self, damping: float, **kwargs):
+        super().__init__(**kwargs)
         self.damping = damping
 
     def delta(
@@ -164,4 +170,4 @@ class LM(CollisionAlgorithm):
         return lm_delta(surface, P, V, t, self.damping)
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.num_iter}, {self.damping})"
+        return f"{type(self).__name__}({self.damping}, {self.max_iter})"

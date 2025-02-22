@@ -129,7 +129,7 @@ class ImplicitSurface(LocalSurface):
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, collision: CollisionAlgorithm = Newton(15, 0.8), **kwargs):
+    def __init__(self, collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10), **kwargs):
         super().__init__(**kwargs)
         self.collision_algorithm = collision
 
@@ -169,11 +169,11 @@ class ImplicitSurface(LocalSurface):
         # Normalize gradient to make normal vectors
         local_normals = torch.nn.functional.normalize(grad, dim=1)
 
-        # If there is no intersection, newton's method won't converge
+        # If there is no intersection, collision detection won't converge
         # and points will not be on the surface
         # So verify intersection here and filter points
         # that aren't on the surface
-        # TODO test Newton method, and support tolerance configuration based on sampling dtype?
+        # TODO better tolerance configuration based on sampling dtype
         valid = self.contains(local_points, tol=1e-3)
 
         return t, local_normals, valid
@@ -341,6 +341,17 @@ class Sphere(ImplicitSurface):
             return sphere_samples_angular(
                 radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
+        
+    def edge_points(self, dtype: torch.dtype) -> tuple[Tensor, Tensor]:
+        "2D edge points"
+
+        A = self.extent(dim=2, dtype=dtype) + torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        B = self.extent(dim=2, dtype=dtype) - torch.tensor(
+            [0.0, self.diameter / 2]
+        )
+        return A, B
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
@@ -349,13 +360,7 @@ class Sphere(ImplicitSurface):
 
         # For points beyond the half-diameter
         # use the distance to the edge point
-        center = torch.tensor([1 / K, 0.0])
-        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
-            [0.0, self.diameter / 2]
-        )
-        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
-            [0.0, self.diameter / 2]
-        )
+        A, B = self.edge_points(dtype=points.dtype)
 
         radicand = 1 - r2 * K**2
         safe_radicand = torch.clamp(radicand, min=0.0)
@@ -381,13 +386,7 @@ class Sphere(ImplicitSurface):
 
         # For points beyond the half-diameter
         # use the distance to the edge point
-        center = torch.tensor([1 / K, 0.0])
-        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
-            [0.0, self.diameter / 2]
-        )
-        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
-            [0.0, self.diameter / 2]
-        )
+        A, B = self.edge_points(dtype=points.dtype)
 
         normA = torch.linalg.vector_norm(points - A, dim=1)
         normB = torch.linalg.vector_norm(points - B, dim=1)
