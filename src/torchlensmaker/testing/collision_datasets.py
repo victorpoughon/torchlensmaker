@@ -2,7 +2,8 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.surfaces import ImplicitSurface, Sphere, Sphere3
-from torchlensmaker.core.rot2d import perpendicular2d
+from torchlensmaker.core.rot2d import perpendicular2d, rot2d
+import math
 
 Tensor = torch.Tensor
 
@@ -21,11 +22,11 @@ class CollisionDataset:
     V: Tensor
 
 
-def offset_rays(
+def tangent_rays(
     offset: float, N: int
 ):
     """
-    Utility function to generate so called 'offset' rays: perpendicular to the
+    Utility function to generate so called 'tangent' rays: perpendicular to the
     surface gradient, offset along the gradient by a constant distance
     """
 
@@ -88,6 +89,38 @@ def normal_rays(
     return generate
 
 
+def random_direction_rays(
+    offset: float, N: int
+):
+    """
+    Utility function to generate so called 'random direction' rays: 
+    rays colliding with the surface on sample points with a random direction V
+    offset along the gradient by a constant distance
+    """
+
+    def generate(surface: ImplicitSurface) -> CollisionDataset:
+
+        samples = surface.samples2D_full(N)
+        assert torch.all(torch.isfinite(samples))
+        
+        theta = 2 * math.pi * torch.rand((N,))
+        V = rot2d(torch.tensor([1.0, 0.0]), theta)
+
+        P = samples + offset * V
+
+        assert torch.all(torch.isfinite(P))
+        assert torch.all(torch.isfinite(V))
+
+        return CollisionDataset(
+            name=f"{surface.testname()}_random",
+            surface=surface,
+            P=P,
+            V=V,
+        )
+
+    return generate
+
+
 def move_rays(P: Tensor, V: Tensor, m: float) -> tuple[Tensor, Tensor]:
     return P + m * V, V
 
@@ -112,87 +145,3 @@ def merge_datasets(datasets: list[CollisionDataset]) -> CollisionDataset:
         V=V,
     )
 
-
-# surface
-# rays generator(s)
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere(10, 10),
-#         offset=5.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere(10, 5),
-#         offset=1.0,
-#         expected_collide=True,
-#         N=150,
-#     )
-# )
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere(10, 1e3),
-#         offset=5.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere(10, 1e6),
-#         offset=5.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere3(10, 10),
-#         offset=5.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     normal_rays(
-#         surface=Sphere3(10, 5),
-#         offset=1.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     offset_rays(
-#         surface=Sphere(10, 5),
-#         offset=1.0,
-#         expected_collide=False,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     offset_rays(
-#         surface=Sphere3(10, 5),
-#         offset=1.0,
-#         expected_collide=False,
-#         N=15,
-#     )
-# )
-
-# register_dataset(
-#     offset_rays(
-#         surface=Sphere3(10, 5),
-#         offset=-1.0,
-#         expected_collide=True,
-#         N=15,
-#     )
-# )

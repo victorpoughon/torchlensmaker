@@ -40,7 +40,7 @@ class LocalSurface:
 
         Returns:
             t: Value of parameter t such that P + tV is on the surface
-            normals: Normal vectors to the surface at the collision points
+            normals: Normal unit vectors to the surface at the collision points
             valid: Bool tensor indicating which rays do collide with the surface
         """
         raise NotImplementedError
