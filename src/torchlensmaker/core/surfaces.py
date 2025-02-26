@@ -549,7 +549,7 @@ class SphereR(LocalSurface):
 
     def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
         C = 1 / self.R
-        if C * self.diameter < 0.1:
+        if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
                 curvature=C, start=0.0, end=self.outline.max_radius(), N=N
@@ -563,7 +563,7 @@ class SphereR(LocalSurface):
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
         "Like samples2D but on the entire domain"
         C = 1 / self.R
-        if C * self.diameter < 0.1:
+        if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
                 curvature=C,
@@ -592,13 +592,12 @@ class SphereR(LocalSurface):
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         center = self.center(dim=points.shape[1])
-        return torch.logical_and(
-            self.outline.contains(points),
-            torch.abs(
-                torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)
-            )
-            < tol,
-        )
+        within_outline = self.outline.contains(points)
+        within_sphere = torch.abs(torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)) <= tol
+        within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x())
+
+        return torch.all(torch.stack((within_outline, within_sphere, within_extent), dim=1), dim=1)
+
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         N, D = P.shape

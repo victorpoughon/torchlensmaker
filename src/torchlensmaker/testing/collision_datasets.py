@@ -8,6 +8,7 @@ import math
 Tensor = torch.Tensor
 
 from dataclasses import dataclass, replace
+from typing import Callable
 
 
 @dataclass
@@ -120,6 +121,37 @@ def random_direction_rays(
 
     return generate
 
+
+def fixed_rays(
+    direction: Tensor,
+    offset: float,
+    N: int,
+) -> Callable[[ImplicitSurface], CollisionDataset]:
+    """
+    Ray generator for rays with a fixed direction
+    """
+
+    def generate(surface: ImplicitSurface) -> CollisionDataset:
+
+        samples = surface.samples2D_full(N)
+        assert torch.all(torch.isfinite(samples))
+        
+        theta = 2 * math.pi * torch.rand((N,))
+        V = torch.tile(direction, (N, 1))
+
+        P = samples + offset * V
+
+        assert torch.all(torch.isfinite(P))
+        assert torch.all(torch.isfinite(V))
+
+        return CollisionDataset(
+            name=f"{surface.testname()}_fixed",
+            surface=surface,
+            P=P,
+            V=V,
+        )
+
+    return generate
 
 def move_rays(P: Tensor, V: Tensor, m: float) -> tuple[Tensor, Tensor]:
     return P + m * V, V
