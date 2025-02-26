@@ -23,7 +23,7 @@ Tensor = torch.Tensor
 
 class LocalSurface:
     """
-    Defines a surface in a local reference frame
+    Base class for surfaces defined in a local reference frame
     """
 
     def __init__(self, outline: Outline, dtype: torch.dtype = torch.float64):
@@ -42,6 +42,12 @@ class LocalSurface:
             t: Value of parameter t such that P + tV is on the surface
             normals: Normal unit vectors to the surface at the collision points
             valid: Bool tensor indicating which rays do collide with the surface
+        """
+        raise NotImplementedError
+
+    def normals(self, points: Tensor) -> Tensor:
+        """
+        Unit vectors normal to the surface at input points of shape (N, D)
         """
         raise NotImplementedError
 
@@ -84,6 +90,11 @@ class Plane(LocalSurface):
         r = torch.linspace(0, self.outline.max_radius(), N)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
+    def samples2D_full(self, N: int) -> Tensor:
+        maxr = self.outline.max_radius()
+        r = torch.linspace(-maxr, maxr, N)
+        return torch.stack((torch.zeros(N), r), dim=-1)
+
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         dim = P.shape[1]
         t = -P[:, 0] / V[:, 0]
@@ -97,6 +108,15 @@ class Plane(LocalSurface):
         valid = self.outline.contains(local_points)
         return t, local_normals, valid
 
+    def normals(self, points: Tensor) -> Tensor:
+        N, dim = points.shape
+        normal = (
+            torch.tensor([-1.0, 0.0], dtype=self.dtype)
+            if dim == 2
+            else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
+        )
+        return torch.tile(normal, (N, 1))
+
     def extent_x(self) -> Tensor:
         return torch.as_tensor(0.0, dtype=self.dtype)
 
@@ -108,6 +128,7 @@ class Plane(LocalSurface):
 
 class SquarePlane(Plane):
     def __init__(self, side_length: float, dtype: torch.dtype = torch.float64):
+        self.side_length = side_length
         super().__init__(SquareOutline(side_length), dtype)
 
     def testname(self) -> str:
@@ -118,6 +139,7 @@ class CircularPlane(Plane):
     "aka disk"
 
     def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
+        self.diameter = diameter
         super().__init__(CircularOutline(diameter), dtype)
 
     def testname(self) -> str:
@@ -177,6 +199,17 @@ class ImplicitSurface(LocalSurface):
         valid = self.contains(local_points, tol=1e-3)
 
         return t, local_normals, valid
+
+    def normals(self, points: Tensor) -> Tensor:
+        return nn.functional.normalize(self.Fd_grad(points), dim=1)
+    
+    def Fd(self, points: Tensor) -> Tensor:
+        "Calls f or F depending on the shape of points"
+        return self.f(points) if points.shape[1] == 2 else self.F(points)
+
+    def Fd_grad(self, points: Tensor) -> Tensor:
+        "Calls f_grad or F_grad depending on the shape of points"
+        return self.f_grad(points) if points.shape[1] == 2 else self.F_grad(points)
 
     def f(self, points: Tensor) -> Tensor:
         raise NotImplementedError

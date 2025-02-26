@@ -32,7 +32,7 @@ def tangent_rays(
 
     def generate(surface: ImplicitSurface) -> CollisionDataset:
         samples = surface.samples2D_full(N)
-        grad_samples = nn.functional.normalize(surface.f_grad(samples))
+        grad_samples = surface.normals(samples)
         assert torch.all(torch.isfinite(samples))
         assert torch.all(torch.isfinite(grad_samples))
 
@@ -66,7 +66,7 @@ def normal_rays(
     def generate(surface: ImplicitSurface) -> CollisionDataset:
 
         samples = surface.samples2D_full(N)
-        grad_samples = nn.functional.normalize(surface.f_grad(samples))
+        grad_samples = surface.normals(samples)
         assert torch.all(torch.isfinite(samples))
         assert torch.all(torch.isfinite(grad_samples))
 

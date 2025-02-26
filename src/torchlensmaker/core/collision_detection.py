@@ -13,15 +13,10 @@ def surface_f(
 ) -> tuple[Tensor, Tensor]:
     "Convinience function to call F and F_grad of an implicit surface with variable dimension"
 
-    dim = P.shape[1]
     points = P + t.unsqueeze(1).expand_as(V) * V
 
-    if dim == 2:
-        F = surface.f(points)
-        F_grad = surface.f_grad(points)
-    else:
-        F = surface.F(points)
-        F_grad = surface.F_grad(points)
+    F = surface.Fd(points)
+    F_grad = surface.Fd_grad(points)
 
     return F, F_grad
 
