@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.core.surfaces import ImplicitSurface, Sphere, Sphere3
+from torchlensmaker.core.surfaces import ImplicitSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
 import math
 

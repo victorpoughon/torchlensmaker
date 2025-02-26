@@ -151,7 +151,11 @@ class ImplicitSurface(LocalSurface):
     Surface3D defined in implicit form: F(x,y,z) = 0
     """
 
-    def __init__(self, collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10), **kwargs):
+    def __init__(
+        self,
+        collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10),
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.collision_algorithm = collision
 
@@ -202,7 +206,7 @@ class ImplicitSurface(LocalSurface):
 
     def normals(self, points: Tensor) -> Tensor:
         return nn.functional.normalize(self.Fd_grad(points), dim=1)
-    
+
     def Fd(self, points: Tensor) -> Tensor:
         "Calls f or F depending on the shape of points"
         return self.f(points) if points.shape[1] == 2 else self.F(points)
@@ -308,96 +312,109 @@ class Sphere(ImplicitSurface):
     functions.
     """
 
-    def __init__(self, diameter: float, r: int | float | nn.Parameter, **kwargs):
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter | None = None,
+        C: int | float | nn.Parameter | None = None,
+        **kwargs,
+    ):
         super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
-        assert (
-            torch.abs(torch.as_tensor(r)) >= diameter / 2
-        ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
+        if (R is not None and C is not None) or (R is None and C is None):
+            raise RuntimeError(
+                "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
+            )
 
-        self.K: torch.Tensor
-        if isinstance(r, nn.Parameter):
-            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=self.dtype))
+        self.C: torch.Tensor
+        if C is None:
+            if torch.abs(torch.as_tensor(R)) < diameter / 2:
+                raise RuntimeError(
+                    f"Sphere radius (R={R}) must be at least half the surface diameter (D={diameter})"
+                )
+
+            if isinstance(R, nn.Parameter):
+                self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=self.dtype))
+            else:
+                self.C = torch.as_tensor(1.0 / R, dtype=self.dtype)
         else:
-            self.K = torch.as_tensor(1.0 / r, dtype=self.dtype)
+            if isinstance(C, nn.Parameter):
+                self.C = C
+            else:
+                self.C = torch.as_tensor(C, dtype=self.dtype)
 
-        assert self.K.dim() == 0
+        assert self.C.dim() == 0
 
     def testname(self) -> str:
-        R = 1 / self.K
-        return f"Sphere-{self.diameter:.2f}-{R:.2f}"
+        return f"Sphere-{self.diameter:.2f}-{self.C:.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
-        if isinstance(self.K, nn.Parameter):
-            return {"K": self.K}
+        if isinstance(self.C, nn.Parameter):
+            return {"C": self.C}
         else:
             return {}
 
-    def radius(self) -> Tensor:
-        "Utility function because parameter is stored internally as curvature"
-        return torch.div(1.0, self.K)
-
     def extent_x(self) -> Tensor:
         r = self.outline.max_radius()
-        K = self.K
-        return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
+        C = self.C
+        return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
 
     def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        if self.K * self.diameter < 0.1:
-            # If the curvature is low, use linear sampling along the y axis
+        # If the curvature is low, use linear sampling along the y axis
+        # Else, use the angular parameterization of the circle so that
+        # samples are smoother, especially for high curvature circles.
+        if self.C * self.diameter < 0.1:
             return sphere_samples_linear(
-                curvature=self.K, start=0.0, end=self.outline.max_radius(), N=N
+                curvature=self.C,
+                start=0.0,
+                end=self.outline.max_radius() - epsilon,
+                N=N,
             )
         else:
-            # Else, use the angular parameterization of the circle so that
-            # samples are smoother, especially for high curvature circles.
-            R = 1 / self.K
+            R = 1 / self.C
             theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
-            return sphere_samples_angular(radius=R, start=0.0, end=theta_max, N=N)
+            return sphere_samples_angular(
+                radius=R, start=0.0, end=theta_max - epsilon, N=N
+            )
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        "Like samples2D but on the entire domain"
-        if self.K * self.diameter < 0.1:
-            # If the curvature is low, use linear sampling along the y axis
+        # If the curvature is low, use linear sampling along the y axis
+        # Else, use the angular parameterization of the circle so that
+        # samples are smoother, especially for high curvature circles.
+        if self.C * self.diameter < 0.1:
             return sphere_samples_linear(
-                curvature=self.K,
+                curvature=self.C,
                 start=-self.outline.max_radius() + epsilon,
                 end=self.outline.max_radius() - epsilon,
                 N=N,
             )
         else:
-            # Else, use the angular parameterization of the circle so that
-            # samples are smoother, especially for high curvature circles.
-            R = 1 / self.K
+            R = 1 / self.C
             theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
             return sphere_samples_angular(
                 radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
-        
+
     def edge_points(self, dtype: torch.dtype) -> tuple[Tensor, Tensor]:
         "2D edge points"
 
-        A = self.extent(dim=2, dtype=dtype) + torch.tensor(
-            [0.0, self.diameter / 2]
-        )
-        B = self.extent(dim=2, dtype=dtype) - torch.tensor(
-            [0.0, self.diameter / 2]
-        )
+        A = self.extent(dim=2, dtype=dtype) + torch.tensor([0.0, self.diameter / 2])
+        B = self.extent(dim=2, dtype=dtype) - torch.tensor([0.0, self.diameter / 2])
         return A, B
 
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
         r2 = torch.pow(r, 2)
-        K = self.K
+        C = self.C
 
         # For points beyond the half-diameter
         # use the distance to the edge point
         A, B = self.edge_points(dtype=points.dtype)
 
-        radicand = 1 - r2 * K**2
+        radicand = 1 - r2 * C**2
         safe_radicand = torch.clamp(radicand, min=0.0)
-        circle = torch.div(K * r2, 1 + torch.sqrt(safe_radicand)) - x
+        circle = torch.div(C * r2, 1 + torch.sqrt(safe_radicand)) - x
 
         top_fallback = torch.linalg.vector_norm(points - A, dim=1)
         bottom_fallback = torch.linalg.vector_norm(points - B, dim=1)
@@ -415,7 +432,7 @@ class Sphere(ImplicitSurface):
     def f_grad(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
         r2 = torch.pow(r, 2)
-        K = self.K
+        C = self.C
 
         # For points beyond the half-diameter
         # use the distance to the edge point
@@ -433,11 +450,11 @@ class Sphere(ImplicitSurface):
 
         max_r = self.outline.max_radius()
 
-        radicand = 1 - r2 * K**2
+        radicand = 1 - r2 * C**2
 
         # clamp to a non zero epsilon to avoid both sqrt(<0) and div by zero
         safe_radicand = torch.clamp(radicand, min=1e-4)
-        grady = torch.div((K * r), torch.sqrt(safe_radicand))
+        grady = torch.div((C * r), torch.sqrt(safe_radicand))
 
         circle = torch.stack((-torch.ones_like(x), grady), dim=-1)
 
@@ -453,82 +470,103 @@ class Sphere(ImplicitSurface):
             ),
         )
 
+    # TODO zone mask in 3D
     def F(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        K = self.K
+        C = self.C
         r2 = y**2 + z**2
-        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2)) - x
+        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * C**2)) - x
 
     def F_grad(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        K = self.K
+        C = self.C
         r2 = y**2 + z**2
-        denom = torch.sqrt(1 - r2 * K**2)
+        denom = torch.sqrt(1 - r2 * C**2)
         return torch.stack(
-            (-torch.ones_like(x), (K * y) / denom, (K * z) / denom), dim=-1
+            (-torch.ones_like(x), (C * y) / denom, (C * z) / denom), dim=-1
         )
 
 
-class Sphere3(ImplicitSurface):
+class SphereR(LocalSurface):
+    """
+    A section of a sphere, parameterized by signed radius.
+
+    This parameterization is useful to represent high curvature sections
+    including a complete half-sphere. However it's poorly suited to represent
+    low curvature sections that are closer to a planar surface.
+
+    In 2D, this surface is an arc of circle.
+    In 3D, this surface is a section of a sphere (wikipedia call it a "spherical cap")
+    """
+
     def __init__(
         self,
         diameter: float,
-        r: int | float | nn.Parameter,
+        R: int | float | nn.Parameter | None = None,
+        C: int | float | nn.Parameter | None = None,
         **kwargs,
     ):
         super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
-        assert (
-            torch.abs(torch.as_tensor(r)) >= diameter / 2
-        ), f"Sphere diameter ({diameter}) must be less than 2x its arc radius (2x{r}={2*r})"
+        if (R is not None and C is not None) or (R is None and C is None):
+            raise RuntimeError(
+                "SphereR must be initialized with exactly one of R (radius) or C (curvature)."
+            )
 
-        self.K: torch.Tensor
-        if isinstance(r, nn.Parameter):
-            self.K = nn.Parameter(torch.tensor(1.0 / r.item(), dtype=self.dtype))
+        self.R: torch.Tensor
+        if C is None:
+            if torch.abs(torch.as_tensor(R)) < diameter / 2:
+                raise RuntimeError(
+                    f"Sphere radius (R={R}) must be at least half the surface diameter (D={diameter})"
+                )
+
+            if isinstance(R, nn.Parameter):
+                self.R = R
+            else:
+                self.R = torch.as_tensor(R, dtype=self.dtype)
         else:
-            self.K = torch.as_tensor(1.0 / r, dtype=self.dtype)
+            if isinstance(C, nn.Parameter):
+                self.R = nn.Parameter(torch.tensor(1.0 / C.item(), dtype=self.dtype))
+            else:
+                self.R = torch.as_tensor(1.0 / C, dtype=self.dtype)
 
-        assert self.K.dim() == 0
+        assert self.R.dim() == 0
 
     def testname(self) -> str:
-        R = 1 / self.K
-        return f"Sphere3-{self.diameter:.2f}-{R:.2f}"
+        return f"SphereR-{self.diameter:.2f}-{self.R:.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
-        if isinstance(self.K, nn.Parameter):
-            return {"K": self.K}
+        if isinstance(self.R, nn.Parameter):
+            return {"R": self.R}
         else:
             return {}
 
-    def radius(self) -> Tensor:
-        "Utility function because parameter is stored internally as curvature"
-        return torch.div(1.0, self.K)
-
     def extent_x(self) -> Tensor:
         r = self.outline.max_radius()
-        K = self.K
+        K = 1 / self.R
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
     def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        if self.K * self.diameter < 0.1:
+        C = 1 / self.R
+        if C * self.diameter < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
-                curvature=self.K, start=0.0, end=self.outline.max_radius(), N=N
+                curvature=C, start=0.0, end=self.outline.max_radius(), N=N
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            R = 1 / self.K
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
-            return sphere_samples_angular(radius=R, start=0.0, end=theta_max, N=N)
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(self.R))
+            return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max, N=N)
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
         "Like samples2D but on the entire domain"
-        if self.K * self.diameter < 0.1:
+        C = 1 / self.R
+        if C * self.diameter < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
-                curvature=self.K,
+                curvature=C,
                 start=-self.outline.max_radius() + epsilon,
                 end=self.outline.max_radius() - epsilon,
                 N=N,
@@ -536,101 +574,111 @@ class Sphere3(ImplicitSurface):
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            R = 1 / self.K
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(self.R))
             return sphere_samples_angular(
-                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
+                radius=self.R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
 
-    def f(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        r2 = torch.pow(r, 2)
-        K = self.K
-        R = self.radius()
-        center = torch.tensor([1 / K, 0.0])
-        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
-            [0.0, self.diameter / 2]
-        )
-        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
-            [0.0, self.diameter / 2]
-        )
+    def center(self, dim: int) -> Tensor:
+        if dim == 2:
+            return torch.tensor([self.R, 0.0])
+        else:
+            return torch.tensor([self.R, 0.0, 0.0])
 
-        # normal vectors to the sector lines
-        def norm(v):
-            return torch.stack((v[1], -v[0]), dim=-1)
+    def normals(self, points: Tensor) -> Tensor:
+        # The normal is the vector from the center to the points
+        center = self.center(dim=points.shape[1])
+        return torch.nn.functional.normalize(points - center)
 
-        LA = norm(A - center)
-        LB = norm(center - B)
-        center_vect = center - points
-
-        zone_cone = torch.logical_and(
-            torch.sum(LA * center_vect, dim=1) > 0,
-            torch.sum(LB * center_vect, dim=1) > 0,
+    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+        center = self.center(dim=points.shape[1])
+        return torch.logical_and(
+            self.outline.contains(points),
+            torch.abs(
+                torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)
+            )
+            < tol,
         )
 
-        zone_A = torch.logical_and(torch.sum(LA * center_vect, dim=1) < 0, r > 0)
+    def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        N, D = P.shape
 
-        full_circle = torch.linalg.norm(points - center, dim=1) - R
-        dist_A = torch.linalg.norm(points - A, dim=1)
-        dist_B = torch.linalg.norm(points - B, dim=1)
+        # Sphere-ray collision is a second order polynomial
+        center = self.center(dim=D)
+        A = torch.sum(V**2, dim=1)
+        B = 2 * torch.sum(V * (P - center), dim=1)
+        C = torch.sum((P - center) ** 2, dim=1) - self.R**2
+        assert A.shape == B.shape == C.shape == (N,)
 
-        return torch.where(zone_cone, full_circle, torch.where(zone_A, dist_A, dist_B))
+        delta = B**2 - 4 * A * C
+        safe_delta = torch.clamp(delta, min=0.0)
+        assert delta.shape == (N,), delta.shape
+        assert safe_delta.shape == (N,), safe_delta.shape
 
-    def f_grad(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        r2 = torch.pow(r, 2)
-        K = self.K
-        R = self.radius()
-        center = torch.tensor([1 / K, 0.0])
-        A = self.extent(dim=2, dtype=points.dtype) + torch.tensor(
-            [0.0, self.diameter / 2]
+        # tensor of shape (N, 2) with both roots
+        # safe meaning that if the root is undefined the value is zero instead
+        safe_roots = torch.stack(
+            (
+                (-B + torch.sqrt(safe_delta)) / (2 * A),
+                (-B - torch.sqrt(safe_delta)) / (2 * A),
+            ),
+            dim=1,
         )
-        B = self.extent(dim=2, dtype=points.dtype) - torch.tensor(
-            [0.0, self.diameter / 2]
+        assert safe_roots.shape == (N, 2)
+
+        # mask of shape (N, 2) indicating if each root is inside the outline
+        root_inside = torch.stack(
+            (
+                self.contains(P + safe_roots[:, 0].unsqueeze(1).expand_as(V) * V),
+                self.contains(P + safe_roots[:, 1].unsqueeze(1).expand_as(V) * V),
+            ),
+            dim=1,
+        )
+        assert root_inside.shape == (N, 2)
+
+        # number of valid roots
+        number_of_valid_roots = torch.sum(root_inside, dim=1)
+        assert number_of_valid_roots.shape == (N,)
+
+        # index of the first valid root
+        _, index_first_valid = torch.max(root_inside, dim=1)
+        assert index_first_valid.shape == (N,)
+
+        # index of the root closest to zero
+        _, index_closest = torch.min(torch.abs(safe_roots), dim=1)
+        assert index_closest.shape == (N,)
+
+        # delta < 0 => no collision
+        # delta >=0 => two roots (which maybe equal)
+        #  - if both are outside the outline => no collision
+        #  - if only one is inside the outline => one collision
+        #  - if both are inside the outline => return the root closest to zero (i.e. the ray origin)
+
+        default_t = torch.zeros(N, dtype=self.dtype)
+        arange = torch.arange(N)
+        t = torch.where(
+            delta < 0,
+            default_t,
+            torch.where(
+                number_of_valid_roots == 0,
+                default_t,
+                torch.where(
+                    number_of_valid_roots == 1,
+                    safe_roots[arange, index_first_valid],
+                    torch.where(
+                        number_of_valid_roots == 2,
+                        safe_roots[arange, index_closest],
+                        default_t,
+                    ),
+                ),
+            ),
         )
 
-        # normal vectors to the sector lines
-        def norm(v):
-            return torch.stack((v[1], -v[0]), dim=-1)
+        local_points = P + t.unsqueeze(1).expand_as(V) * V
+        local_normals = self.normals(local_points)
+        valid = self.contains(local_points)
 
-        LA = norm(A - center)
-        LB = norm(center - B)
-        center_vect = center - points
-
-        zone_cone = torch.logical_and(
-            torch.sum(LA * center_vect, dim=1) > 0,
-            torch.sum(LB * center_vect, dim=1) > 0,
-        )
-
-        zone_A = torch.logical_and(torch.sum(LA * center_vect, dim=1) < 0, r > 0)
-
-        dist_center = (points - center) / torch.linalg.norm(
-            points - center, dim=1
-        ).unsqueeze(1)
-        full_circle = dist_center  # abs?
-        dist_A = (points - A) / torch.linalg.norm(points - A, dim=1).unsqueeze(1)
-        dist_B = (points - B) / torch.linalg.norm(points - B, dim=1).unsqueeze(1)
-
-        return torch.where(
-            zone_cone.unsqueeze(1),
-            full_circle,
-            torch.where(zone_A.unsqueeze(1), dist_A, dist_B),
-        )
-
-    def F(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        K = self.K
-        r2 = y**2 + z**2
-        return torch.div(K * r2, 1 + torch.sqrt(1 - r2 * K**2)) - x
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        K = self.K
-        r2 = y**2 + z**2
-        denom = torch.sqrt(1 - r2 * K**2)
-        return torch.stack(
-            (-torch.ones_like(x), (K * y) / denom, (K * z) / denom), dim=-1
-        )
+        return t, local_normals, valid
 
 
 class Asphere(ImplicitSurface):
