@@ -332,6 +332,9 @@ class Sphere(ImplicitSurface):
             return {"C": self.C}
         else:
             return {}
+    
+    def radius(self) -> float:
+        return 1 / self.C.item()
 
     def extent_x(self) -> Tensor:
         r = self.outline.max_radius()
@@ -519,6 +522,9 @@ class SphereR(LocalSurface):
             return {"R": self.R}
         else:
             return {}
+    
+    def radius(self) -> float:
+        return self.R.item()
 
     def extent_x(self) -> Tensor:
         r = self.outline.max_radius()
@@ -665,16 +671,16 @@ class Asphere(ImplicitSurface):
         R: int | float | nn.Parameter,
         K: int | float | nn.Parameter,
         A4: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        **kwargs
     ):
-        super().__init__(CircularOutline(diameter), dtype)
+        super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
 
         self.C: torch.Tensor
         if isinstance(R, nn.Parameter):
-            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=dtype))
+            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=self.dtype))
         else:
-            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
+            self.C = torch.as_tensor(1.0 / R, dtype=self.dtype)
         assert self.C.dim() == 0
 
         self.K = to_tensor(K)

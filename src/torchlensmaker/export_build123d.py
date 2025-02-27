@@ -26,7 +26,7 @@ def sketch_parabola(parabola: tlm.Parabola) -> bd.Sketch:
 
 
 def sketch_sphere(sphere: tlm.Sphere) -> bd.Sketch:
-    k = sphere.K
+    k = sphere.C
     y = -sphere.diameter / 2
     x = torch.div(k * y**2, 1 + torch.sqrt(1 - y * k**2))
     r = 1.0 / k
