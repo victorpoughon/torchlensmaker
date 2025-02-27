@@ -180,8 +180,6 @@ class ImplicitSurface(LocalSurface):
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
-        dim = P.shape[1]
-
         init_t = self.init_t(P, V)
 
         t = self.collision_algorithm(self, P, V, init_t)
