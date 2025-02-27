@@ -231,7 +231,7 @@ class Parabola(ImplicitSurface):
         a: int | float | nn.Parameter,
         **kwargs,
     ):
-        super().__init__(CircularOutline(diameter), **kwargs)
+        super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
         self.a = to_tensor(a, default_dtype=self.dtype)
 
