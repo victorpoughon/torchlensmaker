@@ -153,7 +153,7 @@ class ImplicitSurface(LocalSurface):
 
     def __init__(
         self,
-        collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10),
+        collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10), # TODO
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -171,6 +171,7 @@ class ImplicitSurface(LocalSurface):
     def init_t(self, P: Tensor, V: Tensor) -> Tensor:
         # Initial guess is the intersection of rays with the X=0 or Y=O plane,
         # depending on if rays are mostly vertical or mostly horizontal
+        # TODO make this backwards safe with an inner where()
         init_x = -P[:, 0] / V[:, 0]
         init_y = -P[:, 1] / V[:, 1]
         init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
@@ -186,14 +187,7 @@ class ImplicitSurface(LocalSurface):
         t = self.collision_algorithm(self, P, V, init_t)
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
-
-        if dim == 2:
-            grad = self.f_grad(local_points)
-        else:
-            grad = self.F_grad(local_points)
-
-        # Normalize gradient to make normal vectors
-        local_normals = torch.nn.functional.normalize(grad, dim=1)
+        local_normals = self.normals(local_points)
 
         # If there is no intersection, collision detection won't converge
         # and points will not be on the surface
