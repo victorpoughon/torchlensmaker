@@ -7,8 +7,10 @@ from dataclasses import dataclass
 Tensor = torch.Tensor
 
 from typing import TYPE_CHECKING, Optional, Callable
+
 if TYPE_CHECKING:
     from torchlensmaker.core.surfaces import ImplicitSurface
+
 
 def surface_f(
     surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
@@ -24,7 +26,7 @@ def surface_f(
 
 
 class CollisionAlgorithm:
-    """Iterative collision detection for implicit surfaces"""
+    """Base class for collision detection algorithms"""
 
     def __init__(self, max_iter: float, max_delta: Optional[float]):
         self.max_iter = max_iter
@@ -42,63 +44,10 @@ class CollisionAlgorithm:
         else:
             return delta
 
-    def __call__(
-        self,
-        surface: ImplicitSurface,
-        P: Tensor,
-        V: Tensor,
-        init_t: Tensor,
-        history: bool = False,
-    ) -> Tensor:
-
-        assert isinstance(P, Tensor) and P.dim() == 2
-        assert isinstance(V, Tensor) and V.dim() == 2
-        assert P.shape == V.shape
-        dim = P.shape[1]
-        assert dim == 2 or dim == 3
-
-        # Initialize solutions t
-        t = init_t
-
-        if history:
-            t_history = torch.empty((P.shape[0], self.max_iter + 2))
-            t_history[:, 0] = init_t
-
-        with torch.no_grad():
-            for i in range(self.max_iter):
-                delta = self.clamped_delta(surface, P, V, t)
-                t = t - delta
-
-                if history:
-                    t_history[:, i + 1] = t
-
-        # One iteration for backwards pass
-        t = t - self.clamped_delta(surface, P, V, t)
-
-        if history:
-            t_history[:, -1] = t
-            return t, t_history
-        else:
-            return t
-
-
-def newton_delta(
-    surface: ImplicitSurface,
-    P: Tensor,
-    V: Tensor,
-    t: Tensor,
-    damping: float,
-) -> Tensor:
-    "Compute the delta for one step of Newton's method"
-
-    F, F_grad = surface_f(surface, P, V, t)
-
-    # Denominator will be zero if F_grad and V are orthogonal
-    dot = torch.sum(F_grad * V, dim=1)
-    return damping * F / dot
-
 
 class Newton(CollisionAlgorithm):
+    "Newton's method with optional damping"
+
     def __init__(self, damping: float, **kwargs):
         super().__init__(**kwargs)
         self.damping = damping
@@ -106,28 +55,19 @@ class Newton(CollisionAlgorithm):
     def delta(
         self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
     ) -> Tensor:
-        return newton_delta(surface, P, V, t, self.damping)
+
+        F, F_grad = surface_f(surface, P, V, t)
+        # Denominator will be zero if F_grad and V are orthogonal
+        dot = torch.sum(F_grad * V, dim=1)
+        return self.damping * F / dot
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping}, {self.max_iter})"
 
 
-def gd_delta(
-    surface: ImplicitSurface,
-    P: Tensor,
-    V: Tensor,
-    t: Tensor,
-    step_size: float,
-) -> Tensor:
-    "Compute the delta for one step of gradient descent"
-
-    F, F_grad = surface_f(surface, P, V, t)
-
-    dot = torch.sum(F_grad * V, dim=1)
-    return 2 * step_size * dot * F
-
-
 class GD(CollisionAlgorithm):
+    "Gradient Descent"
+
     def __init__(self, step_size: float, **kwargs):
         super().__init__(**kwargs)
         self.step_size = step_size
@@ -135,25 +75,13 @@ class GD(CollisionAlgorithm):
     def delta(
         self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
     ) -> Tensor:
-        return gd_delta(surface, P, V, t, self.step_size)
-    
+
+        F, F_grad = surface_f(surface, P, V, t)
+        dot = torch.sum(F_grad * V, dim=1)
+        return 2 * self.step_size * dot * F
+
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.step_size}, {self.max_iter})"
-
-
-def lm_delta(
-    surface: ImplicitSurface,
-    P: Tensor,
-    V: Tensor,
-    t: Tensor,
-    damping: float,
-) -> Tensor:
-    "Compute the delta for one step of Levenberg-Marquardt"
-
-    F, F_grad = surface_f(surface, P, V, t)
-
-    dot = torch.sum(F_grad * V, dim=1)
-    return dot * F / (dot**2 + damping)
 
 
 class LM(CollisionAlgorithm):
@@ -164,7 +92,11 @@ class LM(CollisionAlgorithm):
     def delta(
         self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
     ) -> Tensor:
-        return lm_delta(surface, P, V, t, self.damping)
+        "Levenberg-Marquardt"
+
+        F, F_grad = surface_f(surface, P, V, t)
+        dot = torch.sum(F_grad * V, dim=1)
+        return dot * F / (dot**2 + self.damping)
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping}, {self.max_iter})"
@@ -178,7 +110,11 @@ def init_zeros(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
 
 
 def init_best_axis(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
-    
+    """
+    Initialize t for iterations with the rays intersections with either X or Y
+    axis, depending on which is most perpendicular to the ray.
+    """
+
     # Initial guess is the intersection of rays with the X=0 or Y=O plane,
     # depending on if rays are mostly vertical or mostly horizontal
     # TODO make this backwards safe with an inner where()
@@ -192,8 +128,9 @@ def init_best_axis(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
 @dataclass
 class CollisionMethod:
     """
-    Iterative collision detection for implicit surfaces. A collision "method" is made up of:
-    
+    Dfferentiable iterative collision detection for implicit surfaces.
+
+    A collision "method" is made up of:
     * An initialization function
     * A collision algorithm
     """
@@ -213,10 +150,38 @@ class CollisionMethod:
         P: Tensor,
         V: Tensor,
         history: bool = False,
-    ) -> Tensor:
-        
-        init_t = self.init(surface, P, V)
-        return self.step0(surface, P, V, init_t, history)
+    ) -> Tensor | tuple[Tensor, Tensor]:
+
+        # Sanity checks
+        dim = P.shape[1]
+        assert dim == 2 or dim == 3
+        assert isinstance(P, Tensor) and P.dim() == 2
+        assert isinstance(V, Tensor) and V.dim() == 2
+        assert P.shape == V.shape
+
+        # Initialize solutions t
+        t = self.init(surface, P, V)
+
+        if history:
+            t_history = torch.empty((P.shape[0], self.step0.max_iter + 2))
+            t_history[:, 0] = t
+
+        with torch.no_grad():
+            for i in range(self.step0.max_iter):
+                delta = self.step0.clamped_delta(surface, P, V, t)
+                t = t - delta
+
+                if history:
+                    t_history[:, i + 1] = t
+
+        # One iteration for backwards pass
+        t = t - self.step0.clamped_delta(surface, P, V, t)
+
+        if history:
+            t_history[:, -1] = t
+            return t, t_history
+        else:
+            return t
 
 
 default_collision_method = CollisionMethod(
