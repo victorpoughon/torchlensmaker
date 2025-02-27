@@ -142,7 +142,7 @@ class CollisionMethod:
     step0: CollisionAlgorithm
 
     def __str__(self) -> str:
-        return f"{self.step0}[{self.init.__name__}]"
+        return f"[{self.init.__name__}] {self.step0}"
 
     def __call__(
         self,
