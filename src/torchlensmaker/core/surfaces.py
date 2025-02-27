@@ -13,9 +13,7 @@ from torchlensmaker.core.sphere_sampling import (
 )
 from torchlensmaker.core.tensor_manip import to_tensor
 
-from torchlensmaker.core.collision_detection import CollisionAlgorithm, Newton
-
-from typing import Iterable
+from torchlensmaker.core.collision_detection import CollisionMethod, default_collision_method
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -153,11 +151,11 @@ class ImplicitSurface(LocalSurface):
 
     def __init__(
         self,
-        collision: CollisionAlgorithm = Newton(damping=0.8, max_iter=15, max_delta=10), # TODO
+        collision_method: CollisionMethod = default_collision_method,
         **kwargs,
     ):
         super().__init__(**kwargs)
-        self.collision_algorithm = collision
+        self.collision_method = collision_method
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         dim = points.shape[1]
@@ -168,21 +166,9 @@ class ImplicitSurface(LocalSurface):
             self.outline.contains(points), torch.abs(F(points)) < tol
         )
 
-    def init_t(self, P: Tensor, V: Tensor) -> Tensor:
-        # Initial guess is the intersection of rays with the X=0 or Y=O plane,
-        # depending on if rays are mostly vertical or mostly horizontal
-        # TODO make this backwards safe with an inner where()
-        init_x = -P[:, 0] / V[:, 0]
-        init_y = -P[:, 1] / V[:, 1]
-        init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
-
-        return init_t
-
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
-        init_t = self.init_t(P, V)
-
-        t = self.collision_algorithm(self, P, V, init_t)
+        t = self.collision_method(self, P, V)
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
         local_normals = self.normals(local_points)

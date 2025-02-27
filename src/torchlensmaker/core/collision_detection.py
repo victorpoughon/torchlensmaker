@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import torch
 
+from dataclasses import dataclass
+
 Tensor = torch.Tensor
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Callable
 if TYPE_CHECKING:
     from torchlensmaker.core.surfaces import ImplicitSurface
 
@@ -166,3 +168,58 @@ class LM(CollisionAlgorithm):
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping}, {self.max_iter})"
+
+
+def init_zeros(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
+    "Initialize t for iterations with zeros"
+
+    N = P.shape[0]
+    return torch.zeros((N,), dtype=surface.dtype)
+
+
+def init_best_axis(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
+    
+    # Initial guess is the intersection of rays with the X=0 or Y=O plane,
+    # depending on if rays are mostly vertical or mostly horizontal
+    # TODO make this backwards safe with an inner where()
+    init_x = -P[:, 0] / V[:, 0]
+    init_y = -P[:, 1] / V[:, 1]
+    init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
+
+    return init_t
+
+
+@dataclass
+class CollisionMethod:
+    """
+    Iterative collision detection for implicit surfaces. A collision "method" is made up of:
+    
+    * An initialization function
+    * A collision algorithm
+    """
+
+    # initialization method
+    init: Callable[[ImplicitSurface, Tensor, Tensor], Tensor]
+
+    # algorithm
+    step0: CollisionAlgorithm
+
+    def __str__(self) -> str:
+        return f"{self.step0}[{self.init.__name__}]"
+
+    def __call__(
+        self,
+        surface: ImplicitSurface,
+        P: Tensor,
+        V: Tensor,
+        history: bool = False,
+    ) -> Tensor:
+        
+        init_t = self.init(surface, P, V)
+        return self.step0(surface, P, V, init_t, history)
+
+
+default_collision_method = CollisionMethod(
+    init=init_zeros,
+    step0=Newton(damping=0.8, max_iter=15, max_delta=10),
+)
