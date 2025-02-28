@@ -22,13 +22,13 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
     return [
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
         tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
-        tlm.Sphere(diameter=5, R=tlm.parameter(10), dtype=dtype),
-        tlm.Sphere(diameter=5, C=tlm.parameter(10), dtype=dtype),
+        tlm.Sphere(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
+        tlm.Sphere(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
 
         tlm.SphereR(diameter=5, R=10, dtype=dtype),
         tlm.SphereR(diameter=5, C=0.05, dtype=dtype),
-        tlm.SphereR(diameter=5, R=tlm.parameter(10), dtype=dtype),
-        tlm.SphereR(diameter=5, C=tlm.parameter(10), dtype=dtype),
+        tlm.SphereR(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
+        tlm.SphereR(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
 
         tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
         tlm.Parabola(diameter=5, a=tlm.parameter(0.05), dtype=dtype),
@@ -51,11 +51,28 @@ def test_parameters(surfaces: list[tlm.LocalSurface]) -> None:
         assert all([isinstance(key, str) for key in params.keys()])
         assert all([isinstance(value, nn.Parameter) for value in params.values()])
 
-def test_extent(surfaces: list[tlm.LocalSurface]) -> None:
-    # isfinite
-    # has surface dtype
-    # has shape (dim,)
-    ...
+
+def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
+    for s in surfaces:
+        zero2 = s.zero(2)
+        extent2 = s.extent(2)
+        assert zero2.dim() == 1 and zero2.shape == (2,)
+        assert extent2.dim() == 1 and extent2.shape == (2,)
+        assert torch.all(torch.isfinite(zero2))
+        assert torch.all(torch.isfinite(extent2))
+        assert zero2.dtype == s.dtype
+        assert extent2.dtype == s.dtype
+        del zero2, extent2
+
+        zero3 = s.zero(3)
+        extent3 = s.extent(3)
+        assert zero3.dim() == 1 and zero3.shape == (3,)
+        assert extent3.dim() == 1 and extent3.shape == (3,)
+        assert torch.all(torch.isfinite(zero3))
+        assert torch.all(torch.isfinite(extent3))
+        assert zero3.dtype == s.dtype
+        assert extent3.dtype == s.dtype
+        del zero3, extent3
 
 
 def test_extent_x(surfaces: list[tlm.LocalSurface]) -> None:

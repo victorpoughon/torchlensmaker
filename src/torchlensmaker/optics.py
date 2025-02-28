@@ -216,7 +216,8 @@ class KinematicSurface(nn.Module):
     ) -> Sequence[TransformBase]:
         "Additional transform that applies to the next element"
 
-        T = self.surface.extent(dim, dtype)
+        assert dtype == self.surface.dtype
+        T = self.surface.extent(dim)
 
         # Subtract first anchor, add second anchor
         anchor0 = (
@@ -233,12 +234,13 @@ class KinematicSurface(nn.Module):
     ) -> Sequence[TransformBase]:
         "Additional transform that applies to the surface"
 
+        assert dtype == self.surface.dtype
         S = self.scale * torch.eye(dim, dtype=dtype)
         S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
 
         scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
 
-        extent_translate = -self.scale * self.surface.extent(dim, dtype)
+        extent_translate = -self.scale * self.surface.extent(dim)
 
         anchor: Sequence[TransformBase] = (
             [TranslateTransform(extent_translate)]

@@ -35,14 +35,14 @@ class LocalSurface:
     def parameters(self) -> dict[str, nn.Parameter]:
         raise NotImplementedError
     
-    def zero(self, dim: int, dtype: torch.dtype) -> Tensor:
+    def zero(self, dim: int) -> Tensor:
         "N-dimensional zero point"
-        return torch.zeros((dim,), dtype=dtype)
+        return torch.zeros((dim,), dtype=self.dtype)
     
-    def extent(self, dim: int, dtype: torch.dtype) -> Tensor:
+    def extent(self, dim: int) -> Tensor:
         "N-dimensional extent point"
         return torch.cat(
-            (self.extent_x().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            (self.extent_x().unsqueeze(0), torch.zeros(dim - 1, dtype=self.dtype)),
             dim=0,
         )
     
@@ -336,6 +336,7 @@ class Sphere(ImplicitSurface):
                 self.C = torch.as_tensor(C, dtype=self.dtype)
 
         assert self.C.dim() == 0
+        assert self.C.dtype == self.dtype
 
     def testname(self) -> str:
         return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
@@ -345,12 +346,12 @@ class Sphere(ImplicitSurface):
             return {"C": self.C}
         else:
             return {}
-    
+
     def radius(self) -> float:
         return 1 / self.C.item()
 
     def extent_x(self) -> Tensor:
-        r = self.outline.max_radius()
+        r = torch.as_tensor(self.outline.max_radius(), dtype=self.dtype)
         C = self.C
         return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
 
@@ -390,11 +391,11 @@ class Sphere(ImplicitSurface):
                 radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
 
-    def edge_points(self, dtype: torch.dtype) -> tuple[Tensor, Tensor]:
+    def edge_points(self) -> tuple[Tensor, Tensor]:
         "2D edge points"
 
-        A = self.extent(dim=2, dtype=dtype) + torch.tensor([0.0, self.diameter / 2])
-        B = self.extent(dim=2, dtype=dtype) - torch.tensor([0.0, self.diameter / 2])
+        A = self.extent(dim=2) + torch.tensor([0.0, self.diameter / 2])
+        B = self.extent(dim=2) - torch.tensor([0.0, self.diameter / 2])
         return A, B
 
     def f(self, points: Tensor) -> Tensor:
@@ -404,7 +405,7 @@ class Sphere(ImplicitSurface):
 
         # For points beyond the half-diameter
         # use the distance to the edge point
-        A, B = self.edge_points(dtype=points.dtype)
+        A, B = self.edge_points()
 
         radicand = 1 - r2 * C**2
         safe_radicand = torch.clamp(radicand, min=0.0)
@@ -526,6 +527,7 @@ class SphereR(LocalSurface):
                 self.R = torch.as_tensor(1.0 / C, dtype=self.dtype)
 
         assert self.R.dim() == 0
+        assert self.R.dtype == self.dtype
 
     def testname(self) -> str:
         return f"SphereR-{self.diameter:.2f}-{self.R.item():.2f}"

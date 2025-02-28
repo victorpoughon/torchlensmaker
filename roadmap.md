@@ -28,6 +28,8 @@
 
 * Sphere class and surfaces testing
 
+* ruff and mypy strict 100%
+
 ## v0.2
 
 ### TLM

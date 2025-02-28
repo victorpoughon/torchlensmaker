@@ -39,7 +39,8 @@ def basic_transform(
 
     def makeit(surface: LocalSurface) -> TransformBase:
         # anchor
-        anchor_translate = surface.extent(dim, dtype)
+        assert dtype == surface.dtype
+        anchor_translate = surface.extent(dim)
         transforms: list[TransformBase] = (
             [TranslateTransform(-anchor_translate)] if anchor == "extent" else []
         )

@@ -35,13 +35,14 @@ def anchor_abs(
 ) -> Tensor:
     "Get absolute position of a surface anchor"
 
-    dim, dtype = transform.dim, transform.dtype
+    dim = transform.dim
+    assert surface.dtype == transform.dtype
 
     # Get surface local point corresponding to anchor
     if anchor == "origin":
-        point = surface.zero(dim, dtype)
+        point = surface.zero(dim)
     elif anchor == "extent":
-        point = surface.extent(dim, dtype)
+        point = surface.extent(dim)
 
     # Transform it to absolute space
     return transform.direct_points(point)
