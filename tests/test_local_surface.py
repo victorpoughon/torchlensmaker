@@ -32,6 +32,9 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
 
         tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
         tlm.Parabola(diameter=5, a=tlm.parameter(0.05), dtype=dtype),
+
+        # TODO Asphere
+        # TODO Planes
     ]
     # fmt: on
 
@@ -62,22 +65,30 @@ def test_extent_x(surfaces: list[tlm.LocalSurface]) -> None:
     # has dim 0
     ...
 
-def test_contains(surfaces: list[tlm.LocalSurface]) -> None:
-    # test contains(samples) is true everywhere
 
+def test_normals(surfaces: list[tlm.LocalSurface]) -> None:
     ...
 
-# TODO rename samples functions and add to LocalSurface base class
-
-# normals are finite everywhere and unit vectors
-# samples are finite
-
-# local collide basic stuff: shape, dim, batch shapes, isfinite
+    # normals are finite everywhere and unit vectors
 
 
+def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
+    ...
+
+    # samples2D_half
+    # samples2D_full
+
+    # finite
+    # contain(samples) == true
+    # contains(modified samples) == false
+
+def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
+    ...
+    # local collide basic stuff: shape, dim, batch shapes, isfinite
 
 
-# for test_implicit_surface
+
+# further for test_implicit_surface
 # - F and F grad should be finite everywhere
 # - F should be zero on samples
 # - F should be non zero outside of bounding sphere/box

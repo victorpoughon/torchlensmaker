@@ -35,6 +35,10 @@ class LocalSurface:
     def parameters(self) -> dict[str, nn.Parameter]:
         raise NotImplementedError
     
+    def zero(self, dim: int, dtype: torch.dtype) -> Tensor:
+        "N-dimensional zero point"
+        return torch.zeros((dim,), dtype=dtype)
+    
     def extent(self, dim: int, dtype: torch.dtype) -> Tensor:
         "N-dimensional extent point"
         return torch.cat(
@@ -45,17 +49,25 @@ class LocalSurface:
     def extent_x(self) -> Tensor:
         """
         Extent along the X axis
-        i.e. X coordinate of the point on the surface such that |X| is maximized
+        i.e. X coordinate of the point on the surface that is furthest along the X axis
         """
-        raise NotImplementedError
-    
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         raise NotImplementedError
     
     def normals(self, points: Tensor) -> Tensor:
         """
         Unit vectors normal to the surface at input points of shape (N, D)
         """
+        raise NotImplementedError
+    
+    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+        raise NotImplementedError
+    
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        "Generate 2D samples on the half positive domain"
+        raise NotImplementedError
+    
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        "Generate 2D samples on the full domain"
         raise NotImplementedError
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -70,11 +82,6 @@ class LocalSurface:
         """
         raise NotImplementedError
 
-    # TODO move outside of class or remove
-    def zero(self, dim: int) -> Tensor:
-        "N-dimensional zero point"
-        return torch.zeros((dim,), dtype=self.dtype)
-
 
 class Plane(LocalSurface):
     "X=0 plane"
@@ -85,11 +92,11 @@ class Plane(LocalSurface):
     def parameters(self) -> dict[str, nn.Parameter]:
         return {}
 
-    def samples2D(self, N: int) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
         r = torch.linspace(0, self.outline.max_radius(), N)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
-    def samples2D_full(self, N: int) -> Tensor:
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
         maxr = self.outline.max_radius()
         r = torch.linspace(-maxr, maxr, N)
         return torch.stack((torch.zeros(N), r), dim=-1)
@@ -245,12 +252,13 @@ class Parabola(ImplicitSurface):
         else:
             return {}
 
-    def samples2D(self, N: int) -> Tensor:
-        """
-        Generate N sample points located on the shape's curve with r >= 0
-        """
-
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
         r = torch.linspace(0, self.outline.max_radius(), N)
+        x = self.a * r**2
+        return torch.stack((x, r), dim=-1)
+    
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        r = torch.linspace(-self.outline.max_radius(), self.outline.max_radius(), N)
         x = self.a * r**2
         return torch.stack((x, r), dim=-1)
 
@@ -346,7 +354,7 @@ class Sphere(ImplicitSurface):
         C = self.C
         return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
 
-    def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
         # If the curvature is low, use linear sampling along the y axis
         # Else, use the angular parameterization of the circle so that
         # samples are smoother, especially for high curvature circles.
@@ -536,7 +544,7 @@ class SphereR(LocalSurface):
         K = 1 / self.R
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
-    def samples2D(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
         C = 1 / self.R
         if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
@@ -709,7 +717,7 @@ class Asphere(ImplicitSurface):
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
 
-    def samples2D(self, N: int) -> Tensor:
+    def samples2D_half(self, N: int) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
 
