@@ -6,6 +6,7 @@ from torchlensmaker.core.transforms import *
 from torchlensmaker.core.intersect import *
 from torchlensmaker.core.full_forward import *
 from torchlensmaker.core.collision_detection import *
+from torchlensmaker.core.parameter import parameter
 
 # Optics
 from torchlensmaker.optical_data import *
@@ -16,7 +17,6 @@ from torchlensmaker.materials import *
 from torchlensmaker.sampling import *
 
 # Optimization
-from torchlensmaker.parameter import parameter
 from torchlensmaker.optimize import optimize
 
 # Viewer
