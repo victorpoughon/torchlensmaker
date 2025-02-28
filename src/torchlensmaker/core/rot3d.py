@@ -1,8 +1,8 @@
 import torch
 
 # this is copied from pytorch3d
-# could be replaced by proper dependency to
-# roma (https://naver.github.io/roma/)
+# could be replaced by proper dependency to pytorch3d
+# or roma (https://naver.github.io/roma/)
 
 """
 The transformation matrices returned from the functions in this file assume

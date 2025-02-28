@@ -14,6 +14,7 @@ from torchlensmaker.core.sphere_sampling import (
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from torchlensmaker.core.collision_detection import CollisionMethod, default_collision_method
+from torchlensmaker.core.geometry import unit_vector
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -56,6 +57,7 @@ class LocalSurface:
     def normals(self, points: Tensor) -> Tensor:
         """
         Unit vectors normal to the surface at input points of shape (N, D)
+        Input points are not necessarily on the surface
         """
         raise NotImplementedError
     
@@ -431,7 +433,7 @@ class Sphere(ImplicitSurface):
 
         # For points beyond the half-diameter
         # use the distance to the edge point
-        A, B = self.edge_points(dtype=points.dtype)
+        A, B = self.edge_points()
 
         normA = torch.linalg.vector_norm(points - A, dim=1)
         normB = torch.linalg.vector_norm(points - B, dim=1)
@@ -537,7 +539,7 @@ class SphereR(LocalSurface):
             return {"R": self.R}
         else:
             return {}
-    
+
     def radius(self) -> float:
         return self.R.item()
 
@@ -585,9 +587,22 @@ class SphereR(LocalSurface):
             return torch.tensor([self.R, 0.0, 0.0])
 
     def normals(self, points: Tensor) -> Tensor:
+        dim, dtype = points.shape[-1], self.dtype
+
         # The normal is the vector from the center to the points
-        center = self.center(dim=points.shape[1])
-        return torch.nn.functional.normalize(points - center)
+        center = self.center(dim)
+        normals = torch.nn.functional.normalize(points - center, dim=-1)
+
+        # We need a default value for the case where point == center, to avoid div by zero
+        normal_at_origin = torch.tile(unit_vector(dim, dtype), ((*points.shape[:-1], 1)))
+
+        return torch.where(
+            torch.all(torch.isclose(center, points), dim=-1)
+            .unsqueeze(1)
+            .expand_as(normals),
+            normal_at_origin,
+            normals,
+        )
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         center = self.center(dim=points.shape[1])
@@ -596,7 +611,6 @@ class SphereR(LocalSurface):
         within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x())
 
         return torch.all(torch.stack((within_outline, within_sphere, within_extent), dim=1), dim=1)
-
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         N, D = P.shape

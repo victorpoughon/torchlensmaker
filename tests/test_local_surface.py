@@ -4,6 +4,7 @@ from typing import Any
 
 import torch
 import torch.nn as nn
+import numpy as np
 
 import torchlensmaker as tlm
 
@@ -11,6 +12,10 @@ import torchlensmaker as tlm
 Test all surfaces using the common base class LocalSurface() methods,
 local_collide() is tested only roughly, a more detailed test is in test_local_collide
 """
+
+@pytest.fixture(params=[2, 3], ids=["2D", "3D"])
+def dim(request: pytest.FixtureRequest) -> Any:
+    return request.param
 
 @pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
 def dtype(request: pytest.FixtureRequest) -> Any:
@@ -57,6 +62,7 @@ def test_parameters(surfaces: list[tlm.LocalSurface]) -> None:
 
 
 def isflat(s: tlm.LocalSurface) -> bool:
+    "True if the surface is completely flat"
     return (
         isinstance(s, tlm.Plane)
         or (
@@ -102,13 +108,43 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         del zero3, extent3
 
 
-    # is non zero except for plane and flat sphere
+def sample_grid2d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
+    x = np.linspace(-lim, lim, N)
+    y = np.linspace(-lim, lim, N)
+    X, Y = np.meshgrid(x, y)
+    grid = torch.tensor(np.stack((X, Y), axis=-1).reshape(-1, 2))
+    return grid.to(dtype=dtype)
 
 
-def test_normals(surfaces: list[tlm.LocalSurface]) -> None:
-    ...
+def sample_grid3d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
+    x = np.linspace(-lim, lim, N)
+    y = np.linspace(-lim, lim, N)
+    z = np.linspace(-lim, lim, N)
+    X, Y, Z = np.meshgrid(x, y, z)
+    grid = torch.tensor(np.stack((X, Y, Z), axis=-1).reshape(-1, 3))
+    return grid.to(dtype=dtype)
 
-    # normals are finite everywhere and unit vectors
+
+def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
+    # TODO check arbitrary batch dimensions
+
+    for s in surfaces:
+        # Make a sample grid with odd number of points so that 0 is included
+        if dim == 2:
+            points = sample_grid2d(lim=s.outline.max_radius()*4, N=51, dtype=s.dtype)
+        else:
+            points = sample_grid3d(lim=s.outline.max_radius()*4, N=21, dtype=s.dtype)
+
+        # Compute normals
+        normals = s.normals(points)
+
+        # Sanity checks
+        assert torch.all(torch.isfinite(normals))
+        assert normals.dtype == s.dtype
+        assert torch.allclose(
+            torch.linalg.vector_norm(normals, dim=-1),
+            torch.ones(points.shape[:-1], dtype=s.dtype),
+        )
 
 
 def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
