@@ -28,7 +28,34 @@ class LocalSurface:
         self.outline = outline
         self.dtype = dtype
 
+    def testname(self) -> str:
+        "A string for identification in test cases"
+        raise NotImplementedError
+
     def parameters(self) -> dict[str, nn.Parameter]:
+        raise NotImplementedError
+    
+    def extent(self, dim: int, dtype: torch.dtype) -> Tensor:
+        "N-dimensional extent point"
+        return torch.cat(
+            (self.extent_x().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
+            dim=0,
+        )
+    
+    def extent_x(self) -> Tensor:
+        """
+        Extent along the X axis
+        i.e. X coordinate of the point on the surface such that |X| is maximized
+        """
+        raise NotImplementedError
+    
+    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+        raise NotImplementedError
+    
+    def normals(self, points: Tensor) -> Tensor:
+        """
+        Unit vectors normal to the surface at input points of shape (N, D)
+        """
         raise NotImplementedError
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -43,36 +70,10 @@ class LocalSurface:
         """
         raise NotImplementedError
 
-    def normals(self, points: Tensor) -> Tensor:
-        """
-        Unit vectors normal to the surface at input points of shape (N, D)
-        """
-        raise NotImplementedError
-
-    def extent_x(self) -> Tensor:
-        """
-        Extent along the X axis
-        i.e. X coordinate of the point on the surface such that |X| is maximized
-        """
-        raise NotImplementedError
-
-    def extent(self, dim: int, dtype: torch.dtype) -> Tensor:
-        "N-dimensional extent point"
-        return torch.cat(
-            (self.extent_x().unsqueeze(0), torch.zeros(dim - 1, dtype=dtype)),
-            dim=0,
-        )
-
-    def zero(self, dim: int, dtype: torch.dtype) -> Tensor:
+    # TODO move outside of class or remove
+    def zero(self, dim: int) -> Tensor:
         "N-dimensional zero point"
-        return torch.zeros((dim,), dtype=dtype)
-
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
-        raise NotImplementedError
-
-    def testname(self) -> str:
-        "A string for identification in test cases"
-        raise NotImplementedError
+        return torch.zeros((dim,), dtype=self.dtype)
 
 
 class Plane(LocalSurface):
@@ -234,6 +235,9 @@ class Parabola(ImplicitSurface):
         super().__init__(outline=CircularOutline(diameter), **kwargs)
         self.diameter = diameter
         self.a = to_tensor(a, default_dtype=self.dtype)
+    
+    def testname(self) -> str:
+        return f"Parabola-{self.diameter:.2f}-{self.a.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.a, nn.Parameter):
@@ -254,6 +258,7 @@ class Parabola(ImplicitSurface):
         r = self.outline.max_radius()
         return torch.as_tensor(self.a * r**2, dtype=self.dtype)
 
+    # TODO add zone band mask to parabola
     def f(self, points: Tensor) -> Tensor:
         x, r = points[:, 0], points[:, 1]
         return torch.mul(self.a, torch.pow(r, 2)) - x
@@ -286,7 +291,7 @@ class Sphere(ImplicitSurface):
     In 3D, this surface is a section of a sphere (wikipedia call it a "spherical cap")
 
     For high curvature arcs (close to a half circle), it's better to use the
-    Sphere2 class which uses radius parameterization and polar distance
+    SphereR class which uses radius parameterization and polar distance
     functions.
     """
 
@@ -325,7 +330,7 @@ class Sphere(ImplicitSurface):
         assert self.C.dim() == 0
 
     def testname(self) -> str:
-        return f"Sphere-{self.diameter:.2f}-{self.C:.2f}"
+        return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.C, nn.Parameter):
@@ -515,7 +520,7 @@ class SphereR(LocalSurface):
         assert self.R.dim() == 0
 
     def testname(self) -> str:
-        return f"SphereR-{self.diameter:.2f}-{self.R:.2f}"
+        return f"SphereR-{self.diameter:.2f}-{self.R.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.R, nn.Parameter):
