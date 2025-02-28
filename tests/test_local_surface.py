@@ -20,6 +20,9 @@ def dtype(request: pytest.FixtureRequest) -> Any:
 def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
     # fmt: off
     return [
+        tlm.CircularPlane(diameter=30, dtype=dtype),
+        tlm.SquarePlane(side_length=30, dtype=dtype),
+
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
         tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
         tlm.Sphere(diameter=5, C=0., dtype=dtype),
@@ -36,7 +39,6 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.Parabola(diameter=5, a=0., dtype=dtype),
 
         # TODO Asphere
-        # TODO Planes
     ]
     # fmt: on
 
