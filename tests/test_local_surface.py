@@ -22,6 +22,7 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
     return [
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
         tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
+        tlm.Sphere(diameter=5, C=0., dtype=dtype),
         tlm.Sphere(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
         tlm.Sphere(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
 
@@ -31,7 +32,8 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.SphereR(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
 
         tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
-        tlm.Parabola(diameter=5, a=tlm.parameter(0.05), dtype=dtype),
+        tlm.Parabola(diameter=5, a=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
+        tlm.Parabola(diameter=5, a=0., dtype=dtype),
 
         # TODO Asphere
         # TODO Planes
@@ -52,6 +54,20 @@ def test_parameters(surfaces: list[tlm.LocalSurface]) -> None:
         assert all([isinstance(value, nn.Parameter) for value in params.values()])
 
 
+def isflat(s: tlm.LocalSurface) -> bool:
+    return (
+        isinstance(s, tlm.Plane)
+        or (
+            isinstance(s, tlm.Sphere)
+            and torch.allclose(s.C, torch.tensor(0.0, dtype=s.dtype))
+        )
+        or (
+            isinstance(s, tlm.Parabola)
+            and torch.allclose(s.a, torch.tensor(0.0, dtype=s.dtype))
+        )
+    )
+
+
 def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
     for s in surfaces:
         zero2 = s.zero(2)
@@ -62,6 +78,11 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(extent2))
         assert zero2.dtype == s.dtype
         assert extent2.dtype == s.dtype
+        assert torch.allclose(zero2, torch.tensor(0., dtype=s.dtype))
+        if not isflat(s):
+            assert not torch.allclose(extent2, torch.tensor(0., dtype=s.dtype))
+        else:
+            assert torch.allclose(extent2, torch.tensor(0., dtype=s.dtype))
         del zero2, extent2
 
         zero3 = s.zero(3)
@@ -72,15 +93,14 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(extent3))
         assert zero3.dtype == s.dtype
         assert extent3.dtype == s.dtype
+        if not isflat(s):
+            assert not torch.allclose(extent3, torch.tensor(0., dtype=s.dtype))
+        else:
+            assert torch.allclose(extent3, torch.tensor(0., dtype=s.dtype))
         del zero3, extent3
 
 
-def test_extent_x(surfaces: list[tlm.LocalSurface]) -> None:
-    # isfinite
     # is non zero except for plane and flat sphere
-    # has surface dtype
-    # has dim 0
-    ...
 
 
 def test_normals(surfaces: list[tlm.LocalSurface]) -> None:
@@ -102,7 +122,6 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
     ...
     # local collide basic stuff: shape, dim, batch shapes, isfinite
-
 
 
 # further for test_implicit_surface

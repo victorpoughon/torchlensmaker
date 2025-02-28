@@ -263,7 +263,7 @@ class Parabola(ImplicitSurface):
         return torch.stack((x, r), dim=-1)
 
     def extent_x(self) -> Tensor:
-        r = self.outline.max_radius()
+        r = torch.as_tensor(self.outline.max_radius(), dtype=self.dtype)
         return torch.as_tensor(self.a * r**2, dtype=self.dtype)
 
     # TODO add zone band mask to parabola
