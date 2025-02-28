@@ -16,6 +16,8 @@ from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.core.collision_detection import CollisionMethod, default_collision_method
 from torchlensmaker.core.geometry import unit_vector
 
+from torch.linalg import vector_norm
+
 # shorter for type annotations
 Tensor = torch.Tensor
 
@@ -400,79 +402,84 @@ class Sphere(ImplicitSurface):
         B = self.extent(dim=2) - torch.tensor([0.0, self.diameter / 2])
         return A, B
 
+    def band_mask(self, points: Tensor) -> Tensor:
+        """
+        Mask for the main shape area, i.e. points which distance to the
+        principal axis is within the surface diameter.
+        """
+
+        # TODO make any dim
+        Y = points.select(-1, 1)
+        return torch.abs(Y) <= self.outline.max_radius()
+    
+    # input: edge points (in meridional coordinates)
+    # output: F(meridional points)
+    # output: F_grad(meridional points)
+
     def f(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        r2 = torch.pow(r, 2)
+        assert points.shape[-1] == 2
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        R2 = torch.pow(R, 2)
         C = self.C
 
-        # For points beyond the half-diameter
-        # use the distance to the edge point
+        # For points beyond the diameter, use distance to the edge point
         A, B = self.edge_points()
+        top_fallback = vector_norm(points - A, dim=-1)
+        bottom_fallback = vector_norm(points - B, dim=-1)
 
-        radicand = 1 - r2 * C**2
+        # Implicit function based on sphere sag function
+        radicand = 1 - R2 * C**2
         safe_radicand = torch.clamp(radicand, min=0.0)
-        circle = torch.div(C * r2, 1 + torch.sqrt(safe_radicand)) - x
-
-        top_fallback = torch.linalg.vector_norm(points - A, dim=1)
-        bottom_fallback = torch.linalg.vector_norm(points - B, dim=1)
-
-        max_r = self.outline.max_radius()
-
-        zone_mask = torch.abs(r) <= max_r
-
-        return torch.where(
-            zone_mask,
-            circle,
-            torch.where(r > 0, top_fallback, bottom_fallback),
-        )
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        r2 = torch.pow(r, 2)
-        C = self.C
-
-        # For points beyond the half-diameter
-        # use the distance to the edge point
-        A, B = self.edge_points()
-
-        normA = torch.linalg.vector_norm(points - A, dim=1)
-        normB = torch.linalg.vector_norm(points - B, dim=1)
-
-        top_fallback = torch.stack(
-            ((points[:, 0] - A[0]) / normA, (points[:, 1] - A[1]) / normA), dim=1
-        )
-        bottom_fallback = torch.stack(
-            ((points[:, 0] - B[0]) / normB, (points[:, 1] - B[1]) / normB), dim=1
-        )
-
-        max_r = self.outline.max_radius()
-
-        radicand = 1 - r2 * C**2
-
-        # clamp to a non zero epsilon to avoid both sqrt(<0) and div by zero
-        safe_radicand = torch.clamp(radicand, min=1e-4)
-        grady = torch.div((C * r), torch.sqrt(safe_radicand))
-
-        circle = torch.stack((-torch.ones_like(x), grady), dim=-1)
+        circle = torch.div(C * R2, 1 + torch.sqrt(safe_radicand)) - X
 
         assert circle.shape == top_fallback.shape == bottom_fallback.shape
 
-        zone_mask = torch.abs(r) <= max_r
+        return torch.where(
+            self.band_mask(points),
+            circle,
+            torch.where(R > 0, top_fallback, bottom_fallback),
+        )
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 2
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        R2 = torch.pow(R, 2)
+        C = self.C
+
+        # For points beyond the diameter, use distance to the edge point
+        A, B = self.edge_points()
+        normA, normB = vector_norm(points - A, dim=-1), vector_norm(points - B, dim=-1)
+
+        # Derivative of distance
+        top_fallback = torch.stack(((X - A[0]) / normA, (R - A[1]) / normA), dim=-1)
+        bottom_fallback = torch.stack(((X - B[0]) / normB, (R - B[1]) / normB), dim=-1)
+
+        radicand = 1 - R2 * C**2
+
+        # clamp to a non zero epsilon to avoid both sqrt(<0) and div by zero
+        safe_radicand = torch.clamp(radicand, min=1e-4)
+        grady = torch.div((C * R), torch.sqrt(safe_radicand))
+
+        circle = torch.stack((-torch.ones_like(X), grady), dim=-1)
+
+        assert circle.shape == top_fallback.shape == bottom_fallback.shape
 
         return torch.where(
-            zone_mask.unsqueeze(1).expand(-1, 2),
+            self.band_mask(points).unsqueeze(-1).expand(-1, 2),
             circle,
             torch.where(
-                r.unsqueeze(1).expand(-1, 2) > 0, top_fallback, bottom_fallback
+                R.unsqueeze(-1).expand(-1, 2) > 0, top_fallback, bottom_fallback
             ),
         )
 
     # TODO zone mask in 3D
     def F(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+        assert points.shape[-1] == 3
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1),  points.select(-1, 2)
         C = self.C
-        r2 = y**2 + z**2
-        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * C**2)) - x
+        R2 = Y**2 + Z**2
+
+        return torch.div(C * R2, 1 + torch.sqrt(1 - R2 * C**2)) - X
 
     def F_grad(self, points: Tensor) -> Tensor:
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
