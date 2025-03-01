@@ -481,7 +481,7 @@ class Sphere(ImplicitSurface):
             )
         else:
             R = 1 / self.C
-            theta_max = torch.arcsin(self.diameter/2 / torch.abs(R))
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
             return sphere_samples_angular(
                 radius=R, start=0.0, end=theta_max - epsilon, N=N
             )
@@ -499,7 +499,7 @@ class Sphere(ImplicitSurface):
             )
         else:
             R = 1 / self.C
-            theta_max = torch.arcsin(self.diameter/2 / torch.abs(R))
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
             return sphere_samples_angular(
                 radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
@@ -661,7 +661,7 @@ class SphereR(LocalSurface):
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin(self.diameter/2 / torch.abs(self.R))
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(self.R))
             return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max, N=N)
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
@@ -678,7 +678,7 @@ class SphereR(LocalSurface):
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin(self.diameter/2 / torch.abs(self.R))
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(self.R))
             return sphere_samples_angular(
                 radius=self.R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
@@ -831,7 +831,7 @@ class Asphere(ImplicitSurface):
         }
 
     def extent_x(self) -> Tensor:
-        r2 = self.diameter/2 ** 2
+        r2 = (self.diameter/2) ** 2
         C, K, A4 = self.C, self.K, self.A4
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
