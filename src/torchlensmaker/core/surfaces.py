@@ -290,32 +290,36 @@ class Parabola(ImplicitSurface):
         )
 
 
-
+# TODO make implicitsurface
 class DiameterBandSurface:
     def __init__(self, Ax, Ar):
         self.Ax = Ax
         self.Ar = Ar
 
     def f(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
+        assert points.shape[-1] == 2
+        X, R = points.unbind(-1)
         Ax, Ar = self.Ax, self.Ar
         return (X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2
 
     def f_grad(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
+        assert points.shape[-1] == 2
+        X, R = points.unbind(-1)
         Ax, Ar = self.Ax, self.Ar
         return torch.stack(
             (2 * (X - Ax), torch.sign(R) * 2 * (torch.abs(R) - Ar)), dim=-1
         )
 
     def F(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        assert points.shape[-1] == 3
+        X, Y, Z = points.unbind(-1)
         R2 = Y**2 + Z**2
         Ax, Ar = self.Ax, self.Ar
         return (X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2
 
     def F_grad(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        assert points.shape[-1] == 3
+        X, Y, Z = points.unbind(-1)
         R2 = Y**2 + Z**2
         Ax, Ar = self.Ax, self.Ar
         quot = Ar / torch.sqrt(R2)
@@ -330,12 +334,14 @@ class DiameterBandSurfaceSq:
         self.Ar = Ar
 
     def f(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
+        assert points.shape[-1] == 2
+        X, R = points.unbind(-1)
         Ax, Ar = self.Ax, self.Ar
         return torch.sqrt((X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2)
 
     def f_grad(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
+        assert points.shape[-1] == 2
+        X, R = points.unbind(-1)
         Ax, Ar = self.Ax, self.Ar
         sq = self.f(points)
         return torch.stack(
@@ -343,13 +349,15 @@ class DiameterBandSurfaceSq:
         )
 
     def F(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        assert points.shape[-1] == 3
+        X, Y, Z = points.unbind(-1)
         R2 = Y**2 + Z**2
         Ax, Ar = self.Ax, self.Ar
         return torch.sqrt((X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2)
 
     def F_grad(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        assert points.shape[-1] == 3
+        X, Y, Z = points.unbind(-1)
         R2 = Y**2 + Z**2
         Ax, Ar = self.Ax, self.Ar
         sq = self.F(points)
@@ -370,8 +378,8 @@ class SagSurface(ImplicitSurface):
     Implicit surface defined by a sag function.
 
     A sag function g(r) is a one dimensional real valued function that describes
-    a surface x coordinate in an arbitrary meridional plane as a function of the
-    distance to the principal axis: x = g(r).
+    a surface x coordinate in an arbitrary meridional plane (x,r) as a function
+    of the distance to the principal axis: x = g(r).
 
     Derived classes provide the sag function and its gradient in
     both 2 and 3 dimensions. This class then uses it to create the implicit
@@ -385,17 +393,91 @@ class SagSurface(ImplicitSurface):
         super().__init__(**kwargs)
         self.diameter = diameter
 
-    def g(self, points: Tensor) -> Tensor:
+    def g(self, r: Tensor) -> Tensor:
+        """
+        2D sag function $g(r)$
+        
+        Args:
+        * r: batched tensor of shape (...)
+
+        Returns:
+        * batched tensor of shape (...)
+        """
         raise NotImplementedError
     
-    def g_grad(self, points: Tensor) -> Tensor:
+    def g_grad(self, r: Tensor) -> Tensor:
+        """
+        Derivative of the 2D sag function $g'(r)$
+
+        Args:
+        * r: batched tensor of shape (...)
+
+        Returns:
+        * batched tensor of shape (...)
+        """
         raise NotImplementedError
 
-    def G(self, points: Tensor) -> Tensor:
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
+        """
+        3D sag function $G(X, Y) = g(\sqrt{y^2 + z^2})$
+
+        Args:
+        * y: batched tensor of shape (...)
+        * z: batched tensor of shape (...)
+
+        Returns:
+        * batched tensor of shape (...)
+        """
         raise NotImplementedError
     
-    def G_grad(self, points: Tensor) -> Tensor:
+    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+        """
+        Gradient of the 3D sag function $\nabla G(y, z)$
+
+        Args:
+        * y: batched tensor of shape (...)
+        * z: batched tensor of shape (...)
+
+        Returns:
+        * grad_y: batched tensor of shape (...)
+        * grad_z: batched tensor of shape (...)
+        """
         raise NotImplementedError
+
+    def f(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 2
+        x, r = points.unbind(-1)
+        return self.g(r) - x
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 2
+        x, r = points.unbind(-1)
+        return torch.stack((-torch.ones_like(x), self.g_grad(r)), dim=-1)
+    
+    def F(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 3
+        x, y, z = points.unbind(-1)
+        return self.G(y, z) - x
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 3
+        x, y, z = points.unbind(-1)
+        grad_y, grad_z = self.G_grad(y, z)
+        return torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
+
+
+class CompositeSurface(ImplicitSurface):
+    def __init__(self, mask_function, surface1, surface2):
+        ...
+    
+# combine with DiameterBandSurface here or make a separate surface compose system?
+# CompositeSurface(mask, surface1, surface2)
+#   == torch.where(mask, surface1, surface2)
+
+# for SphereSag make sure there is still an inner where() for safe backwards when masking nans
+# just set all outside domain to zero basically, will be replaced by composite surface anyway
+
+# Sphere = CompositeSurface(within_radius, SagSphere, DiameterBandSurface)
 
 
 class Sphere(ImplicitSurface):
