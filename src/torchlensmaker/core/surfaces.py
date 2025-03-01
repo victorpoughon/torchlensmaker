@@ -468,7 +468,7 @@ class Sphere(ImplicitSurface):
         C = self.C
         return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
 
-    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         # If the curvature is low, use linear sampling along the y axis
         # Else, use the angular parameterization of the circle so that
         # samples are smoother, especially for high curvature circles.
@@ -486,7 +486,7 @@ class Sphere(ImplicitSurface):
                 radius=R, start=0.0, end=theta_max - epsilon, N=N
             )
 
-    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         # If the curvature is low, use linear sampling along the y axis
         # Else, use the angular parameterization of the circle so that
         # samples are smoother, especially for high curvature circles.
@@ -651,20 +651,20 @@ class SphereR(LocalSurface):
         K = 1 / self.R
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
-    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         C = 1 / self.R
         if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
-                curvature=C, start=0.0, end=self.diameter/2, N=N
+                curvature=C, start=0.0, end=self.diameter/2 - epsilon, N=N
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
             theta_max = torch.arcsin((self.diameter/2) / torch.abs(self.R))
-            return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max, N=N)
+            return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max - epsilon, N=N)
 
-    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         "Like samples2D but on the entire domain"
         C = 1 / self.R
         if torch.abs(C * self.diameter) < 0.1:
@@ -709,7 +709,7 @@ class SphereR(LocalSurface):
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         center = self.center(dim=points.shape[1])
-        within_outline = self.within_diameter(points)
+        within_outline = within_radius(self.diameter/2, points)
         within_sphere = torch.abs(torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)) <= tol
         within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x())
 
@@ -836,11 +836,11 @@ class Asphere(ImplicitSurface):
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
 
-    def samples2D_half(self, N: int) -> Tensor:
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
 
-        Y = torch.linspace(0, 1, N) * self.diameter/2
+        Y = torch.linspace(0, self.diameter/2 - epsilon, N)
         r2 = torch.pow(Y, 2)
         X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
             r2, 2

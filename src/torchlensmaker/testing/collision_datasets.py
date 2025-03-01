@@ -32,7 +32,7 @@ def tangent_rays(
     """
 
     def generate(surface: ImplicitSurface) -> CollisionDataset:
-        samples = surface.samples2D_full(N)
+        samples = surface.samples2D_full(N, epsilon=1e-3)
         grad_samples = surface.normals(samples)
         assert torch.all(torch.isfinite(samples))
         assert torch.all(torch.isfinite(grad_samples))
@@ -66,7 +66,7 @@ def normal_rays(
 
     def generate(surface: ImplicitSurface) -> CollisionDataset:
 
-        samples = surface.samples2D_full(N)
+        samples = surface.samples2D_full(N, epsilon=1e-3)
         grad_samples = surface.normals(samples)
         assert torch.all(torch.isfinite(samples))
         assert torch.all(torch.isfinite(grad_samples))
@@ -101,7 +101,7 @@ def random_direction_rays(
 
     def generate(surface: ImplicitSurface) -> CollisionDataset:
 
-        samples = surface.samples2D_full(N)
+        samples = surface.samples2D_full(N, epsilon=1e-3)
         assert torch.all(torch.isfinite(samples))
         
         theta = 2 * math.pi * torch.rand((N,))
@@ -133,7 +133,7 @@ def fixed_rays(
 
     def generate(surface: ImplicitSurface) -> CollisionDataset:
 
-        samples = surface.samples2D_full(N)
+        samples = surface.samples2D_full(N, epsilon=1e-3)
         assert torch.all(torch.isfinite(samples))
         
         theta = 2 * math.pi * torch.rand((N,))

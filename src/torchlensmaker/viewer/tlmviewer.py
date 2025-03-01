@@ -96,7 +96,7 @@ def process_surface(
     """
 
     # TODO, should we have a type SymmetricSurface that provides samples2D?
-    samples = surface.samples2D_half(N)
+    samples = surface.samples2D_half(N, epsilon=0.)
 
     if dim == 2:
         front = torch.flip(
