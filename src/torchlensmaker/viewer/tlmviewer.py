@@ -10,6 +10,7 @@ from typing import Any, Optional
 from torchlensmaker.core.surfaces import (
     LocalSurface,
     ImplicitSurface,
+    Plane,
 )
 
 from torchlensmaker.core.transforms import (
@@ -116,7 +117,7 @@ def process_surface(
         raise RuntimeError("inconsistent arguments to render_surface")
 
     # convert the outline to clip planes
-    if dim == 3:
+    if dim == 3 and isinstance(surface, Plane):
         clip_planes = surface.outline.clip_planes()
         if len(clip_planes) > 0:
             obj["clip_planes"] = clip_planes

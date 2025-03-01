@@ -14,7 +14,7 @@ from torchlensmaker.core.sphere_sampling import (
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from torchlensmaker.core.collision_detection import CollisionMethod, default_collision_method
-from torchlensmaker.core.geometry import unit_vector
+from torchlensmaker.core.geometry import unit_vector, within_radius
 
 from torch.linalg import vector_norm
 
@@ -29,8 +29,7 @@ class LocalSurface:
     Base class for surfaces
     """
 
-    def __init__(self, outline: Outline, dtype: torch.dtype = torch.float64):
-        self.outline = outline
+    def __init__(self, dtype: torch.dtype = torch.float64):
         self.dtype = dtype
 
     def testname(self) -> str:
@@ -93,7 +92,8 @@ class Plane(LocalSurface):
     "X=0 plane"
 
     def __init__(self, outline: Outline, dtype: torch.dtype):
-        super().__init__(outline, dtype)
+        super().__init__(dtype)
+        self.outline = outline
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {}
@@ -176,9 +176,7 @@ class ImplicitSurface(LocalSurface):
 
         F = self.F if dim == 3 else self.f
 
-        return torch.logical_and(
-            self.outline.contains(points), torch.abs(F(points)) < tol
-        )
+        return torch.abs(F(points)) < tol
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
@@ -245,7 +243,7 @@ class Parabola(ImplicitSurface):
         a: int | float | nn.Parameter,
         **kwargs,
     ):
-        super().__init__(outline=CircularOutline(diameter), **kwargs)
+        super().__init__(**kwargs)
         self.diameter = diameter
         self.a = to_tensor(a, default_dtype=self.dtype)
     
@@ -259,17 +257,17 @@ class Parabola(ImplicitSurface):
             return {}
 
     def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, self.outline.max_radius(), N)
+        r = torch.linspace(0, self.diameter/2, N)
         x = self.a * r**2
         return torch.stack((x, r), dim=-1)
     
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(-self.outline.max_radius(), self.outline.max_radius(), N)
+        r = torch.linspace(-self.diameter/2, self.diameter/2, N)
         x = self.a * r**2
         return torch.stack((x, r), dim=-1)
 
     def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.outline.max_radius(), dtype=self.dtype)
+        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
         return torch.as_tensor(self.a * r**2, dtype=self.dtype)
 
     # TODO add zone band mask to parabola
@@ -425,7 +423,7 @@ class Sphere(ImplicitSurface):
         C: int | float | nn.Parameter | None = None,
         **kwargs,
     ):
-        super().__init__(outline=CircularOutline(diameter), **kwargs)
+        super().__init__(**kwargs)
         self.diameter = diameter
 
         if (R is not None and C is not None) or (R is None and C is None):
@@ -435,9 +433,9 @@ class Sphere(ImplicitSurface):
 
         self.C: torch.Tensor
         if C is None:
-            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
+            if torch.abs(torch.as_tensor(R)) < diameter / 2:
                 raise RuntimeError(
-                    f"Sphere radius (R={R}) must be more than half the surface diameter (D={diameter})"
+                    f"Sphere radius (R={R}) must be at least half the surface diameter (D={diameter})"
                 )
 
             if isinstance(R, nn.Parameter):
@@ -466,7 +464,7 @@ class Sphere(ImplicitSurface):
         return 1 / self.C.item()
 
     def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.outline.max_radius(), dtype=self.dtype)
+        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
         C = self.C
         return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
 
@@ -478,12 +476,12 @@ class Sphere(ImplicitSurface):
             return sphere_samples_linear(
                 curvature=self.C,
                 start=0.0,
-                end=self.outline.max_radius() - epsilon,
+                end=self.diameter/2 - epsilon,
                 N=N,
             )
         else:
             R = 1 / self.C
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            theta_max = torch.arcsin(self.diameter/2 / torch.abs(R))
             return sphere_samples_angular(
                 radius=R, start=0.0, end=theta_max - epsilon, N=N
             )
@@ -495,13 +493,13 @@ class Sphere(ImplicitSurface):
         if self.C * self.diameter < 0.1:
             return sphere_samples_linear(
                 curvature=self.C,
-                start=-self.outline.max_radius() + epsilon,
-                end=self.outline.max_radius() - epsilon,
+                start=-self.diameter/2 + epsilon,
+                end=self.diameter/2 - epsilon,
                 N=N,
             )
         else:
             R = 1 / self.C
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(R))
+            theta_max = torch.arcsin(self.diameter/2 / torch.abs(R))
             return sphere_samples_angular(
                 radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
@@ -513,15 +511,6 @@ class Sphere(ImplicitSurface):
         B = self.extent(dim=2) - torch.tensor([0.0, self.diameter / 2])
         return A, B
 
-    def band_mask(self, points: Tensor) -> Tensor:
-        """
-        Mask for the main shape area, i.e. points which distance to the
-        principal axis is within the surface diameter.
-        """
-
-        # TODO make any dim
-        Y = points.select(-1, 1)
-        return torch.abs(Y) <= self.outline.max_radius()
 
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
@@ -542,7 +531,7 @@ class Sphere(ImplicitSurface):
         assert circle.shape == top_fallback.shape == bottom_fallback.shape
 
         return torch.where(
-            self.band_mask(points),
+            within_radius(self.diameter/2, points),
             circle,
             torch.where(R > 0, top_fallback, bottom_fallback),
         )
@@ -572,7 +561,7 @@ class Sphere(ImplicitSurface):
         assert circle.shape == top_fallback.shape == bottom_fallback.shape
 
         return torch.where(
-            self.band_mask(points).unsqueeze(-1).expand(-1, 2),
+            within_radius(self.diameter/2, points).unsqueeze(-1).expand(-1, 2),
             circle,
             torch.where(
                 R.unsqueeze(-1).expand(-1, 2) > 0, top_fallback, bottom_fallback
@@ -598,7 +587,6 @@ class Sphere(ImplicitSurface):
         )
 
 
-
 class SphereR(LocalSurface):
     """
     A section of a sphere, parameterized by signed radius.
@@ -618,7 +606,7 @@ class SphereR(LocalSurface):
         C: int | float | nn.Parameter | None = None,
         **kwargs,
     ):
-        super().__init__(outline=CircularOutline(diameter), **kwargs)
+        super().__init__(**kwargs)
         self.diameter = diameter
 
         if (R is not None and C is not None) or (R is None and C is None):
@@ -659,7 +647,7 @@ class SphereR(LocalSurface):
         return self.R.item()
 
     def extent_x(self) -> Tensor:
-        r = self.outline.max_radius()
+        r = self.diameter/2
         K = 1 / self.R
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
 
@@ -668,12 +656,12 @@ class SphereR(LocalSurface):
         if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
-                curvature=C, start=0.0, end=self.outline.max_radius(), N=N
+                curvature=C, start=0.0, end=self.diameter/2, N=N
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(self.R))
+            theta_max = torch.arcsin(self.diameter/2 / torch.abs(self.R))
             return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max, N=N)
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
@@ -683,14 +671,14 @@ class SphereR(LocalSurface):
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
                 curvature=C,
-                start=-self.outline.max_radius() + epsilon,
-                end=self.outline.max_radius() - epsilon,
+                start=-self.diameter/2 + epsilon,
+                end=self.diameter/2 - epsilon,
                 N=N,
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin(self.outline.max_radius() / torch.abs(self.R))
+            theta_max = torch.arcsin(self.diameter/2 / torch.abs(self.R))
             return sphere_samples_angular(
                 radius=self.R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
             )
@@ -721,7 +709,7 @@ class SphereR(LocalSurface):
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
         center = self.center(dim=points.shape[1])
-        within_outline = self.outline.contains(points)
+        within_outline = self.within_diameter(points)
         within_sphere = torch.abs(torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)) <= tol
         within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x())
 
@@ -817,7 +805,7 @@ class Asphere(ImplicitSurface):
         A4: int | float | nn.Parameter,
         **kwargs
     ):
-        super().__init__(outline=CircularOutline(diameter), **kwargs)
+        super().__init__(**kwargs)
         self.diameter = diameter
 
         self.C: torch.Tensor
@@ -843,7 +831,7 @@ class Asphere(ImplicitSurface):
         }
 
     def extent_x(self) -> Tensor:
-        r2 = self.outline.max_radius() ** 2
+        r2 = self.diameter/2 ** 2
         C, K, A4 = self.C, self.K, self.A4
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
@@ -852,7 +840,7 @@ class Asphere(ImplicitSurface):
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
 
-        Y = torch.linspace(0, 1, N) * self.outline.max_radius()
+        Y = torch.linspace(0, 1, N) * self.diameter/2
         r2 = torch.pow(Y, 2)
         X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
             r2, 2

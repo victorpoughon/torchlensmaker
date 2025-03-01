@@ -34,3 +34,15 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
             dtype=dtype
         )  # TODO need to support dtype in euler_angles_to_matrix
         return torch.matmul(M, unit.view(3, 1)).squeeze(-1)
+
+
+def within_radius(radius: float, points: torch.Tensor) -> torch.Tensor:
+    "Mask indicating if points of shape (..., 2|3) are within 'radius' distance from the X axis"
+    
+    dim = points.shape[-1]
+    if dim == 2:
+        r = points.select(-1, 1)
+        return torch.le(torch.abs(r), radius)
+    else:
+        y, z = points.select(-1, 1), points.select(-1, 2)
+        return torch.le(y**2 + z**2, radius**2)

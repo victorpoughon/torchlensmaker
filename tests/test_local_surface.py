@@ -132,10 +132,11 @@ def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
 
     for s in surfaces:
         # Make a sample grid with odd number of points so that 0 is included
+        lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
         if dim == 2:
-            points = sample_grid2d(lim=s.outline.max_radius()*4, N=51, dtype=s.dtype)
+            points = sample_grid2d(lim=lim, N=51, dtype=s.dtype)
         else:
-            points = sample_grid3d(lim=s.outline.max_radius()*4, N=21, dtype=s.dtype)
+            points = sample_grid3d(lim=lim, N=21, dtype=s.dtype)
 
         # Compute normals
         normals = s.normals(points)

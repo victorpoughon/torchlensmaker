@@ -210,7 +210,8 @@ class PlanoLens(Lens):
         reverse: bool = False,
         **kwargs: Any,
     ):
-        plane = tlm.CircularPlane(2 * surface.outline.max_radius())
+        # TODO use bbox instead of diameter
+        plane = tlm.CircularPlane(2 * surface.diameter/2)
         s1, s2 = (surface, plane) if reverse else (plane, surface)
         super().__init__(
             s1,

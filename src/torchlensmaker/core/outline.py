@@ -1,6 +1,7 @@
 import torch
 import math
 
+from torchlensmaker.core.geometry import within_radius
 
 class Outline:
     "An outline limits the extent of a 3D surface in the local YZ plane"
@@ -53,11 +54,7 @@ class CircularOutline(Outline):
         self.diameter = diameter
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
-        dim = points.shape[1]
-        if dim == 2:
-            return torch.le(torch.abs(points[:, 1]), self.diameter / 2)
-        else:
-            return torch.le(torch.hypot(points[:, 1], points[:, 2]), self.diameter / 2)
+        return within_radius(self.diameter/2, points)
 
     def max_radius(self) -> float:
         return self.diameter / 2
