@@ -18,13 +18,15 @@ from torchlensmaker.core.geometry import unit_vector
 
 from torch.linalg import vector_norm
 
+from typing import Any
+
 # shorter for type annotations
 Tensor = torch.Tensor
 
 
 class LocalSurface:
     """
-    Base class for surfaces defined in a local reference frame
+    Base class for surfaces
     """
 
     def __init__(self, outline: Outline, dtype: torch.dtype = torch.float64):
@@ -290,6 +292,114 @@ class Parabola(ImplicitSurface):
         )
 
 
+
+class DiameterBandSurface:
+    def __init__(self, Ax, Ar):
+        self.Ax = Ax
+        self.Ar = Ar
+
+    def f(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return (X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return torch.stack(
+            (2 * (X - Ax), torch.sign(R) * 2 * (torch.abs(R) - Ar)), dim=-1
+        )
+
+    def F(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        return (X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        quot = Ar / torch.sqrt(R2)
+        return torch.stack((2 * (X - Ax), 2 * Y - quot, 2 * Z - quot), dim=-1)
+
+
+class DiameterBandSurfaceSq:
+    "Square root version of diameter band surface"
+
+    def __init__(self, Ax, Ar):
+        self.Ax = Ax
+        self.Ar = Ar
+
+    def f(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return torch.sqrt((X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2)
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        sq = self.f(points)
+        return torch.stack(
+            ((X - Ax) / sq, torch.sign(R) * (torch.abs(R) - Ar) / sq), dim=-1
+        )
+
+    def F(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        return torch.sqrt((X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2)
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        sq = self.F(points)
+        sqr2 = torch.sqrt(R2)
+        quot = (sqr2 - Ar) / (sqr2 * sq)
+        return torch.stack(
+            (
+                (X - Ax) / sq,
+                Y * quot,
+                Z * quot,
+            ),
+            dim=-1,
+        )
+
+
+class SagSurface(ImplicitSurface):
+    """
+    Implicit surface defined by a sag function.
+
+    A sag function g(r) is a one dimensional real valued function that describes
+    a surface x coordinate in an arbitrary meridional plane as a function of the
+    distance to the principal axis: x = g(r).
+
+    Derived classes provide the sag function and its gradient in
+    both 2 and 3 dimensions. This class then uses it to create the implicit
+    function F representing the full surface in the following manner:
+
+    * Inside the diameter region, the sag function is used to define f(x,r) = g(r) - x
+    * Outside the diameter region, the "diameter band surface" is used.
+    """
+
+    def __init__(self, diameter: float, **kwargs):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+
+    def g(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+    
+    def g_grad(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+
+    def G(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+    
+    def G_grad(self, points: Tensor) -> Tensor:
+        raise NotImplementedError
+
+
 class Sphere(ImplicitSurface):
     """
     A section of a sphere, parameterized by curvature.
@@ -300,11 +410,12 @@ class Sphere(ImplicitSurface):
     enables changing the sign of C during optimization.
 
     In 2D, this surface is an arc of circle.
-    In 3D, this surface is a section of a sphere (wikipedia call it a "spherical cap")
+    In 3D, this surface is a section of a sphere (wikipedia calls it a "spherical cap")
 
     For high curvature arcs (close to a half circle), it's better to use the
     SphereR class which uses radius parameterization and polar distance
-    functions.
+    functions. In fact this class cannot represent an exact half circle (R =
+    D/2) due to the gradient becoming infinite, use SphereR instead.
     """
 
     def __init__(
@@ -324,9 +435,9 @@ class Sphere(ImplicitSurface):
 
         self.C: torch.Tensor
         if C is None:
-            if torch.abs(torch.as_tensor(R)) < diameter / 2:
+            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
                 raise RuntimeError(
-                    f"Sphere radius (R={R}) must be at least half the surface diameter (D={diameter})"
+                    f"Sphere radius (R={R}) must be more than half the surface diameter (D={diameter})"
                 )
 
             if isinstance(R, nn.Parameter):
@@ -486,79 +597,6 @@ class Sphere(ImplicitSurface):
             (-torch.ones_like(x), (C * y) / denom, (C * z) / denom), dim=-1
         )
 
-
-class DiameterBandSurface:
-    def __init__(self, Ax, Ar):
-        self.Ax = Ax
-        self.Ar = Ar
-
-    def f(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
-        Ax, Ar = self.Ax, self.Ar
-        return (X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
-        Ax, Ar = self.Ax, self.Ar
-        return torch.stack(
-            (2 * (X - Ax), torch.sign(R) * 2 * (torch.abs(R) - Ar)), dim=-1
-        )
-
-    def F(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        return (X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        quot = Ar / torch.sqrt(R2)
-        return torch.stack((2 * (X - Ax), 2 * Y - quot, 2 * Z - quot), dim=-1)
-
-
-class DiameterBandSurfaceSq:
-    "Square root version of diameter band surface"
-
-    def __init__(self, Ax, Ar):
-        self.Ax = Ax
-        self.Ar = Ar
-
-    def f(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
-        Ax, Ar = self.Ax, self.Ar
-        return torch.sqrt((X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2)
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        X, R = points.select(-1, 0), points.select(-1, 1)
-        Ax, Ar = self.Ax, self.Ar
-        sq = self.f(points)
-        return torch.stack(
-            ((X - Ax) / sq, torch.sign(R) * (torch.abs(R) - Ar) / sq), dim=-1
-        )
-
-    def F(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        return torch.sqrt((X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2)
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        sq = self.F(points)
-        sqr2 = torch.sqrt(R2)
-        quot = (sqr2 - Ar) / (sqr2 * sq)
-        return torch.stack(
-            (
-                (X - Ax) / sq,
-                Y * quot,
-                Z * quot,
-            ),
-            dim=-1,
-        )
 
 
 class SphereR(LocalSurface):
