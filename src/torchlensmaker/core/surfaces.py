@@ -411,10 +411,6 @@ class Sphere(ImplicitSurface):
         # TODO make any dim
         Y = points.select(-1, 1)
         return torch.abs(Y) <= self.outline.max_radius()
-    
-    # input: edge points (in meridional coordinates)
-    # output: F(meridional points)
-    # output: F_grad(meridional points)
 
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
@@ -488,6 +484,80 @@ class Sphere(ImplicitSurface):
         denom = torch.sqrt(1 - r2 * C**2)
         return torch.stack(
             (-torch.ones_like(x), (C * y) / denom, (C * z) / denom), dim=-1
+        )
+
+
+class DiameterBandSurface:
+    def __init__(self, Ax, Ar):
+        self.Ax = Ax
+        self.Ar = Ar
+
+    def f(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return (X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return torch.stack(
+            (2 * (X - Ax), torch.sign(R) * 2 * (torch.abs(R) - Ar)), dim=-1
+        )
+
+    def F(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        return (X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        quot = Ar / torch.sqrt(R2)
+        return torch.stack((2 * (X - Ax), 2 * Y - quot, 2 * Z - quot), dim=-1)
+
+
+class DiameterBandSurfaceSq:
+    "Square root version of diameter band surface"
+
+    def __init__(self, Ax, Ar):
+        self.Ax = Ax
+        self.Ar = Ar
+
+    def f(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        return torch.sqrt((X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2)
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        X, R = points.select(-1, 0), points.select(-1, 1)
+        Ax, Ar = self.Ax, self.Ar
+        sq = self.f(points)
+        return torch.stack(
+            ((X - Ax) / sq, torch.sign(R) * (torch.abs(R) - Ar) / sq), dim=-1
+        )
+
+    def F(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        return torch.sqrt((X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2)
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        X, Y, Z = points.select(-1, 0), points.select(-1, 1), points.select(-1, 2)
+        R2 = Y**2 + Z**2
+        Ax, Ar = self.Ax, self.Ar
+        sq = self.F(points)
+        sqr2 = torch.sqrt(R2)
+        quot = (sqr2 - Ar) / (sqr2 * sq)
+        return torch.stack(
+            (
+                (X - Ax) / sq,
+                Y * quot,
+                Z * quot,
+            ),
+            dim=-1,
         )
 
 

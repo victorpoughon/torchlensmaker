@@ -38,6 +38,8 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.SphereR(diameter=5, C=0.05, dtype=dtype),
         tlm.SphereR(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
         tlm.SphereR(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
+        tlm.SphereR(diameter=5, R=2.5, dtype=dtype),
+        tlm.SphereR(diameter=5, R=tlm.parameter(2.5, dtype=dtype), dtype=dtype),
 
         tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
         tlm.Parabola(diameter=5, a=tlm.parameter(0.05, dtype=dtype), dtype=dtype),

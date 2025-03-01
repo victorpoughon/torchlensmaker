@@ -185,6 +185,6 @@ class CollisionMethod:
 
 
 default_collision_method = CollisionMethod(
-    init=init_zeros,
+    init=init_best_axis,
     step0=Newton(damping=0.8, max_iter=15, max_delta=10),
 )
