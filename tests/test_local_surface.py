@@ -28,16 +28,20 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.CircularPlane(diameter=30, dtype=dtype),
         tlm.SquarePlane(side_length=30, dtype=dtype),
 
+        # Sphere
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
         tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
         tlm.Sphere(diameter=5, C=0., dtype=dtype),
         tlm.Sphere(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
         tlm.Sphere(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
 
+        # SphereR
         tlm.SphereR(diameter=5, R=10, dtype=dtype),
         tlm.SphereR(diameter=5, C=0.05, dtype=dtype),
         tlm.SphereR(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
         tlm.SphereR(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
+
+        # Half circle with SphereR
         tlm.SphereR(diameter=5, R=2.5, dtype=dtype),
         tlm.SphereR(diameter=5, R=tlm.parameter(2.5, dtype=dtype), dtype=dtype),
 
@@ -69,7 +73,7 @@ def isflat(s: tlm.LocalSurface) -> bool:
         isinstance(s, tlm.Plane)
         or (
             isinstance(s, tlm.Sphere)
-            and torch.allclose(s.C, torch.tensor(0.0, dtype=s.dtype))
+            and torch.allclose(s.inner_surface.C, torch.tensor(0.0, dtype=s.dtype))
         )
         or (
             isinstance(s, tlm.Parabola)
@@ -155,6 +159,8 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
 
     # samples2D_half
     # samples2D_full
+    # samples dtype and shape
+    # samples range for half / full
 
     # finite
     # contain(samples) == true

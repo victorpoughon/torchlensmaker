@@ -190,7 +190,7 @@ class ImplicitSurface(LocalSurface):
         # So verify intersection here and filter points
         # that aren't on the surface
         # TODO better tolerance configuration based on sampling dtype
-        valid = self.contains(local_points, tol=1e-3)
+        valid = self.contains(local_points, tol=1e-4)
 
         return t, local_normals, valid
 
@@ -290,9 +290,9 @@ class Parabola(ImplicitSurface):
         )
 
 
-# TODO make implicitsurface
-class DiameterBandSurface:
-    def __init__(self, Ax, Ar):
+class DiameterBandSurface(ImplicitSurface):
+    def __init__(self, Ax, Ar, **kwargs):
+        super().__init__(**kwargs)
         self.Ax = Ax
         self.Ar = Ar
 
@@ -326,10 +326,11 @@ class DiameterBandSurface:
         return torch.stack((2 * (X - Ax), 2 * Y - quot, 2 * Z - quot), dim=-1)
 
 
-class DiameterBandSurfaceSq:
+class DiameterBandSurfaceSq(ImplicitSurface):
     "Square root version of diameter band surface"
 
-    def __init__(self, Ax, Ar):
+    def __init__(self, Ax, Ar, **kwargs):
+        super().__init__(**kwargs)
         self.Ax = Ax
         self.Ar = Ar
 
@@ -383,15 +384,11 @@ class SagSurface(ImplicitSurface):
 
     Derived classes provide the sag function and its gradient in
     both 2 and 3 dimensions. This class then uses it to create the implicit
-    function F representing the full surface in the following manner:
-
-    * Inside the diameter region, the sag function is used to define f(x,r) = g(r) - x
-    * Outside the diameter region, the "diameter band surface" is used.
+    function F representing the corresponding implicit surface.
     """
 
-    def __init__(self, diameter: float, **kwargs):
-        super().__init__(**kwargs)
-        self.diameter = diameter
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
     def g(self, r: Tensor) -> Tensor:
         """
@@ -419,7 +416,7 @@ class SagSurface(ImplicitSurface):
 
     def G(self, y: Tensor, z: Tensor) -> Tensor:
         """
-        3D sag function $G(X, Y) = g(\sqrt{y^2 + z^2})$
+        3D sag function $G(X, Y) = g(\\sqrt{y^2 + z^2})$
 
         Args:
         * y: batched tensor of shape (...)
@@ -432,7 +429,7 @@ class SagSurface(ImplicitSurface):
     
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         """
-        Gradient of the 3D sag function $\nabla G(y, z)$
+        Gradient of the 3D sag function $\\nabla G(y, z)$
 
         Args:
         * y: batched tensor of shape (...)
@@ -466,23 +463,131 @@ class SagSurface(ImplicitSurface):
         return torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
 
 
-class CompositeSurface(ImplicitSurface):
-    def __init__(self, mask_function, surface1, surface2):
-        ...
-    
-# combine with DiameterBandSurface here or make a separate surface compose system?
-# CompositeSurface(mask, surface1, surface2)
-#   == torch.where(mask, surface1, surface2)
-
-# for SphereSag make sure there is still an inner where() for safe backwards when masking nans
-# just set all outside domain to zero basically, will be replaced by composite surface anyway
-
-# Sphere = CompositeSurface(within_radius, SagSphere, DiameterBandSurface)
-
-
-class Sphere(ImplicitSurface):
+class CompositeImplicitSurface(ImplicitSurface):
     """
-    A section of a sphere, parameterized by curvature.
+    Composes two implicit surfaces spatially with a mask function.
+    """
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.inner_surface = None # To be set by derived class after initialization
+        self.fallback_surface_type = None # To be set by derived class after initialization
+    
+    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
+        raise NotImplementedError
+    
+    def fallback_surface(self) -> ImplicitSurface:
+        # TODO dtype
+        return self.fallback_surface_type(Ax=self.inner_surface.extent_x(), Ar=self.inner_surface.diameter/2, dtype=self.dtype)
+    
+    def f(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 2
+        mask = self.mask_function(self.inner_surface, points)
+        fallback = self.fallback_surface()
+        return torch.where(mask, self.inner_surface.f(points), fallback.f(points))
+
+    def f_grad(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 2
+        mask = self.mask_function(self.inner_surface, points)
+        fallback = self.fallback_surface()
+        return torch.where(mask.unsqueeze(-1).expand(*mask.size(), 2), self.inner_surface.f_grad(points), fallback.f_grad(points))
+    
+    def F(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 3
+        mask = self.mask_function(self.inner_surface, points)
+        fallback = self.fallback_surface()
+        return torch.where(mask, self.inner_surface.F(points), fallback.F(points))
+
+    def F_grad(self, points: Tensor) -> Tensor:
+        assert points.shape[-1] == 3
+        mask = self.mask_function(self.inner_surface, points)
+        fallback = self.fallback_surface()
+        return torch.where(mask.unsqueeze(-1).expand(*mask.size(), 3), self.inner_surface.F_grad(points), fallback.F_grad(points))
+
+
+class SphereSag(SagSurface):
+    "Sag surface for Sphere parameterized with curvature"
+
+    def __init__(self, diameter: Tensor, C: Tensor, **kwargs):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+        self.C = C
+    
+    def parameters(self) -> dict[str, nn.Parameter]:
+        if (isinstance(self.C, nn.Parameter)):
+            return {"C": self.C}
+        else:
+            return {}
+
+    def extent_x(self) -> Tensor:
+        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
+        C = self.C
+        return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
+    
+    def g(self, r: Tensor) -> Tensor:
+        C = self.C
+        r2 = torch.pow(r, 2)
+        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * torch.pow(C, 2)))
+    
+    def g_grad(self, r: Tensor) -> Tensor:
+        C = self.C
+        # TODO add a clamp here to avoid div by zero? or make sure fallback has an epsilon
+        return torch.div(C * r, torch.sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
+
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
+        C = self.C
+        r2 = torch.pow(y, 2) + torch.pow(z, 2)
+        return self.g(r2)
+    
+    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+        C = self.C
+        r2 = torch.pow(y, 2) + torch.pow(z, 2)
+        denom = torch.sqrt(1 - r2*torch.pow(C, 2))
+        return torch.div(y * C, denom), torch.div(z * C, denom)
+
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
+        # If the curvature is low, use linear sampling along the y axis
+        # Else, use the angular parameterization of the circle so that
+        # samples are smoother, especially for high curvature circles.
+        if self.C * self.diameter < 0.1:
+            return sphere_samples_linear(
+                curvature=self.C,
+                start=0.0,
+                end=self.diameter/2 - epsilon,
+                N=N,
+                dtype=self.dtype,
+            )
+        else:
+            R = 1 / self.C
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
+            return sphere_samples_angular(
+                radius=R, start=0.0, end=theta_max - epsilon, N=N,
+                dtype=self.dtype
+            )
+
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
+        # If the curvature is low, use linear sampling along the y axis
+        # Else, use the angular parameterization of the circle so that
+        # samples are smoother, especially for high curvature circles.
+        if self.C * self.diameter < 0.1:
+            return sphere_samples_linear(
+                curvature=self.C,
+                start=-self.diameter/2 + epsilon,
+                end=self.diameter/2 - epsilon,
+                N=N,
+                dtype=self.dtype,
+            )
+        else:
+            R = 1 / self.C
+            theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
+            return sphere_samples_angular(
+                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N, dtype=self.dtype
+            )
+
+
+class Sphere(CompositeImplicitSurface):
+    """
+    A section of a sphere, parameterized by signed curvature.
     Curvature is the inverse of radius: C = 1/R.
 
     This parameterization is useful because it enables clean representation of
@@ -497,6 +602,88 @@ class Sphere(ImplicitSurface):
     functions. In fact this class cannot represent an exact half circle (R =
     D/2) due to the gradient becoming infinite, use SphereR instead.
     """
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter | None = None,
+        C: int | float | nn.Parameter | None = None,
+        fallback_surface_type: Any = DiameterBandSurfaceSq,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+
+        if (R is not None and C is not None) or (R is None and C is None):
+            raise RuntimeError(
+                "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
+            )
+
+        self.C: torch.Tensor
+        if C is None:
+            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
+                raise RuntimeError(
+                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter/2}) "
+                    f"(To model an exact half-sphere, use SphereR)."
+                )
+
+            if isinstance(R, nn.Parameter):
+                C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=self.dtype))
+            else:
+                C_tensor = torch.as_tensor(1.0 / R, dtype=self.dtype)
+        else:
+            if isinstance(C, nn.Parameter):
+                C_tensor = C
+            else:
+                C_tensor = torch.as_tensor(C, dtype=self.dtype)
+
+        assert C_tensor.dim() == 0
+        assert C_tensor.dtype == self.dtype
+        
+        self.inner_surface = SphereSag(diameter=diameter, C=C_tensor, **kwargs)
+        self.fallback_surface_type = fallback_surface_type
+    
+    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
+        # TODO bbox / domain
+        return within_radius(self.inner_surface.diameter / 2, points)
+
+    def radius(self) -> float:
+        "Utility function to get radius from internal curvature"
+        return 1/self.inner_surface.C.item()
+
+    def testname(self) -> str:
+        return f"Sphere-{self.inner_surface.diameter:.2f}-{self.inner_surface.C.item():.2f}"
+    
+    def extent_x(self) -> Tensor:
+        return self.inner_surface.extent_x()
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return self.inner_surface.parameters()
+    
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
+        return self.inner_surface.samples2D_half(N, epsilon)
+
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
+        return self.inner_surface.samples2D_full(N, epsilon)
+
+
+class SphereC(Sphere):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fallback_surface_type = DiameterBandSurface
+    
+    def testname(self) -> str:
+        return "SphereC"
+
+
+# for SphereSag make sure there is still an inner where() for safe backwards when masking nans
+# just set all outside domain to zero basically, will be replaced by composite surface anyway
+
+# Sphere = CompositeSurface(within_radius, SagSphere, DiameterBandSurface)
+
+# add domain to surfaces?
+# clean up bbox / domain of surface instead of extent_x / diameter/2
+
+class SphereOld(ImplicitSurface):
 
     def __init__(
         self,
@@ -534,7 +721,7 @@ class Sphere(ImplicitSurface):
         assert self.C.dtype == self.dtype
 
     def testname(self) -> str:
-        return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
+        return f"SphereOld-{self.diameter:.2f}-{self.C.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.C, nn.Parameter):
@@ -560,12 +747,14 @@ class Sphere(ImplicitSurface):
                 start=0.0,
                 end=self.diameter/2 - epsilon,
                 N=N,
+                dtype=self.dtype,
             )
         else:
             R = 1 / self.C
             theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
             return sphere_samples_angular(
-                radius=R, start=0.0, end=theta_max - epsilon, N=N
+                radius=R, start=0.0, end=theta_max - epsilon, N=N,
+                dtype=self.dtype,
             )
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
@@ -578,12 +767,13 @@ class Sphere(ImplicitSurface):
                 start=-self.diameter/2 + epsilon,
                 end=self.diameter/2 - epsilon,
                 N=N,
+                dtype=self.dtype,
             )
         else:
             R = 1 / self.C
             theta_max = torch.arcsin((self.diameter/2) / torch.abs(R))
             return sphere_samples_angular(
-                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
+                radius=R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N, dtype=self.dtype
             )
 
     def edge_points(self) -> tuple[Tensor, Tensor]:
@@ -738,13 +928,13 @@ class SphereR(LocalSurface):
         if torch.abs(C * self.diameter) < 0.1:
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
-                curvature=C, start=0.0, end=self.diameter/2 - epsilon, N=N
+                curvature=C, start=0.0, end=self.diameter/2 - epsilon, N=N, dtype=self.dtype
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
             theta_max = torch.arcsin((self.diameter/2) / torch.abs(self.R))
-            return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max - epsilon, N=N)
+            return sphere_samples_angular(radius=self.R, start=0.0, end=theta_max - epsilon, N=N, dtype=self.dtype)
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         "Like samples2D but on the entire domain"
@@ -756,13 +946,14 @@ class SphereR(LocalSurface):
                 start=-self.diameter/2 + epsilon,
                 end=self.diameter/2 - epsilon,
                 N=N,
+                dtype=self.dtype
             )
         else:
             # Else, use the angular parameterization of the circle so that
             # samples are smoother, especially for high curvature circles.
             theta_max = torch.arcsin((self.diameter/2) / torch.abs(self.R))
             return sphere_samples_angular(
-                radius=self.R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N
+                radius=self.R, start=-theta_max + epsilon, end=theta_max - epsilon, N=N, dtype=self.dtype
             )
 
     def center(self, dim: int) -> Tensor:

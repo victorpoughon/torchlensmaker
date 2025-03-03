@@ -105,7 +105,7 @@ def random_direction_rays(
         assert torch.all(torch.isfinite(samples))
         
         theta = 2 * math.pi * torch.rand((N,))
-        V = rot2d(torch.tensor([1.0, 0.0]), theta)
+        V = rot2d(torch.tensor([1.0, 0.0]), theta).to(dtype=surface.dtype)
 
         P = samples + offset * V
 
@@ -136,8 +136,7 @@ def fixed_rays(
         samples = surface.samples2D_full(N, epsilon=1e-3)
         assert torch.all(torch.isfinite(samples))
         
-        theta = 2 * math.pi * torch.rand((N,))
-        V = torch.tile(direction, (N, 1))
+        V = torch.tile(direction, (N, 1)).to(dtype=surface.dtype)
 
         P = samples + offset * V
 

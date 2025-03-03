@@ -69,7 +69,7 @@ def make_transforms(
         L_rot = LinearTransform(M, M.T)
 
     # SurfaceExtent
-    s1 = Sphere(35.0, 35 / 2, dtype=dtype)
+    s1 = Sphere(35.0, 20.0, dtype=dtype)
     s2 = Parabola(35.0, 0.010, dtype=dtype)
     s3 = SquarePlane(35.0, dtype=dtype)
     s4 = CircularPlane(35.0, dtype=dtype)

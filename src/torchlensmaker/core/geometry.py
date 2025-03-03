@@ -10,7 +10,6 @@ def unit_vector(dim: int, dtype: torch.dtype) -> Tensor:
     "Unit vector along the X axis"
     return torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype)))
 
-
 def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
     """
     Rotated unit X vector in 2D or 3D

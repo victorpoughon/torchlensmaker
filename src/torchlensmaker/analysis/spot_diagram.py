@@ -146,6 +146,10 @@ def spot_diagram(
     # and it's the product of the sizes of all non row/col dimensions
     # but if there are blocked rays, then that number can be less, or even zero.
 
+    # for index_row in range(nrows):
+    #     for index_col in range(ncols):
+    #         print(index_row, index_col, "size = ", spot_coords[index_row][index_col].size())
+
     # spot_tensor :: [nrows, ncols, N, 2]
     # N is the product of the sizes of all non row/col dimensions
     # The last dimensions is 2 for the Y and Z axes of the image plane

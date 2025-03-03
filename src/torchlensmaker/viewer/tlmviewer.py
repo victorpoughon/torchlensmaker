@@ -5,6 +5,8 @@ import os.path
 import json
 import torch
 
+import warnings
+
 from typing import Any, Optional
 
 from torchlensmaker.core.surfaces import (
@@ -61,7 +63,11 @@ def ipython_display(
     div_template = get_div_template()
     script_template = get_script_template()
 
-    json_data = json.dumps(data, allow_nan=False)
+    try:
+        json_data = json.dumps(data, allow_nan=False)
+    except ValueError as err:
+        warnings.warn(f"tlmviewer: got nan values in display data ({err})")
+        json_data = json.dumps(data, allow_nan=True)
 
     if ndigits is not None:
         json_data = json.dumps(
