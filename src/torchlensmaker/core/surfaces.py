@@ -59,7 +59,8 @@ class LocalSurface:
     
     def normals(self, points: Tensor) -> Tensor:
         """
-        Unit vectors normal to the surface at input points of shape (N, D)
+        Unit vectors normal to the surface at input points of shape (..., D)
+        All dimensions except the last one are batch dimensions
         Input points are not necessarily on the surface
         """
         raise NotImplementedError
@@ -121,13 +122,9 @@ class Plane(LocalSurface):
         return t, local_normals, valid
 
     def normals(self, points: Tensor) -> Tensor:
-        N, dim = points.shape
-        normal = (
-            torch.tensor([-1.0, 0.0], dtype=self.dtype)
-            if dim == 2
-            else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
-        )
-        return torch.tile(normal, (N, 1))
+        batch, dim = points.shape[:-1], points.shape[-1]
+        normal = -unit_vector(dim=dim, dtype=self.dtype)
+        return torch.tile(normal, (*batch, 1))
 
     def extent_x(self) -> Tensor:
         return torch.as_tensor(0.0, dtype=self.dtype)
@@ -195,15 +192,17 @@ class ImplicitSurface(LocalSurface):
         return t, local_normals, valid
 
     def normals(self, points: Tensor) -> Tensor:
-        return nn.functional.normalize(self.Fd_grad(points), dim=1)
+        # To get the normals of an implicit surface,
+        # normalize the gradient of the implicit function
+        return nn.functional.normalize(self.Fd_grad(points), dim=-1)
 
     def Fd(self, points: Tensor) -> Tensor:
         "Calls f or F depending on the shape of points"
-        return self.f(points) if points.shape[1] == 2 else self.F(points)
+        return self.f(points) if points.shape[-1] == 2 else self.F(points)
 
     def Fd_grad(self, points: Tensor) -> Tensor:
         "Calls f_grad or F_grad depending on the shape of points"
-        return self.f_grad(points) if points.shape[1] == 2 else self.F_grad(points)
+        return self.f_grad(points) if points.shape[-1] == 2 else self.F_grad(points)
 
     def f(self, points: Tensor) -> Tensor:
         raise NotImplementedError
@@ -963,19 +962,18 @@ class SphereR(LocalSurface):
             return torch.tensor([self.R, 0.0, 0.0])
 
     def normals(self, points: Tensor) -> Tensor:
-        dim, dtype = points.shape[-1], self.dtype
+        batch, dim, dtype = points.shape[:-1], points.shape[-1], self.dtype
 
         # The normal is the vector from the center to the points
         center = self.center(dim)
         normals = torch.nn.functional.normalize(points - center, dim=-1)
 
         # We need a default value for the case where point == center, to avoid div by zero
-        normal_at_origin = torch.tile(unit_vector(dim, dtype), ((*points.shape[:-1], 1)))
+        unit = unit_vector(dim, dtype)
+        normal_at_origin = torch.tile(unit, ((*batch, 1)))
 
         return torch.where(
-            torch.all(torch.isclose(center, points), dim=-1)
-            .unsqueeze(1)
-            .expand_as(normals),
+            torch.all(torch.isclose(center, points), dim=-1).unsqueeze(-1).expand_as(normals),
             normal_at_origin,
             normals,
         )

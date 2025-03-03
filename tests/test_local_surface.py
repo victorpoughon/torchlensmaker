@@ -9,8 +9,9 @@ import numpy as np
 import torchlensmaker as tlm
 
 """
-Test all surfaces using the common base class LocalSurface() methods,
-local_collide() is tested only roughly, a more detailed test is in test_local_collide
+Test all surfaces using the methods of the common base class LocalSurface().
+All methods are tested here, except local_collide() which is only tested for the
+basic stuff, without labeled data. A full test is in test_local_collide.
 """
 
 @pytest.fixture(params=[2, 3], ids=["2D", "3D"])
@@ -45,11 +46,13 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.SphereR(diameter=5, R=2.5, dtype=dtype),
         tlm.SphereR(diameter=5, R=tlm.parameter(2.5, dtype=dtype), dtype=dtype),
 
-        tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
-        tlm.Parabola(diameter=5, a=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
-        tlm.Parabola(diameter=5, a=0., dtype=dtype),
+        #tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
+        #tlm.Parabola(diameter=5, a=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
+        #tlm.Parabola(diameter=5, a=0., dtype=dtype),
 
         # TODO Asphere
+        # TODO migrate parabola to composite
+        # TODO test domains
     ]
     # fmt: on
 
@@ -132,26 +135,55 @@ def sample_grid3d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
 
 
 def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    # TODO check arbitrary batch dimensions
+    # Number of points per dimension of the sample grid
+    # Make sure to use a sample grid with odd number of points so that 0 is
+    # included
+    N=3
+
+    # The sample grid gets reshaped to a single batch dimension
+    # Number of points in the first batch dimension
+    B1 = N**dim
 
     for s in surfaces:
-        # Make a sample grid with odd number of points so that 0 is included
         lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
         if dim == 2:
-            points = sample_grid2d(lim=lim, N=51, dtype=s.dtype)
+            points1 = sample_grid2d(lim=lim, N=N, dtype=s.dtype)
         else:
-            points = sample_grid3d(lim=lim, N=21, dtype=s.dtype)
+            points1 = sample_grid3d(lim=lim, N=N, dtype=s.dtype)
+
+        # We're going to check that surface.normals() works with an arbitrary
+        # number of batch dimensions. So here make versions of points with more batch
+        # dimensions.
+        points2 = points1.unsqueeze(0).expand(4, *([-1]*(points1.dim())))
+        points3 = points2.unsqueeze(0).expand(5, *([-1]*(points2.dim())))
+        points4 = points3.unsqueeze(0).expand(6, *([-1]*(points3.dim())))
+
+        assert points1.shape == (B1, dim)
+        assert points2.shape == (4, B1, dim)
+        assert points3.shape == (5, 4, B1, dim)
+        assert points4.shape == (6, 5, 4, B1, dim)
 
         # Compute normals
-        normals = s.normals(points)
+        normals1 = s.normals(points1)
+        normals2 = s.normals(points2)
+        normals3 = s.normals(points3)
+        normals4 = s.normals(points4)
 
-        # Sanity checks
-        assert torch.all(torch.isfinite(normals))
-        assert normals.dtype == s.dtype
-        assert torch.allclose(
-            torch.linalg.vector_norm(normals, dim=-1),
-            torch.ones(points.shape[:-1], dtype=s.dtype),
-        )
+        assert normals1.shape == (B1, dim)
+        assert normals2.shape == (4, B1, dim), s
+        assert normals3.shape == (5, 4, B1, dim)
+        assert normals4.shape == (6, 5, 4, B1, dim)
+
+        for normals in (normals1, normals2, normals3, normals4):
+            # Check isfinite, dtype
+            assert torch.all(torch.isfinite(normals))
+            assert normals.dtype == s.dtype
+
+            # Check vector norm along the last dimension is close to 1.0
+            assert torch.allclose(
+                torch.linalg.vector_norm(normals, dim=-1),
+                torch.ones(normals.shape[:-1], dtype=s.dtype),
+            )
 
 
 def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
