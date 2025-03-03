@@ -8,6 +8,8 @@ import numpy as np
 
 import torchlensmaker as tlm
 
+from torchlensmaker.testing.collision_datasets import normal_rays
+
 """
 Test all surfaces using the methods of the common base class LocalSurface().
 All methods are tested here, except local_collide() which is only tested for the
@@ -215,12 +217,47 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
     
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
-    ...
-    # local collide basic stuff: shape, dim, batch shapes, isfinite
+    # Here we test all that we can, without knowledge of wether a collision is
+    # expected for these rays
+    gen = normal_rays(10.0, 150)
+
+    # TODO test multiple batch dimensions
+    
+    for surface in surfaces:
+        dataset = gen(surface)
+
+        # Call local_collide, rays in testing datasets are in local frame
+        P, V = dataset.P, dataset.V
+        batch, D = P.shape[:-1], P.shape[-1]
+        t, local_normals, valid = surface.local_collide(P, V)
+        local_points = P + t.unsqueeze(1).expand_as(V) * V
+
+        # Check shapes
+        assert t.dim() == len(batch) and t.shape == batch
+        assert local_normals.dim() == len(batch) + 1 and local_normals.shape == (*batch, D)
+        assert valid.dim() == len(batch) and valid.shape == batch
+        assert local_points.dim() == 2 and local_points.shape == (*batch, D)
+
+        # Check dtypes
+        assert t.dtype == surface.dtype, (P.dtype, V.dtype, t.dtype, surface.dtype)
+        assert local_normals.dtype == surface.dtype
+        assert valid.dtype == torch.bool
+        assert local_points.dtype == surface.dtype
+
+        # Check isfinite
+        assert torch.all(torch.isfinite(t))
+        assert torch.all(torch.isfinite(local_normals))
+        assert torch.all(torch.isfinite(valid))
+        assert torch.all(torch.isfinite(local_points))
+    
+    # Check all normals are unit vectors
+    assert torch.allclose(torch.linalg.vector_norm(local_normals, dim=-1), torch.ones(1, dtype=surface.dtype))        
 
 
 # further for test_implicit_surface
 # - F and F grad should be finite everywhere
+# - batch shapes of F and F_grad (all dimensions except last are preserved batch dims)
+
 # - F should be zero on samples
 # - F should be non zero outside of bounding sphere/box
-# - batch shapes of F and F_grad (all dimensions except last are preserved batch dims)
+
