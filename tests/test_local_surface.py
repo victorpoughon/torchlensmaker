@@ -187,16 +187,32 @@ def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
 
 
 def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
-    ...
+    N = 50
+    epsilon = 0.
+    
+    for s in surfaces:
+        samples_half = s.samples2D_half(N, epsilon)
+        samples_full = s.samples2D_full(N, epsilon)
 
-    # samples2D_half
-    # samples2D_full
-    # samples dtype and shape
-    # samples range for half / full
+        for samples in (samples_half, samples_full):
+            # Check dtype, shape and isfinite
+            assert samples.dtype == s.dtype, s
+            assert samples.shape == (N, 2)
+            assert torch.all(samples.isfinite())
 
-    # finite
-    # contain(samples) == true
-    # contains(modified samples) == false
+            # Check that samples are on the surface
+            assert torch.all(s.contains(samples, tol=1e-4)), s
+
+            # Check that samples that are sure not to be on the surface, are not
+            modified_samples = samples + 10*s.extent(dim=2) + torch.tensor([1., 0.])
+            assert torch.all(torch.logical_not(s.contains(modified_samples))), s
+
+        # Check range
+        pretty_much_positive = -1e-5
+        assert torch.all(samples_half.select(-1, 1) >= pretty_much_positive)
+        # TODO check upper range of samples_half with bbox
+        # TODO check range of full with bbox
+    
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
     ...

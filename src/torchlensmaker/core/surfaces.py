@@ -100,12 +100,12 @@ class Plane(LocalSurface):
         return {}
 
     def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, self.outline.max_radius(), N)
+        r = torch.linspace(0, self.outline.max_radius(), N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
         maxr = self.outline.max_radius()
-        r = torch.linspace(-maxr, maxr, N)
+        r = torch.linspace(-maxr, maxr, N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
@@ -677,6 +677,8 @@ class SphereC(Sphere):
 # for SphereSag make sure there is still an inner where() for safe backwards when masking nans
 # just set all outside domain to zero basically, will be replaced by composite surface anyway
 
+# think if we need some tolerance / epsilon on mask boundary
+
 # Sphere = CompositeSurface(within_radius, SagSphere, DiameterBandSurface)
 
 # add domain to surfaces?
@@ -979,12 +981,12 @@ class SphereR(LocalSurface):
         )
 
     def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
-        center = self.center(dim=points.shape[1])
-        within_outline = within_radius(self.diameter/2, points)
-        within_sphere = torch.abs(torch.linalg.vector_norm(points - center, dim=1) - torch.abs(self.R)) <= tol
-        within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x())
+        center = self.center(dim=points.shape[-1])
+        within_outline = within_radius(self.diameter/2 + tol, points)
+        on_sphere = torch.abs(torch.linalg.vector_norm(points - center, dim=-1) - torch.abs(self.R)) <= tol
+        within_extent = torch.abs(points[:, 0]) <= torch.abs(self.extent_x()) + tol
 
-        return torch.all(torch.stack((within_outline, within_sphere, within_extent), dim=1), dim=1)
+        return torch.all(torch.stack((within_outline, on_sphere, within_extent), dim=-1), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         N, D = P.shape

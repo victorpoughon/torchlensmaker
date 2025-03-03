@@ -6,9 +6,11 @@ Tensor = torch.Tensor
 def sphere_samples_angular(radius: float, start: float, end: float, N: int, dtype: torch.dtype) -> Tensor:
     "Angular sampling of a circular arc defined by radius"
     R = radius
-    theta = torch.linspace(start, end, N, dtype=dtype)
+    
     if R > 0:
-        theta = theta + torch.pi
+        theta = torch.linspace(torch.pi - end, torch.pi - start, N, dtype=dtype)
+    else:
+        theta = torch.linspace(start, end, N, dtype=dtype)
 
     X = torch.abs(R) * torch.cos(theta) + R
     Y = torch.abs(R) * torch.sin(theta)
