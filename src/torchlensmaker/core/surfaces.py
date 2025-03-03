@@ -537,7 +537,7 @@ class SphereSag(SagSurface):
     def G(self, y: Tensor, z: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
-        return self.g(r2)
+        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * torch.pow(C, 2)))
     
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         C = self.C
