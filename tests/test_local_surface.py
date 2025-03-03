@@ -48,12 +48,15 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.SphereR(diameter=5, R=2.5, dtype=dtype),
         tlm.SphereR(diameter=5, R=tlm.parameter(2.5, dtype=dtype), dtype=dtype),
 
-        #tlm.Parabola(diameter=5, a=0.05, dtype=dtype),
-        #tlm.Parabola(diameter=5, a=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
-        #tlm.Parabola(diameter=5, a=0., dtype=dtype),
+        # Parabola
+        tlm.Parabola(diameter=5, A=0.05, dtype=dtype),
+        tlm.Parabola(diameter=5, A=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
+        tlm.Parabola(diameter=5, A=-0.05, dtype=dtype),
+        tlm.Parabola(diameter=5, A=tlm.parameter(-0.05, dtype=dtype), dtype=dtype),
+        tlm.Parabola(diameter=5, A=0, dtype=dtype),
+        tlm.Parabola(diameter=5, A=tlm.parameter(0, dtype=dtype), dtype=dtype),
 
         # TODO Asphere
-        # TODO migrate parabola to composite
         # TODO test domains
     ]
     # fmt: on
@@ -82,7 +85,7 @@ def isflat(s: tlm.LocalSurface) -> bool:
         )
         or (
             isinstance(s, tlm.Parabola)
-            and torch.allclose(s.a, torch.tensor(0.0, dtype=s.dtype))
+            and torch.allclose(s.A, torch.tensor(0.0, dtype=s.dtype))
         )
     )
 
@@ -96,7 +99,7 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(zero2))
         assert torch.all(torch.isfinite(extent2))
         assert zero2.dtype == s.dtype
-        assert extent2.dtype == s.dtype
+        assert extent2.dtype == s.dtype, s.testname()
         assert torch.allclose(zero2, torch.tensor(0., dtype=s.dtype))
         if not isflat(s):
             assert not torch.allclose(extent2, torch.tensor(0., dtype=s.dtype))

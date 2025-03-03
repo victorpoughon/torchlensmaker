@@ -235,60 +235,6 @@ class ImplicitSurface(LocalSurface):
         raise NotImplementedError
 
 
-class Parabola(ImplicitSurface):
-    def __init__(
-        self,
-        diameter: float,
-        a: int | float | nn.Parameter,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.diameter = diameter
-        self.a = to_tensor(a, default_dtype=self.dtype)
-    
-    def testname(self) -> str:
-        return f"Parabola-{self.diameter:.2f}-{self.a.item():.2f}"
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        if isinstance(self.a, nn.Parameter):
-            return {"a": self.a}
-        else:
-            return {}
-
-    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, self.diameter/2, N)
-        x = self.a * r**2
-        return torch.stack((x, r), dim=-1)
-    
-    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(-self.diameter/2, self.diameter/2, N)
-        x = self.a * r**2
-        return torch.stack((x, r), dim=-1)
-
-    def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
-        return torch.as_tensor(self.a * r**2, dtype=self.dtype)
-
-    # TODO add zone band mask to parabola
-    def f(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        return torch.mul(self.a, torch.pow(r, 2)) - x
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
-        return torch.stack((-torch.ones_like(x), 2 * self.a * r), dim=-1)
-
-    def F(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        return torch.mul(self.a, (y**2 + z**2)) - x
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
-        return torch.stack(
-            (-torch.ones_like(x), 2 * self.a * y, 2 * self.a * z), dim=-1
-        )
-
-
 class DiameterBandSurface(ImplicitSurface):
     def __init__(self, Ax, Ar, **kwargs):
         super().__init__(**kwargs)
@@ -503,6 +449,18 @@ class CompositeImplicitSurface(ImplicitSurface):
         fallback = self.fallback_surface()
         return torch.where(mask.unsqueeze(-1).expand(*mask.size(), 3), self.inner_surface.F_grad(points), fallback.F_grad(points))
 
+    def extent_x(self) -> Tensor:
+        return self.inner_surface.extent_x()
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return self.inner_surface.parameters()
+    
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
+        return self.inner_surface.samples2D_half(N, epsilon)
+
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
+        return self.inner_surface.samples2D_full(N, epsilon)
+
 
 class SphereSag(SagSurface):
     "Sag surface for Sphere parameterized with curvature"
@@ -513,10 +471,7 @@ class SphereSag(SagSurface):
         self.C = C
     
     def parameters(self) -> dict[str, nn.Parameter]:
-        if (isinstance(self.C, nn.Parameter)):
-            return {"C": self.C}
-        else:
-            return {}
+        return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
 
     def extent_x(self) -> Tensor:
         r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
@@ -651,18 +606,6 @@ class Sphere(CompositeImplicitSurface):
 
     def testname(self) -> str:
         return f"Sphere-{self.inner_surface.diameter:.2f}-{self.inner_surface.C.item():.2f}"
-    
-    def extent_x(self) -> Tensor:
-        return self.inner_surface.extent_x()
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return self.inner_surface.parameters()
-    
-    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        return self.inner_surface.samples2D_half(N, epsilon)
-
-    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        return self.inner_surface.samples2D_full(N, epsilon)
 
 
 class SphereC(Sphere):
@@ -683,6 +626,71 @@ class SphereC(Sphere):
 
 # add domain to surfaces?
 # clean up bbox / domain of surface instead of extent_x / diameter/2
+
+class ParabolaSag(SagSurface):
+    "Sag surface for a parabola $X = A Y^2$"
+
+    def __init__(self, diameter: Tensor, A: Tensor, **kwargs):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+        self.A = A
+    
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
+    
+    def extent_x(self) -> Tensor:
+        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
+        ret = torch.as_tensor(self.A * r**2, dtype=self.dtype)
+        print("RET", ret.dtype, self.dtype)
+        return ret
+
+    def g(self, r: Tensor) -> Tensor: 
+        return torch.mul(self.A, torch.pow(r, 2))
+    
+    def g_grad(self, r: Tensor) -> Tensor:
+        return 2 * self.A * r
+
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
+        return torch.mul(self.A, (y**2 + z**2))
+    
+    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+        return 2 * self.A * y, 2 * self.A * z
+
+    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        r = torch.linspace(0, self.diameter/2 - epsilon, N, dtype=self.dtype)
+        x = self.A * r**2
+        return torch.stack((x, r), dim=-1)
+    
+    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
+        r = torch.linspace(-self.diameter/2 + epsilon, self.diameter/2 - epsilon, N, dtype=self.dtype)
+        x = self.A * r**2
+        return torch.stack((x, r), dim=-1)
+
+
+class Parabola(CompositeImplicitSurface):
+    def __init__(
+        self,
+        diameter: float,
+        A: int | float | nn.Parameter,
+        fallback_surface_type: Any = DiameterBandSurfaceSq,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+        self.A = to_tensor(A, default_dtype=self.dtype)
+        assert self.dtype == self.A.dtype, f"Inconsistent dtype between surface and parameter (surface: {self.dtype}) (parameter: {self.A.dtype})"
+
+        self.inner_surface = ParabolaSag(diameter=self.diameter, A=self.A, **kwargs)
+        self.fallback_surface_type = fallback_surface_type
+    
+    def testname(self) -> str:
+        return f"Parabola-{self.diameter:.2f}-{self.A.item():.2f}"
+
+    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
+        # TODO bbox / domain
+        return within_radius(self.inner_surface.diameter / 2, points)
+ 
+
 
 class SphereOld(ImplicitSurface):
 
