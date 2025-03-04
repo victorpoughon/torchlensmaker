@@ -264,10 +264,10 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
         # TODO check range of full with bbox
 
 
-def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
+def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None:
     # Here we test all that we can about LocalSurface.local_collide(), without
     # knowledge of whether a collision is expected for these rays
-    gen = normal_rays(10.0, 150)
+    gen = normal_rays(dim=dim, N=50, offset=10.0)
 
     # TODO 3D version (requires 3D dataset)
     # TODO test multiple batch dimensions

@@ -1,156 +1,108 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.core.surfaces import ImplicitSurface
+from torchlensmaker.core.surfaces import ImplicitSurface, LocalSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
 import math
 
 Tensor = torch.Tensor
 
 from dataclasses import dataclass, replace
-from typing import Callable
+from typing import Callable, TypeAlias
+
+
+def make_samples(surface: LocalSurface, dim: int, N: int):
+    "Generate samples and normals for a surface"
+
+    if dim == 2:
+        samples = surface.samples2D_full(N, epsilon=1e-3)
+    else:
+        root = math.ceil(math.sqrt(N))
+        samples = make_samples3D(surface.samples2D_full(root, epsilon=1e-3), root)
+    return samples, surface.normals(samples)
 
 
 @dataclass
 class CollisionDataset:
-    """
-    A collision dataset contains the data required for a single test case of collision detection.
-    """
-
     name: str
-    surface: ImplicitSurface
+    surface: LocalSurface
     P: Tensor
     V: Tensor
 
 
-def tangent_rays(
-    offset: float, N: int
-):
-    """
-    Utility function to generate so called 'tangent' rays: perpendicular to the
-    surface gradient, offset along the gradient by a constant distance
-    """
+RayGenerator: TypeAlias = Callable[[LocalSurface], CollisionDataset]
 
-    def generate(surface: ImplicitSurface) -> CollisionDataset:
-        samples = surface.samples2D_full(N, epsilon=1e-3)
-        grad_samples = surface.normals(samples)
-        assert torch.all(torch.isfinite(samples))
-        assert torch.all(torch.isfinite(grad_samples))
+
+def tangent_rays(dim: int, N: int, offset: float) -> RayGenerator:
+    "Ray generator for rays tangent to the surface"
+
+    # 2d only for now
+    assert dim == 2
+
+    def generate(surface: LocalSurface) -> CollisionDataset:
+        samples, normals = make_samples(surface, dim, N)
 
         # Points on the surface, offset by 'offset' along the gradient
-        P = samples + offset * grad_samples
+        P = samples + offset * normals
 
         # Vectors are perpendicular to the gradient
-        V = nn.functional.normalize(perpendicular2d(grad_samples))
-
-        assert torch.all(torch.isfinite(P))
-        assert torch.all(torch.isfinite(V))
+        V = nn.functional.normalize(perpendicular2d(normals))
 
         return CollisionDataset(
-            name=f"{surface.testname()}_offset_{offset:.2f}",
-            surface=surface,
-            P=P,
-            V=V,
+            f"{surface.testname()}_offset_{offset:.2f}", surface, P, V
         )
 
     return generate
 
 
-def normal_rays(
-    offset: float, N: int
-):
-    """
-    Utility function to generate so called 'normal' rays: parallel to the
-    surface gradient, offset along the gradient by a constant distance
-    """
+def normal_rays(dim: int, N: int, offset: float) -> RayGenerator:
+    "Ray generator for rays normal to the surface"
 
-    def generate(surface: ImplicitSurface) -> CollisionDataset:
+    def generate(surface: LocalSurface) -> CollisionDataset:
+        samples, normals = make_samples(surface, dim, N)
 
-        samples = surface.samples2D_full(N, epsilon=1e-3)
-        grad_samples = surface.normals(samples)
-        assert torch.all(torch.isfinite(samples))
-        assert torch.all(torch.isfinite(grad_samples))
+        # offset along V
+        P = samples + offset * normals
+        V = normals
 
-        # Points on the surface, offset by 'offset' along the gradient
-        P = samples + offset * grad_samples
-
-        # Vectors are parallel to the gradient
-        V = grad_samples
-
-        assert torch.all(torch.isfinite(P))
-        assert torch.all(torch.isfinite(V))
-
-        return CollisionDataset(
-            name=f"{surface.testname()}_normal",
-            surface=surface,
-            P=P,
-            V=V,
-        )
+        return CollisionDataset(f"{surface.testname()}_normal", surface, P, V)
 
     return generate
 
 
-def random_direction_rays(
-    offset: float, N: int
-):
-    """
-    Utility function to generate so called 'random direction' rays: 
-    rays colliding with the surface on sample points with a random direction V
-    offset along the gradient by a constant distance
-    """
+def random_direction_rays(dim: int, N: int, offset: float) -> RayGenerator:
+    "Ray generator for random direction rays"
 
-    def generate(surface: ImplicitSurface) -> CollisionDataset:
+    def generate(surface: LocalSurface) -> CollisionDataset:
+        samples, _ = make_samples(surface, dim, N)
 
-        samples = surface.samples2D_full(N, epsilon=1e-3)
-        assert torch.all(torch.isfinite(samples))
-        
         theta = 2 * math.pi * torch.rand((N,))
         V = rot2d(torch.tensor([1.0, 0.0]), theta).to(dtype=surface.dtype)
 
         P = samples + offset * V
 
-        assert torch.all(torch.isfinite(P))
-        assert torch.all(torch.isfinite(V))
-
-        return CollisionDataset(
-            name=f"{surface.testname()}_random",
-            surface=surface,
-            P=P,
-            V=V,
-        )
+        return CollisionDataset(f"{surface.testname()}_random", surface, P, V)
 
     return generate
 
 
-def fixed_rays(
-    direction: Tensor,
-    offset: float,
-    N: int,
-) -> Callable[[ImplicitSurface], CollisionDataset]:
-    """
-    Ray generator for rays with a fixed direction
-    """
+def fixed_rays(dim: int, N: int, direction: Tensor, offset: float) -> RayGenerator:
+    "Ray generator for rays with a fixed direction"
 
-    def generate(surface: ImplicitSurface) -> CollisionDataset:
+    # normalize direction
+    assert direction.numel() == dim
+    direction = torch.nn.functional.normalize(direction, dim=0)
 
-        samples = surface.samples2D_full(N, epsilon=1e-3)
-        assert torch.all(torch.isfinite(samples))
-        
-        V = torch.tile(direction, (N, 1)).to(dtype=surface.dtype)
+    def generate(surface: LocalSurface) -> CollisionDataset:
+        samples, _ = make_samples(surface, dim, N)
 
+        V = torch.tile(direction, (samples.shape[0], 1)).to(dtype=surface.dtype)
         P = samples + offset * V
 
-        assert torch.all(torch.isfinite(P))
-        assert torch.all(torch.isfinite(V))
-
-        return CollisionDataset(
-            name=f"{surface.testname()}_fixed",
-            surface=surface,
-            P=P,
-            V=V,
-        )
+        return CollisionDataset(f"{surface.testname()}_fixed", surface, P, V)
 
     return generate
+
 
 def move_rays(P: Tensor, V: Tensor, m: float) -> tuple[Tensor, Tensor]:
     return P + m * V, V
@@ -183,20 +135,20 @@ def make_samples3D(samples2D: torch.Tensor, M: int) -> torch.Tensor:
     axial rotation around the X axis and at M angles linearly spaced around the
     circle
     """
-    step = 2*torch.pi / M
-    angles = torch.linspace(0, (M-1)*step, M, device=samples2D.device)
+    step = 2 * torch.pi / M
+    angles = torch.linspace(0, (M - 1) * step, M, device=samples2D.device)
     cosθ = torch.cos(angles)
     sinθ = torch.sin(angles)
-    
+
     # Split coordinates and expand for broadcasting
     x = samples2D[:, 0].unsqueeze(1).repeat(1, M)  # (N, M)
     y = samples2D[:, 1].unsqueeze(1).repeat(1, M)  # (N, M)
-    
+
     # Calculate rotated coordinates
     y_rotated = y * cosθ.unsqueeze(0)  # (N, M)
-    z_rotated = y * sinθ.unsqueeze(0)   # (N, M)
-    
+    z_rotated = y * sinθ.unsqueeze(0)  # (N, M)
+
     # Combine and reshape
     rotated_points = torch.stack([x, y_rotated, z_rotated], dim=2).view(-1, 3)
-    
+
     return rotated_points
