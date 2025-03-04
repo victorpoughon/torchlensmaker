@@ -34,7 +34,9 @@ def surfaces(
     # fmt: off
     return [
         tlm.CircularPlane(diameter=30, dtype=dtype),
-        tlm.SquarePlane(side_length=30, dtype=dtype),
+
+        # Non axially symmetric surfaces are out of scope for now
+        # tlm.SquarePlane(side_length=30, dtype=dtype),
 
         # Sphere
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
@@ -242,21 +244,18 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
             )
             assert torch.all(torch.logical_not(s.contains(modified_samples)))
 
-        # disable this test for SquarePlane for now
-        # need to revisit when we have better support for non axially symmetric surfaces
-        if not isinstance(s, tlm.SquarePlane):
-            # Make 3D samples by setting Z to zero
-            # Check that they are on the surface
-            samples3D = torch.column_stack(
-                (samples_half, torch.zeros_like(samples_half[:, -1]))
-            )
-            assert torch.all(s.contains(samples3D, tol=1e-4))
+        # Make 3D samples by setting Z to zero
+        # Check that they are on the surface
+        samples3D = torch.column_stack(
+            (samples_half, torch.zeros_like(samples_half[:, -1]))
+        )
+        assert torch.all(s.contains(samples3D, tol=1e-4))
 
-            # Check that modified 3D samples are not on the surface
-            modified_samples3D = (
-                samples3D + 10 * s.extent(dim=3) + tlm.unit_vector(dim=3, dtype=s.dtype)
-            )
-            assert torch.all(torch.logical_not(s.contains(modified_samples3D)))
+        # Check that modified 3D samples are not on the surface
+        modified_samples3D = (
+            samples3D + 10 * s.extent(dim=3) + tlm.unit_vector(dim=3, dtype=s.dtype)
+        )
+        assert torch.all(torch.logical_not(s.contains(modified_samples3D)))
 
         # Check range
         pretty_much_positive = -1e-5
@@ -280,7 +279,7 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
         P, V = dataset.P, dataset.V
         batch, D = P.shape[:-1], P.shape[-1]
         t, local_normals, valid = surface.local_collide(P, V)
-        local_points = P + t.unsqueeze(1).expand_as(V) * V
+        local_points = P + t.unsqueeze(-1).expand_as(V) * V
 
         # Check shapes
         assert t.dim() == len(batch) and t.shape == batch

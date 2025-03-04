@@ -176,3 +176,27 @@ def merge_datasets(datasets: list[CollisionDataset]) -> CollisionDataset:
         V=V,
     )
 
+
+def make_samples3D(samples2D: torch.Tensor, M: int) -> torch.Tensor:
+    """
+    Given a tensor of points of shape (N, 2), make a tensor of shape (M*N, 3) by
+    axial rotation around the X axis and at M angles linearly spaced around the
+    circle
+    """
+    step = 2*torch.pi / M
+    angles = torch.linspace(0, (M-1)*step, M, device=samples2D.device)
+    cosθ = torch.cos(angles)
+    sinθ = torch.sin(angles)
+    
+    # Split coordinates and expand for broadcasting
+    x = samples2D[:, 0].unsqueeze(1).repeat(1, M)  # (N, M)
+    y = samples2D[:, 1].unsqueeze(1).repeat(1, M)  # (N, M)
+    
+    # Calculate rotated coordinates
+    y_rotated = y * cosθ.unsqueeze(0)  # (N, M)
+    z_rotated = y * sinθ.unsqueeze(0)   # (N, M)
+    
+    # Combine and reshape
+    rotated_points = torch.stack([x, y_rotated, z_rotated], dim=2).view(-1, 3)
+    
+    return rotated_points
