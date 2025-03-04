@@ -16,16 +16,21 @@ All methods are tested here, except local_collide() which is only tested for the
 basic stuff, without labeled data. A full test is in test_local_collide.
 """
 
+
 @pytest.fixture(params=[2, 3], ids=["2D", "3D"])
 def dim(request: pytest.FixtureRequest) -> Any:
     return request.param
+
 
 @pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
 def dtype(request: pytest.FixtureRequest) -> Any:
     return request.param
 
+
 @pytest.fixture
-def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
+def surfaces(
+    dtype: torch.dtype,
+) -> list[tlm.LocalSurface]:
     # fmt: off
     return [
         tlm.CircularPlane(diameter=30, dtype=dtype),
@@ -116,11 +121,11 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(extent2))
         assert zero2.dtype == s.dtype
         assert extent2.dtype == s.dtype, s.testname()
-        assert torch.allclose(zero2, torch.tensor(0., dtype=s.dtype))
+        assert torch.allclose(zero2, torch.tensor(0.0, dtype=s.dtype))
         if not isflat(s):
-            assert not torch.allclose(extent2, torch.tensor(0., dtype=s.dtype))
+            assert not torch.allclose(extent2, torch.tensor(0.0, dtype=s.dtype))
         else:
-            assert torch.allclose(extent2, torch.tensor(0., dtype=s.dtype))
+            assert torch.allclose(extent2, torch.tensor(0.0, dtype=s.dtype))
         del zero2, extent2
 
         zero3 = s.zero(3)
@@ -132,9 +137,9 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert zero3.dtype == s.dtype
         assert extent3.dtype == s.dtype
         if not isflat(s):
-            assert not torch.allclose(extent3, torch.tensor(0., dtype=s.dtype))
+            assert not torch.allclose(extent3, torch.tensor(0.0, dtype=s.dtype))
         else:
-            assert torch.allclose(extent3, torch.tensor(0., dtype=s.dtype))
+            assert torch.allclose(extent3, torch.tensor(0.0, dtype=s.dtype))
         del zero3, extent3
 
 
@@ -176,14 +181,14 @@ def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
     # Number of points per dimension of the sample grid
     # Make sure to use a sample grid with odd number of points so that 0 is
     # included
-    N=3
+    N = 3
 
     # The sample grid gets reshaped to a single batch dimension
     # Number of points in the first batch dimension
     B1 = N**dim
 
     for s in surfaces:
-        lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
+        lim = 50  # TODO use 4*bbox.radial here instead of hardcoded limit
         points1 = sample_grid(lim, N, dim, dtype=s.dtype)
 
         # We're going to check that surface.normals() works with an arbitrary
@@ -217,7 +222,7 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
     N = 10
     epsilon = 1e-6
     # TODO float precision dependent epsilon and tolerance values
-    
+
     for s in surfaces:
         samples_half = s.samples2D_half(N, epsilon)
         samples_full = s.samples2D_full(N, epsilon)
@@ -232,7 +237,9 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
             assert torch.all(s.contains(samples, tol=1e-4))
 
             # Check that samples that are sure not to be on the surface, are not
-            modified_samples = samples + 10*s.extent(dim=2) + tlm.unit_vector(dim=2, dtype=s.dtype)
+            modified_samples = (
+                samples + 10 * s.extent(dim=2) + tlm.unit_vector(dim=2, dtype=s.dtype)
+            )
             assert torch.all(torch.logical_not(s.contains(modified_samples)))
 
         # disable this test for SquarePlane for now
@@ -240,11 +247,15 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
         if not isinstance(s, tlm.SquarePlane):
             # Make 3D samples by setting Z to zero
             # Check that they are on the surface
-            samples3D = torch.column_stack((samples_half, torch.zeros_like(samples_half[:, -1])))
+            samples3D = torch.column_stack(
+                (samples_half, torch.zeros_like(samples_half[:, -1]))
+            )
             assert torch.all(s.contains(samples3D, tol=1e-4))
 
             # Check that modified 3D samples are not on the surface
-            modified_samples3D = samples3D + 10*s.extent(dim=3) + tlm.unit_vector(dim=3, dtype=s.dtype)
+            modified_samples3D = (
+                samples3D + 10 * s.extent(dim=3) + tlm.unit_vector(dim=3, dtype=s.dtype)
+            )
             assert torch.all(torch.logical_not(s.contains(modified_samples3D)))
 
         # Check range
@@ -261,7 +272,7 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
 
     # TODO 3D version (requires 3D dataset)
     # TODO test multiple batch dimensions
-    
+
     for surface in surfaces:
         dataset = gen(surface)
 
@@ -273,7 +284,10 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
 
         # Check shapes
         assert t.dim() == len(batch) and t.shape == batch
-        assert local_normals.dim() == len(batch) + 1 and local_normals.shape == (*batch, D)
+        assert local_normals.dim() == len(batch) + 1 and local_normals.shape == (
+            *batch,
+            D,
+        )
         assert valid.dim() == len(batch) and valid.shape == batch
         assert local_points.dim() == 2 and local_points.shape == (*batch, D)
 
@@ -288,9 +302,12 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(local_normals))
         assert torch.all(torch.isfinite(valid))
         assert torch.all(torch.isfinite(local_points))
-    
+
     # Check all normals are unit vectors
-    assert torch.allclose(torch.linalg.vector_norm(local_normals, dim=-1), torch.ones(1, dtype=surface.dtype))        
+    assert torch.allclose(
+        torch.linalg.vector_norm(local_normals, dim=-1),
+        torch.ones(1, dtype=surface.dtype),
+    )
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
@@ -299,14 +316,14 @@ def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
     # Number of points per dimension of the sample grid
     # Make sure to use a sample grid with odd number of points so that 0 is
     # included
-    N=3
+    N = 3
 
     # The sample grid gets reshaped to a single batch dimension
     # Number of points in the first batch dimension
     B1 = N**dim
 
     for surface in [s for s in surfaces if isinstance(s, tlm.ImplicitSurface)]:
-        lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
+        lim = 50  # TODO use 4*bbox.radial here instead of hardcoded limit
         points1 = sample_grid(lim, N, dim, dtype=surface.dtype)
 
         # We're going to check that F and F_grad work with an arbitrary
@@ -331,4 +348,3 @@ def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
             assert torch.all(torch.isfinite(F_grad))
             assert F.dtype == surface.dtype
             assert F_grad.dtype == surface.dtype
-
