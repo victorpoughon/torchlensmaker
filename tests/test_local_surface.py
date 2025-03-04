@@ -208,8 +208,9 @@ def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
 
 
 def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
-    N = 50
-    epsilon = 0.
+    N = 10
+    epsilon = 1e-6
+    # TODO float precision dependent epsilon and tolerance values
     
     for s in surfaces:
         samples_half = s.samples2D_half(N, epsilon)
@@ -222,11 +223,23 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
             assert torch.all(samples.isfinite())
 
             # Check that samples are on the surface
-            assert torch.all(s.contains(samples, tol=1e-4)), s
+            assert torch.all(s.contains(samples, tol=1e-4))
 
             # Check that samples that are sure not to be on the surface, are not
-            modified_samples = samples + 10*s.extent(dim=2) + torch.tensor([1., 0.])
-            assert torch.all(torch.logical_not(s.contains(modified_samples))), s
+            modified_samples = samples + 10*s.extent(dim=2) + tlm.unit_vector(dim=2, dtype=s.dtype)
+            assert torch.all(torch.logical_not(s.contains(modified_samples)))
+
+        # disable this test for SquarePlane for now
+        # need to revisit when we have better support for non axially symmetric surfaces
+        if not isinstance(s, tlm.SquarePlane):
+            # Make 3D samples by setting Z to zero
+            # Check that they are on the surface
+            samples3D = torch.column_stack((samples_half, torch.zeros_like(samples_half[:, -1])))
+            assert torch.all(s.contains(samples3D, tol=1e-4))
+
+            # Check that modified 3D samples are not on the surface
+            modified_samples3D = samples3D + 10*s.extent(dim=3) + tlm.unit_vector(dim=3, dtype=s.dtype)
+            assert torch.all(torch.logical_not(s.contains(modified_samples3D)))
 
         # Check range
         pretty_much_positive = -1e-5
@@ -236,10 +249,11 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
     
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
-    # Here we test all that we can, without knowledge of wether a collision is
-    # expected for these rays
+    # Here we test all that we can about LocalSurface.local_collide(), without
+    # knowledge of whether a collision is expected for these rays
     gen = normal_rays(10.0, 150)
 
+    # TODO 3D version (requires 3D dataset)
     # TODO test multiple batch dimensions
     
     for surface in surfaces:
@@ -273,10 +287,14 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
     assert torch.allclose(torch.linalg.vector_norm(local_normals, dim=-1), torch.ones(1, dtype=surface.dtype))        
 
 
-# further for test_implicit_surface
-# - F and F grad should be finite everywhere
-# - batch shapes of F and F_grad (all dimensions except last are preserved batch dims)
+def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
+    # Tests specific to implicit surfaces
+    for s in surfaces:
+        if isinstance(s, tlm.ImplicitSurface):
+            ...
+            # F and F grad:
+            # - finite, dtype
+            # - shape multiple batch dims
 
-# - F should be zero on samples
-# - F should be non zero outside of bounding sphere/box
-
+            # F should be zero on samples
+            # F should be non zero on modified samples

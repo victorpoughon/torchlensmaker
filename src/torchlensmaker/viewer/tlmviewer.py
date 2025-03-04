@@ -170,6 +170,7 @@ def render_rays(
     return node
 
 def render_points(points: Tensor, color: str = "white") -> Any:
+    # TODO render points sizes in screen coordinates
     assert points.dim() == 2
     return {
         "type": "points",
