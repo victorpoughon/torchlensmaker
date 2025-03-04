@@ -155,6 +155,23 @@ def sample_grid3d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
     return grid.to(dtype=dtype)
 
 
+def sample_grid(lim: float, N: int, dim: int, dtype: torch.dtype) -> torch.Tensor:
+    if dim == 2:
+        return sample_grid2d(lim=lim, N=N, dtype=dtype)
+    else:
+        return sample_grid3d(lim=lim, N=N, dtype=dtype)
+
+
+def extra_batch_dims(tensor, dims):
+    "Create copies of tensor with extra batch dimensions"
+    new_tensors = [tensor]
+    for dim in dims:
+        prev = new_tensors[-1]
+        next = prev.unsqueeze(0).expand(dim, *([-1] * (prev.dim())))
+        new_tensors.append(next)
+    return new_tensors[1:]
+
+
 def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
     # Number of points per dimension of the sample grid
     # Make sure to use a sample grid with odd number of points so that 0 is
@@ -167,35 +184,24 @@ def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
 
     for s in surfaces:
         lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
-        if dim == 2:
-            points1 = sample_grid2d(lim=lim, N=N, dtype=s.dtype)
-        else:
-            points1 = sample_grid3d(lim=lim, N=N, dtype=s.dtype)
+        points1 = sample_grid(lim, N, dim, dtype=s.dtype)
 
         # We're going to check that surface.normals() works with an arbitrary
-        # number of batch dimensions. So here make versions of points with more batch
-        # dimensions.
-        points2 = points1.unsqueeze(0).expand(4, *([-1]*(points1.dim())))
-        points3 = points2.unsqueeze(0).expand(5, *([-1]*(points2.dim())))
-        points4 = points3.unsqueeze(0).expand(6, *([-1]*(points3.dim())))
+        # number of batch dimensions.
+        points2, points3, points4 = extra_batch_dims(points1, [4, 5, 6])
 
         assert points1.shape == (B1, dim)
         assert points2.shape == (4, B1, dim)
         assert points3.shape == (5, 4, B1, dim)
         assert points4.shape == (6, 5, 4, B1, dim)
 
-        # Compute normals
-        normals1 = s.normals(points1)
-        normals2 = s.normals(points2)
-        normals3 = s.normals(points3)
-        normals4 = s.normals(points4)
+        for points in (points1, points2, points3, points4):
+            # Compute normals
+            normals = s.normals(points)
 
-        assert normals1.shape == (B1, dim)
-        assert normals2.shape == (4, B1, dim), s
-        assert normals3.shape == (5, 4, B1, dim)
-        assert normals4.shape == (6, 5, 4, B1, dim)
+            # Check shape
+            assert normals.shape == points.shape
 
-        for normals in (normals1, normals2, normals3, normals4):
             # Check isfinite, dtype
             assert torch.all(torch.isfinite(normals))
             assert normals.dtype == s.dtype
@@ -246,7 +252,7 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(samples_half.select(-1, 1) >= pretty_much_positive)
         # TODO check upper range of samples_half with bbox
         # TODO check range of full with bbox
-    
+
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
     # Here we test all that we can about LocalSurface.local_collide(), without
@@ -288,13 +294,41 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface]) -> None:
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    # Tests specific to implicit surfaces
-    for s in surfaces:
-        if isinstance(s, tlm.ImplicitSurface):
-            ...
-            # F and F grad:
-            # - finite, dtype
-            # - shape multiple batch dims
+    "Tests specific to implicit surfaces"
 
-            # F should be zero on samples
-            # F should be non zero on modified samples
+    # Number of points per dimension of the sample grid
+    # Make sure to use a sample grid with odd number of points so that 0 is
+    # included
+    N=3
+
+    # The sample grid gets reshaped to a single batch dimension
+    # Number of points in the first batch dimension
+    B1 = N**dim
+
+    for surface in [s for s in surfaces if isinstance(s, tlm.ImplicitSurface)]:
+        lim = 50 # TODO use 4*bbox.radial here instead of hardcoded limit
+        points1 = sample_grid(lim, N, dim, dtype=surface.dtype)
+
+        # We're going to check that F and F_grad work with an arbitrary
+        # number of batch dimensions.
+        points2, points3, points4 = extra_batch_dims(points1, [4, 5, 6])
+
+        assert points1.shape == (B1, dim)
+        assert points2.shape == (4, B1, dim)
+        assert points3.shape == (5, 4, B1, dim)
+        assert points4.shape == (6, 5, 4, B1, dim)
+
+        for points in (points1, points2, points3, points4):
+            F = surface.Fd(points)
+            F_grad = surface.Fd_grad(points)
+
+            # Check shapes
+            assert F.shape == points.shape[:-1]
+            assert F_grad.shape == points.shape
+
+            # Check isfinite, dtype
+            assert torch.all(torch.isfinite(F))
+            assert torch.all(torch.isfinite(F_grad))
+            assert F.dtype == surface.dtype
+            assert F_grad.dtype == surface.dtype
+
