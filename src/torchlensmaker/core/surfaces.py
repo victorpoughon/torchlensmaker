@@ -581,7 +581,7 @@ class Sphere(CompositeImplicitSurface):
                 )
 
             if isinstance(R, nn.Parameter):
-                C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=self.dtype))
+                C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
             else:
                 C_tensor = torch.as_tensor(1.0 / R, dtype=self.dtype)
         else:
@@ -899,31 +899,19 @@ class SphereR(LocalSurface):
         return t, local_normals, valid
 
 
-class Asphere(ImplicitSurface):
-    def __init__(
-        self,
-        diameter: float,
-        R: int | float | nn.Parameter,
-        K: int | float | nn.Parameter,
-        A4: int | float | nn.Parameter,
-        **kwargs
-    ):
+class AsphereSag(SagSurface):
+    "Sag surface for the asphere model, parameterized by curvature instead of radius"
+
+    def __init__(self, diameter: Tensor, C: Tensor, K: Tensor, A4: Tensor, **kwargs):
         super().__init__(**kwargs)
         self.diameter = diameter
-
-        self.C: torch.Tensor
-        if isinstance(R, nn.Parameter):
-            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=self.dtype))
-        else:
-            self.C = torch.as_tensor(1.0 / R, dtype=self.dtype)
-        assert self.C.dim() == 0
-
-        self.K = to_tensor(K)
-        self.A4 = to_tensor(A4)
+        self.C = C
+        self.K = K
+        self.A4 = A4
 
     def parameters(self) -> dict[str, nn.Parameter]:
         possible = {
-            "C": self.C,  # curvature
+            "C": self.C,
             "K": self.K,
             "A4": self.A4,
         }
@@ -934,7 +922,8 @@ class Asphere(ImplicitSurface):
         }
 
     def extent_x(self) -> Tensor:
-        r2 = (self.diameter/2) ** 2
+        r = torch.as_tensor(self.diameter/2, dtype=self.dtype)
+        r2 = r**2
         C, K, A4 = self.C, self.K, self.A4
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * r2**2
@@ -943,7 +932,7 @@ class Asphere(ImplicitSurface):
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
 
-        Y = torch.linspace(0, self.diameter/2 - epsilon, N)
+        Y = torch.linspace(0, self.diameter/2 - epsilon, N, dtype=self.dtype)
         r2 = torch.pow(Y, 2)
         X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
             r2, 2
@@ -951,32 +940,37 @@ class Asphere(ImplicitSurface):
 
         return torch.stack((X, Y), dim=-1)
 
-    def f(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
+        K, C, A4 = self.K, self.C, self.A4
+        C2 = torch.pow(C, 2)
+
+        Y = torch.linspace(-self.diameter/2 + epsilon, self.diameter/2 - epsilon, N, dtype=self.dtype)
+        r2 = torch.pow(Y, 2)
+        X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
+            r2, 2
+        )
+
+        return torch.stack((X, Y), dim=-1)
+
+    def g(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
         return (
             torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
             + A4 * torch.pow(r2, 2)
-            - x
         )
 
-    def f_grad(self, points: Tensor) -> Tensor:
-        x, r = points[:, 0], points[:, 1]
+    def g_grad(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
 
-        xgrad = -torch.ones_like(x)
-        rgrad = torch.div(
+        return torch.div(
             C * r, torch.sqrt(1 - (1 + K) * r2 * C2)
         ) + 4 * A4 * torch.pow(r, 3)
 
-        return torch.stack((xgrad, rgrad), dim=-1)
-
-    def F(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
@@ -984,11 +978,9 @@ class Asphere(ImplicitSurface):
         return (
             torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
             + A4 * torch.pow(r2, 2)
-            - x
         )
 
-    def F_grad(self, points: Tensor) -> Tensor:
-        x, y, z = points[:, 0], points[:, 1], points[:, 2]
+    def G_grad(self, y: Tensor, z: Tensor) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
@@ -996,11 +988,42 @@ class Asphere(ImplicitSurface):
         denom = torch.sqrt(1 - (1 + K) * r2 * C2)
         coeffs_term = 4 * A4 * r2
 
-        return torch.stack(
-            (
-                -torch.ones_like(x),
-                (C * y) / denom + y * coeffs_term,
-                (C * z) / denom + z * coeffs_term,
-            ),
-            dim=-1,
-        )
+        return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
+
+
+class Asphere(CompositeImplicitSurface):
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter,
+        K: int | float | nn.Parameter,
+        A4: int | float | nn.Parameter,
+        fallback_surface_type: Any = DiameterBandSurfaceSq,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.diameter = diameter
+
+        self.C: torch.Tensor
+        if isinstance(R, nn.Parameter):
+            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
+        else:
+            self.C = torch.as_tensor(1.0 / R, dtype=self.dtype)
+        assert self.C.dim() == 0
+
+        self.K = to_tensor(K, default_dtype=self.dtype)
+        self.A4 = to_tensor(A4, default_dtype=self.dtype)
+        
+        assert self.dtype == self.C.dtype, f"Inconsistent dtype between surface and parameter C (surface: {self.dtype}) (parameter: {self.C.dtype})"
+        assert self.dtype == self.K.dtype, f"Inconsistent dtype between surface and parameter K (surface: {self.dtype}) (parameter: {self.K.dtype})"
+        assert self.dtype == self.A4.dtype, f"Inconsistent dtype between surface and parameter A4 (surface: {self.dtype}) (parameter: {self.A4.dtype})"
+
+        self.inner_surface = AsphereSag(self.diameter, self.C, self.K, self.A4, **kwargs)
+        self.fallback_surface_type = fallback_surface_type
+
+    def testname(self) -> str:
+        return f"Asphere-{self.diameter:.2f}-{self.C.item():.2f}-{self.K.item():.2f}-{self.A4.item():.6f}"
+
+    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
+        # TODO bbox / domain
+        return within_radius(self.inner_surface.diameter / 2, points)

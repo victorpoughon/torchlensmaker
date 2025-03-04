@@ -102,19 +102,15 @@ def process_surface(
     """
 
     # TODO, should we have a type SymmetricSurface that provides samples2D?
-    samples = surface.samples2D_half(N, epsilon=0.)
 
     if dim == 2:
-        front = torch.flip(
-            torch.column_stack((samples[1:, 0], -samples[1:, 1])), dims=[0]
-        )
-
-        samples = torch.row_stack((front, samples))
+        samples = surface.samples2D_full(N, epsilon=0.)
         obj = {
             "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
         }
     elif dim == 3:
+        samples = surface.samples2D_half(N, epsilon=0.)
         obj = {
             "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),

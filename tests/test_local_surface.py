@@ -56,8 +56,24 @@ def surfaces(dtype: torch.dtype,) -> list[tlm.LocalSurface]:
         tlm.Parabola(diameter=5, A=0, dtype=dtype),
         tlm.Parabola(diameter=5, A=tlm.parameter(0, dtype=dtype), dtype=dtype),
 
-        # TODO Asphere
-        # TODO test domains
+        # Asphere
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=-50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=-1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=-0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=-50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=-1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=-0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=tlm.parameter(50, dtype=dtype), K=1.0, A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=-50, K=tlm.parameter(1.0, dtype=dtype), A4=0.005, dtype=dtype),
+        tlm.Asphere(diameter=10, R=50, K=1.0, A4=tlm.parameter(0.005, dtype=dtype), dtype=dtype),
+
+        # TODO test domains of partial surfaces?
     ]
     # fmt: on
 
