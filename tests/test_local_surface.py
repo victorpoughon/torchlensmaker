@@ -265,12 +265,12 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
 
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    # Here we test all that we can about LocalSurface.local_collide(), without
-    # knowledge of whether a collision is expected for these rays
+    # Here we test all that we can about LocalSurface.local_collide(), for all
+    # surfaces in the test cases of this test file. We only use a single dataset
+    # of normal rays, which are expected to collide for every surface. More
+    # advanded collision testing with more complex datasets is done in
+    # test_local_collide.py
     gen = normal_rays(dim=dim, N=50, offset=10.0)
-
-    # TODO 3D version (requires 3D dataset)
-    # TODO test multiple batch dimensions
 
     for surface in surfaces:
         dataset = gen(surface)
@@ -302,11 +302,11 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None
         assert torch.all(torch.isfinite(valid))
         assert torch.all(torch.isfinite(local_points))
 
-    # Check all normals are unit vectors
-    assert torch.allclose(
-        torch.linalg.vector_norm(local_normals, dim=-1),
-        torch.ones(1, dtype=surface.dtype),
-    )
+        # Check all normals are unit vectors
+        assert torch.allclose(
+            torch.linalg.vector_norm(local_normals, dim=-1),
+            torch.ones(1, dtype=surface.dtype),
+        )
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
