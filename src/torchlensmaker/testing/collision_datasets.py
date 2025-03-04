@@ -11,14 +11,14 @@ from dataclasses import dataclass, replace
 from typing import Callable, TypeAlias
 
 
-def make_samples(surface: LocalSurface, dim: int, N: int):
+def make_samples(surface: LocalSurface, dim: int, N: int, epsilon=0.):
     "Generate samples and normals for a surface"
 
     if dim == 2:
-        samples = surface.samples2D_full(N, epsilon=1e-3)
+        samples = surface.samples2D_full(N, epsilon=epsilon)
     else:
         root = math.ceil(math.sqrt(N))
-        samples = make_samples3D(surface.samples2D_full(root, epsilon=1e-3), root)
+        samples = make_samples3D(surface.samples2D_full(root, epsilon=epsilon), root)
     return samples, surface.normals(samples)
 
 
@@ -33,14 +33,14 @@ class CollisionDataset:
 RayGenerator: TypeAlias = Callable[[LocalSurface], CollisionDataset]
 
 
-def tangent_rays(dim: int, N: int, offset: float) -> RayGenerator:
+def tangent_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
     "Ray generator for rays tangent to the surface"
 
     # 2d only for now
     assert dim == 2
 
     def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, normals = make_samples(surface, dim, N)
+        samples, normals = make_samples(surface, dim, N, epsilon)
 
         # Points on the surface, offset by 'offset' along the gradient
         P = samples + offset * normals
@@ -55,11 +55,11 @@ def tangent_rays(dim: int, N: int, offset: float) -> RayGenerator:
     return generate
 
 
-def normal_rays(dim: int, N: int, offset: float) -> RayGenerator:
+def normal_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
     "Ray generator for rays normal to the surface"
 
     def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, normals = make_samples(surface, dim, N)
+        samples, normals = make_samples(surface, dim, N, epsilon)
 
         # offset along V
         P = samples + offset * normals
@@ -70,11 +70,11 @@ def normal_rays(dim: int, N: int, offset: float) -> RayGenerator:
     return generate
 
 
-def random_direction_rays(dim: int, N: int, offset: float) -> RayGenerator:
+def random_direction_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
     "Ray generator for random direction rays"
 
     def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, _ = make_samples(surface, dim, N)
+        samples, _ = make_samples(surface, dim, N, epsilon)
 
         theta = 2 * math.pi * torch.rand((N,))
         V = rot2d(torch.tensor([1.0, 0.0]), theta).to(dtype=surface.dtype)
@@ -86,7 +86,7 @@ def random_direction_rays(dim: int, N: int, offset: float) -> RayGenerator:
     return generate
 
 
-def fixed_rays(dim: int, N: int, direction: Tensor, offset: float) -> RayGenerator:
+def fixed_rays(dim: int, N: int, direction: Tensor, offset: float, epsilon: float=0.) -> RayGenerator:
     "Ray generator for rays with a fixed direction"
 
     # normalize direction
@@ -94,7 +94,7 @@ def fixed_rays(dim: int, N: int, direction: Tensor, offset: float) -> RayGenerat
     direction = torch.nn.functional.normalize(direction, dim=0)
 
     def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, _ = make_samples(surface, dim, N)
+        samples, _ = make_samples(surface, dim, N, epsilon)
 
         V = torch.tile(direction, (samples.shape[0], 1)).to(dtype=surface.dtype)
         P = samples + offset * V
@@ -102,31 +102,6 @@ def fixed_rays(dim: int, N: int, direction: Tensor, offset: float) -> RayGenerat
         return CollisionDataset(f"{surface.testname()}_fixed", surface, P, V)
 
     return generate
-
-
-def move_rays(P: Tensor, V: Tensor, m: float) -> tuple[Tensor, Tensor]:
-    return P + m * V, V
-
-
-def shift_dataset(dataset: CollisionDataset, shift: float) -> CollisionDataset:
-    "Create a dataset with shifted rays"
-
-    P, V = move_rays(dataset.P, dataset.V, shift)
-    return replace(dataset, P=P, V=V)
-
-
-def merge_datasets(datasets: list[CollisionDataset]) -> CollisionDataset:
-    P = torch.cat([dataset.P for dataset in datasets], dim=0)
-    V = torch.cat([dataset.V for dataset in datasets], dim=0)
-
-    assert all([d.surface == datasets[0].surface for d in datasets])
-
-    return CollisionDataset(
-        name=f"merged-{len(datasets)}",
-        surface=datasets[0].surface,
-        P=P,
-        V=V,
-    )
 
 
 def make_samples3D(samples2D: torch.Tensor, M: int) -> torch.Tensor:

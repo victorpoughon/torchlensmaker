@@ -21,7 +21,7 @@ from torchlensmaker.core.geometry import unit_vector, within_radius
 
 from torch.linalg import vector_norm
 
-from typing import Any
+from typing import Any, Optional
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -68,7 +68,17 @@ class LocalSurface:
         """
         raise NotImplementedError
 
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
+        """
+        Test if points belong to the surface
+
+        Args:
+            * points: Input points of shape (..., D)
+            * tol: optional tolerance parameter (default None). None means use an internal default based on dtype
+
+        Returns:
+            * boolean mask of shape points.shape[:-1]
+        """
         raise NotImplementedError
 
     def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
@@ -132,9 +142,12 @@ class Plane(LocalSurface):
     def extent_x(self) -> Tensor:
         return torch.as_tensor(0.0, dtype=self.dtype)
 
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
+        if tol is None:
+            tol = {torch.float32: 1e-4, torch.float64: 1e-6}[self.dtype]
+
         return torch.logical_and(
-            self.outline.contains(points), torch.abs(points[:, 0]) < tol
+            self.outline.contains(points, tol), torch.abs(points.select(-1, 0)) < tol
         )
 
 
@@ -171,7 +184,11 @@ class ImplicitSurface(LocalSurface):
         super().__init__(**kwargs)
         self.collision_method = collision_method
 
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
+        
+        if tol is None:
+            tol = {torch.float32: 1e-4, torch.float64: 1e-7}[self.dtype]
+        
         dim = points.shape[1]
 
         F = self.F if dim == 3 else self.f
@@ -789,7 +806,7 @@ class SphereR(LocalSurface):
             return sphere_samples_linear(
                 curvature=C,
                 start=0.0,
-                end=self.diameter / 2 - epsilon,
+                end=(self.diameter / 2) * ( 1 - epsilon),
                 N=N,
                 dtype=self.dtype,
             )
@@ -798,7 +815,7 @@ class SphereR(LocalSurface):
             # samples are smoother, especially for high curvature circles.
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(self.R))
             return sphere_samples_angular(
-                radius=self.R, start=0.0, end=theta_max - epsilon, N=N, dtype=self.dtype
+                radius=self.R, start=0.0, end=theta_max * (1 - epsilon), N=N, dtype=self.dtype
             )
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
@@ -808,8 +825,8 @@ class SphereR(LocalSurface):
             # If the curvature is low, use linear sampling along the y axis
             return sphere_samples_linear(
                 curvature=C,
-                start=-self.diameter / 2 + epsilon,
-                end=self.diameter / 2 - epsilon,
+                start=(-self.diameter / 2) * (1 - epsilon),
+                end=(self.diameter / 2) * (1 - epsilon),
                 N=N,
                 dtype=self.dtype,
             )
@@ -819,8 +836,8 @@ class SphereR(LocalSurface):
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(self.R))
             return sphere_samples_angular(
                 radius=self.R,
-                start=-theta_max + epsilon,
-                end=theta_max - epsilon,
+                start=-theta_max*(1-epsilon),
+                end=theta_max*(1-epsilon),
                 N=N,
                 dtype=self.dtype,
             )
@@ -850,7 +867,11 @@ class SphereR(LocalSurface):
             normals,
         )
 
-    def contains(self, points: Tensor, tol: float = 1e-6) -> Tensor:
+    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
+
+        if tol is None:
+            tol = {torch.float32: 1e-3, torch.float64: 1e-7}[self.dtype]
+
         center = self.center(dim=points.shape[-1])
         within_outline = within_radius(self.diameter / 2 + tol, points)
         on_sphere = (
@@ -919,6 +940,8 @@ class SphereR(LocalSurface):
         #  - if only one is inside the outline => one collision
         #  - if both are inside the outline => return the root closest to zero (i.e. the ray origin)
 
+        # TODO refactor don't rely on contains at all
+
         default_t = torch.zeros(N, dtype=self.dtype)
         arange = torch.arange(N)
         t = torch.where(
@@ -941,7 +964,7 @@ class SphereR(LocalSurface):
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
         local_normals = self.normals(local_points)
-        valid = self.contains(local_points)
+        valid = number_of_valid_roots > 0
 
         return t, local_normals, valid
 

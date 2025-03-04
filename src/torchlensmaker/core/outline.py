@@ -54,7 +54,8 @@ class CircularOutline(Outline):
         self.diameter = diameter
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
-        return within_radius(self.diameter/2, points)
+        # TODO improve this with rtol / atol
+        return within_radius(self.diameter/2 + tol, points)
 
     def max_radius(self) -> float:
         return self.diameter / 2

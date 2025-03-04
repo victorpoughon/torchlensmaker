@@ -235,8 +235,13 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
             assert samples.shape == (N, 2)
             assert torch.all(samples.isfinite())
 
-            # Check that samples are on the surface
-            assert torch.all(s.contains(samples, tol=1e-4))
+            # Check that samples are on the surface using the surface default tolerance
+            contains_samples = s.contains(samples)
+            assert torch.all(contains_samples)
+
+            # Check shape and dtype of contains() mask
+            assert contains_samples.shape == samples.shape[:-1]
+            assert contains_samples.dtype == torch.bool
 
             # Check that samples that are sure not to be on the surface, are not
             modified_samples = (
@@ -249,7 +254,7 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
         samples3D = torch.column_stack(
             (samples_half, torch.zeros_like(samples_half[:, -1]))
         )
-        assert torch.all(s.contains(samples3D, tol=1e-4))
+        assert torch.all(s.contains(samples3D))
 
         # Check that modified 3D samples are not on the surface
         modified_samples3D = (
@@ -270,10 +275,14 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None
     # of normal rays, which are expected to collide for every surface. More
     # advanded collision testing with more complex datasets is done in
     # test_local_collide.py
-    gen = normal_rays(dim=dim, N=50, offset=10.0)
+    gen = normal_rays(dim=dim, N=50, offset=10.0, epsilon=1e-3)
 
     for surface in surfaces:
         dataset = gen(surface)
+
+        # Check that dataset uses surface dtype
+        assert dataset.P.dtype == surface.dtype
+        assert dataset.V.dtype == surface.dtype
 
         # Call local_collide, rays in testing datasets are in local frame
         P, V = dataset.P, dataset.V
@@ -307,6 +316,13 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None
             torch.linalg.vector_norm(local_normals, dim=-1),
             torch.ones(1, dtype=surface.dtype),
         )
+
+        # Normal rays are expected to collide for all surfaces
+        assert torch.all(surface.contains(local_points)), surface
+        assert torch.all(valid)
+
+        # Rays and returned normals should be parallel, check dot product is close to one
+        assert torch.allclose(torch.sum(V * local_normals, dim=-1), torch.ones(V.shape[:-1], dtype=V.dtype))
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
