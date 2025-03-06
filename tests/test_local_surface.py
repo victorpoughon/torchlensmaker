@@ -1,6 +1,6 @@
 import pytest
 
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 import torch.nn as nn
@@ -169,7 +169,7 @@ def sample_grid(lim: float, N: int, dim: int, dtype: torch.dtype) -> torch.Tenso
         return sample_grid3d(lim=lim, N=N, dtype=dtype)
 
 
-def extra_batch_dims(tensor, dims):
+def extra_batch_dims(tensor: torch.Tensor, dims: Iterable[int]) -> list[torch.Tensor]:
     "Create copies of tensor with extra batch dimensions"
     new_tensors = [tensor]
     for dim in dims:
@@ -322,7 +322,10 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None
         assert torch.all(valid)
 
         # Rays and returned normals should be parallel, check dot product is close to one
-        assert torch.allclose(torch.sum(V * local_normals, dim=-1), torch.ones(V.shape[:-1], dtype=V.dtype))
+        assert torch.allclose(
+            torch.sum(V * local_normals, dim=-1),
+            torch.ones(V.shape[:-1], dtype=V.dtype),
+        )
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
