@@ -19,7 +19,7 @@ def sketch_circular_plane(plane: tlm.CircularPlane) -> bd.Sketch:
 
 
 def sketch_parabola(parabola: tlm.Parabola) -> bd.Sketch:
-    a: float = parabola.a.item()
+    a: float = parabola.A.item()
     r: float = parabola.diameter / 2
 
     return bd.Bezier((a * r**2, -r), (-a * r**2, 0), (a * r**2, r))
@@ -65,10 +65,11 @@ def lens_to_part(lens: tlm.LensBase) -> bd.Part:
     v2 = curve2.vertices().sort_by(bd.Axis.Y)[-1]
 
     # Connect them to form the lens edge
-    edge = bd.Polyline([v1, v2])
-
-    # Close the edges
-    face = bd.make_face([curve1, edge, curve2])
+    if (bd.Vector(v1) - bd.Vector(v2)).length > 1e-6:
+        edge = bd.Polyline([v1, v2])
+        face = bd.make_face([curve1, edge, curve2])
+    else:
+        face = bd.make_face([curve1, curve2])
 
     # split only the side we are going to revolve
     # keep bottom side because the normal direction of Plane.XZ is in the
