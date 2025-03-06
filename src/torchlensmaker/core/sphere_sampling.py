@@ -1,12 +1,27 @@
 import torch
+from typing import TypeAlias
 
-Tensor = torch.Tensor
+Tensor: TypeAlias = torch.Tensor
 
 
-def sphere_samples_angular(radius: float, start: float, end: float, N: int, dtype: torch.dtype) -> Tensor:
+def to_float(x: int | float | Tensor) -> float:
+    if isinstance(x, Tensor):
+        assert x.dim() == 0
+        return float(x.item())
+    else:
+        return float(x)
+
+
+def sphere_samples_angular(
+    radius: float | Tensor,
+    start: float | Tensor,
+    end: float | Tensor,
+    N: int,
+    dtype: torch.dtype,
+) -> Tensor:
     "Angular sampling of a circular arc defined by radius"
-    R = radius
-    
+    R, start, end = map(to_float, (radius, start, end))
+
     if R > 0:
         theta = torch.linspace(torch.pi - end, torch.pi - start, N, dtype=dtype)
     else:
@@ -18,8 +33,17 @@ def sphere_samples_angular(radius: float, start: float, end: float, N: int, dtyp
     return torch.stack((X, Y), dim=-1)
 
 
-def sphere_samples_linear(curvature: float, start: float, end: float, N: int, dtype: torch.dtype) -> Tensor:
+def sphere_samples_linear(
+    curvature: float | Tensor,
+    start: float | Tensor,
+    end: float | Tensor,
+    N: int,
+    dtype: torch.dtype,
+) -> Tensor:
     "Linear sampling of a circular arc defined by curvature"
+
+    curvature, start, end = map(to_float, (curvature, start, end))
+
     Y = torch.linspace(start, end, N, dtype=dtype)
     Y2 = Y**2
     C = curvature
