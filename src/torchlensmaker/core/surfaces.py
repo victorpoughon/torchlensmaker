@@ -696,10 +696,10 @@ class Parabola(CompositeImplicitSurface):
         dtype: torch.dtype = torch.float64,
     ):
         self.diameter = diameter
-        self.A = to_tensor(A, default_dtype=self.dtype)
+        self.A = to_tensor(A, default_dtype=dtype)
         assert (
-            self.dtype == self.A.dtype
-        ), f"Inconsistent dtype between surface and parameter (surface: {self.dtype}) (parameter: {self.A.dtype})"
+            dtype == self.A.dtype
+        ), f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
 
         inner_surface = ParabolaSag(diameter=self.diameter, A=self.A, dtype=dtype)
         super().__init__(inner_surface, dtype=dtype)
@@ -1069,11 +1069,11 @@ class Asphere(CompositeImplicitSurface):
         if isinstance(R, nn.Parameter):
             self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
         else:
-            self.C = torch.as_tensor(1.0 / R, dtype=self.dtype)
+            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
         assert self.C.dim() == 0
 
-        self.K = to_tensor(K, default_dtype=self.dtype)
-        self.A4 = to_tensor(A4, default_dtype=self.dtype)
+        self.K = to_tensor(K, default_dtype=dtype)
+        self.A4 = to_tensor(A4, default_dtype=dtype)
 
         assert (
             dtype == self.C.dtype

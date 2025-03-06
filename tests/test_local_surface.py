@@ -8,6 +8,8 @@ import numpy as np
 
 import torchlensmaker as tlm
 
+from torchlensmaker.testing.check_local_collide import check_local_collide
+
 from torchlensmaker.testing.collision_datasets import normal_rays
 
 """
@@ -279,53 +281,7 @@ def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None
 
     for surface in surfaces:
         dataset = gen(surface)
-
-        # Check that dataset uses surface dtype
-        assert dataset.P.dtype == surface.dtype
-        assert dataset.V.dtype == surface.dtype
-
-        # Call local_collide, rays in testing datasets are in local frame
-        P, V = dataset.P, dataset.V
-        batch, D = P.shape[:-1], P.shape[-1]
-        t, local_normals, valid = surface.local_collide(P, V)
-        local_points = P + t.unsqueeze(-1).expand_as(V) * V
-
-        # Check shapes
-        assert t.dim() == len(batch) and t.shape == batch
-        assert local_normals.dim() == len(batch) + 1 and local_normals.shape == (
-            *batch,
-            D,
-        )
-        assert valid.dim() == len(batch) and valid.shape == batch
-        assert local_points.dim() == 2 and local_points.shape == (*batch, D)
-
-        # Check dtypes
-        assert t.dtype == surface.dtype, (P.dtype, V.dtype, t.dtype, surface.dtype)
-        assert local_normals.dtype == surface.dtype
-        assert valid.dtype == torch.bool
-        assert local_points.dtype == surface.dtype
-
-        # Check isfinite
-        assert torch.all(torch.isfinite(t))
-        assert torch.all(torch.isfinite(local_normals))
-        assert torch.all(torch.isfinite(valid))
-        assert torch.all(torch.isfinite(local_points))
-
-        # Check all normals are unit vectors
-        assert torch.allclose(
-            torch.linalg.vector_norm(local_normals, dim=-1),
-            torch.ones(1, dtype=surface.dtype),
-        )
-
-        # Normal rays are expected to collide for all surfaces
-        assert torch.all(surface.contains(local_points)), surface
-        assert torch.all(valid)
-
-        # Rays and returned normals should be parallel, check dot product is close to one
-        assert torch.allclose(
-            torch.sum(V * local_normals, dim=-1),
-            torch.ones(V.shape[:-1], dtype=V.dtype),
-        )
+        check_local_collide(surface, dataset.P, dataset.V, expected_collide=True)
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
