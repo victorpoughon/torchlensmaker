@@ -4,10 +4,9 @@ from torchlensmaker.core.transforms import IdentityTransform
 import torchlensmaker.viewer as viewer
 
 
-def dataset_view(surface, dataset, rays_length=100):
+def dataset_view(surface, P, V, rays_length=100):
     "View a collision dataset testcase with tlmviewer"
 
-    P, V = dataset.P, dataset.V
     dim = P.shape[-1]
 
     t, local_normals, valid = surface.local_collide(P, V)
@@ -24,10 +23,9 @@ def dataset_view(surface, dataset, rays_length=100):
         viewer.render_rays(rays_start, rays_end, layer=0)
     )
 
-    assert torch.all(torch.isfinite(dataset.P))
-    assert torch.all(torch.isfinite(dataset.V))
+    assert torch.all(torch.isfinite(P))
+    assert torch.all(torch.isfinite(V))
 
     scene["data"].append(viewer.render_surfaces([surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim))
-    scene["title"] = dataset.name
     viewer.ipython_display(scene)
     #tlm.viewer.dump(scene, ndigits=2)

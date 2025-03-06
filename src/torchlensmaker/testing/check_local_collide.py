@@ -8,7 +8,7 @@ def check_local_collide(
 ) -> None:
     "Call surface.local_collide() and performs tests on the output"
 
-    # Check that dataset uses surface dtype
+    # Check that rays are the correct dtype
     assert P.dtype == surface.dtype
     assert V.dtype == surface.dtype
 
@@ -48,8 +48,3 @@ def check_local_collide(
     assert torch.all(surface.contains(local_points) == expected_collide), surface
     assert torch.all(valid == expected_collide)
 
-    # Rays and returned normals should be parallel, check dot product is close to one
-    assert torch.allclose(
-        torch.sum(V * local_normals, dim=-1),
-        torch.ones(V.shape[:-1], dtype=V.dtype),
-    )

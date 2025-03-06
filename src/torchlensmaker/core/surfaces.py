@@ -434,9 +434,12 @@ class CompositeImplicitSurface(ImplicitSurface):
     """
 
     def __init__(
-        self, inner_surface: ImplicitSurface, dtype: torch.dtype = torch.float64
+        self,
+        inner_surface: ImplicitSurface,
+        collision_method: CollisionMethod = default_collision_method,
+        dtype: torch.dtype = torch.float64,
     ):
-        super().__init__(dtype=dtype)
+        super().__init__(collision_method=collision_method, dtype=dtype)
 
         self.inner_surface = inner_surface
 
@@ -598,6 +601,7 @@ class Sphere(CompositeImplicitSurface):
         diameter: float,
         R: int | float | nn.Parameter | None = None,
         C: int | float | nn.Parameter | None = None,
+        collision_method = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
         self.diameter = diameter
@@ -630,7 +634,7 @@ class Sphere(CompositeImplicitSurface):
         self.C = C_tensor
 
         inner_surface = SphereSag(diameter=diameter, C=C_tensor, dtype=dtype)
-        super().__init__(inner_surface=inner_surface, dtype=dtype)
+        super().__init__(inner_surface=inner_surface, collision_method=collision_method, dtype=dtype)
 
     def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
         # TODO bbox / domain

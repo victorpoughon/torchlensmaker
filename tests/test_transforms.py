@@ -23,16 +23,6 @@ from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.testing.basic_transform import basic_transform
 
 
-@pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
-def dtype(request: pytest.FixtureRequest) -> typing.Any:
-    return request.param
-
-
-@pytest.fixture(params=[2, 3], ids=["2D", "3D"])
-def dim(request: pytest.FixtureRequest) -> typing.Any:
-    return request.param
-
-
 @pytest.fixture
 def make_transforms(
     dtype: torch.dtype,

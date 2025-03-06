@@ -22,86 +22,106 @@ def make_samples(surface: LocalSurface, dim: int, N: int, epsilon=0.):
     return samples, surface.normals(samples)
 
 
+CollisionDataset: TypeAlias = tuple[Tensor, Tensor]
+
+default_epsilon = 0.01
+
+class RayGenerator:
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        raise NotImplementedError
+
+
 @dataclass
-class CollisionDataset:
-    name: str
-    surface: LocalSurface
-    P: Tensor
-    V: Tensor
+class NormalRays(RayGenerator):
+    "Ray generator for rays normal to the surface"
+    dim: int
+    N: int
+    offset: float
+    epsilon: float = default_epsilon
+
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        samples, normals = make_samples(surface, self.dim, self.N, self.epsilon)
+
+        # offset along V
+        P = samples + self.offset * normals
+        V = normals
+
+        return P, V
 
 
-RayGenerator: TypeAlias = Callable[[LocalSurface], CollisionDataset]
-
-
-def tangent_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
+@dataclass
+class TangentRays(RayGenerator):
     "Ray generator for rays tangent to the surface"
+    dim: int
+    N: int
+    distance: float
+    epsilon: float = default_epsilon
 
-    # 2d only for now
-    assert dim == 2
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        assert self.dim == 2
+        samples, normals = make_samples(surface, self.dim, self.N, self.epsilon)
 
-    def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, normals = make_samples(surface, dim, N, epsilon)
-
-        # Points on the surface, offset by 'offset' along the gradient
-        P = samples + offset * normals
+        # Points on the surface, offset by 'distance' along the gradient
+        P = samples + self.distance * normals
 
         # Vectors are perpendicular to the gradient
         V = nn.functional.normalize(perpendicular2d(normals))
 
-        return CollisionDataset(
-            f"{surface.testname()}_offset_{offset:.2f}", surface, P, V
-        )
-
-    return generate
+        return P, V
 
 
-def normal_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
-    "Ray generator for rays normal to the surface"
-
-    def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, normals = make_samples(surface, dim, N, epsilon)
-
-        # offset along V
-        P = samples + offset * normals
-        V = normals
-
-        return CollisionDataset(f"{surface.testname()}_normal", surface, P, V)
-
-    return generate
-
-
-def random_direction_rays(dim: int, N: int, offset: float, epsilon: float=0.) -> RayGenerator:
+@dataclass
+class RandomRays:
     "Ray generator for random direction rays"
+    dim: int
+    N: int
+    offset: float
+    epsilon: float = default_epsilon
+    
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
 
-    def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, _ = make_samples(surface, dim, N, epsilon)
+        assert self.dim == 2 # TODO support 3D
 
-        theta = 2 * math.pi * torch.rand((N,))
+        theta = 2 * math.pi * torch.rand((self.N,))
         V = rot2d(torch.tensor([1.0, 0.0]), theta).to(dtype=surface.dtype)
 
-        P = samples + offset * V
+        P = samples + self.offset * V
 
-        return CollisionDataset(f"{surface.testname()}_random", surface, P, V)
-
-    return generate
+        return P, V
 
 
-def fixed_rays(dim: int, N: int, direction: Tensor, offset: float, epsilon: float=0.) -> RayGenerator:
+@dataclass
+class FixedRays(RayGenerator):
     "Ray generator for rays with a fixed direction"
+    dim: int
+    N: int
+    direction: Tensor
+    offset: float
+    epsilon: float = default_epsilon
 
-    # normalize direction
-    assert direction.numel() == dim
-    direction = torch.nn.functional.normalize(direction, dim=0)
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        # normalize direction
+        assert self.direction.numel() == self.dim
+        direction = torch.nn.functional.normalize(self.direction, dim=0)
 
-    def generate(surface: LocalSurface) -> CollisionDataset:
-        samples, _ = make_samples(surface, dim, N, epsilon)
+        samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
 
         V = torch.tile(direction, (samples.shape[0], 1)).to(dtype=surface.dtype)
-        P = samples + offset * V
+        P = samples + self.offset * V
 
-        return CollisionDataset(f"{surface.testname()}_fixed", surface, P, V)
+        return P, V
 
-    return generate
+
+def make_offset_rays(P: torch.Tensor, V: torch.Tensor, tspace: torch.Tensor):
+    "Duplicate rays by moving the origin P along V by t units"
+
+    assert tspace.dim() == 1
+
+    newP = torch.cat([P + t*V for t in tspace], dim=0)
+    newV = torch.tile(V, dims=(tspace.shape[0], 1))
+
+    return newP, newV
 
 
 def make_samples3D(samples2D: torch.Tensor, M: int) -> torch.Tensor:

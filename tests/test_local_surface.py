@@ -10,81 +10,13 @@ import torchlensmaker as tlm
 
 from torchlensmaker.testing.check_local_collide import check_local_collide
 
-from torchlensmaker.testing.collision_datasets import normal_rays
+from torchlensmaker.testing.collision_datasets import NormalRays
 
 """
 Test all surfaces using the methods of the common base class LocalSurface().
 All methods are tested here, except local_collide() which is only tested for the
 basic stuff, without labeled data. A full test is in test_local_collide.
 """
-
-
-@pytest.fixture(params=[2, 3], ids=["2D", "3D"])
-def dim(request: pytest.FixtureRequest) -> Any:
-    return request.param
-
-
-@pytest.fixture(params=[torch.float32, torch.float64], ids=["float32", "float64"])
-def dtype(request: pytest.FixtureRequest) -> Any:
-    return request.param
-
-
-@pytest.fixture
-def surfaces(
-    dtype: torch.dtype,
-) -> list[tlm.LocalSurface]:
-    # fmt: off
-    return [
-        tlm.CircularPlane(diameter=30, dtype=dtype),
-
-        # Non axially symmetric surfaces are out of scope for now
-        # tlm.SquarePlane(side_length=30, dtype=dtype),
-
-        # Sphere
-        tlm.Sphere(diameter=5, R=10, dtype=dtype),
-        tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
-        tlm.Sphere(diameter=5, C=0., dtype=dtype),
-        tlm.Sphere(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
-        tlm.Sphere(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
-
-        # SphereR
-        tlm.SphereR(diameter=5, R=10, dtype=dtype),
-        tlm.SphereR(diameter=5, C=0.05, dtype=dtype),
-        tlm.SphereR(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
-        tlm.SphereR(diameter=5, C=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
-
-        # Half circle with SphereR
-        tlm.SphereR(diameter=5, R=2.5, dtype=dtype),
-        tlm.SphereR(diameter=5, R=tlm.parameter(2.5, dtype=dtype), dtype=dtype),
-
-        # Parabola
-        tlm.Parabola(diameter=5, A=0.05, dtype=dtype),
-        tlm.Parabola(diameter=5, A=tlm.parameter(0.05, dtype=dtype), dtype=dtype),
-        tlm.Parabola(diameter=5, A=-0.05, dtype=dtype),
-        tlm.Parabola(diameter=5, A=tlm.parameter(-0.05, dtype=dtype), dtype=dtype),
-        tlm.Parabola(diameter=5, A=0, dtype=dtype),
-        tlm.Parabola(diameter=5, A=tlm.parameter(0, dtype=dtype), dtype=dtype),
-
-        # Asphere
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=-50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=-1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=-0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=-50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=-1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=-0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=tlm.parameter(50, dtype=dtype), K=1.0, A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=-50, K=tlm.parameter(1.0, dtype=dtype), A4=0.005, dtype=dtype),
-        tlm.Asphere(diameter=10, R=50, K=1.0, A4=tlm.parameter(0.005, dtype=dtype), dtype=dtype),
-
-        # TODO test domains of partial surfaces?
-    ]
-    # fmt: on
 
 
 def test_testname(surfaces: list[tlm.LocalSurface]) -> None:
@@ -272,16 +204,11 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
 
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    # Here we test all that we can about LocalSurface.local_collide(), for all
-    # surfaces in the test cases of this test file. We only use a single dataset
-    # of normal rays, which are expected to collide for every surface. More
-    # advanded collision testing with more complex datasets is done in
-    # test_local_collide.py
-    gen = normal_rays(dim=dim, N=50, offset=10.0, epsilon=1e-3)
+    gen = NormalRays(dim=dim, N=50, offset=10.0, epsilon=1e-3)
 
     for surface in surfaces:
-        dataset = gen(surface)
-        check_local_collide(surface, dataset.P, dataset.V, expected_collide=True)
+        P, V = gen(surface)
+        check_local_collide(surface, P, V, expected_collide=True)
 
 
 def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
