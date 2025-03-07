@@ -16,9 +16,14 @@ if TYPE_CHECKING:
 def surface_f(
     surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
 ) -> tuple[Tensor, Tensor]:
-    "Convinience function to call F and F_grad of an implicit surface with variable dimension"
+    "Compute F and F_grad for a surface with variable dimension and multiple beams per ray"
 
-    points = P + t.unsqueeze(1).expand_as(V) * V
+    B, N = t.shape
+    D = P.shape[-1]
+    
+    Pbeam = P.expand((B, -1, -1))
+    Vbeam = V.expand((B, -1, -1))
+    points = Pbeam + t.unsqueeze(-1).expand((B, N, D)) * Vbeam
 
     F = surface.Fd(points)
     F_grad = surface.Fd_grad(points)
@@ -59,7 +64,7 @@ class Newton(CollisionAlgorithm):
 
         F, F_grad = surface_f(surface, P, V, t)
         # Denominator will be zero if F_grad and V are orthogonal
-        dot = torch.sum(F_grad * V, dim=1)
+        dot = torch.sum(F_grad * V, dim=-1)
         return self.damping * F / dot
 
     def __str__(self) -> str:
@@ -78,7 +83,7 @@ class GD(CollisionAlgorithm):
     ) -> Tensor:
 
         F, F_grad = surface_f(surface, P, V, t)
-        dot = torch.sum(F_grad * V, dim=1)
+        dot = torch.sum(F_grad * V, dim=-1)
         return 2 * self.step_size * dot * F
 
     def __str__(self) -> str:
@@ -96,7 +101,7 @@ class LM(CollisionAlgorithm):
         "Levenberg-Marquardt"
 
         F, F_grad = surface_f(surface, P, V, t)
-        dot = torch.sum(F_grad * V, dim=1)
+        dot = torch.sum(F_grad * V, dim=-1)
         return torch.div(dot * F, dot**2 + self.damping)
 
     def __str__(self) -> str:
@@ -157,19 +162,33 @@ class CollisionMethod:
     """
     Dfferentiable iterative collision detection for implicit surfaces.
 
-    A collision "method" is made up of:
-    * An initialization function
-    * A collision algorithm
+    Collision detection is made up of in four phases:
+    
+    0. Initialize multiple starting t values for each ray by sampling each rays
+       intersection with the surface bounding box.
+
+    1. Coarse phase: run a fixed number of iterative steps of algorithm A
+
+    2. Fine phase: pick the best t value for each ray, then run a fixed number
+       of iterative steps of algorithm B
+
+    3. Differentiable phase: Run a single step of algorithm C under pytorch autograd
+
+    This class configures everything above (algorithms, number of steps, etc.).
     """
 
     # initialization method
     init: Callable[[ImplicitSurface, Tensor, Tensor], Tensor]
 
-    # algorithm
-    step0: CollisionAlgorithm
+    # Number of solutions per ray in the coarse phase
+    B: int
 
-    def __str__(self) -> str:
-        return f"[{self.init.__name__}] {self.step0}"
+    # Algorithms
+    algoA: CollisionAlgorithm
+    algoB: CollisionAlgorithm
+    algoC: CollisionAlgorithm
+
+    name: str
 
     def __call__(
         self,
@@ -178,13 +197,31 @@ class CollisionMethod:
         V: Tensor,
         history: bool = False,
     ) -> Tensor | tuple[Tensor, Tensor]:
-
+        
         # Sanity checks
-        dim = P.shape[1]
-        assert dim == 2 or dim == 3
+        assert P.dim() == V.dim() == 2
+        assert P.shape == V.shape
+        assert P.shape[-1] in (2, 3)
         assert isinstance(P, Tensor) and P.dim() == 2
         assert isinstance(V, Tensor) and V.dim() == 2
-        assert P.shape == V.shape
+
+        # Tensor dimensions
+        N = P.shape[0] # Number of rays
+        D = P.shape[1] # Rays dimension (2 or 3)
+        H = self.algoB.num_iter if history else 1 # History (1 or num_iter of algo B)
+        B = self.num_beams # Number of solutions per ray for algo A)
+
+        # Returns init phase
+        # init_t :: (N, B)
+
+        # Returns step A
+        # t_history :: (N, B, HA)
+
+        # Returns step B
+        # t_history :: (N, HB)
+        
+        # Returns step C
+        # t_history :: (N,)
 
         # Initialize solutions t
         t = self.init(surface, P, V)
@@ -201,8 +238,9 @@ class CollisionMethod:
                 if history:
                     t_history[:, i + 1] = t
 
+        # 4. Differentiable phase
         # One iteration for backwards pass
-        t = t - self.step0.clamped_delta(surface, P, V, t)
+        t = t - self.algoC.clamped_delta(surface, P, V, t)
 
         if history:
             t_history[:, -1] = t
