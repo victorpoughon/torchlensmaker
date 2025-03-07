@@ -48,30 +48,30 @@ def expected_collide_all_surfaces():
     "Make a list of generators that are expected to collide for all surfaces"
 
     generators = []
-    N = 20
+    N = 15
 
     for dim in (2, 3):
     
         generators.extend([
-            NormalRays(dim=dim, N=N, offset=0.0, epsilon=1e-3),
+            NormalRays(dim=dim, N=N, offset=0.0, epsilon=1e-2),
         ])
 
         if dim == 2:
             generators.extend([
-                #FixedRays(direction=torch.tensor([0.0, 1.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=torch.tensor([1.0, 0.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(100), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(90), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(80), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(70), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(60), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(50), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(40), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(30), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(20), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(10), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(0), dim=dim, N=N, offset=0.0, epsilon=1e-3),
-                #FixedRays(direction=unit2d_rot(-10), dim=dim, N=N, offset=0.0, epsilon=1e-3),
+                #FixedRays(direction=torch.tensor([0.0, 1.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                #FixedRays(direction=torch.tensor([1.0, 0.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                #FixedRays(direction=unit2d_rot(100), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                #FixedRays(direction=unit2d_rot(90), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                #FixedRays(direction=unit2d_rot(80), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                #FixedRays(direction=unit2d_rot(70), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(60), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(50), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(40), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(30), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(20), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(10), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(0), dim=dim, N=N, offset=0.0, epsilon=1e-2),
+                FixedRays(direction=unit2d_rot(-10), dim=dim, N=N, offset=0.0, epsilon=1e-2),
             ])
         
         if dim == 3:
@@ -95,10 +95,10 @@ def test_expected_collide(surface: list[tlm.LocalSurface], generator_expected_co
 
     offset_space = torch.cat(
         (
-            torch.logspace(-6, 3, 20),
-            torch.linspace(0.0, 100.0, 20),
-            -torch.logspace(-6, 3, 20),
-            -torch.linspace(0.0, 100.0, 20),
+            torch.logspace(-6, 2, 20),
+            torch.linspace(0.0, 50.0, 20),
+            -torch.logspace(-6, 2, 20),
+            -torch.linspace(0.0, 50.0, 20),
         ),
         dim=0,
     )

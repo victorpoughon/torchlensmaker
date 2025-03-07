@@ -107,8 +107,10 @@ class FixedRays(RayGenerator):
 
         samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
 
+        assert torch.all(torch.isfinite(samples)), (surface.__dict__, self.dim, self.N, self.epsilon)
+
         V = torch.tile(direction, (samples.shape[0], 1)).to(dtype=surface.dtype)
-        P = samples + self.offset * V
+        P = (samples + self.offset * V).to(dtype=surface.dtype)
 
         return P, V
 

@@ -46,5 +46,5 @@ def check_local_collide(
 
     # Normal rays are expected to collide for all surfaces
     assert torch.all(surface.contains(local_points) == expected_collide), surface
-    assert torch.all(valid == expected_collide)
+    assert torch.all(valid == expected_collide), surface
 

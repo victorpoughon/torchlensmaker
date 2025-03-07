@@ -18,6 +18,7 @@ from torchlensmaker.core.collision_detection import (
     default_collision_method,
 )
 from torchlensmaker.core.geometry import unit_vector, within_radius
+from torchlensmaker.core.collision_detection import init_best_axis
 
 from torch.linalg import vector_norm
 
@@ -112,12 +113,13 @@ class Plane(LocalSurface):
     def parameters(self) -> dict[str, nn.Parameter]:
         return {}
 
-    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, self.outline.max_radius(), N, dtype=self.dtype)
+    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
+        maxr = (1.-epsilon)*self.outline.max_radius()
+        r = torch.linspace(0, maxr, N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
-    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        maxr = self.outline.max_radius()
+    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
+        maxr = (1.-epsilon)*self.outline.max_radius()
         r = torch.linspace(-maxr, maxr, N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
@@ -874,6 +876,11 @@ class SphereR(LocalSurface):
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         N, D = P.shape
 
+        # For numerical stability, it's best if P is close to the origin
+        # Bring rays origins as close as possible before solving
+        init_t = init_best_axis(self, P, V)
+        P = P + init_t.unsqueeze(-1).expand_as(V) * V
+
         # Sphere-ray collision is a second order polynomial
         center = self.center(dim=D)
         A = torch.sum(V**2, dim=1)
@@ -951,7 +958,7 @@ class SphereR(LocalSurface):
         local_normals = self.normals(local_points)
         valid = number_of_valid_roots > 0
 
-        return t, local_normals, valid
+        return init_t + t, local_normals, valid
 
 
 class AsphereSag(SagSurface):
@@ -995,8 +1002,9 @@ class AsphereSag(SagSurface):
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
+        dr = (1. - epsilon)
 
-        Y = torch.linspace(0, self.diameter / 2 - epsilon, N, dtype=self.dtype)
+        Y = torch.linspace(0, dr * self.diameter / 2, N, dtype=self.dtype)
         r2 = torch.pow(Y, 2)
         X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
             r2, 2
@@ -1007,10 +1015,11 @@ class AsphereSag(SagSurface):
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
+        dr = (1. - epsilon)
 
         Y = torch.linspace(
-            -self.diameter / 2 + epsilon,
-            self.diameter / 2 - epsilon,
+            - dr * self.diameter / 2,
+            dr * self.diameter / 2,
             N,
             dtype=self.dtype,
         )

@@ -19,6 +19,8 @@ def make_common_surfaces(dtype: torch.dtype) -> list[tlm.LocalSurface]:
 
         # Sphere
         tlm.Sphere(diameter=5, R=10, dtype=dtype),
+        tlm.Sphere(diameter=5, R=6, dtype=dtype),
+        tlm.Sphere(diameter=5, R=100, dtype=dtype),
         tlm.Sphere(diameter=5, C=0.05, dtype=dtype),
         tlm.Sphere(diameter=5, C=0., dtype=dtype),
         tlm.Sphere(diameter=5, R=tlm.parameter(10, dtype=dtype), dtype=dtype),
