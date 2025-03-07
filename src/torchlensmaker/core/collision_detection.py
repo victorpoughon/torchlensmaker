@@ -6,10 +6,10 @@ from dataclasses import dataclass
 
 Tensor = torch.Tensor
 
-from typing import TYPE_CHECKING, Optional, Callable
+from typing import TYPE_CHECKING, Optional, Callable, Any
 
 if TYPE_CHECKING:
-    from torchlensmaker.core.surfaces import ImplicitSurface
+    from torchlensmaker.core.surfaces import ImplicitSurface, LocalSurface
 
 
 def surface_f(
@@ -28,7 +28,7 @@ def surface_f(
 class CollisionAlgorithm:
     """Base class for collision detection algorithms"""
 
-    def __init__(self, max_iter: float, max_delta: Optional[float]):
+    def __init__(self, max_iter: int, max_delta: Optional[float]):
         self.max_iter = max_iter
         self.max_delta = max_delta
 
@@ -37,7 +37,7 @@ class CollisionAlgorithm:
     ) -> Tensor:
         raise NotImplementedError
 
-    def clamped_delta(self, surface, P, V, t) -> Tensor:
+    def clamped_delta(self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
         delta = self.delta(surface, P, V, t)
         if self.max_delta is not None:
             return torch.clamp(delta, min=-self.max_delta, max=self.max_delta)
@@ -48,7 +48,7 @@ class CollisionAlgorithm:
 class Newton(CollisionAlgorithm):
     "Newton's method with optional damping"
 
-    def __init__(self, damping: float, **kwargs):
+    def __init__(self, damping: float, **kwargs: Any):
         super().__init__(**kwargs)
         self.damping = damping
 
@@ -68,7 +68,7 @@ class Newton(CollisionAlgorithm):
 class GD(CollisionAlgorithm):
     "Gradient Descent"
 
-    def __init__(self, step_size: float, **kwargs):
+    def __init__(self, step_size: float, **kwargs: Any):
         super().__init__(**kwargs)
         self.step_size = step_size
 
@@ -85,7 +85,7 @@ class GD(CollisionAlgorithm):
 
 
 class LM(CollisionAlgorithm):
-    def __init__(self, damping: float, **kwargs):
+    def __init__(self, damping: float, **kwargs: Any):
         super().__init__(**kwargs)
         self.damping = damping
 
@@ -96,20 +96,20 @@ class LM(CollisionAlgorithm):
 
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=1)
-        return dot * F / (dot**2 + self.damping)
+        return torch.div(dot * F, dot**2 + self.damping)
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping}, {self.max_iter})"
 
 
-def init_zeros(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
+def init_zeros(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     "Initialize t for iterations with zeros"
 
     N = P.shape[0]
     return torch.zeros((N,), dtype=surface.dtype)
 
 
-def init_best_axis(surface: ImplicitSurface, P: Tensor, V: Tensor) -> Tensor:
+def init_best_axis(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     """
     Initialize t for iterations with the rays intersections with either X or Y
     axis, depending on which is most perpendicular to the ray.

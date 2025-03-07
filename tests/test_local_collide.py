@@ -35,7 +35,7 @@ from torchlensmaker.testing.collision_datasets import make_offset_rays
 
 from typing import Any
 
-from .conftest import make_common_surfaces
+from conftest import make_common_surfaces
 
 # TODO
 # Rays and returned normals should be parallel, check dot product is close to one
@@ -44,10 +44,10 @@ from .conftest import make_common_surfaces
     #     torch.ones(V.shape[:-1], dtype=V.dtype),
     # )
 
-def expected_collide_all_surfaces():
+def expected_collide_all_surfaces() -> list[RayGenerator]:
     "Make a list of generators that are expected to collide for all surfaces"
 
-    generators = []
+    generators: list[RayGenerator] = []
     N = 15
 
     for dim in (2, 3):
@@ -90,7 +90,7 @@ def surface(request: pytest.FixtureRequest) -> Any:
     return request.param
 
 
-def test_expected_collide(surface: list[tlm.LocalSurface], generator_expected_collide: RayGenerator) -> None:
+def test_expected_collide(surface: tlm.LocalSurface, generator_expected_collide: RayGenerator) -> None:
     "Test with rays that are expected to collide with all surfaces"
 
     offset_space = torch.cat(

@@ -603,7 +603,7 @@ class Sphere(CompositeImplicitSurface):
         diameter: float,
         R: int | float | nn.Parameter | None = None,
         C: int | float | nn.Parameter | None = None,
-        collision_method = default_collision_method,
+        collision_method: CollisionMethod = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
         self.diameter = diameter
