@@ -28,7 +28,7 @@ def dataset_view(surface, P, V, rays_length=100):
     assert torch.all(torch.isfinite(P))
     assert torch.all(torch.isfinite(V))
 
-    scene["data"].append(viewer.render_surfaces([surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim))
+    scene["data"].append(viewer.render_surface(surface))
     viewer.ipython_display(scene)
     #tlm.viewer.dump(scene, ndigits=2)
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import torch
+import math
 
 from dataclasses import dataclass
 
@@ -123,6 +124,32 @@ def init_best_axis(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
 
     return init_t
+
+
+def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
+    """
+    Bounding radius domain initialization
+
+    Returns:
+        * tensor of shape (B, N)
+    """
+
+    N, D = P.shape
+
+    # Compute t so that P + tV is the point on the ray closest to the origin
+    t = - torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
+
+    # Surface maximum bounding radius
+    br = math.sqrt((surface.diameter/2)**2 + surface.extent_x()**2)
+
+    # Sample the domain to make initialization values
+    start, end = t - br, t + br
+    s = torch.linspace(0, 1, B)
+
+    # Compute start + (end - start)*s with broadcasting
+    brd = start.unsqueeze(0) * (1 - s).unsqueeze(1) + end.unsqueeze(0) * s.unsqueeze(1)
+    assert brd.shape == (B, N)
+    return brd
 
 
 @dataclass

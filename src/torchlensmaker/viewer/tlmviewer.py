@@ -16,7 +16,8 @@ from torchlensmaker.core.surfaces import (
 )
 
 from torchlensmaker.core.transforms import (
-    TransformBase
+    TransformBase,
+    IdentityTransform,
 )
 
 Tensor = torch.Tensor
@@ -138,6 +139,11 @@ def render_surfaces(
         "data": [process_surface(s, t, dim, N) for s, t in zip(surfaces, transforms)],
     }
 
+def render_surface(
+        surface: LocalSurface,
+        dim: int,
+) -> Any:
+    return render_surfaces([surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim)
 
 def render_rays(
     start: Tensor,
