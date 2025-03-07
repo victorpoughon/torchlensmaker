@@ -208,8 +208,7 @@ class ImplicitSurface(LocalSurface):
         # and points will not be on the surface
         # So verify intersection here and filter points
         # that aren't on the surface
-        # TODO better tolerance configuration based on sampling dtype
-        valid = self.contains(local_points, tol=1e-4)
+        valid = self.contains(local_points)
 
         return t, local_normals, valid
 
@@ -765,8 +764,11 @@ class SphereR(LocalSurface):
         assert self.R.dim() == 0
         assert self.R.dtype == self.dtype
 
+    def __str__(self) -> str:
+        return f"SphereR({self.diameter}, {self.R.item()})"
+
     def testname(self) -> str:
-        return f"SphereR-{self.diameter:.2f}-{self.R.item():.2f}"
+        return str(self)
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.R, nn.Parameter):

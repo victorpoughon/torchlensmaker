@@ -204,7 +204,7 @@ def test_contains_and_samples2D(surfaces: list[tlm.LocalSurface]) -> None:
 
 
 def test_local_collide_basic(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    gen = NormalRays(dim=dim, N=50, offset=10.0, epsilon=1e-3)
+    gen = NormalRays(dim=dim, N=50, offset=10.0, epsilon=1e-2)
 
     for surface in surfaces:
         P, V = gen(surface)

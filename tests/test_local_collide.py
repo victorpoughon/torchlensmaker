@@ -35,7 +35,7 @@ from torchlensmaker.testing.collision_datasets import make_offset_rays
 
 from typing import Any
 
-from conftest import make_common_surfaces
+from .conftest import make_common_surfaces
 
 # TODO
 # Rays and returned normals should be parallel, check dot product is close to one
