@@ -260,42 +260,6 @@ class ImplicitSurface(LocalSurface):
         raise NotImplementedError
 
 
-class DiameterBandSurface(ImplicitSurface):
-    def __init__(self, Ax: float, Ar: float, dtype: torch.dtype = torch.float64):
-        super().__init__(dtype=dtype)
-        self.Ax = Ax
-        self.Ar = Ar
-
-    def f(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        X, R = points.unbind(-1)
-        Ax, Ar = self.Ax, self.Ar
-        return torch.add((X - Ax) ** 2, (torch.abs(R) - Ar) ** 2)
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        X, R = points.unbind(-1)
-        Ax, Ar = self.Ax, self.Ar
-        return torch.stack(
-            (2 * (X - Ax), torch.sign(R) * 2 * (torch.abs(R) - Ar)), dim=-1
-        )
-
-    def F(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        X, Y, Z = points.unbind(-1)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        return torch.add((X - Ax) ** 2, (torch.sqrt(R2) - Ar) ** 2)
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        X, Y, Z = points.unbind(-1)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        quot = Ar / torch.sqrt(R2)
-        return torch.stack((2 * (X - Ax), 2 * Y - quot, 2 * Z - quot), dim=-1)
-
-
 class DiameterBandSurfaceSq(ImplicitSurface):
     "Square root version of diameter band surface"
 
