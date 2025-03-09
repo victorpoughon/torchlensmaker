@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import math
 
 from torchlensmaker.core.outline import (
     Outline,
@@ -196,6 +197,13 @@ class ImplicitSurface(LocalSurface):
         F = self.F if dim == 3 else self.f
 
         return torch.abs(F(points)) < tol
+
+    def bounding_radius(self) -> float:
+        """
+        Any point on the surface has a distance to the center that is less
+        than (or equal) to the bounding radius
+        """
+        raise NotImplementedError
     
     def rmse(self, points: Tensor) -> float:
         N = sum(points.shape[:-1])
@@ -261,7 +269,7 @@ class ImplicitSurface(LocalSurface):
 
 
 class DiameterBandSurfaceSq(ImplicitSurface):
-    "Square root version of diameter band surface"
+    "Distance to edge points"
 
     def __init__(self, Ax: Tensor, Ar: Tensor, dtype: torch.dtype = torch.float64):
         super().__init__(dtype=dtype)
@@ -310,7 +318,7 @@ class DiameterBandSurfaceSq(ImplicitSurface):
 
 class SagSurface(ImplicitSurface):
     """
-    Implicit surface defined by a sag function.
+    Axially symmetric implicit surface defined by a sag function.
 
     A sag function g(r) is a one dimensional real valued function that describes
     a surface x coordinate in an arbitrary meridional plane (x,r) as a function
@@ -319,10 +327,37 @@ class SagSurface(ImplicitSurface):
     Derived classes provide the sag function and its gradient in
     both 2 and 3 dimensions. This class then uses it to create the implicit
     function F representing the corresponding implicit surface.
+
+    The sag function is assumed defined only on the domain (- diameter/2 ;
+    diameter / 2) in the meridional plane. Outside of this domain, a fallback
+    function is used (implemented by DiameterBandSurfaceSq).
     """
 
-    def __init__(self, dtype: torch.dtype = torch.float64):
-        super().__init__(dtype=dtype)
+    def __init__(
+        self,
+        diameter: float,
+        collision_method: CollisionMethod = default_collision_method,
+        dtype: torch.dtype = torch.float64,
+    ):
+        super().__init__(collision_method=collision_method, dtype=dtype)
+        self.diameter = diameter
+
+    def mask_function(self, points: Tensor) -> Tensor:
+        return within_radius(self.diameter / 2, points)
+
+    def fallback_surface(self) -> DiameterBandSurfaceSq:
+        return DiameterBandSurfaceSq(
+            Ax=self.extent_x(),
+            Ar=self.diameter / 2,
+            dtype=self.dtype,
+        )
+    
+    def bounding_radius(self) -> float:
+        """
+        Any point on the surface has a distance to the center that is less
+        than (or equal) to the bounding radius
+        """
+        return math.sqrt((self.diameter/2)**2 + self.extent_x()**2)
 
     def g(self, r: Tensor) -> Tensor:
         """
@@ -378,102 +413,106 @@ class SagSurface(ImplicitSurface):
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        return self.g(r) - x
+        sag_f = self.g(r) - x
+        mask = self.mask_function(points)
+        fallback = self.fallback_surface()
+        return torch.where(mask, sag_f, fallback.f(points))
 
     def f_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        return torch.stack((-torch.ones_like(x), self.g_grad(r)), dim=-1)
-
-    def F(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        x, y, z = points.unbind(-1)
-        return self.G(y, z) - x
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        x, y, z = points.unbind(-1)
-        grad_y, grad_z = self.G_grad(y, z)
-        return torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
-
-
-class CompositeImplicitSurface(ImplicitSurface):
-    """
-    Composes two implicit surfaces spatially with a mask function.
-    """
-
-    def __init__(
-        self,
-        inner_surface: ImplicitSurface,
-        collision_method: CollisionMethod = default_collision_method,
-        dtype: torch.dtype = torch.float64,
-    ):
-        super().__init__(collision_method=collision_method, dtype=dtype)
-
-        self.inner_surface = inner_surface
-
-    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
-        raise NotImplementedError
-
-    def fallback_surface(self) -> DiameterBandSurfaceSq:
-        return DiameterBandSurfaceSq(
-            Ax=self.inner_surface.extent_x(),
-            Ar=self.inner_surface.diameter / 2,
-            dtype=self.dtype,
-        )
-
-    def f(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        mask = self.mask_function(self.inner_surface, points)
-        fallback = self.fallback_surface()
-        return torch.where(mask, self.inner_surface.f(points), fallback.f(points))
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        mask = self.mask_function(self.inner_surface, points)
+        sag_f_grad = torch.stack((-torch.ones_like(x), self.g_grad(r)), dim=-1)
+        mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(
             mask.unsqueeze(-1).expand(*mask.size(), 2),
-            self.inner_surface.f_grad(points),
+            sag_f_grad,
             fallback.f_grad(points),
         )
 
     def F(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
-        mask = self.mask_function(self.inner_surface, points)
+        x, y, z = points.unbind(-1)
+        sag_F = self.G(y, z) - x
+        mask = self.mask_function(points)
         fallback = self.fallback_surface()
-        return torch.where(mask, self.inner_surface.F(points), fallback.F(points))
+        return torch.where(mask, sag_F, fallback.F(points))
 
     def F_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
-        mask = self.mask_function(self.inner_surface, points)
+        x, y, z = points.unbind(-1)
+        grad_y, grad_z = self.G_grad(y, z)
+        sag_F_grad = torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
+        mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(
             mask.unsqueeze(-1).expand(*mask.size(), 3),
-            self.inner_surface.F_grad(points),
+            sag_F_grad,
             fallback.F_grad(points),
         )
 
-    def extent_x(self) -> Tensor:
-        return self.inner_surface.extent_x()
 
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return self.inner_surface.parameters()
+class Sphere(SagSurface):
+    """
+    A section of a sphere, parameterized by signed curvature.
+    Curvature is the inverse of radius: C = 1/R.
 
-    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        return self.inner_surface.samples2D_half(N, epsilon)
+    This parameterization is useful because it enables clean representation of
+    an infinite radius section of sphere (which is really a plane), and also
+    enables changing the sign of C during optimization.
 
-    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        return self.inner_surface.samples2D_full(N, epsilon)
+    In 2D, this surface is an arc of circle.
+    In 3D, this surface is a section of a sphere (wikipedia calls it a "spherical cap")
 
+    For high curvature arcs (close to a half circle), it's better to use the
+    SphereR class which uses radius parameterization and polar distance
+    functions. In fact this class cannot represent an exact half circle (R =
+    D/2) due to the gradient becoming infinite, use SphereR instead.
+    """
 
-class SphereSag(SagSurface):
-    "Sag surface for Sphere parameterized with curvature"
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter | None = None,
+        C: int | float | nn.Parameter | None = None,
+        collision_method: CollisionMethod = default_collision_method,
+        dtype: torch.dtype = torch.float64,
+    ):
+        if (R is not None and C is not None) or (R is None and C is None):
+            raise RuntimeError(
+                "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
+            )
 
-    def __init__(self, diameter: float, C: Tensor, dtype: torch.dtype = torch.float64):
-        super().__init__(dtype)
-        self.diameter = diameter
-        self.C = C
+        self.C: torch.Tensor
+        if C is None and R is not None:
+            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
+                raise RuntimeError(
+                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter/2}) "
+                    f"(To model an exact half-sphere, use SphereR)."
+                )
+
+            if isinstance(R, nn.Parameter):
+                C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
+            else:
+                C_tensor = torch.as_tensor(1.0 / R, dtype=dtype)
+        else:
+            if isinstance(C, nn.Parameter):
+                C_tensor = C
+            else:
+                C_tensor = torch.as_tensor(C, dtype=dtype)
+
+        assert C_tensor.dim() == 0
+        assert C_tensor.dtype == dtype
+        self.C = C_tensor
+
+        super().__init__(diameter=diameter, collision_method=collision_method, dtype=dtype)
+
+    def radius(self) -> float:
+        "Utility function to get radius from internal curvature"
+        return torch.div(torch.tensor(1.0, dtype=self.dtype), self.C).item()
+
+    def testname(self) -> str:
+        return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
@@ -547,83 +586,24 @@ class SphereSag(SagSurface):
             )
 
 
-class Sphere(CompositeImplicitSurface):
-    """
-    A section of a sphere, parameterized by signed curvature.
-    Curvature is the inverse of radius: C = 1/R.
-
-    This parameterization is useful because it enables clean representation of
-    an infinite radius section of sphere (which is really a plane), and also
-    enables changing the sign of C during optimization.
-
-    In 2D, this surface is an arc of circle.
-    In 3D, this surface is a section of a sphere (wikipedia calls it a "spherical cap")
-
-    For high curvature arcs (close to a half circle), it's better to use the
-    SphereR class which uses radius parameterization and polar distance
-    functions. In fact this class cannot represent an exact half circle (R =
-    D/2) due to the gradient becoming infinite, use SphereR instead.
-    """
+class Parabola(SagSurface):
+    "Sag surface for a parabola $X = A Y^2$"
 
     def __init__(
         self,
         diameter: float,
-        R: int | float | nn.Parameter | None = None,
-        C: int | float | nn.Parameter | None = None,
-        collision_method: CollisionMethod = default_collision_method,
+        A: int | float | nn.Parameter,
         dtype: torch.dtype = torch.float64,
     ):
-        self.diameter = diameter
+        self.A = to_tensor(A, default_dtype=dtype)
+        assert (
+            dtype == self.A.dtype
+        ), f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
 
-        if (R is not None and C is not None) or (R is None and C is None):
-            raise RuntimeError(
-                "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
-            )
-
-        self.C: torch.Tensor
-        if C is None and R is not None:
-            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
-                raise RuntimeError(
-                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter/2}) "
-                    f"(To model an exact half-sphere, use SphereR)."
-                )
-
-            if isinstance(R, nn.Parameter):
-                C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
-            else:
-                C_tensor = torch.as_tensor(1.0 / R, dtype=dtype)
-        else:
-            if isinstance(C, nn.Parameter):
-                C_tensor = C
-            else:
-                C_tensor = torch.as_tensor(C, dtype=dtype)
-
-        assert C_tensor.dim() == 0
-        assert C_tensor.dtype == dtype
-        self.C = C_tensor
-
-        inner_surface = SphereSag(diameter=diameter, C=C_tensor, dtype=dtype)
-        super().__init__(inner_surface=inner_surface, collision_method=collision_method, dtype=dtype)
-
-    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
-        # TODO bbox / domain
-        return within_radius(self.diameter / 2, points)
-
-    def radius(self) -> float:
-        "Utility function to get radius from internal curvature"
-        return torch.div(torch.tensor(1.0, dtype=self.dtype), self.C).item()
+        super().__init__(diameter, dtype=dtype)
 
     def testname(self) -> str:
-        return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
-
-
-class ParabolaSag(SagSurface):
-    "Sag surface for a parabola $X = A Y^2$"
-
-    def __init__(self, diameter: float, A: Tensor, dtype: torch.dtype = torch.float64):
-        super().__init__(dtype=dtype)
-        self.diameter = diameter
-        self.A = A
+        return f"Parabola-{self.diameter:.2f}-{self.A.item():.2f}"
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
@@ -659,30 +639,6 @@ class ParabolaSag(SagSurface):
         )
         x = self.A * r**2
         return torch.stack((x, r), dim=-1)
-
-
-class Parabola(CompositeImplicitSurface):
-    def __init__(
-        self,
-        diameter: float,
-        A: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
-    ):
-        self.diameter = diameter
-        self.A = to_tensor(A, default_dtype=dtype)
-        assert (
-            dtype == self.A.dtype
-        ), f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
-
-        inner_surface = ParabolaSag(diameter=self.diameter, A=self.A, dtype=dtype)
-        super().__init__(inner_surface, dtype=dtype)
-
-    def testname(self) -> str:
-        return f"Parabola-{self.diameter:.2f}-{self.A.item():.2f}"
-
-    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
-        # TODO bbox / domain
-        return within_radius(self.diameter / 2, points)
 
 
 class SphereR(LocalSurface):
@@ -931,23 +887,40 @@ class SphereR(LocalSurface):
         return init_t + t, local_normals, valid
 
 
-class AsphereSag(SagSurface):
-    "Sag surface for the asphere model, parameterized by curvature instead of radius"
-
+class Asphere(SagSurface):
     def __init__(
         self,
         diameter: float,
-        C: Tensor,
-        K: Tensor,
-        A4: Tensor,
+        R: int | float | nn.Parameter,
+        K: int | float | nn.Parameter,
+        A4: int | float | nn.Parameter,
         dtype: torch.dtype = torch.float64,
     ):
-        super().__init__(dtype=dtype)
-        self.diameter = diameter
-        self.C = C
-        self.K = K
-        self.A4 = A4
+        self.C: torch.Tensor
+        if isinstance(R, nn.Parameter):
+            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
+        else:
+            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
+        assert self.C.dim() == 0
 
+        self.K = to_tensor(K, default_dtype=dtype)
+        self.A4 = to_tensor(A4, default_dtype=dtype)
+
+        assert (
+            dtype == self.C.dtype
+        ), f"Inconsistent dtype between surface and parameter C (surface: {dtype}) (parameter: {self.C.dtype})"
+        assert (
+            dtype == self.K.dtype
+        ), f"Inconsistent dtype between surface and parameter K (surface: {dtype}) (parameter: {self.K.dtype})"
+        assert (
+            dtype == self.A4.dtype
+        ), f"Inconsistent dtype between surface and parameter A4 (surface: {dtype}) (parameter: {self.A4.dtype})"
+
+        super().__init__(diameter, dtype=dtype)
+
+    def testname(self) -> str:
+        return f"Asphere-{self.diameter:.2f}-{self.C.item():.2f}-{self.K.item():.2f}-{self.A4.item():.6f}"
+    
     def parameters(self) -> dict[str, nn.Parameter]:
         possible = {
             "C": self.C,
@@ -1035,45 +1008,3 @@ class AsphereSag(SagSurface):
         coeffs_term = 4 * A4 * r2
 
         return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
-
-
-class Asphere(CompositeImplicitSurface):
-    def __init__(
-        self,
-        diameter: float,
-        R: int | float | nn.Parameter,
-        K: int | float | nn.Parameter,
-        A4: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
-    ):
-        self.diameter = diameter
-
-        self.C: torch.Tensor
-        if isinstance(R, nn.Parameter):
-            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
-        else:
-            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
-        assert self.C.dim() == 0
-
-        self.K = to_tensor(K, default_dtype=dtype)
-        self.A4 = to_tensor(A4, default_dtype=dtype)
-
-        assert (
-            dtype == self.C.dtype
-        ), f"Inconsistent dtype between surface and parameter C (surface: {dtype}) (parameter: {self.C.dtype})"
-        assert (
-            dtype == self.K.dtype
-        ), f"Inconsistent dtype between surface and parameter K (surface: {dtype}) (parameter: {self.K.dtype})"
-        assert (
-            dtype == self.A4.dtype
-        ), f"Inconsistent dtype between surface and parameter A4 (surface: {dtype}) (parameter: {self.A4.dtype})"
-
-        inner_surface = AsphereSag(self.diameter, self.C, self.K, self.A4, dtype=dtype)
-        super().__init__(inner_surface, dtype=dtype)
-
-    def testname(self) -> str:
-        return f"Asphere-{self.diameter:.2f}-{self.C.item():.2f}-{self.K.item():.2f}-{self.A4.item():.6f}"
-
-    def mask_function(self, surface: ImplicitSurface, points: Tensor) -> Tensor:
-        # TODO bbox / domain
-        return within_radius(self.inner_surface.diameter / 2, points)

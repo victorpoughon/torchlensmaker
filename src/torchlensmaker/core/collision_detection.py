@@ -230,8 +230,7 @@ class CollisionMethod:
             history_coarse = torch.zeros((B, N, self.num_iterA), dtype=surface.dtype)
             history_fine = torch.zeros((N, self.num_iterB), dtype=surface.dtype)
 
-        # TODO ImplicitSurface.bounding_radius()
-        br = math.sqrt((surface.diameter/2)**2 + surface.extent_x()**2)
+        br = surface.bounding_radius()
 
         with torch.no_grad():
             # Iteration tensor t
