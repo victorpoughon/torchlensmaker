@@ -115,12 +115,12 @@ class Plane(LocalSurface):
         return {}
 
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        maxr = (1.-epsilon)*self.outline.max_radius()
+        maxr = (1.0 - epsilon) * self.outline.max_radius()
         r = torch.linspace(0, maxr, N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        maxr = (1.-epsilon)*self.outline.max_radius()
+        maxr = (1.0 - epsilon) * self.outline.max_radius()
         r = torch.linspace(-maxr, maxr, N, dtype=self.dtype)
         return torch.stack((torch.zeros(N), r), dim=-1)
 
@@ -204,10 +204,10 @@ class ImplicitSurface(LocalSurface):
         than (or equal) to the bounding radius
         """
         raise NotImplementedError
-    
+
     def rmse(self, points: Tensor) -> float:
         N = sum(points.shape[:-1])
-        return torch.sqrt(torch.sum(self.Fd(points)**2) / N).item()
+        return torch.sqrt(torch.sum(self.Fd(points) ** 2) / N).item()
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
@@ -348,16 +348,16 @@ class SagSurface(ImplicitSurface):
     def fallback_surface(self) -> DiameterBandSurfaceSq:
         return DiameterBandSurfaceSq(
             Ax=self.extent_x(),
-            Ar=self.diameter / 2,
+            Ar=torch.as_tensor(self.diameter / 2, dtype=self.dtype),
             dtype=self.dtype,
         )
-    
+
     def bounding_radius(self) -> float:
         """
         Any point on the surface has a distance to the center that is less
         than (or equal) to the bounding radius
         """
-        return math.sqrt((self.diameter/2)**2 + self.extent_x()**2)
+        return math.sqrt((self.diameter / 2) ** 2 + self.extent_x() ** 2)
 
     def g(self, r: Tensor) -> Tensor:
         """
@@ -483,7 +483,7 @@ class Sphere(SagSurface):
                 "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
             )
 
-        self.C: torch.Tensor
+        C_tensor: torch.Tensor | nn.Parameter
         if C is None and R is not None:
             if torch.abs(torch.as_tensor(R)) <= diameter / 2:
                 raise RuntimeError(
@@ -505,7 +505,9 @@ class Sphere(SagSurface):
         assert C_tensor.dtype == dtype
         self.C = C_tensor
 
-        super().__init__(diameter=diameter, collision_method=collision_method, dtype=dtype)
+        super().__init__(
+            diameter=diameter, collision_method=collision_method, dtype=dtype
+        )
 
     def radius(self) -> float:
         "Utility function to get radius from internal curvature"
@@ -559,7 +561,11 @@ class Sphere(SagSurface):
             R = 1 / self.C
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
             return sphere_samples_angular(
-                radius=R, start=0.0, end=(1 - epsilon ) * theta_max, N=N, dtype=self.dtype
+                radius=R,
+                start=0.0,
+                end=(1 - epsilon) * theta_max,
+                N=N,
+                dtype=self.dtype,
             )
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
@@ -579,8 +585,8 @@ class Sphere(SagSurface):
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
             return sphere_samples_angular(
                 radius=R,
-                start=- (1 - epsilon ) * theta_max,
-                end=(1 - epsilon ) * theta_max,
+                start=-(1 - epsilon) * theta_max,
+                end=(1 - epsilon) * theta_max,
                 N=N,
                 dtype=self.dtype,
             )
@@ -920,7 +926,7 @@ class Asphere(SagSurface):
 
     def testname(self) -> str:
         return f"Asphere-{self.diameter:.2f}-{self.C.item():.2f}-{self.K.item():.2f}-{self.A4.item():.6f}"
-    
+
     def parameters(self) -> dict[str, nn.Parameter]:
         possible = {
             "C": self.C,
@@ -945,7 +951,7 @@ class Asphere(SagSurface):
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
-        dr = (1. - epsilon)
+        dr = 1.0 - epsilon
 
         Y = torch.linspace(0, dr * self.diameter / 2, N, dtype=self.dtype)
         r2 = torch.pow(Y, 2)
@@ -958,10 +964,10 @@ class Asphere(SagSurface):
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         K, C, A4 = self.K, self.C, self.A4
         C2 = torch.pow(C, 2)
-        dr = (1. - epsilon)
+        dr = 1.0 - epsilon
 
         Y = torch.linspace(
-            - dr * self.diameter / 2,
+            -dr * self.diameter / 2,
             dr * self.diameter / 2,
             N,
             dtype=self.dtype,
