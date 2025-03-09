@@ -196,12 +196,16 @@ class ImplicitSurface(LocalSurface):
         F = self.F if dim == 3 else self.f
 
         return torch.abs(F(points)) < tol
+    
+    def rmse(self, points: Tensor) -> float:
+        N = sum(points.shape[:-1])
+        return torch.sqrt(torch.sum(self.Fd(points)**2) / N).item()
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
 
-        t = self.collision_method(self, P, V)
+        t = self.collision_method(self, P, V, history=False).t
 
-        local_points = P + t.unsqueeze(1).expand_as(V) * V
+        local_points = P + t.unsqueeze(-1).expand_as(V) * V
         local_normals = self.normals(local_points)
 
         # If there is no intersection, collision detection won't converge
@@ -552,7 +556,7 @@ class SphereSag(SagSurface):
             R = 1 / self.C
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
             return sphere_samples_angular(
-                radius=R, start=0.0, end=theta_max - epsilon, N=N, dtype=self.dtype
+                radius=R, start=0.0, end=(1 - epsilon ) * theta_max, N=N, dtype=self.dtype
             )
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
@@ -572,8 +576,8 @@ class SphereSag(SagSurface):
             theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
             return sphere_samples_angular(
                 radius=R,
-                start=-theta_max + epsilon,
-                end=theta_max - epsilon,
+                start=- (1 - epsilon ) * theta_max,
+                end=(1 - epsilon ) * theta_max,
                 N=N,
                 dtype=self.dtype,
             )

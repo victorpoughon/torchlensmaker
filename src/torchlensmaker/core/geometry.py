@@ -41,8 +41,8 @@ def unit2d_rot(theta, dtype: torch.dtype = torch.float64) -> Tensor:
     v = torch.tensor([1.0, 0.0], dtype=dtype)
     return rot2d(v, torch.deg2rad(torch.as_tensor(theta, dtype=dtype)))
 
-def unit3d_rot(theta1, theta2) -> Tensor:
-    return rotated_unit_vector(torch.deg2rad(torch.as_tensor([[theta1, theta2]])), dim=3).squeeze(0)
+def unit3d_rot(theta1, theta2, dtype: torch.dtype = torch.float64) -> Tensor:
+    return rotated_unit_vector(torch.deg2rad(torch.as_tensor([[theta1, theta2]], dtype=dtype)), dim=3).squeeze(0)
 
 def within_radius(radius: float, points: torch.Tensor) -> torch.Tensor:
     "Mask indicating if points of shape (..., 2|3) are within 'radius' distance from the X axis"

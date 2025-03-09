@@ -33,56 +33,92 @@ def dataset_view(surface, P, V, rays_length=100):
     #tlm.viewer.dump(scene, ndigits=2)
 
 
-def convergence_plot(surface, P, V, dataset_name, methods):
-    "Plot convergence of collision detection for multiple algorithms"
-
-
-    # move rays by a tiny bit, to avoid t=0 local minimum
-    # that happens with constructed datasets
-    # TODO augment dataset with different shifts
-    #P, V = move_rays(P, V, 0.)
+def convergence_plot(surface, P, V, dataset_name):
+    "Plot convergence of iterative collision detection results"
     
-    fig, axes = plt.subplots(len(methods), 2, figsize=(10, 3*len(methods)), layout="tight", squeeze=False)
+    # Two axes for the coarse phase and the fine phase
+    fig, (ax_coarse, ax_fine) = plt.subplots(2, 1, figsize=(10, 6), layout="tight")
 
-    for i, method in enumerate(methods):
-        axQ1, axQ2 = axes[i]
+    # Manually perform local_collide to get history
+    results = surface.collision_method(surface, P, V, history=True)
+    
+    # Tensor shapes
+    B, N, HA = results.history_coarse.shape
+    _, HB = results.history_fine.shape
+    D = P.shape[-1]
 
-        t_solve, t_history = method(surface, P, V, history=True)
+    ## COARSE PHASE PLOT
+
+    # P and V go from (N, D) to (B, N, HA, D)
+    P4 = P.unsqueeze(1).expand((B, N, HA, D))
+    V4 = V.unsqueeze(1).expand((B, N, HA, D))
+    points_history_coarse = P4 + results.history_coarse.unsqueeze(-1).expand((B, N, HA, D)) * V4
+    assert points_history_coarse.shape == (B, N, HA, D)
+
+    # For each ray, plot Q(t) of its best beam
+    residuals_coarse = torch.ones((N, HA), dtype=surface.dtype)
+    for ray_index in range(N):
         
-        # Reshape tensors for broadcasting
-        N, H = P.shape[0], t_history.shape[1]
-        P_expanded = P.unsqueeze(1)  # Shape: (N, 1, 2)
-        V_expanded = V.unsqueeze(1)  # Shape: (N, 1, 2)
-        t_history_expanded = t_history.unsqueeze(2)  # Shape: (N, H, 1)
-    
-        # Compute points_history
-        points_history = P_expanded + t_history_expanded * V_expanded  # Shape: (N, H, 2)
-    
-        assert t_history.shape == (N, H), (N, H)
-        assert points_history.shape == (N, H, 2)
-    
-        # plot Q(t)
-        for ray_index in range(t_history.shape[0]):
-            axQ2.plot(range(t_history.shape[1]), surface.f(points_history[ray_index, :, :]))
-        
-        #axQ1.set_xlabel("iteration")
-        #axQ1.set_ylabel("Q(t)", rotation=0)
-        axQ1.set_title(f"{dataset_name} | {str(method)}")
+        # F of each ray :: (B, HA)
+        F = surface.Fd(points_history_coarse[:, ray_index, :, :])
+        assert F.shape == (B, HA)
 
-        # plot total error
-        axE = axQ2.twinx()
-        axE.set_ylabel("error")
-        axE.set_yscale("log")
-        axE.set_ylim([1e-8, 100])
+        _, bestF_indices = torch.min(torch.abs(F), dim=0)
+        assert bestF_indices.shape == (HA,)
+        Y = torch.gather(F, dim=0, index=bestF_indices.unsqueeze(0))
+        assert Y.shape == (1, HA)
+        ax_coarse.plot(range(HA), Y.squeeze(0), color="grey", label="Q(t)" if ray_index == 0 else None)
 
-        residuals = torch.ones((N, H))
-        for h in range(H):
-            residuals[:, h] = surface.f(points_history[:, h, :])
+        for h in range(HA):
+            residuals_coarse[ray_index, h] = F[bestF_indices[h], h]
+    
+    # Total error computed over each rays best beam
+    ax_coarse_error = ax_coarse.twinx()
+    ax_coarse_error.set_yscale("log")
+    ax_coarse_error.set_ylim([1e-10, 100])
+    error_coarse = torch.sqrt(torch.sum(residuals_coarse**2, dim=0) / N)
+    assert error_coarse.shape == (HA,)
+    ax_coarse_error.plot(error_coarse, label="error (coarse phase)", color="coral")
+    
+    ## FINE PHASE PLOT
 
-        error = torch.sqrt(torch.sum(residuals**2, dim=0) / N)
-        assert error.shape == (H,)
-        axE.plot(error, label="error")
-        axE.legend()
+    # Reshape tensors for broadcasting
+    P_expanded = P.unsqueeze(1)  # Shape: (N, 1, 2)
+    V_expanded = V.unsqueeze(1)  # Shape: (N, 1, 2)
+    t_history_expanded = results.history_fine.unsqueeze(2)  # Shape: (N, H, 1)
+
+    # Compute points_history
+    points_history = P_expanded + t_history_expanded * V_expanded  # Shape: (N, H, 2)
+
+    assert results.history_fine.shape == (N, HB), (N, HB)
+    assert points_history.shape == (N, HB, D)
+
+    # plot Q(t) = F(P+tV) on 
+    for ray_index in range(N):
+        ax_fine.plot(range(HB), surface.Fd(points_history[ray_index, :, :]), color="grey", label="Q(t)" if ray_index == 0 else None)
+    
+    ax_fine.set_xlabel("iteration")
+    ax_fine.set_ylabel("Q(t)")
+    fig.suptitle(f"{dataset_name} | {surface.collision_method.name}")
+
+    # plot total error
+    ax_fine_error = ax_fine.twinx()
+    ax_fine_error.set_ylabel("error")
+    ax_fine_error.set_yscale("log")
+    ax_fine_error.set_ylim([1e-10, 100])
+
+    residuals = torch.ones((N, HB))
+    for h in range(HB):
+        residuals[:, h] = surface.Fd(points_history[:, h, :])
+
+    error = torch.sqrt(torch.sum(residuals**2, dim=0) / N)
+    assert error.shape == (HB,)
+    ax_fine_error.plot(error, label="error (fine phase)", color="coral")
+
+    # Combine labels into a single legend
+    lines, labels = ax_fine.get_legend_handles_labels()
+    lines2, labels2 = ax_fine_error.get_legend_handles_labels()
+    ax_fine.legend(lines + lines2, labels + labels2, loc=0)
 
 
     return fig

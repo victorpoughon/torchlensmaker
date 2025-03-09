@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import torch
 import math
+from functools import partial
 
 from dataclasses import dataclass
 
@@ -34,21 +35,10 @@ def surface_f(
 class CollisionAlgorithm:
     """Base class for collision detection algorithms"""
 
-    def __init__(self, max_iter: int, max_delta: Optional[float]):
-        self.max_iter = max_iter
-        self.max_delta = max_delta
-
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
+        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
     ) -> Tensor:
         raise NotImplementedError
-
-    def clamped_delta(self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor) -> Tensor:
-        delta = self.delta(surface, P, V, t)
-        if self.max_delta is not None:
-            return torch.clamp(delta, min=-self.max_delta, max=self.max_delta)
-        else:
-            return delta
 
 
 class Newton(CollisionAlgorithm):
@@ -59,16 +49,15 @@ class Newton(CollisionAlgorithm):
         self.damping = damping
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
+        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
     ) -> Tensor:
 
         F, F_grad = surface_f(surface, P, V, t)
-        # Denominator will be zero if F_grad and V are orthogonal
         dot = torch.sum(F_grad * V, dim=-1)
-        return self.damping * F / dot
+        return self.damping * torch.where(torch.abs(dot) >= torch.abs(F) / max_delta, F / dot, torch.sign(dot) * torch.sign(F) * max_delta)
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.damping}, {self.max_iter})"
+        return f"{type(self).__name__}({self.damping})"
 
 
 class GD(CollisionAlgorithm):
@@ -79,15 +68,16 @@ class GD(CollisionAlgorithm):
         self.step_size = step_size
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
+        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
     ) -> Tensor:
 
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
-        return 2 * self.step_size * dot * F
+        d = 2 * self.step_size * dot * F
+        return torch.clamp(d, min=-max_delta, max=max_delta)
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.step_size}, {self.max_iter})"
+        return f"{type(self).__name__}({self.step_size})"
 
 
 class LM(CollisionAlgorithm):
@@ -96,16 +86,17 @@ class LM(CollisionAlgorithm):
         self.damping = damping
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor
+        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
     ) -> Tensor:
         "Levenberg-Marquardt"
 
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
-        return torch.div(dot * F, dot**2 + self.damping)
+        d = torch.div(dot * F, dot**2 + self.damping)
+        return torch.clamp(d, min=-max_delta, max=max_delta)
 
     def __str__(self) -> str:
-        return f"{type(self).__name__}({self.damping}, {self.max_iter})"
+        return f"{type(self).__name__}({self.damping})"
 
 
 def init_zeros(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
@@ -158,6 +149,25 @@ def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
 
 
 @dataclass
+class CollisionDetectionResult:
+    # Final t values
+    # Tensor of shape (N,)
+    t: Tensor
+
+    # t values used for initialization
+    # Tensor of shape (B, N)
+    init_t: Tensor
+
+    # History of iteration in the coarse phase
+    # Tensor of shape (B, N, HA)
+    history_coarse: Optional[Tensor]
+
+    # History of iteration in the fine phase
+    # Tensor of shape (N, HB)
+    history_fine: Optional[Tensor]
+
+
+@dataclass
 class CollisionMethod:
     """
     Dfferentiable iterative collision detection for implicit surfaces.
@@ -180,13 +190,14 @@ class CollisionMethod:
     # initialization method
     init: Callable[[ImplicitSurface, Tensor, Tensor], Tensor]
 
-    # Number of solutions per ray in the coarse phase
-    B: int
-
     # Algorithms
     algoA: CollisionAlgorithm
     algoB: CollisionAlgorithm
     algoC: CollisionAlgorithm
+    
+    close_filter_threshold: float
+    num_iterA: int
+    num_iterB: int
 
     name: str
 
@@ -196,7 +207,7 @@ class CollisionMethod:
         P: Tensor,
         V: Tensor,
         history: bool = False,
-    ) -> Tensor | tuple[Tensor, Tensor]:
+    ) -> CollisionDetectionResult:
         
         # Sanity checks
         assert P.dim() == V.dim() == 2
@@ -205,51 +216,78 @@ class CollisionMethod:
         assert isinstance(P, Tensor) and P.dim() == 2
         assert isinstance(V, Tensor) and V.dim() == 2
 
+        # Initialize solutions t
+        init_t = self.init(surface, P, V)
+        assert init_t.shape[1] == P.shape[0]
+
         # Tensor dimensions
         N = P.shape[0] # Number of rays
         D = P.shape[1] # Rays dimension (2 or 3)
-        H = self.algoB.num_iter if history else 1 # History (1 or num_iter of algo B)
-        B = self.num_beams # Number of solutions per ray for algo A)
+        B = init_t.shape[0] # Number of solutions per ray for algo A
 
-        # Returns init phase
-        # init_t :: (N, B)
-
-        # Returns step A
-        # t_history :: (N, B, HA)
-
-        # Returns step B
-        # t_history :: (N, HB)
-        
-        # Returns step C
-        # t_history :: (N,)
-
-        # Initialize solutions t
-        t = self.init(surface, P, V)
-
+        # History tensors, if requested
         if history:
-            t_history = torch.empty((P.shape[0], self.step0.max_iter + 2))
-            t_history[:, 0] = t
+            history_coarse = torch.zeros((B, N, self.num_iterA), dtype=surface.dtype)
+            history_fine = torch.zeros((N, self.num_iterB), dtype=surface.dtype)
+
+        # TODO ImplicitSurface.bounding_radius()
+        br = math.sqrt((surface.diameter/2)**2 + surface.extent_x()**2)
 
         with torch.no_grad():
-            for i in range(self.step0.max_iter):
-                delta = self.step0.clamped_delta(surface, P, V, t)
-                t = t - delta
+            # Iteration tensor t
+            t = init_t
 
+            # Coarse phase (multiple beams)
+            for ia in range(self.num_iterA):
+                t = t - self.algoA.delta(surface, P, V, t, max_delta= br / B)
                 if history:
-                    t_history[:, i + 1] = t
+                    history_coarse[:, :, ia] = t.clone()
 
-        # 4. Differentiable phase
-        # One iteration for backwards pass
-        t = t - self.algoC.clamped_delta(surface, P, V, t)
+            # Filter step:
+            # Keep the best beam, deterministically even when there are multiple collisions
+            # - For each ray, identify F values below a threshold
+            # - Keep the one that's closest to t=0
 
-        if history:
-            t_history[:, -1] = t
-            return t, t_history
-        else:
-            return t
+            # Threshold mask
+            F, _ = surface_f(surface, P, V, t)
+            assert F.shape == (B, N)
+            close_mask = torch.abs(F) < self.close_filter_threshold
+            nbclose = torch.sum(close_mask, dim=0, keepdim=True).expand((B, N))
+
+            # Score of beams
+            score = torch.where(nbclose == 0, F, torch.where(close_mask, torch.abs(t), torch.tensor(float("inf"), dtype=F.dtype)))
+            _, indices = torch.min(score, dim=0)
+
+            # Keep best beam
+            assert t.shape == (B, N)
+            assert indices.shape == (N,)
+            t = torch.gather(t, 0, indices.unsqueeze(0))
+            assert t.shape == (1, N)
+
+            # Fine phase (single beam)
+            for ib in range(self.num_iterB):
+                t = t - self.algoB.delta(surface, P, V, t, max_delta=br / (B*self.num_iterA))
+                if history:
+                    history_fine[:, ib] = t
+
+        # Differentiable phase: one iteration for backwards pass
+        t = t - self.algoC.delta(surface, P, V, t, max_delta=br)
+
+        return CollisionDetectionResult(
+            t[0, :],
+            init_t,
+            history_coarse if history else None,
+            history_fine if history else None
+        )
 
 
 default_collision_method = CollisionMethod(
-    init=init_best_axis,
-    step0=Newton(damping=0.8, max_iter=15, max_delta=10),
+    init=partial(init_brd, B=12),
+    algoA=Newton(damping=0.8),
+    algoB=Newton(damping=0.8),
+    algoC=Newton(damping=0.8),
+    num_iterA = 20,
+    num_iterB=10,
+    close_filter_threshold=1e-5,
+    name="Default collision method"
 )
