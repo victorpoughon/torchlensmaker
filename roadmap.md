@@ -2,33 +2,8 @@
 
 ## v0.1
 
-* More and better examples
-    * Rainbow
-    * Ernostar 1928
-    * promote some existing test_notebooks
-    * asphere example
 
 
-* copyright / license headers
-* pip install torchlensmaker
-
-* tlmviewer: version number in build artifact
-* tlmviewer: available on cdnjs and npm
-* tlmviewer works after just 'pip install torchlensmaker'
-
-* funding doc / github sponsor / ko-fi
-
-* project news channels (bluesky? mastodon?)
-
-* format the roadmap
-
-* set gui options from python
-
-* different ray category for non colliding with surface and total internal
-
-* Sphere class and surfaces testing
-
-* ruff and mypy strict 100%
 
 ## v0.2
 
@@ -37,12 +12,15 @@
 * Surfaces:
     * Linear Spline
     * Bezier Spline
+    * Implicit SphereR version with sphere SDF, radius param, and iterative solver
 
 
 * Analysis:
     * Ray distribution visu
 
 * Cemented lenses: doublet, etc.
+
+* different ray category for non colliding with surface and total internal -> better blocked visualization
 
 * Examples:
     * Non rotationally symmetric example
