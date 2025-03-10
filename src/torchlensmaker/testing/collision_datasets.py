@@ -1,17 +1,20 @@
 import torch
 import torch.nn as nn
 
+from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector
 from torchlensmaker.core.surfaces import ImplicitSurface, LocalSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
 import math
 
-Tensor = torch.Tensor
-
-from dataclasses import dataclass, replace
 from typing import Callable, TypeAlias
+from dataclasses import dataclass, replace
+
+Tensor: TypeAlias = torch.Tensor
 
 
-def make_samples(surface: LocalSurface, dim: int, N: int, epsilon=0.):
+def make_samples(
+    surface: LocalSurface, dim: int, N: int, epsilon: float = 0.0
+) -> tuple[Tensor, Tensor]:
     "Generate samples and normals for a surface"
 
     if dim == 2:
@@ -115,7 +118,33 @@ class FixedRays(RayGenerator):
         return P, V
 
 
-def make_offset_rays(P: torch.Tensor, V: torch.Tensor, tspace: torch.Tensor):
+@dataclass
+class OrbitalRays(RayGenerator):
+    "Ray generator for rays tangent to a circle centered at the origin"
+
+    dim: int
+    N: int
+    radius: float
+    offset: float
+    epsilon: float = default_epsilon
+
+    def __call__(self, surface: LocalSurface) -> CollisionDataset:
+        if self.dim == 2:
+            theta = torch.linspace(0., 2*torch.pi, self.N, dtype=surface.dtype)
+
+            points = torch.stack((
+                self.radius * surface.bounding_radius() * torch.cos(theta),
+                self.radius * surface.bounding_radius() * torch.sin(theta)
+            ), dim=-1)
+
+            V = rotated_unit_vector(torch.tensor(torch.pi / 2, dtype=surface.dtype) + theta, self.dim)
+
+            return points, V
+        else:
+            raise NotImplementedError # TODO
+
+
+def make_offset_rays(P: torch.Tensor, V: torch.Tensor, tspace: torch.Tensor) -> tuple[Tensor, Tensor]:
     "Duplicate rays by moving the origin P along V by t units"
 
     assert tspace.dim() == 1

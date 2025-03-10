@@ -1,23 +1,5 @@
-# TODO port tests from notebook
-
-# construction of test cases
-
-# expected collide all surfaces:
-# - normal
-# - fixed direction
-# - random direction
-
-# expected no collide for all surfaces:
-# - outside of bbox
-
-# expected collide for some surfaces
-# - tangent with fixed offset
-
-# try multiple offset as part of check_collide?
-
-# print test case before calling check_collide
-
 import pytest
+from dataclasses import dataclass
 
 import torchlensmaker as tlm
 import torch
@@ -26,6 +8,7 @@ from torchlensmaker.testing.collision_datasets import (
     NormalRays,
     FixedRays,
     RayGenerator,
+    OrbitalRays,
 )
 
 from torchlensmaker.core.geometry import unit2d_rot, unit3d_rot
@@ -38,27 +21,36 @@ from typing import Any
 from .conftest import make_common_surfaces
 
 # TODO
-# Rays and returned normals should be parallel, check dot product is close to one
-    # assert torch.allclose(
-    #     torch.sum(V * local_normals, dim=-1),
-    #     torch.ones(V.shape[:-1], dtype=V.dtype),
-    # )
+# Rays from normal generator and returned normals should be parallel, check dot product is close to one
+# assert torch.allclose(
+#     torch.sum(V * local_normals, dim=-1),
+#     torch.ones(V.shape[:-1], dtype=V.dtype),
+# )
 
-def expected_collide_all_surfaces() -> list[RayGenerator]:
-    "Make a list of generators that are expected to collide for all surfaces"
 
-    generators: list[RayGenerator] = []
+@dataclass
+class CollisionTestCase:
+    generator: list[RayGenerator]
+    expected_collide: bool
+
+
+def make_test_cases_all_surfaces() -> list[CollisionTestCase]:
+    "List of test cases that are common to all surfaces"
+
+    generators_collide: list[RayGenerator] = []
+    generators_no_collide: list[RayGenerator] = []
     N = 12
     epsilon = 0.05
 
     for dim in (2, 3):
-    
-        generators.extend([
+        # fmt: off
+        # GENERATORS EXPECTED TO COLLIDE
+        generators_collide.extend([
             NormalRays(dim=dim, N=N, offset=0.0, epsilon=epsilon),
         ])
 
         if dim == 2:
-            generators.extend([
+            generators_collide.extend([
                 FixedRays(direction=torch.tensor([0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=torch.tensor([1.0, 0.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(100), dim=dim, N=N, offset=0.0, epsilon=epsilon),
@@ -76,23 +68,42 @@ def expected_collide_all_surfaces() -> list[RayGenerator]:
             ])
         
         if dim == 3:
-            generators.extend([])
+            # TODO collide 3D
+            generators_collide.extend([])
         
-    
-    return generators
+        # GENERATORS EXPECTED TO NOT COLLIDE
+        if dim == 2:
+            generators_no_collide.extend([
+                    OrbitalRays(radius=1.1, dim=dim, N=N, offset=0., epsilon=0.)
+                ])
+        
+        if dim == 3:
+            # TODO no collide 3D
+            generators_no_collide.extend([])
+
+        # fmt: on
+
+    return [CollisionTestCase(gen, True) for gen in generators_collide] + [
+        CollisionTestCase(gen, False) for gen in generators_no_collide
+    ]
 
 
-@pytest.fixture(params=expected_collide_all_surfaces())
-def generator_expected_collide(request: pytest.FixtureRequest) -> Any:
+@pytest.fixture(params=make_test_cases_all_surfaces())
+def test_cases_all_surfaces(request: pytest.FixtureRequest) -> Any:
     return request.param
 
-@pytest.fixture(params=make_common_surfaces(torch.float32) + make_common_surfaces(torch.float64))
+
+@pytest.fixture(
+    params=make_common_surfaces(torch.float32) + make_common_surfaces(torch.float64)
+)
 def surface(request: pytest.FixtureRequest) -> Any:
     return request.param
 
 
-def test_expected_collide(surface: tlm.LocalSurface, generator_expected_collide: RayGenerator) -> None:
-    "Test with rays that are expected to collide with all surfaces"
+def test_expected_collide(
+    surface: tlm.LocalSurface, test_cases_all_surfaces: RayGenerator
+) -> None:
+    "Test cases common to all surfaces"
 
     offset_space = torch.cat(
         (
@@ -104,20 +115,19 @@ def test_expected_collide(surface: tlm.LocalSurface, generator_expected_collide:
         dim=0,
     )
 
-    gen = generator_expected_collide
-    genP, genV = gen(surface)
-    
+    genP, genV = test_cases_all_surfaces.generator(surface)
+
     # Add copies of rays but with origin points moved along the direction
     # this is to check the collision detection dependence on rays origins
     P, V = make_offset_rays(genP, genV, offset_space)
 
     print("Checking collision")
-    print("Ray generator:", gen)
+    print("Ray generator:", test_cases_all_surfaces.generator)
     print("Surface = ", surface.testname())
-    print("Expected collide = yes")
+    print("expected collide:", test_cases_all_surfaces.expected_collide)
     print("dim", P.shape[1])
     print("dtype", surface.dtype)
     print()
 
     # Call local_collide and check
-    check_local_collide(surface, P, V, expected_collide=True)
+    check_local_collide(surface, P, V, expected_collide=test_cases_all_surfaces.expected_collide)

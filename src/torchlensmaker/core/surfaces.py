@@ -91,6 +91,13 @@ class LocalSurface:
         "Generate 2D samples on the full domain"
         raise NotImplementedError
 
+    def bounding_radius(self) -> float:
+        """
+        Any point on the surface has a distance to the center that is less
+        than (or equal) to the bounding radius
+        """
+        raise NotImplementedError
+
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         """
         Find collision points and surface normals of ray-surface intersection
@@ -160,6 +167,9 @@ class Plane(LocalSurface):
     def extent_x(self) -> Tensor:
         return torch.as_tensor(0.0, dtype=self.dtype)
 
+    def bounding_radius(self) -> float:
+        return self.outline.max_radius()
+
     def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
         if tol is None:
             tol = {torch.float32: 1e-4, torch.float64: 1e-6}[self.dtype]
@@ -212,13 +222,6 @@ class ImplicitSurface(LocalSurface):
         F = self.F if dim == 3 else self.f
 
         return torch.abs(F(points)) < tol
-
-    def bounding_radius(self) -> float:
-        """
-        Any point on the surface has a distance to the center that is less
-        than (or equal) to the bounding radius
-        """
-        raise NotImplementedError
 
     def rmse(self, points: Tensor) -> float:
         N = sum(points.shape[:-1])
@@ -728,6 +731,9 @@ class SphereR(LocalSurface):
         r = self.diameter / 2
         K = 1 / self.R
         return torch.div(K * r**2, 1 + torch.sqrt(1 - (r * K) ** 2))
+
+    def bounding_radius(self) -> float:
+        return math.sqrt((self.diameter / 2) ** 2 + self.extent_x() ** 2)
 
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         C = 1 / self.R

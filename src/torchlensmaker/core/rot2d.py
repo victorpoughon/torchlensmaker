@@ -1,6 +1,5 @@
 import torch
 
-
 def rotation_matrix_2D(theta: torch.Tensor) -> torch.Tensor:
     theta = torch.atleast_1d(theta)  # type: ignore
     return torch.vstack(
@@ -51,5 +50,5 @@ def rot2d(v: torch.Tensor, theta: torch.Tensor | float) -> torch.Tensor:
     return v_rotated
 
 
-def perpendicular2d(v):
+def perpendicular2d(v: torch.Tensor) -> torch.Tensor:
     return torch.stack((v[:, 1], -v[:, 0]), dim=-1)
