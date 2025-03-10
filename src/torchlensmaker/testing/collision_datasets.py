@@ -27,8 +27,6 @@ def make_samples(
 
 CollisionDataset: TypeAlias = tuple[Tensor, Tensor]
 
-default_epsilon = 0.01
-
 class RayGenerator:
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         raise NotImplementedError
@@ -40,7 +38,7 @@ class NormalRays(RayGenerator):
     dim: int
     N: int
     offset: float
-    epsilon: float = default_epsilon
+    epsilon: float
 
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         samples, normals = make_samples(surface, self.dim, self.N, self.epsilon)
@@ -58,7 +56,7 @@ class TangentRays(RayGenerator):
     dim: int
     N: int
     distance: float
-    epsilon: float = default_epsilon
+    epsilon: float
 
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         assert self.dim == 2
@@ -79,7 +77,7 @@ class RandomRays:
     dim: int
     N: int
     offset: float
-    epsilon: float = default_epsilon
+    epsilon: float
     
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
@@ -101,7 +99,7 @@ class FixedRays(RayGenerator):
     N: int
     direction: Tensor
     offset: float
-    epsilon: float = default_epsilon
+    epsilon: float
 
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         # normalize direction
@@ -126,7 +124,7 @@ class OrbitalRays(RayGenerator):
     N: int
     radius: float
     offset: float
-    epsilon: float = default_epsilon
+    epsilon: float
 
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         if self.dim == 2:

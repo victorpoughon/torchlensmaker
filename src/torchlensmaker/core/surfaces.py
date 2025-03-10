@@ -557,7 +557,7 @@ class Sphere(SagSurface):
             return sphere_samples_linear(
                 curvature=self.C,
                 start=0.0,
-                end=self.diameter / 2 - epsilon,
+                end=(1 - epsilon) * self.diameter / 2,
                 N=N,
                 dtype=self.dtype,
             )
@@ -579,8 +579,8 @@ class Sphere(SagSurface):
         if self.C * self.diameter < 0.1:
             return sphere_samples_linear(
                 curvature=self.C,
-                start=-self.diameter / 2 + epsilon,
-                end=self.diameter / 2 - epsilon,
+                start=-(1-epsilon)*self.diameter / 2,
+                end=(1-epsilon)*self.diameter / 2,
                 N=N,
                 dtype=self.dtype,
             )
@@ -636,14 +636,14 @@ class Parabola(SagSurface):
         return 2 * self.A * y, 2 * self.A * z
 
     def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, self.diameter / 2 - epsilon, N, dtype=self.dtype)
+        r = torch.linspace(0, (1-epsilon)*self.diameter / 2, N, dtype=self.dtype)
         x = self.A * r**2
         return torch.stack((x, r), dim=-1)
 
     def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
         r = torch.linspace(
-            -self.diameter / 2 + epsilon,
-            self.diameter / 2 - epsilon,
+            -(1-epsilon)*self.diameter / 2,
+            (1-epsilon)*self.diameter / 2,
             N,
             dtype=self.dtype,
         )
