@@ -59,17 +59,17 @@ def expected_collide_all_surfaces() -> list[RayGenerator]:
 
         if dim == 2:
             generators.extend([
-                #FixedRays(direction=torch.tensor([0.0, 1.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                #FixedRays(direction=torch.tensor([1.0, 0.0], dtype=dtype), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=torch.tensor([0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=torch.tensor([1.0, 0.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(100), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                #FixedRays(direction=unit2d_rot(90), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit2d_rot(90), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(80), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(70), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                #FixedRays(direction=unit2d_rot(60), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit2d_rot(60), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(50), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                #FixedRays(direction=unit2d_rot(40), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit2d_rot(40), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(30), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                #FixedRays(direction=unit2d_rot(20), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit2d_rot(20), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(10), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(-10), dim=dim, N=N, offset=0.0, epsilon=epsilon),

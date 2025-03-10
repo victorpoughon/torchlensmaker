@@ -54,7 +54,7 @@ class Newton(CollisionAlgorithm):
 
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
-        return self.damping * torch.where(torch.abs(dot) >= torch.abs(F) / max_delta, F / dot, torch.sign(dot) * torch.sign(F) * max_delta)
+        return self.damping * torch.where(torch.abs(dot) > torch.abs(F) / max_delta, F / dot, torch.sign(dot) * torch.sign(F) * max_delta)
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping})"
