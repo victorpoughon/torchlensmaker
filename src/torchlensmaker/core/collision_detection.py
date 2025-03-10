@@ -99,27 +99,14 @@ class LM(CollisionAlgorithm):
         return f"{type(self).__name__}({self.damping})"
 
 
-def init_zeros(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
-    "Initialize t for iterations with zeros"
-
-    N = P.shape[0]
-    return torch.zeros((N,), dtype=surface.dtype)
-
-
-def init_best_axis(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
+def init_closest_origin(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     """
-    Initialize t for iterations with the rays intersections with either X or Y
-    axis, depending on which is most perpendicular to the ray.
+    Find t such that the point P+tV is:
+    * in 2D, the collision of the ray with the X or Y axis, depending on 
     """
+    
+    return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
-    # Initial guess is the intersection of rays with the X=0 or Y=O plane,
-    # depending on if rays are mostly vertical or mostly horizontal
-    # TODO make this backwards safe with an inner where()
-    init_x = -P[:, 0] / V[:, 0]
-    init_y = -P[:, 1] / V[:, 1]
-    init_t = torch.where(torch.abs(V[:, 0]) > torch.abs(V[:, 1]), init_x, init_y)
-
-    return init_t
 
 
 def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:

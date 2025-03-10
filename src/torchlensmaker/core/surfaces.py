@@ -19,7 +19,7 @@ from torchlensmaker.core.collision_detection import (
     default_collision_method,
 )
 from torchlensmaker.core.geometry import unit_vector, within_radius
-from torchlensmaker.core.collision_detection import init_best_axis
+from torchlensmaker.core.collision_detection import init_closest_origin
 
 from torch.linalg import vector_norm
 
@@ -134,7 +134,7 @@ class Plane(LocalSurface):
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         N, dim = P.shape
 
-        # If rays are exactly vertical (V_x == 0), need to avoid div by zero
+        # If rays are exactly meridional (V_x == 0), need to avoid div by zero
         # There can be two cases:
         # P[:, 0] == 0 => infinite solutions => return t = collision with X axis
         # P[:, 0] != 0 => no solution => t = 0
@@ -145,12 +145,21 @@ class Plane(LocalSurface):
         )
         mask_one_sol = torch.logical_not(mask_vertical_rays)
 
+        # Solution for the edge case where Px == 0 and Vx == 0
+        if dim == 2:
+            # Intersection with X axis
+            axis_collision = -P[:, 1] / V[:, 1]
+        else:
+            # Closest point to the origin in the meridional plane
+            Pyz, Vyz = P[:, 0:], V[:, 0:]
+            axis_collision = - torch.sum(Pyz * Vyz, dim=-1) / torch.sum(Vyz * Vyz, dim=-1)
+
         t = torch.where(
             mask_one_sol,
             -P[:, 0] / V[:, 0],  # Nominal case, rays aren't vertical
             torch.where(
                 mask_inf_sol,
-                - P[:, 1] / V[:, 1],  # Rays are vertical and exactly on Y axis (infinity solutions)
+                axis_collision,  # Rays are vertical and exactly on meridional axis (infinity solutions)
                 torch.zeros(N, dtype=self.dtype),  # Rays are vertical and offset (no solutions)
             ),
         )
@@ -831,7 +840,7 @@ class SphereR(LocalSurface):
 
         # For numerical stability, it's best if P is close to the origin
         # Bring rays origins as close as possible before solving
-        init_t = init_best_axis(self, P, V)
+        init_t = init_closest_origin(self, P, V)
         P = P + init_t.unsqueeze(-1).expand_as(V) * V
 
         # Sphere-ray collision is a second order polynomial

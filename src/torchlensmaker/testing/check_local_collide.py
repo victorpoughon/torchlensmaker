@@ -1,4 +1,5 @@
 import torch
+import torch.nn as nn
 
 import torchlensmaker as tlm
 
@@ -7,6 +8,8 @@ def check_local_collide(
     surface: tlm.LocalSurface, P: torch.Tensor, V: torch.Tensor, expected_collide: bool
 ) -> None:
     "Call surface.local_collide() and performs tests on the output"
+
+    dim = P.shape[-1]
 
     # Check that rays are the correct dtype
     assert P.dtype == surface.dtype
@@ -31,10 +34,26 @@ def check_local_collide(
     assert local_normals.dtype == surface.dtype
     assert valid.dtype == torch.bool
     assert local_points.dtype == surface.dtype
+    
+    if isinstance(surface, tlm.SagSurface):
+        if dim == 3:
+            gx, gy = surface.G_grad(local_points[:, 1], local_points[:, 2])
+            assert torch.all(torch.isfinite(gx)), "nan in G_grad x"
+            assert torch.all(torch.isfinite(gy)), "nan in G_grad y"
+        elif dim == 2:
+            g_grad = surface.g_grad(local_points[:, 1])
+            assert torch.all(torch.isfinite(g_grad)), "nan in g_grad"
+
+        fallback = surface.fallback_surface()
+        fallback_grad = fallback.Fd_grad(local_points)
+        if not torch.all(torch.isfinite(fallback_grad)):
+            print(fallback_grad)
+            print(local_points)
+        assert torch.all(torch.isfinite(fallback_grad)), "nan in fallback Fd_grad"
 
     # Check isfinite
     assert torch.all(torch.isfinite(t)), surface
-    assert torch.all(torch.isfinite(local_normals))
+    assert torch.all(torch.isfinite(local_normals)), local_normals
     assert torch.all(torch.isfinite(valid))
     assert torch.all(torch.isfinite(local_points))
 
@@ -46,13 +65,13 @@ def check_local_collide(
 
     if isinstance(surface, tlm.ImplicitSurface):
         N = sum(P.shape[:-1])
-        error = torch.sqrt(torch.sum(surface.Fd(local_points)**2) / N).item()
         rmse = surface.rmse(local_points)
     else:
-        error = None
         rmse = None
 
+    
+
     # Check expected collision against expected_collide
-    assert torch.all(surface.contains(local_points) == expected_collide), (str(surface), error, rmse)
+    assert torch.all(surface.contains(local_points) == expected_collide), (str(surface), rmse)
     assert torch.all(valid == expected_collide), surface
 

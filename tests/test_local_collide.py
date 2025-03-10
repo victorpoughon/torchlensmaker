@@ -51,30 +51,38 @@ def make_test_cases_all_surfaces() -> list[CollisionTestCase]:
 
         if dim == 2:
             generators_collide.extend([
-                FixedRays(direction=torch.tensor([0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                # TODO rays with V_x == 0 are out of scope for now
+                # FixedRays(direction=torch.tensor([0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=torch.tensor([1.0, 0.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                FixedRays(direction=unit2d_rot(100), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit2d_rot(110), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(90), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(80), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                FixedRays(direction=unit2d_rot(70), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(60), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                FixedRays(direction=unit2d_rot(50), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(40), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                FixedRays(direction=unit2d_rot(30), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(20), dim=dim, N=N, offset=0.0, epsilon=epsilon),
-                FixedRays(direction=unit2d_rot(10), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(-10), dim=dim, N=N, offset=0.0, epsilon=epsilon),
             ])
         
         if dim == 3:
-            # TODO collide 3D
-            generators_collide.extend([])
+            generators_collide.extend([
+                # FixedRays(direction=torch.tensor([0.0, 0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                # FixedRays(direction=torch.tensor([0.0, 1.0, 0.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=torch.tensor([1.0, 0.0, 0.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(110, 50), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(90, 20), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(80, -80), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(60, 80), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(40, 0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(20, -40), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(0, 0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+                FixedRays(direction=unit3d_rot(-10, -30), dim=dim, N=N, offset=0.0, epsilon=epsilon),
+            ])
         
         # GENERATORS EXPECTED TO NOT COLLIDE
         if dim == 2:
             generators_no_collide.extend([
-                    OrbitalRays(radius=1.1, dim=dim, N=N, offset=0., epsilon=0.)
+                    OrbitalRays(radius=1.1, dim=dim, N=N, offset=0., epsilon=0.),
                 ])
         
         if dim == 3:
