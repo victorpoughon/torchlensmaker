@@ -33,7 +33,7 @@ def check_local_collide(
     assert local_points.dtype == surface.dtype
 
     # Check isfinite
-    assert torch.all(torch.isfinite(t))
+    assert torch.all(torch.isfinite(t)), surface
     assert torch.all(torch.isfinite(local_normals))
     assert torch.all(torch.isfinite(valid))
     assert torch.all(torch.isfinite(local_points))
@@ -46,11 +46,13 @@ def check_local_collide(
 
     if isinstance(surface, tlm.ImplicitSurface):
         N = sum(P.shape[:-1])
-        error = torch.sqrt(torch.sum(surface.Fd(local_points)**2) / N)
+        error = torch.sqrt(torch.sum(surface.Fd(local_points)**2) / N).item()
+        rmse = surface.rmse(local_points)
     else:
         error = None
+        rmse = None
 
-    # Normal rays are expected to collide for all surfaces
-    assert torch.all(surface.contains(local_points) == expected_collide), (str(surface), error.item(), surface.rmse(local_points))
+    # Check expected collision against expected_collide
+    assert torch.all(surface.contains(local_points) == expected_collide), (str(surface), error, rmse)
     assert torch.all(valid == expected_collide), surface
 

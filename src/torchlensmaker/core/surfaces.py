@@ -125,17 +125,32 @@ class Plane(LocalSurface):
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-        dim = P.shape[1]
-        t = -P[:, 0] / V[:, 0]
-        local_points = P + t.unsqueeze(1).expand_as(V) * V
-        normal = (
-            torch.tensor([-1.0, 0.0], dtype=self.dtype)
-            if dim == 2
-            else torch.tensor([-1.0, 0.0, 0.0], dtype=self.dtype)
+        N, dim = P.shape
+
+        # If rays are exactly vertical (V_x == 0), need to avoid div by zero
+        # There can be two cases:
+        # P[:, 0] == 0 => infinite solutions => return t = collision with X axis
+        # P[:, 0] != 0 => no solution => t = 0
+
+        mask_vertical_rays = V[:, 0] == torch.zeros(1, dtype=V.dtype)
+        mask_inf_sol = torch.logical_and(
+            mask_vertical_rays, P[:, 0] == torch.torch.zeros(1, dtype=P.dtype)
         )
-        local_normals = torch.tile(normal, (P.shape[0], 1))
+        mask_one_sol = torch.logical_not(mask_vertical_rays)
+
+        t = torch.where(
+            mask_one_sol,
+            -P[:, 0] / V[:, 0],  # Nominal case, rays aren't vertical
+            torch.where(
+                mask_inf_sol,
+                - P[:, 1] / V[:, 1],  # Rays are vertical and exactly on Y axis (infinity solutions)
+                torch.zeros(N, dtype=self.dtype),  # Rays are vertical and offset (no solutions)
+            ),
+        )
+
+        local_points = P + t.unsqueeze(1).expand_as(V) * V
         valid = self.outline.contains(local_points)
-        return t, local_normals, valid
+        return t, self.normals(local_points), valid
 
     def normals(self, points: Tensor) -> Tensor:
         batch, dim = points.shape[:-1], points.shape[-1]
