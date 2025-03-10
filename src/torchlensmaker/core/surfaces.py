@@ -132,36 +132,13 @@ class Plane(LocalSurface):
         return torch.stack((torch.zeros(N), r), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-        N, dim = P.shape
-
-        # If rays are exactly meridional (V_x == 0), need to avoid div by zero
-        # There can be two cases:
-        # P[:, 0] == 0 => infinite solutions => return t = collision with X axis
-        # P[:, 0] != 0 => no solution => t = 0
-
-        mask_vertical_rays = V[:, 0] == torch.zeros(1, dtype=V.dtype)
-        mask_inf_sol = torch.logical_and(
-            mask_vertical_rays, P[:, 0] == torch.torch.zeros(1, dtype=P.dtype)
-        )
-        mask_one_sol = torch.logical_not(mask_vertical_rays)
-
-        # Solution for the edge case where Px == 0 and Vx == 0
-        if dim == 2:
-            # Intersection with X axis
-            axis_collision = -P[:, 1] / V[:, 1]
-        else:
-            # Closest point to the origin in the meridional plane
-            Pyz, Vyz = P[:, 0:], V[:, 0:]
-            axis_collision = - torch.sum(Pyz * Vyz, dim=-1) / torch.sum(Vyz * Vyz, dim=-1)
+        # Nominal case: rays are not perpendicular to the X axis
+        mask_nominal = V[:, 0] != torch.zeros(1, dtype=V.dtype)
 
         t = torch.where(
-            mask_one_sol,
+            mask_nominal,
             -P[:, 0] / V[:, 0],  # Nominal case, rays aren't vertical
-            torch.where(
-                mask_inf_sol,
-                axis_collision,  # Rays are vertical and exactly on meridional axis (infinity solutions)
-                torch.zeros(N, dtype=self.dtype),  # Rays are vertical and offset (no solutions)
-            ),
+            init_closest_origin(self, P, V)  # Default for vertical rays
         )
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
