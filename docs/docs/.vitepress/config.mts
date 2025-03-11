@@ -7,26 +7,39 @@ export default defineConfig({
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
-      { text: 'Home', link: '/' },
-      { text: 'Examples', link: '/markdown-examples' },
+      { text: 'Documentation', link: '/' },
       { text: 'About', link: '/about' }
     ],
 
+    logo: '/logos/tlmlogo_black150.png',
+
     sidebar: [
+      {
+        text: 'Getting Started',
+        items: [
+          { text: 'Welcome', link: '/'},
+          { text: 'Design Overview', link: '/design-overview' },
+          { text: 'Installation', link: '/installation' },
+        ]
+      },
       {
         text: 'Examples',
         items: [
-          { text: 'Markdown Examples', link: '/markdown-examples' },
-          { text: 'Runtime API Examples', link: '/api-examples' },
-          { text: 'Design Overview', link: '/design' }
+          { text: 'Pink Floyd', link: '/examples/pink_floyd'},
         ]
       }
     ],
 
     socialLinks: [
       { icon: 'github', link: 'https://github.com/victorpoughon/torchlensmaker' }
-    ]
+    ],
+
+    search: {
+      provider: 'local'
+    }
   },
+
+  cleanUrls: true,
 
   markdown: {
     math: true,

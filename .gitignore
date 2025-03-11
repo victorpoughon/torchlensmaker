@@ -10,4 +10,4 @@ html/
 # Docs
 node_modules/
 
-.vitepress/cache
+**/.vitepress/cache/

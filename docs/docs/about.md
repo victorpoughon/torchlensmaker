@@ -32,13 +32,7 @@ Yeah sure, but in optics it's totally different! I have not yet found an optics
 textbook that satisfyingly defines what an image is. The best I got was in a Khan
 Academy video where it was said "an image is where rays of light converge".
 Still, I think it's more subtle than that (sometimes they don't converge, and
-still an image is formed)! My best understanding of it actually came when I
-implemented the `ImagePlane` class.
-
-!!! idea
-
-    Did you ever ask "What is money?" to an economist? It's really fun isn't it?
-    Next time, try asking "What is an image?" to an optics expert.
+still an image is formed)!
 
 ### Recurse Center
 

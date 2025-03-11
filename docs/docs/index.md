@@ -3,15 +3,17 @@
 layout: doc
 ---
 
-<div id="logo-title">
-<h1>Torch Lens Maker</h1>
-</div>
+<LogoTitle/>
+
+<Badges/>
 
 Welcome to **Torch Lens Maker**, an open-source Python library for geometric
-optics based on [PyTorch](https://pytorch.org/). Currently a *very experimental*
+optics based on [PyTorch](https://pytorch.org/). Currently a very experimental
 project, the ultimate goal is to be able to design complex real-world optical
 systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
 numerical optimization.
+
+<TLMViewer/>
 
 ```python
 import torchlensmaker as tlm
@@ -29,6 +31,8 @@ optics = tlm.Sequential(
 
 tlm.show2d(optics, title="Landscape Lens")
 ```
+
+<div class="tlmviewer" data-url="./examples/landscape.json"></div>
 
 The core of the project is *differentiable geometric optics*: 3D collision
 detection and the laws of optics implemented in [PyTorch](https://pytorch.org/).
