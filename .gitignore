@@ -7,4 +7,7 @@ venv/
 html/
 .obsidian
 
-site/
+# Docs
+node_modules/
+
+.vitepress/cache
