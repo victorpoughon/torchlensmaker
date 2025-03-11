@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import torchlensmaker as tlm
@@ -6,6 +7,7 @@ from os.path import join
 
 from typing import Any
 
+from IPython.display import display, HTML
 
 def tuplelist(arr: Any) -> Any:
     "Numpy array to list of tuples"
@@ -90,3 +92,12 @@ def export_all_step(optics: nn.Sequential, folder_path: str) -> None:
             path = join(folder_path, f"lens{j}.step")
             part = lens_to_part(element)
             bd.export_step(part, path)
+
+
+def show_part(part: bd.Part) -> None:
+    vue_format_requested = os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
+
+    if not vue_format_requested:
+        display(part)
+    else:
+        display(HTML("<em>part display not supported in vitepress</em>"))

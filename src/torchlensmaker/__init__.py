@@ -32,3 +32,4 @@ from torchlensmaker.analysis.spot_diagram import spot_diagram
 
 # Export build123d
 import torchlensmaker.export_build123d as export
+from torchlensmaker.export_build123d import show_part

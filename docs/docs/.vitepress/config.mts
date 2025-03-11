@@ -4,14 +4,14 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Torch Lens Maker",
   description: "Differentiable geometric optics in PyTorch",
+  head: [['link', { rel: 'icon', href: '/logos/tlmlogo_black130_margin.png' }]],
   themeConfig: {
-    // https://vitepress.dev/reference/default-theme-config
+    logo: '/logos/tlmlogo_black150.png',
+
     nav: [
       { text: 'Documentation', link: '/' },
       { text: 'About', link: '/about' }
     ],
-
-    logo: '/logos/tlmlogo_black150.png',
 
     sidebar: [
       {
@@ -25,7 +25,7 @@ export default defineConfig({
       {
         text: 'Examples',
         items: [
-          // { text: 'Pink Floyd', link: '/examples/pink_floyd'},
+          { text: 'Pink Floyd', link: '/examples/pink_floyd'},
         ]
       }
     ],

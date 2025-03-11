@@ -19,8 +19,8 @@ from nbconvert.writers import FilesWriter
 
 
 def print_md_list(folder: Path):
-    for notebook in (Path("docs") / folder).glob("*.md"):
-        path = Path(*notebook.parts[1:])
+    for notebook in (Path("docs") / Path("docs") / folder).glob("*.md"):
+        path = Path(*notebook.parts[2:])
         print(f"* [{path}]({path})")
 
 

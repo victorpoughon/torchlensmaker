@@ -13,6 +13,8 @@ systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
 numerical optimization.
 
 ```python
+# TODO update me
+
 import torchlensmaker as tlm
 
 optics = tlm.Sequential(
@@ -29,7 +31,7 @@ optics = tlm.Sequential(
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
-<TLMViewer src="./examples/landscape.json"/>
+<TLMViewer src="./examples/landscape_tlmviewer/landscape_0.json"/>
 
 The core of the project is *differentiable geometric optics*: 3D collision
 detection and the laws of optics implemented in [PyTorch](https://pytorch.org/).
