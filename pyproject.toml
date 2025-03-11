@@ -21,13 +21,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-docs = [
-    "mkdocs",
-    "mkdocs-material",
-    #"mkdocs-jupyter",
-    "mkdocs-simple-hooks>=0.1.5",
-    "jupytext <= 1.16.3", # https://github.com/mwouts/jupytext/issues/1301
-]
 test = [
     "nbstripout-fast",
     "nbmake~=1.5.4",
