@@ -1,0 +1,1 @@
+{"mode": "2D", "camera": "XY", "data": [{"type": "points", "data": [[0.0, 0.0], [0.0, 0.0]], "layers": [4]}, {"type": "rays", "points": [[0.0, 0.0, 37.58770483, 13.68080573]], "color": "#ffa724", "variables": {}, "domain": {}, "layers": [3]}]}
