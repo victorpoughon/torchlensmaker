@@ -555,12 +555,7 @@ def show(
 
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
-    vue_format_requested = os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
-
-    if not vue_format_requested:
-        viewer.ipython_display(scene, ndigits)
-    else:
-        viewer.vitepress_vue_display(scene, ndigits)
+    viewer.display_scene(scene, ndigits)
 
     return scene if return_scene else None
 
