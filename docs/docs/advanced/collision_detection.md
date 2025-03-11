@@ -1,4 +1,4 @@
-# Math foundation
+# Collision detection
 
 A detailed description of how differentiable collision detection works in Torch
 Lens Maker.

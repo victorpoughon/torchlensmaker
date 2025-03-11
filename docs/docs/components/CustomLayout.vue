@@ -6,7 +6,7 @@ const { Layout } = DefaultTheme
 
 <style scoped>
 p {
-  background: #fff2ea;
+  background: var(--vp-custom-block-warning-bg);
   padding: 1rem;
   border-radius: 10px;
   font-weight: bold;
