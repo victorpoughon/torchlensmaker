@@ -4,7 +4,6 @@ layout: doc
 ---
 
 <LogoTitle/>
-
 <Badges/>
 
 Welcome to **Torch Lens Maker**, an open-source Python library for geometric
@@ -12,8 +11,6 @@ optics based on [PyTorch](https://pytorch.org/). Currently a very experimental
 project, the ultimate goal is to be able to design complex real-world optical
 systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
 numerical optimization.
-
-<TLMViewer/>
 
 ```python
 import torchlensmaker as tlm
@@ -32,7 +29,7 @@ optics = tlm.Sequential(
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
-<div class="tlmviewer" data-url="./examples/landscape.json"></div>
+<TLMViewer src="./examples/landscape.json"/>
 
 The core of the project is *differentiable geometric optics*: 3D collision
 detection and the laws of optics implemented in [PyTorch](https://pytorch.org/).
@@ -86,14 +83,3 @@ The ultimate goal of _Torch Lens Maker_ is to be to _Zemax OpticStudio_ what _Op
 This project is in its very early stages, I've got a [very long roadmap](/about/#roadmap) planned
 and I'm [looking for funding](/about/#funding) to be able to keep working on it full time! If you
 can, please consider donating, sponsoring or even hiring me! 😊💚
-
-When $a \ne 0$, there are two solutions to $(ax^2 + bx + c = 0)$ and they are
-$$ x = {-b \pm \sqrt{b^2-4ac} \over 2a} $$
-
-**Maxwell's equations:**
-
-| equation                                                                                                                                                                  | description                                                                            |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| $\nabla \cdot \vec{\mathbf{B}}  = 0$                                                                                                                                      | divergence of $\vec{\mathbf{B}}$ is zero                                               |
-| $\nabla \times \vec{\mathbf{E}}\, +\, \frac1c\, \frac{\partial\vec{\mathbf{B}}}{\partial t}  = \vec{\mathbf{0}}$                                                          | curl of $\vec{\mathbf{E}}$ is proportional to the rate of change of $\vec{\mathbf{B}}$ |
-| $\nabla \times \vec{\mathbf{B}} -\, \frac1c\, \frac{\partial\vec{\mathbf{E}}}{\partial t} = \frac{4\pi}{c}\vec{\mathbf{j}}    \nabla \cdot \vec{\mathbf{E}} = 4 \pi \rho$ | _wha?_                                                                                 |

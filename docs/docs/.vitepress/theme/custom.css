@@ -6,11 +6,4 @@
     --vp-code-font-size: 12px;
   }
 
-  .tlmviewer {
-    box-shadow: rgba(0, 0, 0, 0.24) 0px 3px 8px;
-    width: 100%;
-    height: 500px;
-    background: black;
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-}
+

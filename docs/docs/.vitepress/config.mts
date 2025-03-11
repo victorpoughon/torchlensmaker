@@ -25,7 +25,7 @@ export default defineConfig({
       {
         text: 'Examples',
         items: [
-          { text: 'Pink Floyd', link: '/examples/pink_floyd'},
+          // { text: 'Pink Floyd', link: '/examples/pink_floyd'},
         ]
       }
     ],
