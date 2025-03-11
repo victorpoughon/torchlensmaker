@@ -47,7 +47,6 @@ Snell's law. Inference, or the forward model, is the optical simulation where
 given some input light, we compute the system's output light. Training, or
 optimization, is finding the best shapes for lenses to focus light where we want&nbsp;it.
 
-<div class="center-table" markdown>
 
 |                   |          **Neural Network**          |        **Optical system**         |
 | ----------------: | :----------------------------------: | :-------------------------------: |
@@ -55,7 +54,6 @@ optimization, is finding the best shapes for lenses to focus light where we want
 |        **Layers** |         Conv2d, Linear, ReLU         |    Refraction, Reflection, Gap    |
 | **Loss Function** | Prediction error to labeled examples | Focusing error in the image plane |
 
-</div>
 
 The magic is that we can pretty much use `torch.nn` and `nn.Module` directly,
 stacking lenses and mirrors as if they were `Conv2d` and `ReLU`. Then, pass the

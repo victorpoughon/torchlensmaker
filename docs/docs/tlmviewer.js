@@ -16535,7 +16535,7 @@ function Zm(i, t, e) {
       u.push(
         ...E.toArray(),
         ...E.toArray()
-      ), console.log(f, E);
+      );
     }
   }
   const p = new Ca();
@@ -18006,7 +18006,7 @@ class f_ {
     else
       throw new Error(`Uknown camera type '${n}'`);
     const a = t.getElementsByClassName("tlmviewer-title")[0];
-    a.innerHTML = e.title, this.gui = new u_(this, t, this.scene), this.gui.updateCameraLayers(), this.resetView();
+    a.innerHTML = e.title, this.gui = new u_(this, t, this.scene), this.gui.updateCameraLayers(), n === "XY" && this.resetView();
   }
   // Handle window resize events
   // @ts-ignore
@@ -18015,9 +18015,7 @@ class f_ {
     this.camera instanceof ze ? this.camera.aspect = t : this.camera instanceof Bi && (this.camera.left = -t * 10, this.camera.right = t * 10, this.camera.top = 10, this.camera.bottom = -10), this.camera.updateProjectionMatrix(), this.renderer.setSize(window.innerWidth, window.innerHeight);
   }
   resetView() {
-    const t = this.scene.getBB();
-    console.log("resetView:", t);
-    const e = this.viewport.getBoundingClientRect(), n = e.width / e.height;
+    const t = this.scene.getBB(), e = this.viewport.getBoundingClientRect(), n = e.width / e.height;
     if (!(this.camera instanceof Bi)) return;
     const s = new P();
     t.getCenter(s);
@@ -18096,7 +18094,7 @@ function Bl(i, t) {
     const e = p_(i, t);
     e.registerEventHandlers(i), e.animate();
   } catch (e) {
-    i.innerHTML = "tlmviewer error: " + e;
+    throw i.innerHTML = "<span style='color: red'>tlmviewer error: " + e + "</span>", e;
   }
 }
 function m_(i, t) {
@@ -18104,11 +18102,16 @@ function m_(i, t) {
     const e = JSON.parse(t);
     Bl(i, e);
   } catch (e) {
-    i.innerHTML = "tlmviewer error: " + e;
+    throw i.innerHTML = "<span style='color: red'>tlmviewer error: " + e + "</span>", e;
   }
 }
 async function zl(i, t) {
-  return console.log("tlmviewer load(): rect is", i.getBoundingClientRect()), fetch(t).then((e) => e.json()).then((e) => Bl(i, e));
+  try {
+    const n = await (await fetch(t)).json();
+    Bl(i, n);
+  } catch (e) {
+    throw i.innerHTML = "<span style='color: red'>tlmviewer error: " + e + "</span>", e;
+  }
 }
 async function __() {
   const i = document.querySelectorAll(".tlmviewer"), t = [];

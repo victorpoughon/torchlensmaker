@@ -14,8 +14,6 @@ const tlmviewer = module.tlmviewer;
 var tlmviewerElement = ref(null);
 
 onMounted(() => {
-    const rect = tlmviewerElement.value.getBoundingClientRect();
-    console.log("rect", rect);
     tlmviewer.load(tlmviewerElement.value, props.src).then(() => {
         console.log("loaded!");
     });
