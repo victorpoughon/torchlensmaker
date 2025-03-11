@@ -18,6 +18,7 @@ import torchlensmaker.viewer as viewer
 
 import matplotlib as mpl
 import json
+import os
 
 Tensor = torch.Tensor
 
@@ -537,13 +538,6 @@ def default_sampling(
     return {"base": 10, "object": 5, "wavelength": 3}
 
 
-def truncate_scene(scene, ndigits: int) -> Any:
-    json_data = json.dumps(scene, allow_nan=False)
-    scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
-
-    return scene
-
-
 def show(
     optics: nn.Module,
     sampling: Optional[Dict[str, Any]] = None,
@@ -561,7 +555,12 @@ def show(
 
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
-    viewer.ipython_display(scene, ndigits)
+    vue_format_requested = os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
+
+    if not vue_format_requested:
+        viewer.ipython_display(scene, ndigits)
+    else:
+        viewer.vitepress_vue_display(scene, ndigits)
 
     return scene if return_scene else None
 
@@ -595,7 +594,7 @@ def export_json(
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
 
     if ndigits is not None:
-        scene = truncate_scene(scene, ndigits)
+        scene = viewer.truncate_scene(scene, ndigits)
 
     with open(filename, "w") as f:
         json.dump(scene, f)

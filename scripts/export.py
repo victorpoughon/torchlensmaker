@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import os.path
 from pathlib import Path
 import argparse
@@ -52,12 +53,12 @@ def main():
 
         if Path(filepath).is_file():
             output_folder_relative = Path(fullpath[-2])
-            output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
+            output_folder = Path(*dir_path[:-1]) / "docs" / "docs" / output_folder_relative
             print(f"Exporting notebook {filepath} to {output_folder}")
             export_notebook(Path(filepath), output_folder, args.skip)
         elif Path(filepath).is_dir():
             output_folder_relative = Path(fullpath[-1])
-            output_folder = Path(*dir_path[:-1]) / "docs" / output_folder_relative
+            output_folder = Path(*dir_path[:-1]) / "docs" / "docs" / output_folder_relative
             print(f"Exporting all notebooks in {filepath} to {output_folder}")
             export_all(Path(filepath), output_folder, args.skip)
         
@@ -90,18 +91,27 @@ def export_notebook(filename: Path, output_folder: Path, skip: bool) -> None:
 
     with open(filename) as f:
         nb = nbformat.read(f, as_version=4)
+    
+    # Set env var to request vue component format
+    os.environ["TLMVIEWER_TARGET_DIRECTORY"] = str(output_folder)
+    os.environ["TLMVIEWER_TARGET_NAME"] = root
+    os.environ["TLMVIEWER_TARGET_FORMAT"] = "vue"
 
     resources = nbconvertapp.NbConvertApp().init_single_notebook_resources(filename)
 
+    # fmt: off
     processors = [
         # Execute the notebook
         ExecutePreprocessor(timeout=600, kernel_name="python3"),
+
         # Merge consecutive sequences of stream output into single stream to
         # prevent extra newlines inserted at flush calls
         CoalesceStreamsPreprocessor(),
+        
         # Remove cells containing only whitespace or empty
         RegexRemovePreprocessor(patterns=[r"\s*\Z"]),
     ]
+    # fmt: on
 
     for ep in processors:
         ep.preprocess(nb, resources)

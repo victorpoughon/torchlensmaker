@@ -6,6 +6,7 @@ import json
 import torch
 
 import warnings
+from pathlib import Path
 
 from typing import Any, Optional
 
@@ -57,6 +58,13 @@ def dump(scene: object, ndigits: int | None = None) -> None:
     print(json.dumps(scene))
 
 
+def truncate_scene(scene, ndigits: int) -> Any:
+    json_data = json.dumps(scene, allow_nan=False)
+    scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+
+    return scene
+
+
 def ipython_display(
     data: object, ndigits: int | None = None, dump: bool = False
 ) -> None:
@@ -81,6 +89,38 @@ def ipython_display(
     div = string.Template(div_template).substitute(div_id=div_id)
     script = string.Template(script_template).substitute(data=json_data, div_id=div_id)
     display(HTML(div + script))  # type: ignore
+
+
+vitepress_global_counter = 0
+
+
+def vitepress_vue_display(
+    data: object, ndigits: int | None = None, dump: bool = False
+) -> None:
+    global vitepress_global_counter
+
+    name = os.environ["TLMVIEWER_TARGET_NAME"]
+    target_dir = os.environ["TLMVIEWER_TARGET_DIRECTORY"]
+    json_folder = Path(f"{name}_tlmviewer")
+    json_name = Path(f"{name}_{vitepress_global_counter}.json")
+    
+    output_folder = Path(target_dir) / json_folder
+    output_folder.mkdir(parents=True, exist_ok=True)
+    
+    rel_path = json_folder / json_name
+    abs_path = output_folder / Path(json_name)
+
+    # truncate digits if requested
+    if ndigits is not None:
+        data = truncate_scene(data, ndigits)
+
+    # write json file
+    with open(abs_path, "w") as f:
+        json.dump(data, f)
+
+    display(HTML(f'<TLMViewer src="./{rel_path}" />'))
+
+    vitepress_global_counter += 1
 
 
 def new_scene(mode: str) -> Any:
