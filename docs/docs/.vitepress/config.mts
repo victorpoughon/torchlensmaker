@@ -38,6 +38,13 @@ export default defineConfig({
           { text: 'Variable Lens Sequence', link: '/examples/variable_lens_sequence'},
           { text: 'Test notebooks', link: '/test_notebooks'}
         ]
+      },
+
+      {
+        text: 'Advanced Topics',
+        items: [
+          { text: 'Collision detection', link: '/advanced/collision_detection'}
+        ]
       }
     ],
 
