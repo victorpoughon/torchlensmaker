@@ -19,7 +19,7 @@ from nbconvert.writers import FilesWriter
 
 
 def print_md_list(folder: Path):
-    for notebook in (Path("docs") / Path("docs") / folder).glob("*.md"):
+    for notebook in (Path("docs") / Path("src") / folder).glob("*.md"):
         path = Path(*notebook.parts[2:])
         print(f"* [{path}]({path})")
 
@@ -53,12 +53,12 @@ def main():
 
         if Path(filepath).is_file():
             output_folder_relative = Path(fullpath[-2])
-            output_folder = Path(*dir_path[:-1]) / "docs" / "docs" / output_folder_relative
+            output_folder = Path(*dir_path[:-1]) / "docs" / "src" / output_folder_relative
             print(f"Exporting notebook {filepath} to {output_folder}")
             export_notebook(Path(filepath), output_folder, args.skip)
         elif Path(filepath).is_dir():
             output_folder_relative = Path(fullpath[-1])
-            output_folder = Path(*dir_path[:-1]) / "docs" / "docs" / output_folder_relative
+            output_folder = Path(*dir_path[:-1]) / "docs" / "src" / output_folder_relative
             print(f"Exporting all notebooks in {filepath} to {output_folder}")
             export_all(Path(filepath), output_folder, args.skip)
         
