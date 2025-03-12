@@ -66,7 +66,8 @@ def truncate_scene(scene, ndigits: int) -> Any:
 
 
 def ipython_display(
-    data: object, ndigits: int | None = None, dump: bool = False
+    data: object,
+    ndigits: int | None = None,
 ) -> None:
     div_id = random_id()
     div_template = get_div_template()
@@ -83,9 +84,6 @@ def ipython_display(
             json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
         )
 
-    if dump:
-        print(json_data)
-
     div = string.Template(div_template).substitute(div_id=div_id)
     script = string.Template(script_template).substitute(data=json_data, div_id=div_id)
     display(HTML(div + script))  # type: ignore
@@ -95,7 +93,8 @@ vitepress_global_counter = 0
 
 
 def vitepress_vue_display(
-    data: object, ndigits: int | None = None, dump: bool = False
+    data: object,
+    ndigits: int | None = None,
 ) -> None:
     global vitepress_global_counter
 
@@ -103,10 +102,10 @@ def vitepress_vue_display(
     target_dir = os.environ["TLMVIEWER_TARGET_DIRECTORY"]
     json_folder = Path(f"{name}_files")
     json_name = Path(f"{name}_{vitepress_global_counter}.json")
-    
+
     output_folder = Path(target_dir) / json_folder
     output_folder.mkdir(parents=True, exist_ok=True)
-    
+
     rel_path = json_folder / json_name
     abs_path = output_folder / Path(json_name)
 

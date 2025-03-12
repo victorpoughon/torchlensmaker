@@ -51,8 +51,18 @@ model = tlm.Sequential(
         [60, 0]),
 )
 
-tlm.show2d(model, sampling={"base": 50, "object": 5, "wavelength": 10}, end=50)
-tlm.show3d(model, sampling={"base": 500, "object": 20, "wavelength": 10}, end=30)
+# Use rays opacity and thickness to give some illusion of real color
+controls = {"opacity": 0.05, "thickness": 2.1, "valid_rays": "wavelength (true color)", "output_rays": "wavelength (true color)"}
+
+tlm.show2d(model,
+           sampling={"base": 50, "object": 5, "wavelength": 10},
+           end=50,
+           controls=controls)
+
+tlm.show3d(model,
+           sampling={"base": 200, "object": 15, "wavelength": 10},
+           end=30,
+           controls=controls)
 ```
 
 

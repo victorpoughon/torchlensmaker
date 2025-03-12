@@ -546,6 +546,7 @@ def show(
     end: Optional[float] = None,
     title: str = "",
     ndigits: int | None = 8,
+    controls: object | None = None,
     return_scene: bool = False,
 ) -> None:
     "Render an optical stack and show it with ipython display"
@@ -554,6 +555,9 @@ def show(
         sampling = default_sampling(optics, dim, dtype)
 
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
+
+    if controls is not None:
+        scene["controls"] = controls
 
     viewer.display_scene(scene, ndigits)
 
@@ -579,6 +583,7 @@ def export_json(
     end: Optional[float] = None,
     title: str = "",
     ndigits: int | None = 8,
+    controls: object | None = None,
 ) -> None:
     "Render and export an optical stack to a tlmviewer json file"
 
@@ -587,6 +592,9 @@ def export_json(
         sampling = {"base": 10, "object": 5, "wavelength": 8}
 
     scene = render_sequence(optics, dim, dtype, sampling, end, title)
+
+    if controls is not None:
+        scene["controls"] = controls
 
     if ndigits is not None:
         scene = viewer.truncate_scene(scene, ndigits)

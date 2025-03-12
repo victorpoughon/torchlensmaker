@@ -2,6 +2,5 @@
 
 set -euo pipefail
 
-nbstripout-fast examples/*.ipynb
-nbstripout-fast test_notebooks/*.ipynb
-nbstripout-fast docs/src/*.ipynb
+# Find and process all *.ipynb files in the specified directories and their subdirectories
+find docs/src/ test_notebooks/ -type f -name "*.ipynb" -exec nbstripout-fast {} +
