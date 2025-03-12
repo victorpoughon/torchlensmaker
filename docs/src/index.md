@@ -82,7 +82,7 @@ The ultimate goal of _Torch Lens Maker_ is to be to _Zemax OpticStudio_ what _Op
 
 
 ::: warning Funding
-This project is in its very early stages, I've got a [very long roadmap](/about/#roadmap) planned
-and I'm [looking for funding](/about/#funding) to be able to keep working on it full time! If you
+This project is in its very early stages, I've got a [very long roadmap](/about#roadmap) planned
+and I'm [looking for funding](/about#funding) to be able to keep working on it full time! If you
 can, please consider donating, sponsoring or even hiring me! 😊💚
 :::

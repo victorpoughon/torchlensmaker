@@ -6,8 +6,6 @@ const props = defineProps({
     src: String
 });
 
-console.log("async got prop", props.src);
-
 const module = await import("/tlmviewer.js");
 const tlmviewer = module.tlmviewer;
 

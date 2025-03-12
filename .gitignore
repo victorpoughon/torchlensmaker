@@ -9,4 +9,4 @@ venv/
 # Docs
 node_modules/
 **/.vitepress/cache/
-**/vitepress/dist
+**/.vitepress/dist

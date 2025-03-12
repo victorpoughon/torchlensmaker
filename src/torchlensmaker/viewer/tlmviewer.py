@@ -123,10 +123,12 @@ def vitepress_vue_display(
     vitepress_global_counter += 1
 
 
-def display_scene(scene: object, ndigits: int | None = None) -> None:
-    vue_format_requested = os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
+def vue_format_requested() -> bool:
+    return os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
 
-    if not vue_format_requested:
+
+def display_scene(scene: object, ndigits: int | None = None) -> None:
+    if not vue_format_requested():
         ipython_display(scene, ndigits)
     else:
         vitepress_vue_display(scene, ndigits)
