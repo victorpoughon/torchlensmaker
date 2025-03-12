@@ -59,5 +59,7 @@ you!
 
 You can find contact info on [my personal website](https://victorpoughon.fr/).
 
+## Mailing List
+
 ## Roadmap
 

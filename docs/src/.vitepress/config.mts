@@ -10,16 +10,25 @@ export default defineConfig({
 
     nav: [
       { text: 'Documentation', link: '/' },
-      { text: 'About', link: '/about' }
+      { text: 'About', link: '/about' },
+      {
+        text: 'Community',
+        items: [
+          { text: 'GitHub Discussions', link: 'https://github.com/victorpoughon/torchlensmaker/discussions' },
+          { text: 'Funding', link: '/about#funding' },
+          { text: 'Mailing List', link: '/about#mailing-list' }
+        ]
+      }
     ],
 
     sidebar: [
       {
-        text: 'Getting Started',
+        text: 'Introduction',
         items: [
           { text: 'Welcome', link: '/'},
           { text: 'Design Overview', link: '/design-overview' },
           { text: 'Installation', link: '/installation' },
+          { text: 'Getting Started', link: '/getting-started' },
         ]
       },
       {

@@ -13,17 +13,15 @@ systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
 numerical optimization.
 
 ```python
-# TODO update me
-
 import torchlensmaker as tlm
 
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
     tlm.Wavelength(400, 800),
     tlm.Gap(15),
-    tlm.RefractiveSurface(tlm.Sphere(diameter=25, r=-45.759), material="BK7"),
+    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
     tlm.Gap(3.419),
-    tlm.RefractiveSurface(tlm.Sphere(diameter=25, r=-24.887), material="air"),
+    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-24.887), material="air"),
     tlm.Gap(97.5088),
     tlm.ImagePlane(50),
 )
