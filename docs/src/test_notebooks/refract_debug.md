@@ -25,7 +25,7 @@ tlm.show(optics, dim=2, end=10, sampling={"base": 10})
 ```
 
 
-<TLMViewer src="./refract_debug_tlmviewer/refract_debug_0.json" />
+<TLMViewer src="./refract_debug_tlmviewer/refract_debug_0.json?url" />
 
 
 
@@ -72,7 +72,7 @@ tlm.show(optics, dim=2, sampling={"base": 10})
 
 
 
-<TLMViewer src="./refract_debug_tlmviewer/refract_debug_1.json" />
+<TLMViewer src="./refract_debug_tlmviewer/refract_debug_1.json?url" />
 
 
 
@@ -113,5 +113,5 @@ tlm.show(optics, dim=2, sampling={"base": 10})
 ```
 
 
-<TLMViewer src="./refract_debug_tlmviewer/refract_debug_2.json" />
+<TLMViewer src="./refract_debug_tlmviewer/refract_debug_2.json?url" />
 

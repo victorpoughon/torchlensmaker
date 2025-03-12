@@ -25,7 +25,7 @@ tlm.show(optics, dim=2, sampling={"base": 10, "wavelength": 10})
 ```
 
 
-<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_0.json" />
+<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_0.json?url" />
 
 
 
@@ -84,11 +84,11 @@ tlm.show(optics, dim=3, sampling={"object": 10, "base": 64, "wavelength": 5}, en
 ```
 
 
-<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_1.json" />
+<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_1.json?url" />
 
 
 
-<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_2.json" />
+<TLMViewer src="./biconvex_parabola_tlmviewer/biconvex_parabola_2.json?url" />
 
 
 

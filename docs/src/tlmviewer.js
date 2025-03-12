@@ -16477,7 +16477,9 @@ function $m(i, t) {
 function qm(i, t) {
   const e = fe(i, "data"), n = i.color ?? "#ffffff", s = new le();
   for (const r of e) {
-    const a = new Ta(0.1, 8, 8), o = new Fs({ color: n }), l = new be(a, o);
+    const a = new Ta(0.1, 8, 8), o = new Fs({ color: n });
+    o.transparent = !0, o.opacity = 0.8;
+    const l = new be(a, o);
     if (r.length != t)
       throw new Error(
         `point array length is ${r.length} (expected ${t})`

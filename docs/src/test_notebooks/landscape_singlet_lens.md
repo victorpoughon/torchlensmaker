@@ -33,7 +33,7 @@ tlm.plot_magnification(optics, sampling={"base": 10, "object": 5, "sampler": "un
 ```
 
 
-<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_0.json" />
+<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_0.json?url" />
 
 
 
@@ -91,7 +91,7 @@ tlm.plot_magnification(optics, sampling={"base": 10, "object": 5, "sampler": "un
 
 
 
-<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_1.json" />
+<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_1.json?url" />
 
 
 
@@ -131,7 +131,7 @@ tlm.plot_magnification(optics, sampling={"base": 10, "object": 5, "sampler": "un
 ```
 
 
-<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_2.json" />
+<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_2.json?url" />
 
 
 
@@ -186,7 +186,7 @@ tlm.plot_magnification(optics, sampling={"base": 10, "object": 5, "sampler": "un
 
 
 
-<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_3.json" />
+<TLMViewer src="./landscape_singlet_lens_tlmviewer/landscape_singlet_lens_3.json?url" />
 
 
 

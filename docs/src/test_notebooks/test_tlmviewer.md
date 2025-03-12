@@ -24,7 +24,7 @@ tlm.viewer.display_scene(scene)
 ```
 
 
-<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_0.json" />
+<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_0.json?url" />
 
 
 
@@ -59,7 +59,7 @@ tlm.viewer.display_scene(scene)
 ```
 
 
-<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_1.json" />
+<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_1.json?url" />
 
 
 
@@ -87,5 +87,5 @@ tlm.viewer.display_scene(scene)
 ```
 
 
-<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_2.json" />
+<TLMViewer src="./test_tlmviewer_tlmviewer/test_tlmviewer_2.json?url" />
 

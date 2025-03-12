@@ -27,11 +27,11 @@ tlm.show(optics, dim=3, end=40, sampling={})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_0.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_0.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_1.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_1.json?url" />
 
 
 ## PointSourceAtInfinity
@@ -55,11 +55,11 @@ tlm.show3d(optics, end=40, sampling={"base": 50})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_2.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_2.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_3.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_3.json?url" />
 
 
 ## PointSource
@@ -80,11 +80,11 @@ tlm.show(optics, dim=3, end=100, sampling={"base": 100, "sampler": "random"})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_4.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_4.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_5.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_5.json?url" />
 
 
 ## ObjectAtInfinity
@@ -104,11 +104,11 @@ tlm.show3d(optics, end=200, sampling={"base": 20, "object": 20})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_6.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_6.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_7.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_7.json?url" />
 
 
 ## Object
@@ -135,11 +135,11 @@ tlm.show(optics, dim=3, end=200, sampling={"base": 10, "object": 10})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_8.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_8.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_9.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_9.json?url" />
 
 
 ## Wavelength
@@ -162,9 +162,9 @@ tlm.show3d(optics, end=5, sampling={"base": 15, "wavelength": [400, 600, 600]})
 ```
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_10.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_10.json?url" />
 
 
 
-<TLMViewer src="./light_sources_tlmviewer/light_sources_11.json" />
+<TLMViewer src="./light_sources_tlmviewer/light_sources_11.json?url" />
 

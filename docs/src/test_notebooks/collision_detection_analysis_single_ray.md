@@ -95,7 +95,7 @@ analysis_single_ray(tlm.Sphere(30, R=20),
 ```
 
 
-<TLMViewer src="./collision_detection_analysis_single_ray_tlmviewer/collision_detection_analysis_single_ray_0.json" />
+<TLMViewer src="./collision_detection_analysis_single_ray_tlmviewer/collision_detection_analysis_single_ray_0.json?url" />
 
 
     tensor([-7.8810e-08, -1.5762e-08, -3.1524e-09, -6.3048e-10, -1.2610e-10,

@@ -65,5 +65,28 @@ export default defineConfig({
     theme : {
       light : 'github-light',
       dark: 'github-dark',
-  }}
+  }},
+
+  vue: {
+    template: {
+      transformAssetUrls: {
+        video: ['src', 'poster'],
+        source: ['src'],
+        img: ['src'],
+        image: ['xlink:href', 'href'],
+        use: ['xlink:href', 'href'],
+        TLMViewer: ['src'],
+      },
+    },
+  },
+
+  vite: {
+    build: {
+      assetsInlineLimit: 0,
+      sourcemap: false,
+      commonjsOptions: {
+        sourceMap: false,
+      },
+    }
+  },
 })

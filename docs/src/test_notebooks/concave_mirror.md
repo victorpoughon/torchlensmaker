@@ -22,11 +22,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_0.json" />
+<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_0.json?url" />
 
 
 
-<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_1.json" />
+<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_1.json?url" />
 
 
 
@@ -76,9 +76,9 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_2.json" />
+<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_2.json?url" />
 
 
 
-<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_3.json" />
+<TLMViewer src="./concave_mirror_tlmviewer/concave_mirror_3.json?url" />
 

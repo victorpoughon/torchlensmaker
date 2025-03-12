@@ -24,11 +24,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_0.json" />
+<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_0.json?url" />
 
 
 
-<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_1.json" />
+<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_1.json?url" />
 
 
 
@@ -87,11 +87,11 @@ tlm.show(optics, dim=3, end=60)
 ```
 
 
-<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_2.json" />
+<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_2.json?url" />
 
 
 
-<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_3.json" />
+<TLMViewer src="./planoconvex_sphere_tlmviewer/planoconvex_sphere_3.json?url" />
 
 
 

@@ -52,14 +52,13 @@ model = tlm.Sequential(
 )
 
 tlm.show2d(model, sampling={"base": 50, "object": 5, "wavelength": 10}, end=50)
-tlm.export_json(model, "rainbow.json", sampling={"base": 100, "object": 10, "wavelength": 10}, end=50)
 tlm.show3d(model, sampling={"base": 500, "object": 20, "wavelength": 10}, end=30)
 ```
 
 
-<TLMViewer src="./rainbow_tlmviewer/rainbow_0.json" />
+<TLMViewer src="./rainbow_tlmviewer/rainbow_0.json?url" />
 
 
 
-<TLMViewer src="./rainbow_tlmviewer/rainbow_1.json" />
+<TLMViewer src="./rainbow_tlmviewer/rainbow_1.json?url" />
 

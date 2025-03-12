@@ -103,5 +103,5 @@ demo(test_rays)
 ```
 
 
-<TLMViewer src="./demo_collision_detection_3D_tlmviewer/demo_collision_detection_3D_0.json" />
+<TLMViewer src="./demo_collision_detection_3D_tlmviewer/demo_collision_detection_3D_0.json?url" />
 

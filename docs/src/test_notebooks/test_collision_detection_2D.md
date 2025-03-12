@@ -95,7 +95,7 @@ demo("Parabola", tlm.Parabola(35.0, 0.05))
 
 
 
-<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_0.json" />
+<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_0.json?url" />
 
 
 
@@ -103,7 +103,7 @@ demo("Parabola", tlm.Parabola(35.0, 0.05))
 
 
 
-<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_1.json" />
+<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_1.json?url" />
 
 
 
@@ -111,5 +111,5 @@ demo("Parabola", tlm.Parabola(35.0, 0.05))
 
 
 
-<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_2.json" />
+<TLMViewer src="./test_collision_detection_2D_tlmviewer/test_collision_detection_2D_2.json?url" />
 

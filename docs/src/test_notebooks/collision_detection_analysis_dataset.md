@@ -90,7 +90,7 @@ demo()
 ```
 
 
-<TLMViewer src="./collision_detection_analysis_dataset_tlmviewer/collision_detection_analysis_dataset_0.json" />
+<TLMViewer src="./collision_detection_analysis_dataset_tlmviewer/collision_detection_analysis_dataset_0.json?url" />
 
 
     rmse: 5.10201572555291e-11

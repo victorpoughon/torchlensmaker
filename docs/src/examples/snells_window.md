@@ -18,11 +18,11 @@ tlm.show(optics, dim=3, end=2, sampling={"base": 2000})
 ```
 
 
-<TLMViewer src="./snells_window_tlmviewer/snells_window_0.json" />
+<TLMViewer src="./snells_window_tlmviewer/snells_window_0.json?url" />
 
 
 
-<TLMViewer src="./snells_window_tlmviewer/snells_window_1.json" />
+<TLMViewer src="./snells_window_tlmviewer/snells_window_1.json?url" />
 
 
 

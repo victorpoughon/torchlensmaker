@@ -103,5 +103,5 @@ for surface, gen, expected_collide in test_cases:
 
 
 
-<TLMViewer src="./collision_detection_view_testcase_tlmviewer/collision_detection_view_testcase_0.json" />
+<TLMViewer src="./collision_detection_view_testcase_tlmviewer/collision_detection_view_testcase_0.json?url" />
 

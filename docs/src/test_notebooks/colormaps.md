@@ -42,5 +42,5 @@ tlm.viewer.display_scene(scene)
 ```
 
 
-<TLMViewer src="./colormaps_tlmviewer/colormaps_0.json" />
+<TLMViewer src="./colormaps_tlmviewer/colormaps_0.json?url" />
 

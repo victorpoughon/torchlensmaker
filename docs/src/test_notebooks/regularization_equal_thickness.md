@@ -54,11 +54,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./regularization_equal_thickness_tlmviewer/regularization_equal_thickness_0.json" />
+<TLMViewer src="./regularization_equal_thickness_tlmviewer/regularization_equal_thickness_0.json?url" />
 
 
 
-<TLMViewer src="./regularization_equal_thickness_tlmviewer/regularization_equal_thickness_1.json" />
+<TLMViewer src="./regularization_equal_thickness_tlmviewer/regularization_equal_thickness_1.json?url" />
 
 
 

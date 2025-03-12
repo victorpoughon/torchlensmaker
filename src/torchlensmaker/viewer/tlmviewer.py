@@ -118,7 +118,9 @@ def vitepress_vue_display(
     with open(abs_path, "w") as f:
         json.dump(data, f)
 
-    display(HTML(f'<TLMViewer src="./{rel_path}" />'))
+    # '?url' is required to workaround https://github.com/vitejs/vite-plugin-vue/issues/544
+    # see also https://github.com/vuejs/vitepress/discussions/4619
+    display(HTML(f'<TLMViewer src="./{rel_path}?url" />'))
 
     vitepress_global_counter += 1
 

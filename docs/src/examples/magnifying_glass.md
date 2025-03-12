@@ -21,5 +21,5 @@ tlm.show(optics, dim=2, end=10)
 ```
 
 
-<TLMViewer src="./magnifying_glass_tlmviewer/magnifying_glass_0.json" />
+<TLMViewer src="./magnifying_glass_tlmviewer/magnifying_glass_0.json?url" />
 

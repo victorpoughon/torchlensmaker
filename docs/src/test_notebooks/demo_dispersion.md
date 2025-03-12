@@ -969,9 +969,9 @@ demo_dispersion(incident, n_material, 1.0, rgb_outcident)
 ```
 
 
-<TLMViewer src="./demo_dispersion_tlmviewer/demo_dispersion_0.json" />
+<TLMViewer src="./demo_dispersion_tlmviewer/demo_dispersion_0.json?url" />
 
 
 
-<TLMViewer src="./demo_dispersion_tlmviewer/demo_dispersion_1.json" />
+<TLMViewer src="./demo_dispersion_tlmviewer/demo_dispersion_1.json?url" />
 

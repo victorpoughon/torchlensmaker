@@ -18,7 +18,7 @@ tlm.plot_magnification(optics, sampling=sampling)
 ```
 
 
-<TLMViewer src="./pinhole_camera_tlmviewer/pinhole_camera_0.json" />
+<TLMViewer src="./pinhole_camera_tlmviewer/pinhole_camera_0.json?url" />
 
 
 

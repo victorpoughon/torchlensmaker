@@ -44,11 +44,11 @@ tlm.show3d(optics, sampling={"base": 100, "object": [[np.deg2rad(0), 0.], [np.de
 ```
 
 
-<TLMViewer src="./spot_diagram_tlmviewer/spot_diagram_0.json" />
+<TLMViewer src="./spot_diagram_tlmviewer/spot_diagram_0.json?url" />
 
 
 
-<TLMViewer src="./spot_diagram_tlmviewer/spot_diagram_1.json" />
+<TLMViewer src="./spot_diagram_tlmviewer/spot_diagram_1.json?url" />
 
 
 

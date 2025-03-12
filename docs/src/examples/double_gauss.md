@@ -79,5 +79,5 @@ tlm.show(optics, dim=2, end=10, sampling={"base": 5, "object": 3, "wavelength": 
 ```
 
 
-<TLMViewer src="./double_gauss_tlmviewer/double_gauss_0.json" />
+<TLMViewer src="./double_gauss_tlmviewer/double_gauss_0.json?url" />
 

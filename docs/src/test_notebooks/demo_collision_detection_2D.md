@@ -105,14 +105,14 @@ def demo(rays):
      #pprint(scene)
     
     tlm.viewer.display_scene(scene)
-    #tlm.viewer.ipython_display(scene, ndigits=3, dump=True)
+    #tlm.viewer.display_scene(scene, ndigits=3, dump=True)
 
 
 demo(test_rays)
 ```
 
 
-<TLMViewer src="./demo_collision_detection_2D_tlmviewer/demo_collision_detection_2D_0.json" />
+<TLMViewer src="./demo_collision_detection_2D_tlmviewer/demo_collision_detection_2D_0.json?url" />
 
 
 
@@ -131,5 +131,5 @@ tlm.viewer.display_scene(scene)
 ```
 
 
-<TLMViewer src="./demo_collision_detection_2D_tlmviewer/demo_collision_detection_2D_1.json" />
+<TLMViewer src="./demo_collision_detection_2D_tlmviewer/demo_collision_detection_2D_1.json?url" />
 

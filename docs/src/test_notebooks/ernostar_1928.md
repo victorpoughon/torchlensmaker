@@ -72,7 +72,7 @@ tlm.plot_magnification(optics, sampling={"base": 5, "object": 5, "wavelength": 3
 
 
 
-<TLMViewer src="./ernostar_1928_tlmviewer/ernostar_1928_0.json" />
+<TLMViewer src="./ernostar_1928_tlmviewer/ernostar_1928_0.json?url" />
 
 
 
@@ -135,7 +135,7 @@ tlm.plot_magnification(optics, sampling={"base": 10, "object": 5, "wavelength": 
 ```
 
 
-<TLMViewer src="./ernostar_1928_tlmviewer/ernostar_1928_1.json" />
+<TLMViewer src="./ernostar_1928_tlmviewer/ernostar_1928_1.json?url" />
 
 
 

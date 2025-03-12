@@ -31,9 +31,9 @@ tlm.show(optics, dim=3, sampling={"base":100})
 ```
 
 
-<TLMViewer src="./rotation_kinematic_tlmviewer/rotation_kinematic_0.json" />
+<TLMViewer src="./rotation_kinematic_tlmviewer/rotation_kinematic_0.json?url" />
 
 
 
-<TLMViewer src="./rotation_kinematic_tlmviewer/rotation_kinematic_1.json" />
+<TLMViewer src="./rotation_kinematic_tlmviewer/rotation_kinematic_1.json?url" />
 

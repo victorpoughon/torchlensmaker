@@ -24,11 +24,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_0.json" />
+<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_0.json?url" />
 
 
 
-<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_1.json" />
+<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_1.json?url" />
 
 
 
@@ -84,11 +84,11 @@ tlm.show(optics, dim=3)
 
 
 
-<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_2.json" />
+<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_2.json?url" />
 
 
 
-<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_3.json" />
+<TLMViewer src="./diverging_lens_tlmviewer/diverging_lens_3.json?url" />
 
 
 

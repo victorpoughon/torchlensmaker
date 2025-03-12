@@ -67,7 +67,7 @@ tlm.show(optics, dim=2, end=250)
 
 
 
-<TLMViewer src="./lens_maker_equation_tlmviewer/lens_maker_equation_0.json" />
+<TLMViewer src="./lens_maker_equation_tlmviewer/lens_maker_equation_0.json?url" />
 
 
 # Next

@@ -331,15 +331,15 @@ demo_light(deg(-30), deg(-50), 30, 30, tlm.reflection)
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_0.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_0.json?url" />
 
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_1.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_1.json?url" />
 
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_2.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_2.json?url" />
 
 
 ## Refraction in 3D
@@ -351,7 +351,7 @@ demo_light(deg(-30), deg(-50), 1, 1, lambda rays, normals: tlm.refraction(rays, 
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_3.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_3.json?url" />
 
 
 
@@ -361,7 +361,7 @@ demo_light(deg(-30), deg(-50), 1, 30, lambda rays, normals: tlm.refraction(rays,
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_4.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_4.json?url" />
 
 
 
@@ -371,7 +371,7 @@ demo_light(deg(-30), deg(-50), 30, 30, lambda rays, normals: tlm.refraction(rays
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_5.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_5.json?url" />
 
 
 
@@ -382,7 +382,7 @@ demo_light(deg(-30), deg(-20), 30, 30, lambda rays, normals: tlm.refraction(rays
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_6.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_6.json?url" />
 
 
 
@@ -393,5 +393,5 @@ demo_light(deg(-60), deg(-20), 30, 20, lambda rays, normals: tlm.refraction(rays
 ```
 
 
-<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_7.json" />
+<TLMViewer src="./demo_reflection_refraction_tlmviewer/demo_reflection_refraction_7.json?url" />
 

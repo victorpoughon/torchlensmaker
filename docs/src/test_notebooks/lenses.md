@@ -45,7 +45,7 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./lenses_tlmviewer/lenses_0.json" />
+<TLMViewer src="./lenses_tlmviewer/lenses_0.json?url" />
 
 
 

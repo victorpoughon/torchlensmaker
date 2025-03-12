@@ -55,7 +55,7 @@ tlm.show(optics, dim=2, end=20)
 
 
 
-<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_0.json" />
+<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_0.json?url" />
 
 
 
@@ -86,7 +86,7 @@ tlm.show(optics, dim=2, sampling={"base": 10})
 ```
 
 
-<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_1.json" />
+<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_1.json?url" />
 
 
 
@@ -113,7 +113,7 @@ tlm.show(optics, dim=2, sampling={"base": 10})
 ```
 
 
-<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_2.json" />
+<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_2.json?url" />
 
 
 
@@ -162,5 +162,5 @@ tlm.show(optics, dim=2, sampling={"base": 10})
 
 
 
-<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_3.json" />
+<TLMViewer src="./second_side_quest_tlmviewer/second_side_quest_3.json?url" />
 

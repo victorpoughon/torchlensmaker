@@ -19,7 +19,7 @@ tlm.show2d(optics, title="Landscape Lens")
 ```
 
 
-<TLMViewer src="./landscape_tlmviewer/landscape_0.json" />
+<TLMViewer src="./landscape_tlmviewer/landscape_0.json?url" />
 
 
 
@@ -28,7 +28,7 @@ tlm.show3d(optics, title="Landscape Lens")
 ```
 
 
-<TLMViewer src="./landscape_tlmviewer/landscape_1.json" />
+<TLMViewer src="./landscape_tlmviewer/landscape_1.json?url" />
 
 
 

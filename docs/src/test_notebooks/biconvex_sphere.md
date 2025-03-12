@@ -30,11 +30,11 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_0.json" />
+<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_0.json?url" />
 
 
 
-<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_1.json" />
+<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_1.json?url" />
 
 
 
@@ -90,11 +90,11 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_2.json" />
+<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_2.json?url" />
 
 
 
-<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_3.json" />
+<TLMViewer src="./biconvex_sphere_tlmviewer/biconvex_sphere_3.json?url" />
 
 
 

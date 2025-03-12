@@ -53,5 +53,5 @@ demo()
 ```
 
 
-<TLMViewer src="./asphere_tlmviewer/asphere_0.json" />
+<TLMViewer src="./asphere_tlmviewer/asphere_0.json?url" />
 

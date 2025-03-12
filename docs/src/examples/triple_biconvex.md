@@ -33,11 +33,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_0.json" />
+<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_0.json?url" />
 
 
 
-<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_1.json" />
+<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_1.json?url" />
 
 
 
@@ -96,9 +96,9 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_2.json" />
+<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_2.json?url" />
 
 
 
-<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_3.json" />
+<TLMViewer src="./triple_biconvex_tlmviewer/triple_biconvex_3.json?url" />
 

@@ -30,11 +30,11 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_0.json" />
+<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_0.json?url" />
 
 
 
-<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_1.json" />
+<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_1.json?url" />
 
 
 
@@ -90,11 +90,11 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_2.json" />
+<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_2.json?url" />
 
 
 
-<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_3.json" />
+<TLMViewer src="./plot_magnification_tlmviewer/plot_magnification_3.json?url" />
 
 
 

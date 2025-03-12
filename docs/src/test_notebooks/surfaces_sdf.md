@@ -95,7 +95,7 @@ def surface_sdf_analysis(surface, xlim=(-10, 10), ylim=(-10, 10)):
     return f, axes
 
 f, _ = surface_sdf_analysis(tlm.Sphere(6, 3.5))
-f.savefig("sphere.png")
+#f.savefig("sphere.png")
 
 #F, _ = surface_sdf_analysis(tlm.DiameterBandSurface(1.0, 2.0))
 #F, _ = surface_sdf_analysis(tlm.DiameterBandSurfaceSq(1.0, 2.0))
@@ -104,7 +104,7 @@ f.savefig("sphere.png")
 
 ```
 
-    /tmp/ipykernel_91741/1530191286.py:75: DeprecationWarning: __array_wrap__ must accept context and return_scalar arguments (positionally) in the future. (Deprecated NumPy 2.0)
+    /tmp/ipykernel_83596/2810113602.py:75: DeprecationWarning: __array_wrap__ must accept context and return_scalar arguments (positionally) in the future. (Deprecated NumPy 2.0)
       ax_grad_arg.pcolormesh(X, Y, np.arctan2(F_grad[:, 1], F_grad[:, 0]).reshape(X.shape), cmap='twilight')
 
 

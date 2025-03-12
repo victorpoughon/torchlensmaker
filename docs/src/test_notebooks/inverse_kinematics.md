@@ -45,7 +45,7 @@ tlm.show3d(model)
 
 
 
-<TLMViewer src="./inverse_kinematics_tlmviewer/inverse_kinematics_0.json" />
+<TLMViewer src="./inverse_kinematics_tlmviewer/inverse_kinematics_0.json?url" />
 
 
 
@@ -103,5 +103,5 @@ tlm.show3d(model)
 
 
 
-<TLMViewer src="./inverse_kinematics_tlmviewer/inverse_kinematics_1.json" />
+<TLMViewer src="./inverse_kinematics_tlmviewer/inverse_kinematics_1.json?url" />
 

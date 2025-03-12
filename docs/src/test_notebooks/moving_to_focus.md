@@ -29,11 +29,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_0.json" />
+<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_0.json?url" />
 
 
 
-<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_1.json" />
+<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_1.json?url" />
 
 
 
@@ -82,5 +82,5 @@ tlm.show(optics, dim=2)
 ```
 
 
-<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_2.json" />
+<TLMViewer src="./moving_to_focus_tlmviewer/moving_to_focus_2.json?url" />
 

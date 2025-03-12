@@ -46,7 +46,7 @@ tlm.show(optics, dim=2)
 ```
 
 
-<TLMViewer src="./cooke_triplet_tlmviewer/cooke_triplet_0.json" />
+<TLMViewer src="./cooke_triplet_tlmviewer/cooke_triplet_0.json?url" />
 
 
 
@@ -96,7 +96,7 @@ tlm.show(optics, dim=2)
 ```
 
 
-<TLMViewer src="./cooke_triplet_tlmviewer/cooke_triplet_1.json" />
+<TLMViewer src="./cooke_triplet_tlmviewer/cooke_triplet_1.json?url" />
 
 
 

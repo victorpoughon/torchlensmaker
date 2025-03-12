@@ -69,7 +69,7 @@ tlm.show(optics, dim=2, end=20)
 ```
 
 
-<TLMViewer src="./test_full_forward_tlmviewer/test_full_forward_0.json" />
+<TLMViewer src="./test_full_forward_tlmviewer/test_full_forward_0.json?url" />
 
 
 
@@ -122,7 +122,7 @@ outs[optics]
 
 
 
-    OpticalData(dim=2, dtype=torch.float64, sampling={'base': DenseSampler(size=5)}, transforms=[[IdentityTransform 0x7220797878c0 dim=2 dtype=torch.float64], [TranslateTransform 0x7220797869c0 dim=2 dtype=torch.float64], [TranslateTransform 0x722079787a10 dim=2 dtype=torch.float64], [TranslateTransform 0x7220797877a0 dim=2 dtype=torch.float64]], P=tensor([[29.8189, -1.6381],
+    OpticalData(dim=2, dtype=torch.float64, sampling={'base': DenseSampler(size=5)}, transforms=[[IdentityTransform 0x7aa2c803cbc0 dim=2 dtype=torch.float64], [TranslateTransform 0x7aa1b15fb170 dim=2 dtype=torch.float64], [TranslateTransform 0x7aa1b15faed0 dim=2 dtype=torch.float64], [TranslateTransform 0x7aa1b15fb6e0 dim=2 dtype=torch.float64]], P=tensor([[29.8189, -1.6381],
             [29.9484, -0.8783],
             [30.0000,  0.0000],
             [29.9484,  0.8783],
@@ -130,6 +130,6 @@ outs[optics]
             [ 0.9892,  0.1466],
             [ 1.0000,  0.0000],
             [ 0.9892, -0.1466],
-            [ 0.9468, -0.3219]], dtype=torch.float64), normals=None, rays_base=tensor([-0.1745, -0.0873,  0.0000,  0.0873,  0.1745], dtype=torch.float64), rays_object=None, rays_image=None, rays_wavelength=None, var_base=tensor([-0.1745, -0.0873,  0.0000,  0.0873,  0.1745], dtype=torch.float64), var_object=None, var_wavelength=None, material=<torchlensmaker.materials.NonDispersiveMaterial object at 0x7220ae00c080>, blocked=tensor([False, False, False, False, False]), loss=tensor(0., dtype=torch.float64))
+            [ 0.9468, -0.3219]], dtype=torch.float64), normals=None, rays_base=tensor([-0.1745, -0.0873,  0.0000,  0.0873,  0.1745], dtype=torch.float64), rays_object=None, rays_image=None, rays_wavelength=None, var_base=tensor([-0.1745, -0.0873,  0.0000,  0.0873,  0.1745], dtype=torch.float64), var_object=None, var_wavelength=None, material=<torchlensmaker.materials.NonDispersiveMaterial object at 0x7aa1e5ff80b0>, blocked=tensor([False, False, False, False, False]), loss=tensor(0., dtype=torch.float64))
 
 

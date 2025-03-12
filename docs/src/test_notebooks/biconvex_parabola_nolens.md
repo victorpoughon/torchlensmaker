@@ -26,11 +26,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_0.json" />
+<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_0.json?url" />
 
 
 
-<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_1.json" />
+<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_1.json?url" />
 
 
 
@@ -80,9 +80,9 @@ tlm.show(optics, dim=3, end=60)
 ```
 
 
-<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_2.json" />
+<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_2.json?url" />
 
 
 
-<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_3.json" />
+<TLMViewer src="./biconvex_parabola_nolens_tlmviewer/biconvex_parabola_nolens_3.json?url" />
 
