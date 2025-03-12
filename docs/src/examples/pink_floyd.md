@@ -18,7 +18,7 @@ optics = tlm.Sequential(
     tlm.Gap(10),
     tlm.Turn([-20, 0]),
     tlm.Rotate(
-        tlm.RefractiveSurface(tlm.CircularPlane(S), material="BK7"),
+        tlm.RefractiveSurface(tlm.CircularPlane(S), material="K5"),
         [-A, 0]),
     tlm.Gap(R),
     tlm.Rotate(
@@ -30,7 +30,7 @@ sampling = {"wavelength": 10}
 
 output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
 
-tlm.show(optics, dim=2, end=10, sampling=sampling)
+tlm.show(optics, dim=2, end=10, sampling=sampling, controls={"output_rays": "wavelength"})
 tlm.show(optics, dim=3, end=10, sampling=sampling)
 ```
 

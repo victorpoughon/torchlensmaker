@@ -42,7 +42,7 @@ export default defineConfig({
           { text: 'Pink Floyd', link: '/examples/pink_floyd'},
           { text: 'Rainbow', link: '/examples/rainbow'},
           { text: 'Reflecting Telescope', link: '/examples/reflecting_telescope'},
-          { text: 'Snells Window', link: '/examples/snells_window'},
+          { text: 'Snell\'s Window', link: '/examples/snells_window'},
           { text: 'Triple Biconvex', link: '/examples/triple_biconvex'},
           { text: 'Variable Lens Sequence', link: '/examples/variable_lens_sequence'},
           { text: 'Test notebooks', link: '/test_notebooks'}
