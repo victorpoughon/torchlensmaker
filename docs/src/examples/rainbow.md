@@ -56,9 +56,9 @@ tlm.show3d(model, sampling={"base": 500, "object": 20, "wavelength": 10}, end=30
 ```
 
 
-<TLMViewer src="./rainbow_tlmviewer/rainbow_0.json?url" />
+<TLMViewer src="./rainbow_files/rainbow_0.json?url" />
 
 
 
-<TLMViewer src="./rainbow_tlmviewer/rainbow_1.json?url" />
+<TLMViewer src="./rainbow_files/rainbow_1.json?url" />
 

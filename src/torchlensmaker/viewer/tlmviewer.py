@@ -101,7 +101,7 @@ def vitepress_vue_display(
 
     name = os.environ["TLMVIEWER_TARGET_NAME"]
     target_dir = os.environ["TLMVIEWER_TARGET_DIRECTORY"]
-    json_folder = Path(f"{name}_tlmviewer")
+    json_folder = Path(f"{name}_files")
     json_name = Path(f"{name}_{vitepress_global_counter}.json")
     
     output_folder = Path(target_dir) / json_folder

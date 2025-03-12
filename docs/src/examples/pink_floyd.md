@@ -35,9 +35,9 @@ tlm.show(optics, dim=3, end=10, sampling=sampling)
 ```
 
 
-<TLMViewer src="./pink_floyd_tlmviewer/pink_floyd_0.json?url" />
+<TLMViewer src="./pink_floyd_files/pink_floyd_0.json?url" />
 
 
 
-<TLMViewer src="./pink_floyd_tlmviewer/pink_floyd_1.json?url" />
+<TLMViewer src="./pink_floyd_files/pink_floyd_1.json?url" />
 

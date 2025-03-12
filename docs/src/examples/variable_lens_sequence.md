@@ -100,11 +100,11 @@ tlm.show(optics, dim=3)
 
 
 
-<TLMViewer src="./variable_lens_sequence_tlmviewer/variable_lens_sequence_0.json?url" />
+<TLMViewer src="./variable_lens_sequence_files/variable_lens_sequence_0.json?url" />
 
 
 
-<TLMViewer src="./variable_lens_sequence_tlmviewer/variable_lens_sequence_1.json?url" />
+<TLMViewer src="./variable_lens_sequence_files/variable_lens_sequence_1.json?url" />
 
 
 
@@ -198,11 +198,11 @@ tlm.show3d(optics)
 ```
 
 
-<TLMViewer src="./variable_lens_sequence_tlmviewer/variable_lens_sequence_2.json?url" />
+<TLMViewer src="./variable_lens_sequence_files/variable_lens_sequence_2.json?url" />
 
 
 
-<TLMViewer src="./variable_lens_sequence_tlmviewer/variable_lens_sequence_3.json?url" />
+<TLMViewer src="./variable_lens_sequence_files/variable_lens_sequence_3.json?url" />
 
 
 

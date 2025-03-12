@@ -41,11 +41,11 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./reflecting_telescope_tlmviewer/reflecting_telescope_0.json?url" />
+<TLMViewer src="./reflecting_telescope_files/reflecting_telescope_0.json?url" />
 
 
 
-<TLMViewer src="./reflecting_telescope_tlmviewer/reflecting_telescope_1.json?url" />
+<TLMViewer src="./reflecting_telescope_files/reflecting_telescope_1.json?url" />
 
 
 
@@ -95,9 +95,9 @@ tlm.show(optics, dim=3)
 ```
 
 
-<TLMViewer src="./reflecting_telescope_tlmviewer/reflecting_telescope_2.json?url" />
+<TLMViewer src="./reflecting_telescope_files/reflecting_telescope_2.json?url" />
 
 
 
-<TLMViewer src="./reflecting_telescope_tlmviewer/reflecting_telescope_3.json?url" />
+<TLMViewer src="./reflecting_telescope_files/reflecting_telescope_3.json?url" />
 
