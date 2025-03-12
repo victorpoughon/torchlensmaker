@@ -1,13 +1,12 @@
+# Python
 .ipynb_checkpoints
 __pycache__/
 venv/
 *.egg-info
 
 .vscode
-html/
-.obsidian
 
 # Docs
 node_modules/
-
 **/.vitepress/cache/
+**/vitepress/dist
