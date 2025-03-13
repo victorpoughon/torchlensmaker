@@ -5,12 +5,14 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 
 ## Documentation
 
+* Add "download this notebook" button
 * Document sign and axis convention
 * Reference API documentation (I've been focused on examples so far!)
 * Fix rendering of build123 models
 * Add page discussing total internal reflection, blocked rays and sequential mode
 * Add "try it live" functionality with pyodide / jupyterlite / etc.
 * Document lens inner vs outer thickness
+* Custom nbconvert markdown template: https://stackoverflow.com/questions/56229030
 
 ## Examples
 
@@ -40,8 +42,16 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Implicit version of SphereR
 * Convert between surface types by fitting samples
 * Improve `Outline` support
+* use rtol / atol in `contains()` instead of bare tol
+* rename `samples()` epsilon argument to clarify what it does
+* implementation of parabola without Sag but direct solve of the quadratic collision equation
+* Non axially symmetric surfaces
+* Replace `Surface.testname()` by `__str__()`
+* In sag surface make sure there is an inner where() for safe backwards when masking
 
 ## Materials
+
+* Load data from material database
 
 ## Lenses
 
@@ -65,6 +75,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Collision detection: detect convergence before max iter with tolerance parameter
 * Zoom lenses: sampling dimension for mechanical configuration
 * Diffuse reflection / partial reflection (analogy to NN dropout)
+* Utility function to get available dimensions of a model
 
 ## Optimization
 
@@ -133,6 +144,13 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Set camera view button (XY / XY / XZ)
 * Display scale bar
 * Surface tooltip (material / type / parameters)
+* Fullscreen button
+* Support object and base coordinate color rendering for rays in 3D (use [2D colormaps](https://dominikjaeckle.com/projects/color2d/)?)
+* Better handle of window resize with threejs `onWindowResize()`
+* "tlmviewer loaded" should show version
+* clean up code layout in tlmviewer.py / render_sequence
+* clean up code in scene.ts
+* fix visible inner disk when rendering two half spheres
 
 ## Testing
 
@@ -140,9 +158,12 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
     lens maker equation
     setup a stack, call forward, check loss value aginst expected
     check loss is differentiable, and gradient is finite
+* test_local_collide: add tangent test cases specific to surfaces*
+* Fix collision tests with rays that have `V_X == 0`
+* same sign for offset in generators for sphere and sphereR
 
 ## Advanced topics
 
-* Enforce `mypy --strict`
+* Enforce `mypy --strict` and ruff
 * Think about `float128` support
 * GPU performance benchmark
