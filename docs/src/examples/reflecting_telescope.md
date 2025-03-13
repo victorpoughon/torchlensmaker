@@ -1,28 +1,21 @@
 # Reflecting Telescope
 
+A reflecting telescope, in its basic form, is a very simple design. Two surfaces both reflect light to focus it at a single point.
+
+![Newton reflecting Telescope](./newton_reflecting_telescope.jpeg)
+
+*Image from Wikipedia*
+
+For this example, our telescope will be made of two convace mirrors. To spice things up, we'll say that the primary mirror is parabolic, and the secondary is spherical. Of course this can easily be changed, so feel free to download this notebook and play with it. In this example, we will keep the position of the two mirrors constant, and try to optimize the two mirrors curvatures jointly.
+
 
 ```python
-import torch
-import torch.nn as nn
-import torch.optim as optim
 import torchlensmaker as tlm
-
-# A simple reflecting telescope made of two concave mirrors
-
-# In this example we keep the position of the mirrors constant
-# and optimize their curvature jointly
-
-# Note that there is more than one solution because rays can cross N times before focusing on the focal point
-# We want the solution where they cross at the focal point for the first time
-# TODO use image loss to account for flips
-# aka "intermediate image"
-
-
 
 primary = tlm.Parabola(35., A=tlm.parameter(-0.0001))
 secondary = tlm.Sphere(35., R=tlm.parameter(450.0))
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.Gap(-100),
     tlm.PointSourceAtInfinity(beam_diameter=30),
     tlm.Gap(100),
@@ -36,8 +29,8 @@ optics = nn.Sequential(
     tlm.FocalPoint(),
 )
 
-tlm.show(optics, dim=2)
-tlm.show(optics, dim=3)
+tlm.show2d(optics)
+tlm.show3d(optics)
 ```
 
 
@@ -48,8 +41,12 @@ tlm.show(optics, dim=3)
 <TLMViewer src="./reflecting_telescope_files/reflecting_telescope_1.json?url" />
 
 
+Now, as you can see light isn't being focused at all. We have wrapped both surfaces arguments in `tlm.parameter()`. Internally, this creates a `nn.Parameter()` so that PyTorch can optimize them. Let's run a standard Adam optimizer for 100 iterations, with 10 rays samples.
+
 
 ```python
+import torch.optim as optim
+
 tlm.optimize(
     optics,
     optimizer = optim.Adam(optics.parameters(), lr=3e-4),
@@ -84,7 +81,7 @@ tlm.optimize(
 
 
     
-![png](reflecting_telescope_files/reflecting_telescope_2_1.png)
+![png](reflecting_telescope_files/reflecting_telescope_4_1.png)
     
 
 
