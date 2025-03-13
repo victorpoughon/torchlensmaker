@@ -66,16 +66,24 @@ def spot_diagram(
     # Process shortcut definitions in the sampling dict
     sampling = tlm.init_sampling(sampling)
 
-    # Split the input sampling configuration in one per row / col
+    # Setup rows and cols, with convenience generators for iteration
     nrows = sampling[row].size() if row is not None else 1
     ncols = sampling[col].size() if col is not None else 1
-    spot_sampling: list[list[dict[str, tlm.Sampler]]] = [
-        [{} for index_col in range(ncols)] for index_row in range(nrows)
-    ]
+
+    def rows():
+        yield from range(nrows)
+
+    def cols():
+        yield from range(ncols)
+
+    def spots():
+        for ir in rows():
+            for ic in cols():
+                yield ir, ic
 
     # Get the "non cartesian producted" sampling variables
     # by evaluating the stack
-    output_full = optics(tlm.default_input(sampling, dim=3, dtype=dtype))
+    output_full: tlm.OpticalData = optics(tlm.default_input(sampling, dim=3, dtype=dtype))
     var_row = output_full.get_var_optional(row) if row is not None else None
     var_col = output_full.get_var_optional(col) if col is not None else None
 
@@ -98,31 +106,33 @@ def spot_diagram(
         )
 
     # Build a sampling dictionary for each spot in the diagram, i.e. each row/col position
-    for index_row in range(nrows):
-        for index_col in range(ncols):
-            for name, sampler in sampling.items():
-                if row is not None and var_row is not None and name == row:
-                    spot_sampling[index_row][index_col][name] = tlm.sampling.exact(
-                        var_row[index_row].unsqueeze(0)
-                    )
-                elif col is not None and var_col is not None and name == col:
-                    spot_sampling[index_row][index_col][name] = tlm.sampling.exact(
-                        var_col[index_col].unsqueeze(0)
-                    )
-                else:
-                    spot_sampling[index_row][index_col][name] = sampler
+    spot_sampling: list[list[dict[str, tlm.Sampler]]] = [
+        [{} for index_col in range(ncols)] for index_row in range(nrows)
+    ]
+    for ir, ic in spots():
+        for name, sampler in sampling.items():
+            if row is not None and var_row is not None and name == row:
+                spot_sampling[ir][ic][name] = tlm.sampling.exact(
+                    var_row[ir].unsqueeze(0)
+                )
+            elif col is not None and var_col is not None and name == col:
+                spot_sampling[ir][ic][name] = tlm.sampling.exact(
+                    var_col[ic].unsqueeze(0)
+                )
+            else:
+                spot_sampling[ir][ic][name] = sampler
 
     # Compute image coordinates, and color data for each spot
     spot_coords: list[list[Tensor]] = []
     spot_colors: list[list[Tensor]] = []
-    for index_row in range(nrows):
+    for ir in rows():
         spot_coords.append([])
         spot_colors.append([])
-        for index_col in range(ncols):
+        for ic in cols():
             # Evaluate model with the current row/col spot sampling dict
             output = optics(
                 tlm.default_input(
-                    spot_sampling[index_row][index_col], dim=3, dtype=dtype
+                    spot_sampling[ir][ic], dim=3, dtype=dtype
                 )
             )
 
