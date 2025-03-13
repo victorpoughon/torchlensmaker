@@ -1,3 +1,4 @@
+# About
 
 Hello! My name is Victor, I'm the author of this project. You can find contact
 info on [my personal website](https://victorpoughon.fr). Feel free to reach out 😊
@@ -57,7 +58,11 @@ working on this project. If you are interested in sponsoring open-source
 development of Torch Lens Maker, please reach out or make a donation! Thank
 you!
 
-You can find contact info on [my personal website](https://victorpoughon.fr/).
+* [Sponsor Torch Lens Maker on GitHub](https://github.com/sponsors/victorpoughon)
+* [Buy me a coffee](https://buymeacoffee.com/victorpoughon)
+
+You can also find personal contact info on [my website](https://victorpoughon.fr/).
+Feel free to reach out 😊
 
 ## Mailing List
 

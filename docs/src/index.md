@@ -70,15 +70,6 @@ On top of that, after having tried software like
 powerful way to design mechanical 3D systems and this project is an exploration
 of that, but for optical systems.
 
-In summary, I got the idea to start this project because:
-
-* [torch.autograd](https://pytorch.org/docs/stable/autograd.html) is *very, very* powerful.
-* Optical design software is too often ridiculously expensive and proprietary.
-* Open-source optics should exist!
-
-The ultimate goal of _Torch Lens Maker_ is to be to _Zemax OpticStudio_ what _OpenSCAD_ is to _SolidWorks_.
-
-
 ::: warning Experimental project!
 This project is in its very early stages, I've got a [very long roadmap](/about#roadmap) planned
 and I'm [looking for funding](/about#funding) to be able to keep working on it full time! If you
