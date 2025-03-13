@@ -79,8 +79,10 @@ In summary, I got the idea to start this project because:
 The ultimate goal of _Torch Lens Maker_ is to be to _Zemax OpticStudio_ what _OpenSCAD_ is to _SolidWorks_.
 
 
-::: warning Funding
+::: warning Experimental project!
 This project is in its very early stages, I've got a [very long roadmap](/about#roadmap) planned
 and I'm [looking for funding](/about#funding) to be able to keep working on it full time! If you
 can, please consider donating, sponsoring or even hiring me! 😊💚
+
+Also, the API **will** change without warning. A stable release is still very far in the future.
 :::

@@ -81,7 +81,8 @@ The math behind surface parameterization and collision detection code is heavily
 For now there is support for:
 
 * Plane
-* Sphere
+* Sphere with radius parameterization
+* Sphere with curvature parameterization
 * Parabola
 * Generic Asphere
 
@@ -96,18 +97,10 @@ Fully freeform surfaces are also possible within the math framework of the libra
 
 Torch Lens Maker is based on PyTorch's exceptional autograd engine. This means
 we can get exact derivatives of pretty much anything, and go crazy with gradient
-descent. It's possible to optimize: 
+descent. It's possible to optimize parametric surface shapes, 3D transform
+(spacing, position, rotation) and any combination of those jointly.
 
-* Parametric surface shape
-* Surface diameter
-* Any arbitrary 3D transform (spacing, position, rotation)
-* Wavelength
-* Index of refraction
-* Any combination of the above jointly
-
-> TODO link to examples in the list above
-
-Any custom function can also be added to the loss function, so expressing design
+Custom functions can also be added to the loss, so expressing design
 contraints is very flexible. One awesome idea is to be able to propagate
 manufacturing constraints all the way to the initial steps of an optical design
 project.
