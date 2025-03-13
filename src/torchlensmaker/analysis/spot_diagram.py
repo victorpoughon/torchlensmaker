@@ -151,61 +151,59 @@ def spot_diagram(
     del coords
     del output
 
-    # Potential issue here is that spots don't all have the same number of points
-    # if there are no blocked rays, the number of points is the same for all spots,
-    # and it's the product of the sizes of all non row/col dimensions
-    # but if there are blocked rays, then that number can be less, or even zero.
+    # TODO display the number of rays per spot on the figure
 
-    # for index_row in range(nrows):
-    #     for index_col in range(ncols):
-    #         print(index_row, index_col, "size = ", spot_coords[index_row][index_col].size())
-
-    # spot_tensor :: [nrows, ncols, N, 2]
-    # N is the product of the sizes of all non row/col dimensions
-    # The last dimensions is 2 for the Y and Z axes of the image plane
-    spot_tensor = torch.stack([torch.stack(row, dim=0) for row in spot_coords], dim=0)
-    assert spot_tensor.shape[0] == nrows
-    assert spot_tensor.shape[1] == ncols
-    assert spot_tensor.shape[3] == 2
+    # Each tensor in spot_coords has shape [..., 2], where:
+    # - the first dimension is the number of points in the spot, which beween 0
+    #   (if all rays are blocked) and the product of the sizes of all non
+    #   row/col dimensions
+    # - the second dimension is 2 for the Y and Z axes of the image plane
 
     # Compute spot centers and range
-    centers = spot_tensor.mean(dim=2)
-    centered_spots = spot_tensor - centers.unsqueeze(2)
-    range_radius = 1.1 * torch.max(torch.abs(centered_spots))
+    centers: list[list[Tensor]] = [
+        [spot_coords[ir][ic].mean(dim=0) for ic in cols()] for ir in rows()
+    ]
+
+    centered_spots: list[list[Tensor]] = [
+        [spot_coords[ir][ic] - centers[ir][ic] for ic in cols()] for ir in rows()
+    ]
+
+    # Range radius is the common display range that will be used for all spots
+    range_radius = 1.1 * max(
+        [torch.max(torch.abs(centered_spots[ir][ic])) for ir, ic in spots()]
+    )
 
     fig, axes = plt.subplots(nrows, ncols, squeeze=False, **fig_kw)
 
     fig.suptitle("Spot Diagram")
 
     # Plot image coordinate as points
-    for index_row in range(nrows):
-        for index_col in range(ncols):
-            coords = spot_tensor[index_row, index_col, :, :]
+    for ir, ic in spots():
+        coords = spot_coords[ir][ic]
 
-            # Plot image coordinates as points
-            ax = axes[index_row][index_col]
-            ax.scatter(
-                coords[:, 1],
-                coords[:, 0],
-                s=0.5,
-                c=spot_colors[index_row][index_col],
-                marker=".",
-            )
+        # Plot image coordinates as points
+        ax = axes[ir][ic]
+        ax.scatter(
+            coords[:, 1],
+            coords[:, 0],
+            s=0.5,
+            c=spot_colors[ir][ic],
+            marker=".",
+        )
 
-            centerY = centers[index_row, index_col, 1]
-            centerZ = centers[index_row, index_col, 0]
-            ax.set_xlim([centerY - range_radius, centerY + range_radius])
-            ax.set_ylim([centerZ - range_radius, centerZ + range_radius])
+        centerZ, centerY = centers[ir][ic]
+        ax.set_xlim([centerY - range_radius, centerY + range_radius])
+        ax.set_ylim([centerZ - range_radius, centerZ + range_radius])
 
     # Set the row / col titles
     if col is not None and var_col is not None:
-        for index_col, ax in enumerate(axes[0]):
-            label = make_var_label(col, var_col[index_col].tolist(), precision=2)
+        for ic, ax in enumerate(axes[0]):
+            label = make_var_label(col, var_col[ic].tolist(), precision=2)
             ax.set_title(label, size="medium")
 
     if row is not None and var_row is not None:
-        for index_row, ax in zip(range(nrows), axes[:, 0]):
-            label = make_var_label(row, var_row[index_row].tolist(), precision=2)
+        for ir, ax in zip(range(nrows), axes[:, 0]):
+            label = make_var_label(row, var_row[ir].tolist(), precision=2)
             ax.set_ylabel(label, rotation=0, ha="right", size="medium")
 
     for ax in axes.flatten():
