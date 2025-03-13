@@ -56,15 +56,11 @@ to keep working on it as much as possible!
 I am looking for sponsorship, contracting or donations to be able to keep
 working on this project. If you are interested in sponsoring open-source
 development of Torch Lens Maker, please reach out or make a donation! Thank
-you!
+you 💚
 
 * [Sponsor Torch Lens Maker on GitHub](https://github.com/sponsors/victorpoughon)
 * [Buy me a coffee](https://buymeacoffee.com/victorpoughon)
 
 You can also find personal contact info on [my website](https://victorpoughon.fr/).
 Feel free to reach out 😊
-
-## Mailing List
-
-## Roadmap
 

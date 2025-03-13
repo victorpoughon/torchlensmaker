@@ -71,7 +71,7 @@ powerful way to design mechanical 3D systems and this project is an exploration
 of that, but for optical systems.
 
 ::: warning Experimental project!
-This project is in its very early stages, I've got a [very long roadmap](/about#roadmap) planned
+This project is in its very early stages, I've got a [very long roadmap](/roadmap) planned
 and I'm [looking for funding](/about#funding) to be able to keep working on it full time! If you
 can, please consider donating, sponsoring or even hiring me! 😊💚
 

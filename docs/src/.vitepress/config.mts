@@ -11,6 +11,7 @@ export default defineConfig({
     nav: [
       { text: 'Documentation', link: '/' },
       { text: 'About', link: '/about' },
+      { text: 'Roadmap', link: '/roadmap' },
       {
         text: 'Community',
         items: [
