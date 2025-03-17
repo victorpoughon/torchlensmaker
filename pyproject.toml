@@ -1,6 +1,6 @@
 [project]
 name = "torchlensmaker"
-version = "0.0.1"
+version = "0.0.2"
 authors = [
   { name="Victor Poughon", email="victor.poughon@gmail.com" }
 ]
