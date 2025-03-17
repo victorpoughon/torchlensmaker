@@ -1,3 +1,8 @@
+<script setup>
+import Newsletter from './components/Newsletter.vue';
+</script>
+
+
 # About
 
 Hello! My name is Victor, I'm the author of this project. You can find contact
@@ -64,3 +69,9 @@ you 💚
 You can also find personal contact info on [my website](https://victorpoughon.fr/).
 Feel free to reach out 😊
 
+## Newsletter
+
+If you want to receive project updates by email, I've setup a mailing list. I'll
+send a few emails per year at most.
+
+<Newsletter/>

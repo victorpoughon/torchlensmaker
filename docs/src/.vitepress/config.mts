@@ -20,7 +20,7 @@ export default defineConfig({
         items: [
           { text: 'GitHub Discussions', link: 'https://github.com/victorpoughon/torchlensmaker/discussions' },
           { text: 'Funding', link: '/about#funding' },
-          { text: 'Mailing List', link: '/about#mailing-list' }
+          { text: 'Mailing List', link: '/about#newsletter' }
         ]
       }
     ],
