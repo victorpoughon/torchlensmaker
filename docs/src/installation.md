@@ -25,17 +25,49 @@ python -c "import torchlensmaker"
 
 The 3D web viewer widget [tlmviewer](https://github.com/victorpoughon/tlmviewer)
 is written in TypeScript using ThreeJS, and is built as a standard npm package.
-It can be used:
 
-* as an interactive widget from a Jupyter Notebook:
+### tlmviewer in jupyter notebook
 
 ```python title="python"
 tlm.show3d(optics, title="Landscape Lens")
 ```
 
-* embeded statically in an HTML page:
+By default, this code will request the tlmviewer library file from a CDN
+(jsdelivr). This works out of the box but requires an internet connection. You
+can also use a local version of the viewer by downloading `tlmviewer-{version}.js` from
+[GitHub releases](https://github.com/victorpoughon/tlmviewer/releases)
+(or even building it yourself with npm if you prefer).
+
+Place the `.js` file in the same directory as your notebook. When running the notebook interactively,
+the python library will find it and use the local version.
+
+### tlmviewer in static html
+
+tlmviewer can also be embedded in a static HTML page, provided with a json file of the scene:
 
 ```html title="HTML"
-<div class="tlmviewer" data-url="/examples/landscape.json"></div>
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>tlmviewer example</title>
+
+        <script type="module">
+            import tlmviewer from 'https://cdn.jsdelivr.net/npm/tlmviewer/+esm';
+            tlmviewer.loadAll();
+        </script>
+
+        <style>
+            .tlmviewer {
+                height: 600px;
+                aspect-ratio: 1.5;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="tlmviewer" data-url="./testsEmbed/landscape.json"></div>
+    </body>
+</html>
+
 ```
 
