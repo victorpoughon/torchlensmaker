@@ -167,3 +167,4 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Enforce `mypy --strict` and ruff
 * Think about `float128` support
 * GPU performance benchmark
+* Reduce number of project dependencies (scipy, colorcet at least)
