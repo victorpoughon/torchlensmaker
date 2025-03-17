@@ -8,6 +8,8 @@ import torch
 import warnings
 from pathlib import Path
 
+from importlib.metadata import version, PackageNotFoundError
+
 from typing import Any, Optional
 
 from torchlensmaker.core.surfaces import (
@@ -84,8 +86,15 @@ def ipython_display(
             json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
         )
 
+    # Get torchlensmaker version from pyproject.toml metadata
+    package_version = version("torchlensmaker")
+
     div = string.Template(div_template).substitute(div_id=div_id)
-    script = string.Template(script_template).substitute(data=json_data, div_id=div_id)
+    script = string.Template(script_template).substitute(
+        data=json_data,
+        div_id=div_id,
+        version=package_version,
+    )
     display(HTML(div + script))  # type: ignore
 
 

@@ -1,14 +1,36 @@
+// Load the tlmviewer js library in a jupyter notebook context
 async function importtlm() {
-    try {
-        return await import("/tlmviewer.js");
-    } catch (error) {
-        console.log("error", error);
-        return await import("/files/test_notebooks/tlmviewer.js");
+    const sources = [
+        "/tlmviewer-$version.js",
+        "/files/tlmviewer-${version}.js",
+        "https://unpkg.com/tlmviewer@${version}",
+    ];
+
+    // Helper function to attempt loading from a source
+    const tryImport = async (url) => {
+        try {
+            const module = await import(url);
+            return module;
+        } catch (error) {
+            return null;
+        }
+    };
+
+    // Try sources in sequence
+    for (const url of sources) {
+        const result = await tryImport(url);
+        if (result){
+            console.log("Successfully loaded tlmviewer from " + url);
+            return result;
+        }
     }
+
+    // If all sources fail
+    throw new Error('Failed to load tlmviewer');
 }
 
 const module = await importtlm();
-const tlmviewer = module.tlmviewer;
+const tlmviewer = module.default;
 
 const data = '$data';
 
