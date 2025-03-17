@@ -5,6 +5,7 @@
 ![PRs-Welcome](https://img.shields.io/badge/PRs-Welcome-green?logo=ticktick&logoColor=green)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=Python&logoColor=yellow)
 ![Static Badge](https://img.shields.io/badge/PyTorch-powered-red?logo=PyTorch)
+![PyPI - Version](https://img.shields.io/pypi/v/torchlensmaker)
 
 Welcome to **Torch Lens Maker**, an open-source Python library for designing
 optical systems using optimization. Currently an experimental project, the goal
