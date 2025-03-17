@@ -18173,7 +18173,7 @@ const v_ = {
   load: zl,
   loadAll: __
 };
-console.log("tlmviewer-0.0.7 loaded");
+console.log("tlmviewer-0.0.8 loaded");
 export {
   f_ as TLMViewerApp,
   v_ as default
