@@ -10,3 +10,6 @@ venv/
 node_modules/
 **/.vitepress/cache/
 **/.vitepress/dist
+
+# tlmviewer
+tlmviewer*.js
