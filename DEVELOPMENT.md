@@ -10,6 +10,8 @@ To make a new release, bump the version number in:
 * tlm: `pyproject.toml`
 * tlm: `docs/package.json`
 
+Remember to run `npm install` to update also `package-lock.json`.
+
 ## Using a local version of tlmviewer in notebooks
 
 Build tlmviewer locally with:
