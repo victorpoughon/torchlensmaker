@@ -12,5 +12,6 @@
         <img alt="PRs welcome" src="https://img.shields.io/badge/PRs-Welcome-green?logo=ticktick&logoColor=green">
         <img alt="Python Version from PEP 621 TOML" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=Python&logoColor=yellow">
         <img alt="PyTorch powered" src="https://img.shields.io/badge/PyTorch-powered-red?logo=PyTorch">
+        <img alt="PyPI - Version" src="https://img.shields.io/pypi/v/torchlensmaker">
     </div>
 </template>
