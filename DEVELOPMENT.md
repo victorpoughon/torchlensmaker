@@ -6,8 +6,8 @@ The version numbers for torchlensmaker (the python library) and tlmviewer (the 3
 
 To make a new release, bump the version number in:
 
-* tlmviewer: `package.json`
-* tlm: `pyproject.toml` (multiple occurences in the file)
+* tlmviewer: `package.json` (multiple occurences in the file)
+* tlm: `pyproject.toml`
 * tlm: `docs/package.json`
 
 ## Using a local version of tlmviewer in notebooks

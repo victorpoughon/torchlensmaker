@@ -50,11 +50,11 @@ open-source tooling. Let's do the same for optics!
 
 ## Funding
 
-I've been working on this project for a few months now on my own time. I'd love
-to keep working on it as much as possible!
+I've been working on this project on my own time and money for a few months now
+(as of early 2025). I'd love to keep working on it as much as possible!
 
 I am looking for sponsorship, contracting or donations to be able to keep
-working on this project. If you are interested in sponsoring open-source
+working on it. If you are interested in sponsoring open-source
 development of Torch Lens Maker, please reach out or make a donation! Thank
 you 💚
 
