@@ -153,8 +153,8 @@ css = [
 
 [[package]]
 name = "build123d"
-version = "0.1.dev1989+gedf1dbd"
-source = { git = "https://github.com/victorpoughon/build123d.git?rev=fix_async_display#edf1dbdaa1fdfa0fcf7ae811a8b55c023fa65a2f" }
+version = "0.9.1"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anytree" },
     { name = "cadquery-ocp" },
@@ -166,6 +166,10 @@ dependencies = [
     { name = "svgpathtools" },
     { name = "trianglesolver" },
     { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/88/da/7e8b15b9daaa86e2fb98784f5f7b409c294aca9a4edb6d09b9004ea6cc8b/build123d-0.9.1.tar.gz", hash = "sha256:8bc179cb65c7e7393191ad7113f13781fabf75892be07060f2bebf95369c093b", size = 17091674 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/fa/f1/9adca2cf75b23c0678bd0460ec0386c9ccf32fe65f29d8ecaa4474905749/build123d-0.9.1-py3-none-any.whl", hash = "sha256:0e2a3c171d7db55329201438a95ab888df6c1b0fd13067a3780efcc8fbe1cc78", size = 232957 },
 ]
 
 [[package]]
@@ -2312,7 +2316,7 @@ wheels = [
 
 [[package]]
 name = "torchlensmaker"
-version = "0.0.1"
+version = "0.0.2"
 source = { editable = "." }
 dependencies = [
     { name = "build123d" },
@@ -2332,7 +2336,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "build123d", git = "https://github.com/victorpoughon/build123d.git?rev=fix_async_display" },
+    { name = "build123d", specifier = "~=0.9.1" },
     { name = "colorcet", specifier = ">=3" },
     { name = "matplotlib", specifier = "~=3.9.2" },
     { name = "nbmake", marker = "extra == 'test'", specifier = "~=1.5.4" },
