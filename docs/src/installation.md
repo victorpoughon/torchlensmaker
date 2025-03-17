@@ -33,13 +33,14 @@ tlm.show3d(optics, title="Landscape Lens")
 ```
 
 By default, this code will request the tlmviewer library file from a CDN
-(jsdelivr). This works out of the box but requires an internet connection. You
+(unpkg.com). This works out of the box but requires an internet connection. You
 can also use a local version of the viewer by downloading `tlmviewer-{version}.js` from
-[GitHub releases](https://github.com/victorpoughon/tlmviewer/releases)
+[npmjs releases](https://www.npmjs.com/package/tlmviewer)
 (or even building it yourself with npm if you prefer).
 
-Place the `.js` file in the same directory as your notebook. When running the notebook interactively,
-the python library will find it and use the local version.
+Place the `.js` file in the working directory of the jupyter server. When
+running the notebook interactively, the python library will find it and use the
+local version.
 
 ### tlmviewer in static html
 
@@ -53,7 +54,7 @@ tlmviewer can also be embedded in a static HTML page, provided with a json file 
         <title>tlmviewer example</title>
 
         <script type="module">
-            import tlmviewer from 'https://cdn.jsdelivr.net/npm/tlmviewer/+esm';
+            import tlmviewer from 'https://unpkg.com/tlmviewer@latest';
             tlmviewer.loadAll();
         </script>
 
@@ -68,6 +69,5 @@ tlmviewer can also be embedded in a static HTML page, provided with a json file 
         <div class="tlmviewer" data-url="./testsEmbed/landscape.json"></div>
     </body>
 </html>
-
 ```
 

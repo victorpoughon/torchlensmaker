@@ -1,5 +1,8 @@
 import { defineConfig } from 'vitepress'
 
+// Vite plugins
+import version from "vite-plugin-package-version";
+
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
   title: "Torch Lens Maker",
@@ -97,6 +100,7 @@ export default defineConfig({
       commonjsOptions: {
         sourceMap: false,
       },
-    }
+    },
+    plugins: [version()],
   },
 })

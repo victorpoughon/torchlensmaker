@@ -6,15 +6,14 @@ const props = defineProps({
     src: String
 });
 
-const module = await import("/tlmviewer.js");
-const tlmviewer = module.tlmviewer;
+const version = import.meta.env.PACKAGE_VERSION;
+const module = await import(`./tlmviewer-${version}.js`);
+const tlmviewer = module.default;
 
 var tlmviewerElement = ref(null);
 
 onMounted(() => {
-    tlmviewer.load(tlmviewerElement.value, props.src).then(() => {
-        console.log("loaded!");
-    });
+    tlmviewer.load(tlmviewerElement.value, props.src);
 });
 </script>
 
