@@ -1,1 +1,0 @@
-../tlmviewer/dist/tlmviewer-0.0.10.js
