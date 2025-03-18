@@ -77,11 +77,11 @@ of that, but for optical systems.
 
 ## Installation
 
-> TODO
+```sh
+pip install torchlensmaker
+```
 
-## Documentation
-
-> TODO
+For more installation info, including how to setup tlmviewer, see the documentation. `TODO add link`.
 
 ## About
 
