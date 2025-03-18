@@ -15,7 +15,6 @@ and state-of-the art numerical optimization.
 ```python
 import torchlensmaker as tlm
 
-# Define the optical sequence: a simple lens made of two refractive surfaces
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
     tlm.Gap(15),
@@ -26,10 +25,8 @@ optics = tlm.Sequential(
     tlm.ImagePlane(50),
 )
 
-# Optimize the radius of curvature
 tlm.optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), {"base": 10, "object": 5}, 100)
 
-# Show 2D layout
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
