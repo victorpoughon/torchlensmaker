@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-import torch.optim as optim
+import torch.optim
 
 import math
 from dataclasses import dataclass
@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 import torchlensmaker as tlm
 
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, TypeAlias
 
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]
@@ -21,6 +21,8 @@ def get_all_gradients(model: nn.Module) -> Tensor:
             grads.append(param.grad.view(-1))
     return torch.cat(grads)
 
+# Alias for convinience
+optim: TypeAlias = torch.optim
 
 @dataclass
 class OptimizationRecord:
@@ -38,10 +40,10 @@ def optimize(
     optimizer: optim.Optimizer,
     sampling: dict[str, Any],
     num_iter: int,
-    dim: int,
     dtype: torch.dtype = torch.float64,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
+    dim: int = 2,
 ) -> OptimizationRecord:
 
     # Record values for analysis
@@ -84,7 +86,7 @@ def optimize(
         grad = get_all_gradients(optics)
         if torch.isnan(grad).any():
             print("ERROR: nan in grad", grad)
-            raise RuntimeError("nan in gradient, check your torch.where() =)")
+            raise RuntimeError("nan in gradient, check your torch.where() (https://docs.jax.dev/en/latest/faq.html#gradients-contain-nan-where-using-where))")
 
         optimizer.step()
 

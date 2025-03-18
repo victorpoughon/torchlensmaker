@@ -15,17 +15,21 @@ and state-of-the art numerical optimization.
 ```python
 import torchlensmaker as tlm
 
+# Define the optical sequence: a simple lens made of two refractive surfaces
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
-    tlm.Wavelength(400, 800),
     tlm.Gap(15),
-    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
-    tlm.Gap(3.419),
-    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-24.887), material="air"),
-    tlm.Gap(97.5088),
+    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.0), material="BK7-nd"),
+    tlm.Gap(3),
+    tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=tlm.parameter(-20)), material="air"),
+    tlm.Gap(100),
     tlm.ImagePlane(50),
 )
 
+# Optimize the radius of curvature
+tlm.optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), {"base": 10, "object": 5}, 100)
+
+# Show 2D layout
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
@@ -37,12 +41,12 @@ PyTorch provides world-class automatic differentiation, and access to
 state-of-the-art numerical optimization algorithms with GPU support.
 
 The key idea is that there is a strong analogy to be made between layers of a
-neural network, and optical elements in a so-called *sequential optical system*.
+neural network, and optical elements in a so-called *sequential* optical system.
 If we have a compound optical system made of a series of lenses, mirrors, etc.,
-we can pretend that each optical element is the layer of a neural network. The
+we can treat each optical element as the layer of a neural network. The
 data flowing through this network are not images, sounds, or text, but rays of
-light! Each layer affects light rays depending on its internal parameters
-(surface shape, refractive material...) and following the very much non-linear
+light. Each layer affects light rays depending on its internal parameters
+(surface shape, refractive material...) and following the very much non&#8209;linear
 Snell's law. Inference, or the forward model, is the optical simulation where
 given some input light, we compute the system's output light. Training, or
 optimization, is finding the best shapes for lenses to focus light where we want&nbsp;it.

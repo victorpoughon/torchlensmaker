@@ -456,6 +456,25 @@ class SagSurface(ImplicitSurface):
         )
 
 
+def safe_sqrt(radicand: Tensor) -> Tensor:
+    """
+    Gradient safe version of torch.sqrt() that returns 0 where radicand <= 0
+    """
+    ok = radicand > 0
+    safe = torch.zeros_like(radicand)
+    return torch.sqrt(torch.where(ok, radicand, safe))
+
+
+def safe_div(dividend: Tensor, divisor: Tensor) -> Tensor:
+    """
+    Gradient safe version of torch.div() that returns dividend where divisor == 0
+    """
+
+    ok = divisor != torch.zeros(1, dtype=divisor.dtype)
+    safe = torch.ones_like(divisor)
+    return torch.div(dividend, torch.where(ok, divisor, safe))
+
+
 class Sphere(SagSurface):
     """
     A section of a sphere, parameterized by signed curvature.
@@ -531,23 +550,23 @@ class Sphere(SagSurface):
     def g(self, r: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(r, 2)
-        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * torch.pow(C, 2)))
+        return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
     def g_grad(self, r: Tensor) -> Tensor:
         C = self.C
         # TODO add a clamp here to avoid div by zero? or make sure fallback has an epsilon
-        return torch.div(C * r, torch.sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
+        return safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
 
     def G(self, y: Tensor, z: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
-        return torch.div(C * r2, 1 + torch.sqrt(1 - r2 * torch.pow(C, 2)))
+        return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         C = self.C
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
-        denom = torch.sqrt(1 - r2 * torch.pow(C, 2))
-        return torch.div(y * C, denom), torch.div(z * C, denom)
+        denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
+        return safe_div(y * C, denom), safe_div(z * C, denom)
 
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         # If the curvature is low, use linear sampling along the y axis

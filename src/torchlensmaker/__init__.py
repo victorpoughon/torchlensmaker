@@ -18,7 +18,7 @@ from torchlensmaker.materials import *
 from torchlensmaker.sampling import *
 
 # Optimization
-from torchlensmaker.optimize import optimize
+from torchlensmaker.optimize import *
 
 # Viewer
 import torchlensmaker.viewer.tlmviewer as viewer
