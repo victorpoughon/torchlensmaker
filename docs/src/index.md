@@ -6,11 +6,11 @@ layout: doc
 <LogoTitle/>
 <Badges/>
 
-Welcome to **Torch Lens Maker**, an open-source Python library for geometric
-optics based on [PyTorch](https://pytorch.org/). Currently a very experimental
-project, the ultimate goal is to be able to design complex real-world optical
-systems (lenses, mirrors, etc.) using modern computer code and state-of-the art
-numerical optimization.
+Welcome to **Torch Lens Maker**, an open-source Python library for
+differentiable geometric optics based on [PyTorch](https://pytorch.org/).
+Currently a very experimental project, the goal is to be able to design complex
+real-world optical systems (lenses, mirrors, etc.) using modern computer code
+and state-of-the art numerical optimization.
 
 ```python
 import torchlensmaker as tlm

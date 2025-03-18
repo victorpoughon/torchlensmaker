@@ -1,16 +1,16 @@
 [<img src="./docs/src/public/logos/logo-title.png">](https://github.com/victorpoughon/torchlensmaker)
 
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/victorpoughon/torchlensmaker)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=python&logoColor=yellow&color=yellowgreen)
 ![GitHub License](https://img.shields.io/github/license/victorpoughon/torchlensmaker)
-![PRs-Welcome](https://img.shields.io/badge/PRs-Welcome-green?logo=ticktick&logoColor=green)
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=Python&logoColor=yellow)
-![Static Badge](https://img.shields.io/badge/PyTorch-powered-red?logo=PyTorch)
 ![PyPI - Version](https://img.shields.io/pypi/v/torchlensmaker)
+![Static Badge](https://img.shields.io/badge/PyTorch-powered-red?logo=PyTorch)
 
-Welcome to **Torch Lens Maker**, an open-source Python library for designing
-optical systems using optimization. Currently an experimental project, the goal
-is to be able to design complex real-world optical systems (lenses, mirrors,
-etc.) using modern and expressive computer code.
+Welcome to **Torch Lens Maker**, an open-source Python library for
+differentiable geometric optics based on [PyTorch](https://pytorch.org/).
+Currently a very experimental project, the goal is to be able to design complex
+real-world optical systems (lenses, mirrors, etc.) using modern computer code
+and state-of-the art numerical optimization.
 
 ```python
 import torchlensmaker as tlm

@@ -12,7 +12,7 @@ div#logo-title {
     justify-content: center;
     position: relative;
     margin: 0 auto;
-    margin-bottom: 40px;
+    margin-bottom: 25px;
 }
 
 #logo-title h1 {
