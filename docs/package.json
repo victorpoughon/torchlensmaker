@@ -1,9 +1,12 @@
 {
-  "version": "0.0.8",
+  "version": "0.0.10",
   "devDependencies": {
     "markdown-it-mathjax3": "^4.3.2",
     "vite-plugin-package-version": "^1.1.0",
     "vitepress": "^1.6.3"
+  },
+  "dependencies": {
+    "tlmviewer": "github:victorpoughon/tlmviewer#main"
   },
   "scripts": {
     "docs:dev": "vitepress dev src",

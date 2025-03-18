@@ -2,13 +2,11 @@
 
 import { ref, onMounted } from 'vue';
 
+import tlmviewer from 'tlmviewer';
+
 const props = defineProps({
     src: String
 });
-
-const version = import.meta.env.PACKAGE_VERSION;
-const module = await import(`./tlmviewer-${version}.js`);
-const tlmviewer = module.default;
 
 var tlmviewerElement = ref(null);
 

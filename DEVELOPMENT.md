@@ -53,4 +53,4 @@ Python notebook are embeded into the documentation as `.md` files. To export a n
 
 ## Using a local version of tlmviewer for a local documentation build
 
-Update the tlmviewer library file in `docs/src/components/tlmviewer-{version}.js`.
+Update the version of tlmviewer in `docs/package.json` to point to your local checkout of tlmviewer.
