@@ -10,6 +10,9 @@ export default defineConfig({
   head: [['link', { rel: 'icon', href: '/logos/tlmlogo_black130_margin.png' }]],
   themeConfig: {
     logo: '/logos/tlmlogo_black150.png',
+    notFound: {
+      quote: "Sorry!"
+    },
 
     nav: [
       { text: 'Documentation', link: '/' },
