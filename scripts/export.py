@@ -19,7 +19,7 @@ from nbconvert.writers import FilesWriter
 
 
 def print_md_list(folder: Path):
-    for notebook in (Path("docs") / Path("src") / folder).glob("*.md"):
+    for notebook in sorted(folder.glob("*.md")):
         path = Path(*notebook.parts[2:])
         print(f"* [{path}]({path})")
 
@@ -39,9 +39,16 @@ def main():
     )
     parser.add_argument(
         "-p",
-        "--print_md_list",
+        "--print-md-list",
         action="store_true",
         help="Print list at destination in md format",
+    )
+    parser.add_argument(
+        "--output-dir",
+        help="Directory to write output(s) to",
+        type=str,
+        default=None,
+        metavar="DIR"
     )
 
     args = parser.parse_args()
@@ -52,11 +59,11 @@ def main():
         fullpath = Path(filepath).resolve()
 
         if Path(filepath).is_file():
-            output_folder = fullpath.parent
+            output_folder: Path = fullpath.parent if args.output_dir is None else Path(args.output_dir)
             print(f"Exporting notebook {filepath} to {output_folder}")
             export_notebook(Path(filepath), output_folder, args.skip)
         elif Path(filepath).is_dir():
-            output_folder = fullpath
+            output_folder: Path = fullpath if args.output_dir is None else Path(args.output_dir)
             print(f"Exporting all notebooks in {filepath} to {output_folder}")
             export_all(Path(filepath), output_folder, args.skip)
         else:
