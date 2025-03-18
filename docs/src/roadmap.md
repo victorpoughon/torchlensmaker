@@ -82,6 +82,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * More tweaking options for loss function: radial weighting, wavelength weighting, etc.
 * LR scheduler
 * Caching of best minimum
+* Optimization with 3D rays (image loss math)
 * Per parameter learning rate adapted to parameter scale. Example: one parabola coefficient, one distance
 * detect when optimization leads to parameter out of domain with nice error message for example, setup an impossibly short focal length with a spherical lens
 * detect when optimization reaches a point where there are no rays exiting the system, make a nice error message
