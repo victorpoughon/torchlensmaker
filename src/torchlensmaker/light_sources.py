@@ -3,6 +3,7 @@ import torch.nn as nn
 
 from torchlensmaker.core.tensor_manip import (
     cat_optional,
+    cartesian_prod2d,
     cartesian_prod2d_optional,
     to_tensor,
 )
@@ -32,25 +33,22 @@ class LightSourceBase(nn.Module):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
         raise NotImplementedError
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim, dtype = inputs.dim, inputs.dtype
 
         # Get samples from derived class in local frame
-        P, V, var_base, var_object = self.sample_light_source(
+        P, V, rays_base, rays_object, var_base, var_object = self.sample_light_source(
             inputs.sampling, dim, dtype
         )
 
-        # Cartesian product
-        P, V = cartesian_prod2d_optional(P, V)
-        rays_base, rays_object = cartesian_prod2d_optional(var_base, var_object)
-
         # Apply kinematic transform
         tf = forward_kinematic(inputs.transforms)
-        P = tf.direct_points(P)
-        V = tf.direct_vectors(V)
+        P, V = tf.direct_rays(P, V)
+
+        # TODO need better way to store var basis if we want to properly support multiple light source in a scene
 
         return inputs.replace(
             P=torch.cat((inputs.P, P), dim=0),
@@ -66,12 +64,12 @@ class LightSourceBase(nn.Module):
 class RaySource(LightSourceBase):
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
 
         P = torch.zeros(1, dim, dtype=dtype)
         V = unit_vector(dim, dtype).unsqueeze(0)
 
-        return P, V, None, None
+        return P, V, None, None, None, None
 
 
 class PointSourceAtInfinity(LightSourceBase):
@@ -81,7 +79,7 @@ class PointSourceAtInfinity(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
@@ -95,7 +93,10 @@ class PointSourceAtInfinity(LightSourceBase):
         P = torch.column_stack((torch.zeros(NX.shape[0], dtype=dtype), NX))
         V = unit_vector(dim, dtype).unsqueeze(0)
 
-        return P, V, NX, None
+        # Cartesian product
+        fullP, fullV = cartesian_prod2d(P, V)
+
+        return fullP, fullV, NX, None, NX, None
 
 
 class PointSource(LightSourceBase):
@@ -106,7 +107,7 @@ class PointSource(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
 
         # Sample angular direction
         angles = sampleND(
@@ -119,7 +120,10 @@ class PointSource(LightSourceBase):
         V = rotated_unit_vector(angles, dim)
         P = torch.zeros((1, dim), dtype=dtype)
 
-        return P, V, angles, None
+        # Cartesian product
+        fullP, fullV = cartesian_prod2d(P, V)
+
+        return fullP, fullV, angles, None, angles, None
 
 
 class ObjectAtInfinity(LightSourceBase):
@@ -130,7 +134,7 @@ class ObjectAtInfinity(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
@@ -149,8 +153,12 @@ class ObjectAtInfinity(LightSourceBase):
             dtype,
         )
         V = rotated_unit_vector(angles, dim)
+        
+        # Cartesian product
+        fullP, fullV = cartesian_prod2d(P, V)
+        rays_base, rays_object  = cartesian_prod2d(NX, angles)
 
-        return P, V, NX, angles
+        return fullP, fullV, rays_base, rays_object, NX, angles
 
 
 class Object(LightSourceBase):
@@ -161,7 +169,7 @@ class Object(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Tensor, Optional[Tensor]]:
+    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
 
         # Sample coordinates other than X on a disk
         NX = sampleND(
@@ -181,7 +189,11 @@ class Object(LightSourceBase):
         )
         V = rotated_unit_vector(angles, dim)
 
-        return P, V, angles, NX
+        # Cartesian product
+        fullP, fullV = cartesian_prod2d(P, V)
+        rays_object, rays_base  = cartesian_prod2d(NX, angles)
+
+        return fullP, fullV, rays_base, rays_object, angles, NX
 
 
 def cartesian_wavelength(inputs, ray_var):
