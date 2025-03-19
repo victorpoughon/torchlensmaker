@@ -616,7 +616,7 @@ class Sphere(SagSurface):
 
 
 class Parabola(SagSurface):
-    "Sag surface for a parabola $X = A Y^2$"
+    "Sag surface for a parabola $X = A R^2$"
 
     def __init__(
         self,
