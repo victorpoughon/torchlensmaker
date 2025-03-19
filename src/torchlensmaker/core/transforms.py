@@ -51,6 +51,12 @@ class TransformBase:
     def inverse_vectors(self, vectors: Tensor) -> Tensor:
         raise NotImplementedError
 
+    def direct_rays(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor]:
+        return self.direct_points(P), self.direct_vectors(V)
+
+    def inverse_rays(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor]:
+        return self.inverse_points(P), self.inverse_vectors(V)
+
     def hom_matrix(self) -> Tensor:
         "Homogenous transform matrix"
         raise NotImplementedError
