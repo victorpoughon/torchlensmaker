@@ -4,7 +4,6 @@ This is an automatically generated list of internal test notebooks. They are
 intended for development, testing or debugging and not really for
 documentation. But you're welcome to look around 😊
 
-* [test_notebooks/asphere.md](test_notebooks/asphere.md)
 * [test_notebooks/better_tree_forward.md](test_notebooks/better_tree_forward.md)
 * [test_notebooks/biconvex_parabola_nolens.md](test_notebooks/biconvex_parabola_nolens.md)
 * [test_notebooks/biconvex_parabola.md](test_notebooks/biconvex_parabola.md)
