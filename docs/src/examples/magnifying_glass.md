@@ -17,7 +17,7 @@ optics = tlm.Sequential(
     tlm.ImagePlane(50),
 )
 
-tlm.show(optics, dim=2, end=10)
+tlm.show(optics, dim=2)
 ```
 
 

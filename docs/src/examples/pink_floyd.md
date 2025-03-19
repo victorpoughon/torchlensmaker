@@ -31,7 +31,7 @@ sampling = {"wavelength": 10}
 output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
 
 tlm.show(optics, dim=2, end=10, sampling=sampling, controls={"color_rays": "wavelength"})
-tlm.show(optics, dim=3, end=10, sampling=sampling)
+tlm.show(optics, dim=3, end=10, sampling=sampling, controls={"color_rays": "wavelength"})
 ```
 
 
