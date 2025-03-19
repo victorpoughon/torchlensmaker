@@ -57,6 +57,13 @@ export default defineConfig({
       },
 
       {
+        text: 'Modeling',
+        items: [
+          { text: 'Light Sources', link: '/modeling/light_sources'}
+        ]
+      },
+
+      {
         text: 'Advanced Topics',
         items: [
           { text: 'Collision detection', link: '/advanced/collision_detection'}

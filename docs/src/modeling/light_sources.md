@@ -24,10 +24,7 @@ import torch.optim as optim
 
 
 ```python
-optics = tlm.Sequential(
-    tlm.Turn([20, 0]),
-    tlm.RaySource(material="air")
-)
+optics = tlm.Sequential(tlm.Turn([20, 0]), tlm.RaySource(material="air"))
 
 tlm.show(optics, dim=2, end=40, sampling={})
 tlm.show(optics, dim=3, end=40, sampling={})
@@ -51,7 +48,7 @@ optics = nn.Sequential(
     tlm.Gap(10),
     tlm.Rotate(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
-        angles = (-15, -5),
+        angles=(-15, -5),
     ),
     tlm.Gap(10),
     tlm.PointSourceAtInfinity(beam_diameter=18.5),
@@ -75,12 +72,7 @@ A point source that's positioned in physical space by the kinematic chain. Rays 
 
 
 ```python
-optics = nn.Sequential(
-    tlm.Gap(-10),
-    tlm.Rotate(
-        tlm.PointSource(10),
-        [15, 0])
-)
+optics = nn.Sequential(tlm.Gap(-10), tlm.Rotate(tlm.PointSource(10), [15, 0]))
 
 tlm.show(optics, dim=2, end=30, sampling={"base": 10, "sampler": "random"})
 tlm.show(optics, dim=3, end=100, sampling={"base": 100, "sampler": "random"})
@@ -103,7 +95,11 @@ An object that's so far away that all light rays coming from the same position o
 optics = nn.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=25),
     tlm.Gap(20),
-    tlm.BiLens(tlm.Parabola(diameter=15, A=tlm.parameter(0.02)), material = 'BK7-nd', outer_thickness=1.0),
+    tlm.BiLens(
+        tlm.Parabola(diameter=15, A=tlm.parameter(0.02)),
+        material="BK7-nd",
+        outer_thickness=1.0,
+    ),
 )
 
 tlm.show2d(optics, end=50)
@@ -125,7 +121,7 @@ An object that's positioned in physical space by the kinematic chain. Emits ligh
 
 ```python
 surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.02))
-lens = tlm.BiLens(surface, material = 'BK7-nd', outer_thickness=1.0)
+lens = tlm.BiLens(surface, material="BK7-nd", outer_thickness=1.0)
 
 object_distance = 50
 
@@ -160,12 +156,26 @@ optics = nn.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=12),
     tlm.Gap(1),
     tlm.Wavelength(400, 800),
-    tlm.BiLens(tlm.Parabola(diameter=15, A=tlm.parameter(0.02)), material = 'SF10', outer_thickness=1.0),
+    tlm.BiLens(
+        tlm.Parabola(diameter=15, A=tlm.parameter(0.02)),
+        material="SF10",
+        outer_thickness=1.0,
+    ),
 )
 
 # As with other dimensions, configure the sampled wavelengths with the sampling dictionary
-tlm.show2d(optics, end=5, sampling={"base": 10, "wavelength": 10}, controls={"color_rays": "wavelength"})
-tlm.show3d(optics, end=5, sampling={"base": 15, "wavelength": [400, 600, 600]}, controls={"color_rays": "wavelength"})
+tlm.show2d(
+    optics,
+    end=5,
+    sampling={"base": 10, "wavelength": 10},
+    controls={"color_rays": "wavelength"},
+)
+tlm.show3d(
+    optics,
+    end=5,
+    sampling={"base": 15, "wavelength": [400, 600, 600]},
+    controls={"color_rays": "wavelength"},
+)
 ```
 
 
