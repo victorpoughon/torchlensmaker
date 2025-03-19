@@ -25,7 +25,6 @@ documentation. But you're welcome to look around 😊
 * [test_notebooks/landscape_singlet_lens.md](test_notebooks/landscape_singlet_lens.md)
 * [test_notebooks/lens_maker_equation.md](test_notebooks/lens_maker_equation.md)
 * [test_notebooks/lenses.md](test_notebooks/lenses.md)
-* [test_notebooks/light_sources.md](test_notebooks/light_sources.md)
 * [test_notebooks/material_models.md](test_notebooks/material_models.md)
 * [test_notebooks/moving_to_focus.md](test_notebooks/moving_to_focus.md)
 * [test_notebooks/planoconvex_sphere.md](test_notebooks/planoconvex_sphere.md)
