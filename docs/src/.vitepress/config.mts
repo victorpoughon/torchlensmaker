@@ -105,5 +105,6 @@ export default defineConfig({
       },
     },
     plugins: [version()],
+    server: {host: true}
   },
 })
