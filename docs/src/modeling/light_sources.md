@@ -3,27 +3,21 @@
 Currently supported light sources:
 
 * [RaySource](/modeling/light_sources#raysource): A single light ray. (Sampling dimensions: None)
-* PointSource: A point source on the kinematic chain. (Sampling dimensions: `base`)
-* PointSourceAtInfinity: A point source at infinity. (Sampling dimensions: `base`)
-* Object: A circular object on the kinematic chain. (Sampling dimensions: `base`, `object`)
-* ObjectAtInfinity: A circular object at infinity. (Sampling dimensions: `base`, `object`)
-* Wavelength: A virtual light source that adds wavelength data to existing non chromatic light rays. (Sampling dimensions: `wavelength`)
+* [PointSource](/modeling/light_sources#pointsource): A point source on the kinematic chain. (Sampling dimensions: `base`)
+* [PointSourceAtInfinity](/modeling/light_sources#pointsourceatinfinity): A point source at infinity. (Sampling dimensions: `base`)
+* [Object](/modeling/light_sources#object): A circular object on the kinematic chain. (Sampling dimensions: `base`, `object`)
+* [ObjectAtInfinity](/modeling/light_sources#objectatinfinity): A circular object at infinity. (Sampling dimensions: `base`, `object`)
+* [Wavelength](/modeling/light_sources#wavelength): A virtual light source that adds wavelength data to existing non chromatic light rays. (Sampling dimensions: `wavelength`)
 
-
-
-```python
-import torch
-import torch.nn as nn
-import torchlensmaker as tlm
-import torch.optim as optim
-```
 
 ## RaySource
 
-`RaySource()` is a light source that emits a single ray of light. It does not need any sampling information.
+A light source that emits a single ray of light. It does not need any sampling information.
 
 
 ```python
+import torchlensmaker as tlm
+
 optics = tlm.Sequential(tlm.Turn([20, 0]), tlm.RaySource(material="air"))
 
 tlm.show(optics, dim=2, end=40, sampling={})
@@ -40,11 +34,11 @@ tlm.show(optics, dim=3, end=40, sampling={})
 
 ## PointSourceAtInfinity
 
-`PointSourceAtInfinity()` represents a point light source "at infinity", meaning that the source is so far away that the rays it emits are perfecly parallel. The number of rays depends on the "base" sampling dimension along the source's beam diameter.
+A point light source "at infinity", meaning that the source is so far away that the rays it emits are perfecly parallel. The number of rays depends on the "base" sampling dimension along the source's beam diameter. The element's position on the kinematic chain represents the start point of the rays.
 
 
 ```python
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.Gap(10),
     tlm.Rotate(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
@@ -72,7 +66,7 @@ A point source that's positioned in physical space by the kinematic chain. Rays 
 
 
 ```python
-optics = nn.Sequential(tlm.Gap(-10), tlm.Rotate(tlm.PointSource(10), [15, 0]))
+optics = tlm.Sequential(tlm.Gap(-10), tlm.Rotate(tlm.PointSource(10), [15, 0]))
 
 tlm.show(optics, dim=2, end=30, sampling={"base": 10, "sampler": "random"})
 tlm.show(optics, dim=3, end=100, sampling={"base": 100, "sampler": "random"})
@@ -88,11 +82,11 @@ tlm.show(optics, dim=3, end=100, sampling={"base": 100, "sampler": "random"})
 
 ## ObjectAtInfinity
 
-An object that's so far away that all light rays coming from the same position on the object are perfectly parallel. Emits light rays along both "base" and "object" sampling dimensions, within the domain defined by the beam diameter and the object angular size.
+An object that's so far away that all light rays coming from the same position on the object are perfectly parallel. Emits light rays along both "base" and "object" sampling dimensions, within the domain defined by the beam diameter and the object angular size. The position of this optical element on the kinematic chain represents the start point of the rays.
 
 
 ```python
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=25),
     tlm.Gap(20),
     tlm.BiLens(
@@ -125,7 +119,7 @@ lens = tlm.BiLens(surface, material="BK7-nd", outer_thickness=1.0)
 
 object_distance = 50
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.Gap(-object_distance),
     tlm.Object(beam_angular_size=5, object_diameter=5),
     tlm.Gap(object_distance),
@@ -151,7 +145,7 @@ Adds a wavelength variable to existing rays. Duplicates existing light rays for 
 
 
 ```python
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.Gap(-1),
     tlm.PointSourceAtInfinity(beam_diameter=12),
     tlm.Gap(1),
