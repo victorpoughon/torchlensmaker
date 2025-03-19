@@ -2,6 +2,7 @@
 :root {
     --vp-c-brand-1: #d8824d;
     --vp-c-brand-2: #7c4a2b;
+    --vp-code-color: --vp-c-text-1;
 
     --vp-code-font-size: 12px;
   }
