@@ -502,7 +502,7 @@ def render_sequence(
     )
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
-    ray_variables = RayVariables.from_optical_data(input_tree.values())
+    ray_variables = RayVariables.from_optical_data(output_tree.values())
 
     scene = viewer.new_scene("2D" if dim == 2 else "3D")
 
