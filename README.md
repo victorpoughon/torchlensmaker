@@ -108,11 +108,7 @@ Design principles and features (SOME OF THESE ARE WORK IN PROGRESS):
   3D viewer component for Torch Lens Maker. It is a TypeScript project based on
   ThreeJS and is developed side-by-side with the python package.
 
-For more discussion of these features, see the documentation. TODO link
-
-## Examples
-
-For more, check out examples at the documentation: TODO link here
+For more discussion of these features, see [the documentation](https://victorpoughon.github.io/torchlensmaker/features).
 
 ## Installation
 
@@ -120,7 +116,7 @@ For more, check out examples at the documentation: TODO link here
 pip install torchlensmaker
 ```
 
-For more installation info, including how to setup tlmviewer, see the documentation. `TODO add link`.
+For more installation info, including how to setup tlmviewer, [see the documentation](https://victorpoughon.github.io/torchlensmaker/installation).
 
 ## About
 
@@ -181,3 +177,6 @@ you!
 * [Buy me a coffee](https://buymeacoffee.com/victorpoughon)
 
 You can also find personal contact info on [my website](https://victorpoughon.fr/).
+
+For project updates, feel free to subscribe to
+[the mailing list](https://victorpoughon.github.io/torchlensmaker/about#newsletter).
