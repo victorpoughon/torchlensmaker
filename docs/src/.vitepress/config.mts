@@ -60,7 +60,8 @@ export default defineConfig({
         text: 'Modeling',
         items: [
           { text: 'Light Sources', link: '/modeling/light_sources'},
-          { text: 'Surfaces', link: '/modeling/surfaces'}
+          { text: 'Surfaces', link: '/modeling/surfaces'},
+          { text: 'Sampling', link: '/modeling/sampling'}
         ]
       },
 
