@@ -41,6 +41,7 @@ export default defineConfig({
       {
         text: 'Examples',
         items: [
+          { text: 'Simple Lenses', link: '/examples/simple_lenses'},
           { text: 'Cooke Triplet', link: '/examples/cooke_triplet'},
           { text: 'Double Gauss', link: '/examples/double_gauss'},
           { text: 'Landscape Lens', link: '/examples/landscape'},
