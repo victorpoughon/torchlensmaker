@@ -37,7 +37,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
 exclude = [
-  "docs/",
+  "docs/src/",
   "test_notebooks/",
   "drafts",
 ]
