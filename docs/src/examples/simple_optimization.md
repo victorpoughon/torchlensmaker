@@ -1,16 +1,13 @@
-# Biconvex Spherical Lens
+# Simple lens optimization
 
 
 ```python
-import torch
-import torch.nn as nn
-import torch.optim as optim
 import torchlensmaker as tlm
 
 surface = tlm.Sphere(diameter=15, R=tlm.parameter(25))
 lens = tlm.BiLens(surface, material="BK7-nd", outer_thickness=1.5)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=18.5),
     tlm.Gap(10),
     lens,
@@ -30,18 +27,18 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./biconvex_sphere_files/biconvex_sphere_0.json?url" />
+<TLMViewer src="./simple_optimization_files/simple_optimization_0.json?url" />
 
 
 
-<TLMViewer src="./biconvex_sphere_files/biconvex_sphere_1.json?url" />
+<TLMViewer src="./simple_optimization_files/simple_optimization_1.json?url" />
 
 
 
 ```python
 tlm.optimize(
     optics,
-    optimizer = optim.Adam(optics.parameters(), lr=1e-3),
+    optimizer = tlm.optim.Adam(optics.parameters(), lr=1e-3),
     sampling = {"base": 10},
     dim = 2,
     num_iter = 100
@@ -80,7 +77,7 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
     
-![png](biconvex_sphere_files/biconvex_sphere_2_1.png)
+![png](simple_optimization_files/simple_optimization_2_1.png)
     
 
 
@@ -90,25 +87,9 @@ tlm.show(optics, dim=3, sampling={"base": 100})
 
 
 
-<TLMViewer src="./biconvex_sphere_files/biconvex_sphere_2.json?url" />
+<TLMViewer src="./simple_optimization_files/simple_optimization_2.json?url" />
 
 
 
-<TLMViewer src="./biconvex_sphere_files/biconvex_sphere_3.json?url" />
-
-
-
-```python
-print(lens.inner_thickness())
-print(lens.outer_thickness())
-part = tlm.export.lens_to_part(lens)
-tlm.show_part(part)
-```
-
-    tensor(3.2144, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
-    tensor(1.5000, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
-
-
-
-<em>part display not supported in vitepress</em>
+<TLMViewer src="./simple_optimization_files/simple_optimization_3.json?url" />
 

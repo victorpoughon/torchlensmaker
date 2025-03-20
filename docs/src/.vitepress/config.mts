@@ -41,19 +41,17 @@ export default defineConfig({
       {
         text: 'Examples',
         items: [
-          { text: 'Simple Lenses', link: '/examples/simple_lenses'},
-          { text: 'Cooke Triplet', link: '/examples/cooke_triplet'},
-          { text: 'Double Gauss', link: '/examples/double_gauss'},
           { text: 'Landscape Lens', link: '/examples/landscape'},
-          { text: 'Magnifying glass', link: '/examples/magnifying_glass'},
-          { text: 'Pinhole Camera', link: '/examples/pinhole_camera'},
+          { text: 'Simple Lenses', link: '/examples/simple_lenses'},
+          { text: 'Simple Optimization', link: '/examples/simple_optimization'},
+          { text: 'Cooke Triplet', link: '/examples/cooke_triplet'},
+          { text: 'Snell\'s Window', link: '/examples/snells_window'},
           { text: 'Pink Floyd', link: '/examples/pink_floyd'},
           { text: 'Rainbow', link: '/examples/rainbow'},
           { text: 'Reflecting Telescope', link: '/examples/reflecting_telescope'},
-          { text: 'Snell\'s Window', link: '/examples/snells_window'},
           { text: 'Triple Biconvex', link: '/examples/triple_biconvex'},
           { text: 'Variable Lens Sequence', link: '/examples/variable_lens_sequence'},
-          { text: 'Test notebooks', link: '/test_notebooks'}
+          { text: 'Test notebooks', link: '/test_notebooks'},
         ]
       },
 
