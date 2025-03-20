@@ -2,7 +2,9 @@
 outline: [1, 3]
 ---
 
-# Design and Features
+# Features
+
+## Geometric Optics
 
 Torch Lens Maker implements <em class="hl-green">geometric optics</em>. Light is
 made up of a finite number of individual rays. Rays are each modeled as an

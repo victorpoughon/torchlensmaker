@@ -33,7 +33,7 @@ export default defineConfig({
         text: 'Introduction',
         items: [
           { text: 'Welcome', link: '/'},
-          { text: 'Design Overview', link: '/design-overview' },
+          { text: 'Features', link: '/features' },
           { text: 'Installation', link: '/installation' },
           { text: 'Getting Started', link: '/getting-started' },
         ]

@@ -82,14 +82,14 @@ Design principles and features (SOME OF THESE ARE WORK IN PROGRESS):
 * **Geometric optics**: Light rays are straight lines in absolute space. If they
   hit a surface, they can reflect, refract or stop.
 * **No approximations**: Perfect geometric accuracy up to floating point
-  precision
+  precision (currently f32 or f64).
 * **Sequential mode**: The order in which rays interact with optical elements
-  must be known. This constraints is heavily mitigated by the fact that the
+  must be known. This constraint is heavily mitigated by the fact that the
   entire optical model is a pure Python program, and the PyTorch compute graph
   is dynamic, so parameterization is very powerful.
 * **Beautiful code**: Torch Lens Maker is code based optical CAD software. The
   design of a software library should aim to make code easy to read, not easy to
-  write.
+  write. So great care is being taken to make the API as beautiful as possible.
 * **Dimension generic code**: Modeling is generic over the number of dimensions
   (2 or 3). It is only when sampling the system that dimension is fixed. This
   bridges the gap between 2D ray diagrams and full 3D raytracing with the same
@@ -97,15 +97,18 @@ Design principles and features (SOME OF THESE ARE WORK IN PROGRESS):
   raytracing isn't available).
 * **Flexible surface definition framework**. Any surface definition can be
   easily added in explicit or implicit form: 2D or 3D, axially symmetric or not.
-* **Export 3D models for manufacturing** Using build123d, lens models can be
+* **Export 3D models for manufacturing** Using
+  [build123d](https://build123d.readthedocs.io/en/latest/), lens models can be
   exported to 3D manufacturing formats (STEP, STL, etc.)
 * **Forward and inverse kinematics**: Optical elements positions in world space
   are defined on a kinematic tree. This enables joint optimization of surface
   shapes, positions and rotations, effectively acting as an inverse kinematics
   solver.
 * **Web viewer**: [tlmviewer](https://github.com/victorpoughon/tlmviewer) is a
-  3D viewer component for Torch Lens Maker. It is a typescript project based on
-  ThreeJS and is developed jointly.
+  3D viewer component for Torch Lens Maker. It is a TypeScript project based on
+  ThreeJS and is developed side-by-side with the python package.
+
+For more discussion of these features, see the documentation. TODO link
 
 ## Examples
 
