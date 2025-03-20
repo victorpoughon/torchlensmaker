@@ -440,3 +440,33 @@ $$ T(\overrightarrow{N}) = RS\overrightarrow{N}$$
 
 > TODO document using sucessive transforms to make a forward kinematic chain
 
+## Iterative collision detection for implicit surfaces
+
+Summary of the overall algorithm.
+
+First, a bit of nomenclature:
+
+* "algorithm" refers top one instance of Newton, Gradient Descent or Levenberg-Marquardt with associated configuration like number of iterations, maximum step size, damping parameter, etc.
+* "method" refers to the overall collision detection procedure, which includes three phases which each use a single algorithm.
+
+**Step 1: Initialization**
+
+Initialize t values. Different initialization methods are available. During the optimization, each ray can be associated with multiple t values so that the search can progress from multiple starting values of t in parallel. This is akin to particle optimization, but here the search is quite simple it's one dimensional. Each of these is called a "beam" in the source code. 
+
+So ultimately tensors in the code can have three dimensions:
+
+* N, the number of rays
+* H, the number of iteration steps
+* B, the number of beams per ray
+
+**Step 2: Coarse phase**
+
+Run a fixed number of steps of algorithm A, with B beams for each ray. The goal here is to have at least one beam within a close distance to the global minimum.
+
+**Step 3: Fine phase**
+
+Starting from the best beam of the coarse phase, run a fixed number of steps of algorithm B with a single beam. The goal here is to refine the solution to a high degree of precision.
+
+**Step 4: Differentiable step**
+
+Run a single step of algorithm C. The goal here is to provide differentiability during torch backwards pass. Every step except this one is run under `torch.no_grad()`.
