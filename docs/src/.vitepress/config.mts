@@ -8,6 +8,7 @@ export default defineConfig({
   title: "Torch Lens Maker",
   description: "Differentiable geometric optics in PyTorch",
   head: [['link', { rel: 'icon', href: '/logos/tlmlogo_black130_margin.png' }]],
+  base: '/torchlensmaker/',
   themeConfig: {
     logo: '/logos/tlmlogo_black150.png',
     notFound: {
