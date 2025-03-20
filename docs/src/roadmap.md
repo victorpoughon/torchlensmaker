@@ -5,14 +5,15 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 
 ## Documentation
 
+* Write a lot more documentation!
+* Integrate pdoc to generate reference documentation
 * Add "download this notebook" button
 * Document sign and axis convention
-* Reference API documentation (I've been focused on examples so far!)
 * Fix rendering of build123 models
 * Add page discussing total internal reflection, blocked rays and sequential mode
 * Add "try it live" functionality with pyodide / jupyterlite / etc.
 * Document lens inner vs outer thickness
-* Custom nbconvert markdown template: https://stackoverflow.com/questions/56229030
+* Custom nbconvert markdown template for clearer text output cells: https://stackoverflow.com/questions/56229030
 
 ## Examples
 
