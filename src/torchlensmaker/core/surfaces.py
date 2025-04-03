@@ -38,7 +38,7 @@ from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
 
 
-from typing import Optional
+from typing import Optional, Any
 
 # shorter for type annotations
 Tensor = torch.Tensor
@@ -125,6 +125,12 @@ class LocalSurface:
         """
         raise NotImplementedError
 
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        """
+        Convert to a dictionary for JSON serialization
+        """
+        raise NotImplementedError
+
 
 class Plane(LocalSurface):
     "X=0 plane"
@@ -178,6 +184,13 @@ class Plane(LocalSurface):
         return torch.logical_and(
             self.outline.contains(points, tol), torch.abs(points.select(-1, 0)) < tol
         )
+
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {
+            "type": "surface-plane",
+            "radius": self.outline.max_radius(),
+            "clip_planes": self.outline.clip_planes()
+        }
 
 
 class SquarePlane(Plane):
@@ -595,6 +608,25 @@ class Sphere(SagSurface):
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
+    # def to_dict(self, _dim: int) -> dict[str, Any]:
+    #     return {
+    #         "type": "sag-surface",
+    #         "sag-type": "sphere",
+    #         "C": self.C.item(),
+    #     }
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        N = 100
+        if dim == 2:
+            samples = self.samples2D_full(N, epsilon=0.0)
+        elif dim == 3:
+            samples = self.samples2D_half(N, epsilon=0.0)
+        # TODO implement sphere in tlmviewer, for now lathe surface
+        return {
+            "type": "surface-lathe",
+            "samples": samples.tolist(),
+        }
+
 
 class Parabola(SagSurface):
     "Sag surface for a parabola $X = A R^2$"
@@ -635,6 +667,24 @@ class Parabola(SagSurface):
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         return 2 * self.A * y, 2 * self.A * z
 
+    # def to_dict(self, _dim: int) -> dict[str, Any]:
+    #     return {
+    #         "type": "sag-surface",
+    #         "sag-type": "parabola",
+    #         "A": self.A.item(),
+    #     }
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        N = 100
+        if dim == 2:
+            samples = self.samples2D_full(N, epsilon=0.0)
+        elif dim == 3:
+            samples = self.samples2D_half(N, epsilon=0.0)
+        # TODO implement parabola in tlmviewer, for now lathe surface
+        return {
+            "type": "surface-lathe",
+            "samples": samples.tolist(),
+        }
 
 class SphereR(LocalSurface):
     """
@@ -883,6 +933,12 @@ class SphereR(LocalSurface):
 
         return init_t + t, local_normals, valid
 
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {
+            "type": "surface-sphere-r",
+            "R": self.R.item(),
+        }
+
 
 class Asphere(SagSurface):
     def __init__(
@@ -974,3 +1030,15 @@ class Asphere(SagSurface):
         coeffs_term = 4 * A4 * r2
 
         return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        N = 100
+        if dim == 2:
+            samples = self.samples2D_full(N, epsilon=0.0)
+        elif dim == 3:
+            samples = self.samples2D_half(N, epsilon=0.0)
+        # TODO implement asphere in tlmviewer, for now lathe surface
+        return {
+            "type": "surface-lathe",
+            "samples": samples.tolist(),
+        }

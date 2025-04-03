@@ -165,12 +165,7 @@ class KinematicSurfaceArtist:
         chain = input_tree[module].transforms + module.surface_transform(dim, dtype)
         transform = tlm.forward_kinematic(chain)
 
-        # TODO find a way to group surfaces together?
-        return [
-            viewer.render_surfaces(
-                [module.surface], [transform], dim=transform.dim, N=100
-            )
-        ]
+        return [viewer.render_surface(module.surface, transform, dim=transform.dim)]
 
     @staticmethod
     def render_rays(

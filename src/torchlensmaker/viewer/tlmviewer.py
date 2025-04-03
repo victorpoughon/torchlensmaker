@@ -169,60 +169,30 @@ def new_scene(mode: str) -> Any:
         raise RuntimeError("mode should be 2D or 3D")
 
 
-def process_surface(
+def render_surface(
     surface: ImplicitSurface,
     transform: TransformBase,
     dim: int,
-    N: int = 100,
 ) -> object:
     """
     Render a surface to a json serializable object in tlmviewer format
     """
 
-    # TODO, should we have a type SymmetricSurface that provides samples2D?
+    # Convert the surface to a dict
+    obj = surface.to_dict(dim)
 
-    if dim == 2:
-        samples = surface.samples2D_full(N, epsilon=0.0)
-        obj = {
-            "matrix": transform.hom_matrix().tolist(),
-            "samples": samples.tolist(),
-        }
-    elif dim == 3:
-        samples = surface.samples2D_half(N, epsilon=0.0)
-        obj = {
-            "matrix": transform.hom_matrix().tolist(),
-            "samples": samples.tolist(),
-        }
-    else:
-        raise RuntimeError("inconsistent arguments to render_surface")
-
-    # convert the outline to clip planes
-    if dim == 3 and isinstance(surface, Plane):
-        clip_planes = surface.outline.clip_planes()
-        if len(clip_planes) > 0:
-            obj["clip_planes"] = clip_planes
+    # Add the matrix transform
+    obj["matrix"] = transform.hom_matrix().tolist()
 
     return obj
 
 
-def render_surfaces(
-    surfaces: list[LocalSurface],
-    transforms: list[TransformBase],
-    dim: int,
-    N: int = 100,
-) -> Any:
-    return {
-        "type": "surfaces",
-        "data": [process_surface(s, t, dim, N) for s, t in zip(surfaces, transforms)],
-    }
-
-
-def render_surface(
+def render_surface_local(
     surface: LocalSurface,
     dim: int,
 ) -> Any:
-    return render_surfaces(
-        [surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim
+    return render_surface(
+        surface, IdentityTransform(dim=dim, dtype=surface.dtype), dim=dim
     )
 
 
