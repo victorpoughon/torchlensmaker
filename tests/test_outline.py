@@ -24,8 +24,9 @@ def test_square_outline() -> None:
         ]
     )
 
-    assert torch.all(outline.contains(points) == torch.tensor([True, True, True, True, False]))
-
+    assert torch.all(
+        outline.contains(points) == torch.tensor([True, True, True, True, False])
+    )
 
 
 def test_circular_outline() -> None:
@@ -43,4 +44,6 @@ def test_circular_outline() -> None:
         ]
     )
     print(outline.contains(points))
-    assert torch.all(outline.contains(points) == torch.tensor([True, True, True, False, False]))
+    assert torch.all(
+        outline.contains(points) == torch.tensor([True, True, True, False, False])
+    )

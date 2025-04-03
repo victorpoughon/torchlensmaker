@@ -9,6 +9,7 @@ from typing import Any
 Fixtures common to all tests
 """
 
+
 def make_common_surfaces(dtype: torch.dtype) -> list[tlm.LocalSurface]:
     # fmt: off
     return [
@@ -65,9 +66,11 @@ def make_common_surfaces(dtype: torch.dtype) -> list[tlm.LocalSurface]:
     ]
     # fmt: on
 
+
 @pytest.fixture
 def surfaces(dtype: torch.dtype) -> list[tlm.LocalSurface]:
     return make_common_surfaces(dtype)
+
 
 @pytest.fixture(params=[2, 3], ids=["2D", "3D"])
 def dim(request: pytest.FixtureRequest) -> Any:

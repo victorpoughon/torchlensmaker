@@ -10,4 +10,3 @@ def test_refractive_index() -> None:
         print(idx)
         assert torch.all(idx >= 1.0)
         assert torch.all(idx <= 10.0)
-

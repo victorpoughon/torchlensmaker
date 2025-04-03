@@ -145,12 +145,11 @@ def test_shapes(make_transforms: tuple[torch.dtype, int, list[TransformBase]]) -
 
 
 def test_roundtrip(
-    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]],
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 5
     for t in transforms:
-
         if dtype == torch.float32:
             atol, rtol = 1e-4, 1e-4
         elif dtype == torch.float64:
@@ -170,7 +169,7 @@ def test_roundtrip(
 
 
 def test_preserve_dtype(
-    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]],
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 3
@@ -185,7 +184,7 @@ def test_preserve_dtype(
 
 
 def test_hom_matrix(
-    make_transforms: tuple[torch.dtype, int, list[TransformBase]]
+    make_transforms: tuple[torch.dtype, int, list[TransformBase]],
 ) -> None:
     dtype, dim, transforms = make_transforms
     N = 5

@@ -63,7 +63,7 @@ def make_test_cases_all_surfaces() -> list[CollisionTestCase]:
                 FixedRays(direction=unit2d_rot(0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit2d_rot(-10), dim=dim, N=N, offset=0.0, epsilon=epsilon),
             ])
-        
+
         if dim == 3:
             generators_collide.extend([
                 # FixedRays(direction=torch.tensor([0.0, 0.0, 1.0]), dim=dim, N=N, offset=0.0, epsilon=epsilon),
@@ -78,13 +78,13 @@ def make_test_cases_all_surfaces() -> list[CollisionTestCase]:
                 FixedRays(direction=unit3d_rot(0, 0), dim=dim, N=N, offset=0.0, epsilon=epsilon),
                 FixedRays(direction=unit3d_rot(-10, -30), dim=dim, N=N, offset=0.0, epsilon=epsilon),
             ])
-        
+
         # GENERATORS EXPECTED TO NOT COLLIDE
         if dim == 2:
             generators_no_collide.extend([
                     OrbitalRays(radius=1.1, dim=dim, N=N, offset=0., epsilon=0.),
                 ])
-        
+
         if dim == 3:
             # TODO no collide 3D
             generators_no_collide.extend([])
@@ -138,4 +138,6 @@ def test_expected_collide(
     print()
 
     # Call local_collide and check
-    check_local_collide(surface, P, V, expected_collide=test_cases_all_surfaces.expected_collide)
+    check_local_collide(
+        surface, P, V, expected_collide=test_cases_all_surfaces.expected_collide
+    )

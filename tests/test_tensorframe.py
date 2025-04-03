@@ -51,12 +51,14 @@ def test_update_broadcast() -> None:
     tf = tf.update(a=42, d=45)
 
     # broadcast tensor of dim 0
-    tf = tf.update(e=torch.tensor(0.))
+    tf = tf.update(e=torch.tensor(0.0))
 
     # broadcast tensor of dim 1, size 1
     tf = tf.update(f=torch.tensor([-10]))
 
-    assert torch.all(tf.data == torch.tensor([[42, 2, 3, 45, 0, -10], [42, 2, 3, 45, 0, -10]]))
+    assert torch.all(
+        tf.data == torch.tensor([[42, 2, 3, 45, 0, -10], [42, 2, 3, 45, 0, -10]])
+    )
     assert tf.columns == ["a", "b", "c", "d", "e", "f"]
     assert tf.shape == tf.data.shape == (N, 6)
 

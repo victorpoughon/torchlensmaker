@@ -10,6 +10,7 @@ import pytest
 
 # TODO test reflection
 
+
 @pytest.fixture
 def random_rays_2D():
     N = 10000
