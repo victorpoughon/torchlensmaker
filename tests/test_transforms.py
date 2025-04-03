@@ -1,5 +1,4 @@
 import pytest
-import typing
 
 import torch
 

@@ -1,6 +1,5 @@
-import pytest
 
-from typing import Any, Iterable
+from typing import Iterable
 
 import torch
 import torch.nn as nn

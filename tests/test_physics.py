@@ -1,7 +1,6 @@
 import torch
 from torchlensmaker.core.physics import (
     refraction,
-    reflection,
 )
 from torch.nn.functional import normalize
 
