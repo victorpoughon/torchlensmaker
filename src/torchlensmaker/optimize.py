@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -30,6 +30,7 @@ from typing import Any, Callable, Optional, TypeAlias
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]
 
+
 def get_all_gradients(model: nn.Module) -> Tensor:
     grads = []
     for param in model.parameters():
@@ -37,8 +38,10 @@ def get_all_gradients(model: nn.Module) -> Tensor:
             grads.append(param.grad.view(-1))
     return torch.cat(grads)
 
+
 # Alias for convinience
 optim: TypeAlias = torch.optim
+
 
 @dataclass
 class OptimizationRecord:
@@ -61,7 +64,6 @@ def optimize(
     nshow: int = 20,
     dim: int = 2,
 ) -> OptimizationRecord:
-
     # Record values for analysis
     parameters_record: dict[str, list[Tensor]] = {
         n: [] for n, _ in optics.named_parameters()
@@ -102,12 +104,14 @@ def optimize(
         grad = get_all_gradients(optics)
         if torch.isnan(grad).any():
             print("ERROR: nan in grad", grad)
-            raise RuntimeError("nan in gradient, check your torch.where() (https://docs.jax.dev/en/latest/faq.html#gradients-contain-nan-where-using-where))")
+            raise RuntimeError(
+                "nan in gradient, check your torch.where() (https://docs.jax.dev/en/latest/faq.html#gradients-contain-nan-where-using-where))"
+            )
 
         optimizer.step()
 
         if i % show_every == 0 or i == num_iter - 1:
-            iter_str = f"[{i+1:>3}/{num_iter}]"
+            iter_str = f"[{i + 1:>3}/{num_iter}]"
             L_str = f"L= {loss.item():>6.3f} | grad norm= {torch.linalg.norm(grad)}"
             print(f"{iter_str} {L_str}")
 
@@ -115,7 +119,6 @@ def optimize(
 
 
 def plot_optimization_record(record: OptimizationRecord) -> None:
-
     optics = record.optics
     parameters = record.parameters
     loss = record.loss

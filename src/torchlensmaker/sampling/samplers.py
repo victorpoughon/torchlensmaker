@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -24,11 +24,14 @@ Tensor = torch.Tensor
 
 from torchlensmaker.core.tensor_manip import to_tensor
 
+
 class Sampler:
     def size(self) -> int:
         return NotImplementedError
 
-    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(
+        self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
         raise NotImplementedError
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -46,7 +49,9 @@ class RandomUniformSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(
+        self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
         return (torch.rand(self.N, dtype=dtype)) * (upper - lower) + lower
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -62,6 +67,7 @@ class RandomUniformSampler(Sampler):
 
         return torch.column_stack((X, Y))
 
+
 class RandomNormalSampler(Sampler):
     def __init__(self, N: int, std: float):
         super().__init__()
@@ -71,7 +77,9 @@ class RandomNormalSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(
+        self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
         t = torch.zeros((self.N,), dtype=dtype)
         nn.init.trunc_normal_(t, mean=0.0, std=self.std, a=lower, b=upper)
         return t
@@ -79,7 +87,7 @@ class RandomNormalSampler(Sampler):
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
         # Generate random r (square root for uniform distribution)
         t = torch.zeros((self.N,), dtype=dtype)
-        nn.init.trunc_normal_(t, mean=0.0, std=self.std / (diameter / 2), a=0., b=1.)
+        nn.init.trunc_normal_(t, mean=0.0, std=self.std / (diameter / 2), a=0.0, b=1.0)
         r = torch.sqrt(t) * (diameter / 2)
 
         # Generate random angles
@@ -124,7 +132,9 @@ class DenseSampler(Sampler):
     def size(self) -> int:
         return self.N
 
-    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+    def sample1d(
+        self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
         return torch.linspace(lower, upper, self.N, dtype=dtype)
 
     def sample2d(self, diameter: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
@@ -137,8 +147,10 @@ class ExactSampler(Sampler):
 
     def size(self) -> int:
         return self.values.shape[0]
-    
-    def sample1d(self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64) -> Tensor:
+
+    def sample1d(
+        self, lower: Tensor, upper: Tensor, dtype: torch.dtype = torch.float64
+    ) -> Tensor:
         assert self.values.dim() == 1
         assert torch.all(self.values.min() >= lower)
         assert torch.all(self.values.max() <= upper)
@@ -157,11 +169,10 @@ def sampleND(
     dim: int,
     dtype: torch.dtype = torch.float64,
 ) -> Tensor:
-
     if dim == 2:
         return sampler.sample2d(diameter, dtype)
     elif dim == 1:
-        return sampler.sample1d(-diameter/2, diameter/2, dtype)
+        return sampler.sample1d(-diameter / 2, diameter / 2, dtype)
     else:
         raise RuntimeError(f"sampleND: dim must be 1 or 2, got {dim}")
 
@@ -177,7 +188,7 @@ def init_sampling(sampling: dict[str, Any]) -> dict[str, Sampler]:
             output[name] = ExactSampler(value)
         else:
             output[name] = value
-    
+
     return output
 
 

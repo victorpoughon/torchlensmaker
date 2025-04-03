@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -49,7 +49,14 @@ class LightSourceBase(nn.Module):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         raise NotImplementedError
 
     def forward(self, inputs: OpticalData) -> OpticalData:
@@ -80,8 +87,14 @@ class LightSourceBase(nn.Module):
 class RaySource(LightSourceBase):
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
-
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         P = torch.zeros(1, dim, dtype=dtype)
         V = unit_vector(dim, dtype).unsqueeze(0)
 
@@ -95,8 +108,14 @@ class PointSourceAtInfinity(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
-
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         # Sample coordinates other than X on a disk
         NX = sampleND(
             sampling["base"],
@@ -123,8 +142,14 @@ class PointSource(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
-
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         # Sample angular direction
         angles = sampleND(
             sampling["base"],
@@ -150,8 +175,14 @@ class ObjectAtInfinity(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
-
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         # Sample coordinates other than X on a disk
         NX = sampleND(
             sampling["base"],
@@ -169,10 +200,10 @@ class ObjectAtInfinity(LightSourceBase):
             dtype,
         )
         V = rotated_unit_vector(angles, dim)
-        
+
         # Cartesian product
         fullP, fullV = cartesian_prod2d(P, V)
-        rays_base, rays_object  = cartesian_prod2d(NX, angles)
+        rays_base, rays_object = cartesian_prod2d(NX, angles)
 
         return fullP, fullV, rays_base, rays_object, NX, angles
 
@@ -185,8 +216,14 @@ class Object(LightSourceBase):
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
-    ) -> tuple[Tensor, Tensor, Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Tensor]]:
-
+    ) -> tuple[
+        Tensor,
+        Tensor,
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+        Optional[Tensor],
+    ]:
         # Sample coordinates other than X on a disk
         NX = sampleND(
             sampling["object"],
@@ -207,7 +244,7 @@ class Object(LightSourceBase):
 
         # Cartesian product
         fullP, fullV = cartesian_prod2d(P, V)
-        rays_object, rays_base  = cartesian_prod2d(NX, angles)
+        rays_object, rays_base = cartesian_prod2d(NX, angles)
 
         return fullP, fullV, rays_base, rays_object, angles, NX
 
@@ -258,7 +295,9 @@ class Wavelength(nn.Module):
                 "Missing 'wavelength' key in sampling configuration. Cannot apply Wavelength()."
             )
 
-        chromatic_space = inputs.sampling["wavelength"].sample1d(self.lower, self.upper, inputs.dtype)
+        chromatic_space = inputs.sampling["wavelength"].sample1d(
+            self.lower, self.upper, inputs.dtype
+        )
 
         return cartesian_wavelength(inputs, chromatic_space).replace(
             var_wavelength=chromatic_space

@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -43,6 +43,7 @@ def make_samples(
 
 CollisionDataset: TypeAlias = tuple[Tensor, Tensor]
 
+
 class RayGenerator:
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         raise NotImplementedError
@@ -51,6 +52,7 @@ class RayGenerator:
 @dataclass
 class NormalRays(RayGenerator):
     "Ray generator for rays normal to the surface"
+
     dim: int
     N: int
     offset: float
@@ -69,6 +71,7 @@ class NormalRays(RayGenerator):
 @dataclass
 class TangentRays(RayGenerator):
     "Ray generator for rays tangent to the surface"
+
     dim: int
     N: int
     distance: float
@@ -90,15 +93,16 @@ class TangentRays(RayGenerator):
 @dataclass
 class RandomRays:
     "Ray generator for random direction rays"
+
     dim: int
     N: int
     offset: float
     epsilon: float
-    
+
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
 
-        assert self.dim == 2 # TODO support 3D
+        assert self.dim == 2  # TODO support 3D
 
         theta = 2 * math.pi * torch.rand((self.N,))
         V = rot2d(torch.tensor([1.0, 0.0]), theta).to(dtype=surface.dtype)
@@ -111,6 +115,7 @@ class RandomRays:
 @dataclass
 class FixedRays(RayGenerator):
     "Ray generator for rays with a fixed direction"
+
     dim: int
     N: int
     direction: Tensor
@@ -124,7 +129,12 @@ class FixedRays(RayGenerator):
 
         samples, _ = make_samples(surface, self.dim, self.N, self.epsilon)
 
-        assert torch.all(torch.isfinite(samples)), (surface.__dict__, self.dim, self.N, self.epsilon)
+        assert torch.all(torch.isfinite(samples)), (
+            surface.__dict__,
+            self.dim,
+            self.N,
+            self.epsilon,
+        )
 
         V = torch.tile(direction, (samples.shape[0], 1)).to(dtype=surface.dtype)
         P = (samples + self.offset * V).to(dtype=surface.dtype)
@@ -144,26 +154,33 @@ class OrbitalRays(RayGenerator):
 
     def __call__(self, surface: LocalSurface) -> CollisionDataset:
         if self.dim == 2:
-            theta = torch.linspace(0., 2*torch.pi, self.N, dtype=surface.dtype)
+            theta = torch.linspace(0.0, 2 * torch.pi, self.N, dtype=surface.dtype)
 
-            points = torch.stack((
-                self.radius * surface.bounding_radius() * torch.cos(theta),
-                self.radius * surface.bounding_radius() * torch.sin(theta)
-            ), dim=-1)
+            points = torch.stack(
+                (
+                    self.radius * surface.bounding_radius() * torch.cos(theta),
+                    self.radius * surface.bounding_radius() * torch.sin(theta),
+                ),
+                dim=-1,
+            )
 
-            V = rotated_unit_vector(torch.tensor(torch.pi / 2, dtype=surface.dtype) + theta, self.dim)
+            V = rotated_unit_vector(
+                torch.tensor(torch.pi / 2, dtype=surface.dtype) + theta, self.dim
+            )
 
             return points, V
         else:
-            raise NotImplementedError # TODO
+            raise NotImplementedError  # TODO
 
 
-def make_offset_rays(P: torch.Tensor, V: torch.Tensor, tspace: torch.Tensor) -> tuple[Tensor, Tensor]:
+def make_offset_rays(
+    P: torch.Tensor, V: torch.Tensor, tspace: torch.Tensor
+) -> tuple[Tensor, Tensor]:
     "Duplicate rays by moving the origin P along V by t units"
 
     assert tspace.dim() == 1
 
-    newP = torch.cat([P + t*V for t in tspace], dim=0)
+    newP = torch.cat([P + t * V for t in tspace], dim=0)
     newV = torch.tile(V, dims=(tspace.shape[0], 1))
 
     return newP, newV

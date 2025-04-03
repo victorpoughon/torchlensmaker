@@ -154,7 +154,7 @@ class Plane(LocalSurface):
         t = torch.where(
             mask_nominal,
             -P[:, 0] / V[:, 0],  # Nominal case, rays aren't vertical
-            init_closest_origin(self, P, V)  # Default for vertical rays
+            init_closest_origin(self, P, V),  # Default for vertical rays
         )
 
         local_points = P + t.unsqueeze(1).expand_as(V) * V
@@ -215,7 +215,6 @@ class ImplicitSurface(LocalSurface):
         self.collision_method = collision_method
 
     def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
-
         if tol is None:
             tol = {torch.float32: 1e-4, torch.float64: 1e-7}[self.dtype]
 
@@ -230,7 +229,6 @@ class ImplicitSurface(LocalSurface):
         return torch.sqrt(torch.sum(self.Fd(points) ** 2) / N).item()
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-
         t = self.collision_method(self, P, V, history=False).t
 
         local_points = P + t.unsqueeze(-1).expand_as(V) * V
@@ -540,7 +538,7 @@ class Sphere(SagSurface):
         if C is None and R is not None:
             if torch.abs(torch.as_tensor(R)) <= diameter / 2:
                 raise RuntimeError(
-                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter/2}) "
+                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter / 2}) "
                     f"(To model an exact half-sphere, use SphereR)."
                 )
 
@@ -609,9 +607,9 @@ class Parabola(SagSurface):
         dtype: torch.dtype = torch.float64,
     ):
         self.A = to_tensor(A, default_dtype=dtype)
-        assert (
-            dtype == self.A.dtype
-        ), f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
+        assert dtype == self.A.dtype, (
+            f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
+        )
 
         super().__init__(diameter, dtype=dtype)
 
@@ -782,7 +780,6 @@ class SphereR(LocalSurface):
         )
 
     def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
-
         if tol is None:
             tol = {torch.float32: 1e-3, torch.float64: 1e-7}[self.dtype]
 
@@ -907,15 +904,15 @@ class Asphere(SagSurface):
         self.K = to_tensor(K, default_dtype=dtype)
         self.A4 = to_tensor(A4, default_dtype=dtype)
 
-        assert (
-            dtype == self.C.dtype
-        ), f"Inconsistent dtype between surface and parameter C (surface: {dtype}) (parameter: {self.C.dtype})"
-        assert (
-            dtype == self.K.dtype
-        ), f"Inconsistent dtype between surface and parameter K (surface: {dtype}) (parameter: {self.K.dtype})"
-        assert (
-            dtype == self.A4.dtype
-        ), f"Inconsistent dtype between surface and parameter A4 (surface: {dtype}) (parameter: {self.A4.dtype})"
+        assert dtype == self.C.dtype, (
+            f"Inconsistent dtype between surface and parameter C (surface: {dtype}) (parameter: {self.C.dtype})"
+        )
+        assert dtype == self.K.dtype, (
+            f"Inconsistent dtype between surface and parameter K (surface: {dtype}) (parameter: {self.K.dtype})"
+        )
+        assert dtype == self.A4.dtype, (
+            f"Inconsistent dtype between surface and parameter A4 (surface: {dtype}) (parameter: {self.A4.dtype})"
+        )
 
         super().__init__(diameter, dtype=dtype)
 

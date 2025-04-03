@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -37,7 +37,7 @@ def surface_f(
 
     B, N = t.shape
     D = P.shape[-1]
-    
+
     Pbeam = P.expand((B, -1, -1))
     Vbeam = V.expand((B, -1, -1))
     points = Pbeam + t.unsqueeze(-1).expand((B, N, D)) * Vbeam
@@ -52,7 +52,12 @@ class CollisionAlgorithm:
     """Base class for collision detection algorithms"""
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
+        self,
+        surface: ImplicitSurface,
+        P: Tensor,
+        V: Tensor,
+        t: Tensor,
+        max_delta: float,
     ) -> Tensor:
         raise NotImplementedError
 
@@ -65,12 +70,20 @@ class Newton(CollisionAlgorithm):
         self.damping = damping
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
+        self,
+        surface: ImplicitSurface,
+        P: Tensor,
+        V: Tensor,
+        t: Tensor,
+        max_delta: float,
     ) -> Tensor:
-
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
-        return self.damping * torch.where(torch.abs(dot) > torch.abs(F) / max_delta, F / dot, torch.sign(dot) * torch.sign(F) * max_delta)
+        return self.damping * torch.where(
+            torch.abs(dot) > torch.abs(F) / max_delta,
+            F / dot,
+            torch.sign(dot) * torch.sign(F) * max_delta,
+        )
 
     def __str__(self) -> str:
         return f"{type(self).__name__}({self.damping})"
@@ -84,9 +97,13 @@ class GD(CollisionAlgorithm):
         self.step_size = step_size
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
+        self,
+        surface: ImplicitSurface,
+        P: Tensor,
+        V: Tensor,
+        t: Tensor,
+        max_delta: float,
     ) -> Tensor:
-
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
         d = 2 * self.step_size * dot * F
@@ -102,7 +119,12 @@ class LM(CollisionAlgorithm):
         self.damping = damping
 
     def delta(
-        self, surface: ImplicitSurface, P: Tensor, V: Tensor, t: Tensor, max_delta: float
+        self,
+        surface: ImplicitSurface,
+        P: Tensor,
+        V: Tensor,
+        t: Tensor,
+        max_delta: float,
     ) -> Tensor:
         "Levenberg-Marquardt"
 
@@ -118,11 +140,10 @@ class LM(CollisionAlgorithm):
 def init_closest_origin(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     """
     Find t such that the point P+tV is:
-    * in 2D, the collision of the ray with the X or Y axis, depending on 
+    * in 2D, the collision of the ray with the X or Y axis, depending on
     """
-    
-    return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
+    return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
 
 def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
@@ -136,10 +157,10 @@ def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
     N, D = P.shape
 
     # Compute t so that P + tV is the point on the ray closest to the origin
-    t = - torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
+    t = -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
     # Surface maximum bounding radius
-    br = math.sqrt((surface.diameter/2)**2 + surface.extent_x()**2)
+    br = math.sqrt((surface.diameter / 2) ** 2 + surface.extent_x() ** 2)
 
     # Sample the domain to make initialization values
     start, end = t - br, t + br
@@ -176,7 +197,7 @@ class CollisionMethod:
     Dfferentiable iterative collision detection for implicit surfaces.
 
     Collision detection is made up of in four phases:
-    
+
     0. Initialize multiple starting t values for each ray by sampling each rays
        intersection with the surface bounding box.
 
@@ -197,7 +218,7 @@ class CollisionMethod:
     algoA: CollisionAlgorithm
     algoB: CollisionAlgorithm
     algoC: CollisionAlgorithm
-    
+
     close_filter_threshold: float
     num_iterA: int
     num_iterB: int
@@ -211,7 +232,6 @@ class CollisionMethod:
         V: Tensor,
         history: bool = False,
     ) -> CollisionDetectionResult:
-        
         # Sanity checks
         assert P.dim() == V.dim() == 2
         assert P.shape == V.shape
@@ -224,9 +244,9 @@ class CollisionMethod:
         assert init_t.shape[1] == P.shape[0]
 
         # Tensor dimensions
-        N = P.shape[0] # Number of rays
-        D = P.shape[1] # Rays dimension (2 or 3)
-        B = init_t.shape[0] # Number of solutions per ray for algo A
+        N = P.shape[0]  # Number of rays
+        D = P.shape[1]  # Rays dimension (2 or 3)
+        B = init_t.shape[0]  # Number of solutions per ray for algo A
 
         # History tensors, if requested
         if history:
@@ -241,7 +261,7 @@ class CollisionMethod:
 
             # Coarse phase (multiple beams)
             for ia in range(self.num_iterA):
-                t = t - self.algoA.delta(surface, P, V, t, max_delta= br / B)
+                t = t - self.algoA.delta(surface, P, V, t, max_delta=br / B)
                 if history:
                     history_coarse[:, :, ia] = t.clone()
 
@@ -257,7 +277,13 @@ class CollisionMethod:
             nbclose = torch.sum(close_mask, dim=0, keepdim=True).expand((B, N))
 
             # Score of beams
-            score = torch.where(nbclose == 0, F, torch.where(close_mask, torch.abs(t), torch.tensor(float("inf"), dtype=F.dtype)))
+            score = torch.where(
+                nbclose == 0,
+                F,
+                torch.where(
+                    close_mask, torch.abs(t), torch.tensor(float("inf"), dtype=F.dtype)
+                ),
+            )
             _, indices = torch.min(score, dim=0)
 
             # Keep best beam
@@ -268,7 +294,9 @@ class CollisionMethod:
 
             # Fine phase (single beam)
             for ib in range(self.num_iterB):
-                t = t - self.algoB.delta(surface, P, V, t, max_delta=br / (B*self.num_iterA))
+                t = t - self.algoB.delta(
+                    surface, P, V, t, max_delta=br / (B * self.num_iterA)
+                )
                 if history:
                     history_fine[:, ib] = t
 
@@ -279,7 +307,7 @@ class CollisionMethod:
             t[0, :],
             init_t,
             history_coarse if history else None,
-            history_fine if history else None
+            history_fine if history else None,
         )
 
 
@@ -288,8 +316,8 @@ default_collision_method = CollisionMethod(
     algoA=Newton(damping=0.8),
     algoB=Newton(damping=0.8),
     algoC=Newton(damping=0.8),
-    num_iterA = 20,
+    num_iterA=20,
     num_iterB=10,
     close_filter_threshold=1e-5,
-    name="Default collision method"
+    name="Default collision method",
 )

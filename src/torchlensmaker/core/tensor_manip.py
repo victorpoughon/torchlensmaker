@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -80,7 +80,9 @@ def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
     return PA, PB
 
 
-def cartesian_prod2d_optional(A: Optional[Tensor], B: Optional[Tensor]) -> tuple[Optional[Tensor], Optional[Tensor]]:
+def cartesian_prod2d_optional(
+    A: Optional[Tensor], B: Optional[Tensor]
+) -> tuple[Optional[Tensor], Optional[Tensor]]:
     """
     Optional version of cartesian_prod2d
     If any tensor is None, returns both tensors unmodified.

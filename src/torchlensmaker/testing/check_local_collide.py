@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -50,7 +50,7 @@ def check_local_collide(
     assert local_normals.dtype == surface.dtype
     assert valid.dtype == torch.bool
     assert local_points.dtype == surface.dtype
-    
+
     if isinstance(surface, tlm.SagSurface):
         if dim == 3:
             gx, gy = surface.G_grad(local_points[:, 1], local_points[:, 2])
@@ -85,9 +85,9 @@ def check_local_collide(
     else:
         rmse = None
 
-    
-
     # Check expected collision against expected_collide
-    assert torch.all(surface.contains(local_points) == expected_collide), (str(surface), rmse)
+    assert torch.all(surface.contains(local_points) == expected_collide), (
+        str(surface),
+        rmse,
+    )
     assert torch.all(valid == expected_collide), surface
-

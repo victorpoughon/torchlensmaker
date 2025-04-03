@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -99,7 +99,9 @@ def spot_diagram(
 
     # Get the "non cartesian producted" sampling variables
     # by evaluating the stack
-    output_full: tlm.OpticalData = optics(tlm.default_input(sampling, dim=3, dtype=dtype))
+    output_full: tlm.OpticalData = optics(
+        tlm.default_input(sampling, dim=3, dtype=dtype)
+    )
     var_row = output_full.get_var_optional(row) if row is not None else None
     var_col = output_full.get_var_optional(col) if col is not None else None
 
@@ -147,9 +149,7 @@ def spot_diagram(
         for ic in cols():
             # Evaluate model with the current row/col spot sampling dict
             output = optics(
-                tlm.default_input(
-                    spot_sampling[ir][ic], dim=3, dtype=dtype
-                )
+                tlm.default_input(spot_sampling[ir][ic], dim=3, dtype=dtype)
             )
 
             # Get 2D image plane coordinates

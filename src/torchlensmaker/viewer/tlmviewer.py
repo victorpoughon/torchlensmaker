@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -182,13 +182,13 @@ def process_surface(
     # TODO, should we have a type SymmetricSurface that provides samples2D?
 
     if dim == 2:
-        samples = surface.samples2D_full(N, epsilon=0.)
+        samples = surface.samples2D_full(N, epsilon=0.0)
         obj = {
             "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
         }
     elif dim == 3:
-        samples = surface.samples2D_half(N, epsilon=0.)
+        samples = surface.samples2D_half(N, epsilon=0.0)
         obj = {
             "matrix": transform.hom_matrix().tolist(),
             "samples": samples.tolist(),
@@ -216,11 +216,15 @@ def render_surfaces(
         "data": [process_surface(s, t, dim, N) for s, t in zip(surfaces, transforms)],
     }
 
+
 def render_surface(
-        surface: LocalSurface,
-        dim: int,
+    surface: LocalSurface,
+    dim: int,
 ) -> Any:
-    return render_surfaces([surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim)
+    return render_surfaces(
+        [surface], [IdentityTransform(dim=dim, dtype=surface.dtype)], dim=dim
+    )
+
 
 def render_rays(
     start: Tensor,
@@ -230,7 +234,6 @@ def render_rays(
     domain: dict[str, list[float]] = {},
     default_color: str = "#ffa724",
 ) -> Any:
-
     assert start.shape == end.shape
     for var in variables.values():
         assert var.shape[0] == start.shape[0]
@@ -251,6 +254,7 @@ def render_rays(
         node.update(layers=[layer])
 
     return node
+
 
 def render_points(points: Tensor, color: str = "white") -> Any:
     # TODO render points sizes in screen coordinates

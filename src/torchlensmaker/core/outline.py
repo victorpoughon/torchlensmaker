@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -18,6 +18,7 @@ import torch
 import math
 
 from torchlensmaker.core.geometry import within_radius
+
 
 class Outline:
     "An outline limits the extent of a 3D surface in the local YZ plane"
@@ -71,7 +72,7 @@ class CircularOutline(Outline):
 
     def contains(self, points: torch.Tensor, tol: float = 1e-6) -> torch.Tensor:
         # TODO improve this with rtol / atol
-        return within_radius(self.diameter/2 + tol, points)
+        return within_radius(self.diameter / 2 + tol, points)
 
     def max_radius(self) -> float:
         return self.diameter / 2
