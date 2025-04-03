@@ -1,16 +1,16 @@
 # This file is part of Torch Lens Maker
 # Copyright (C) 2025 Victor Poughon
-# 
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
@@ -471,6 +471,20 @@ class SagSurface(ImplicitSurface):
             fallback.F_grad(points),
         )
 
+    def samples2D_full(self, N, epsilon):
+        start = -(1 - epsilon) * self.diameter / 2
+        end = (1 - epsilon) * self.diameter / 2
+        r = torch.linspace(start, end, N, dtype=self.dtype)
+        x = self.g(r)
+        return torch.stack((x, r), dim=-1)
+
+    def samples2D_half(self, N, epsilon):
+        start = 0.0
+        end = (1 - epsilon) * self.diameter / 2
+        r = torch.linspace(start, end, N, dtype=self.dtype)
+        x = self.g(r)
+        return torch.stack((x, r), dim=-1)
+
 
 def safe_sqrt(radicand: Tensor) -> Tensor:
     """
@@ -584,52 +598,6 @@ class Sphere(SagSurface):
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
-    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        # If the curvature is low, use linear sampling along the y axis
-        # Else, use the angular parameterization of the circle so that
-        # samples are smoother, especially for high curvature circles.
-        if self.C * self.diameter < 0.1:
-            return sphere_samples_linear(
-                curvature=self.C,
-                start=0.0,
-                end=(1 - epsilon) * self.diameter / 2,
-                N=N,
-                dtype=self.dtype,
-            )
-        else:
-            R = 1 / self.C
-            theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
-            return sphere_samples_angular(
-                radius=R,
-                start=0.0,
-                end=(1 - epsilon) * theta_max,
-                N=N,
-                dtype=self.dtype,
-            )
-
-    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        # If the curvature is low, use linear sampling along the y axis
-        # Else, use the angular parameterization of the circle so that
-        # samples are smoother, especially for high curvature circles.
-        if self.C * self.diameter < 0.1:
-            return sphere_samples_linear(
-                curvature=self.C,
-                start=-(1-epsilon)*self.diameter / 2,
-                end=(1-epsilon)*self.diameter / 2,
-                N=N,
-                dtype=self.dtype,
-            )
-        else:
-            R = 1 / self.C
-            theta_max = torch.arcsin((self.diameter / 2) / torch.abs(R))
-            return sphere_samples_angular(
-                radius=R,
-                start=-(1 - epsilon) * theta_max,
-                end=(1 - epsilon) * theta_max,
-                N=N,
-                dtype=self.dtype,
-            )
-
 
 class Parabola(SagSurface):
     "Sag surface for a parabola $X = A R^2$"
@@ -669,21 +637,6 @@ class Parabola(SagSurface):
 
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         return 2 * self.A * y, 2 * self.A * z
-
-    def samples2D_half(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(0, (1-epsilon)*self.diameter / 2, N, dtype=self.dtype)
-        x = self.A * r**2
-        return torch.stack((x, r), dim=-1)
-
-    def samples2D_full(self, N: int, epsilon: float = 1e-3) -> Tensor:
-        r = torch.linspace(
-            -(1-epsilon)*self.diameter / 2,
-            (1-epsilon)*self.diameter / 2,
-            N,
-            dtype=self.dtype,
-        )
-        x = self.A * r**2
-        return torch.stack((x, r), dim=-1)
 
 
 class SphereR(LocalSurface):
@@ -989,37 +942,6 @@ class Asphere(SagSurface):
         return torch.add(
             torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)), A4 * r2**2
         )
-
-    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-        dr = 1.0 - epsilon
-
-        Y = torch.linspace(0, dr * self.diameter / 2, N, dtype=self.dtype)
-        r2 = torch.pow(Y, 2)
-        X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
-            r2, 2
-        )
-
-        return torch.stack((X, Y), dim=-1)
-
-    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-        dr = 1.0 - epsilon
-
-        Y = torch.linspace(
-            -dr * self.diameter / 2,
-            dr * self.diameter / 2,
-            N,
-            dtype=self.dtype,
-        )
-        r2 = torch.pow(Y, 2)
-        X = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)) + A4 * torch.pow(
-            r2, 2
-        )
-
-        return torch.stack((X, Y), dim=-1)
 
     def g(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
