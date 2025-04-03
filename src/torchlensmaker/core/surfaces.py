@@ -936,6 +936,7 @@ class SphereR(LocalSurface):
     def to_dict(self, _dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sphere-r",
+            "diameter": self.diameter,
             "R": self.R.item(),
         }
 
