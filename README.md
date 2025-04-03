@@ -1,6 +1,6 @@
 [<img src="./docs/readme_images/logo-title.png">](https://github.com/victorpoughon/torchlensmaker)
 
-![GitHub commit activity](https://img.shields.io/github/commit-activity/m/victorpoughon/torchlensmaker)
+![GitHub Repo stars](https://img.shields.io/github/stars/victorpoughon/torchlensmaker?style=flat&label=stars&labelColor=%233a69c5&color=black)
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2Fvictorpoughon%2Ftorchlensmaker%2Frefs%2Fheads%2Fmain%2Fpyproject.toml&logo=python&logoColor=yellow&color=yellowgreen)
 ![GitHub License](https://img.shields.io/github/license/victorpoughon/torchlensmaker?color=gold)
 ![PyPI - Version](https://img.shields.io/pypi/v/torchlensmaker)
