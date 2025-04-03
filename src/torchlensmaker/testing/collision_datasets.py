@@ -17,13 +17,13 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector
-from torchlensmaker.core.surfaces import ImplicitSurface, LocalSurface
+from torchlensmaker.core.geometry import rotated_unit_vector
+from torchlensmaker.core.surfaces import LocalSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
 import math
 
-from typing import Callable, TypeAlias
-from dataclasses import dataclass, replace
+from typing import TypeAlias
+from dataclasses import dataclass
 
 Tensor: TypeAlias = torch.Tensor
 

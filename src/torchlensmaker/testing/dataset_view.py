@@ -16,7 +16,6 @@
 
 import torch
 
-from torchlensmaker.core.transforms import IdentityTransform
 
 import torchlensmaker as tlm
 

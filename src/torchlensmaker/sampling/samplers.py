@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from typing import Any, Optional, Type, Sequence
+from typing import Any, Sequence
 
 Tensor = torch.Tensor
 

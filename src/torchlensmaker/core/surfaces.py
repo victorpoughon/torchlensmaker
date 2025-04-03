@@ -37,9 +37,8 @@ from torchlensmaker.core.collision_detection import (
 from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
 
-from torch.linalg import vector_norm
 
-from typing import Any, Optional, Type
+from typing import Optional
 
 # shorter for type annotations
 Tensor = torch.Tensor

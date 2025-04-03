@@ -23,7 +23,6 @@ import matplotlib.pyplot as plt
 from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
     default_colormap,
-    color_valid,
     color_rays,
     color_spot_diagram,
 )

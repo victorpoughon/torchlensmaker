@@ -24,9 +24,9 @@ import torch
 import warnings
 from pathlib import Path
 
-from importlib.metadata import version, PackageNotFoundError
+from importlib.metadata import version
 
-from typing import Any, Optional
+from typing import Any
 
 from torchlensmaker.core.surfaces import (
     LocalSurface,

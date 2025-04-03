@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from typing import Literal, Any, Optional, Type, Dict, TypeVar, Iterable, Generic
+from typing import Any, Optional, Dict, Iterable
 from collections import defaultdict
 from dataclasses import dataclass
 
@@ -32,9 +32,7 @@ from torchlensmaker.analysis.colors import (
 
 import torchlensmaker.viewer as viewer
 
-import matplotlib as mpl
 import json
-import os
 
 Tensor = torch.Tensor
 

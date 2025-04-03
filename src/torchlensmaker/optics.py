@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Any, Sequence, Optional, TypeAlias
+from typing import Sequence, Optional, TypeAlias
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.core.transforms import (

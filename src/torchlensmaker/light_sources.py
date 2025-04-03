@@ -20,14 +20,11 @@ import torch.nn as nn
 from torchlensmaker.core.tensor_manip import (
     cat_optional,
     cartesian_prod2d,
-    cartesian_prod2d_optional,
     to_tensor,
 )
 from torchlensmaker.optics import OpticalData
 
 from torchlensmaker.core.transforms import forward_kinematic
-from torchlensmaker.core.rot2d import rot2d
-from torchlensmaker.core.rot3d import euler_angles_to_matrix
 from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector
 
 from torchlensmaker.sampling.samplers import (
