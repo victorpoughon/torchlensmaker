@@ -667,23 +667,12 @@ class Parabola(SagSurface):
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         return 2 * self.A * y, 2 * self.A * z
 
-    # def to_dict(self, _dim: int) -> dict[str, Any]:
-    #     return {
-    #         "type": "sag-surface",
-    #         "sag-type": "parabola",
-    #         "A": self.A.item(),
-    #     }
-
     def to_dict(self, dim: int) -> dict[str, Any]:
-        N = 100
-        if dim == 2:
-            samples = self.samples2D_full(N, epsilon=0.0)
-        elif dim == 3:
-            samples = self.samples2D_half(N, epsilon=0.0)
-        # TODO implement parabola in tlmviewer, for now lathe surface
         return {
-            "type": "surface-lathe",
-            "samples": samples.tolist(),
+            "type": "surface-sag",
+            "sag-type": "parabola",
+            "diameter": self.diameter,
+            "A": self.A.item()
         }
 
 class SphereR(LocalSurface):
