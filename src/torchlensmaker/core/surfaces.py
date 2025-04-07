@@ -608,23 +608,12 @@ class Sphere(SagSurface):
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
-    # def to_dict(self, _dim: int) -> dict[str, Any]:
-    #     return {
-    #         "type": "sag-surface",
-    #         "sag-type": "sphere",
-    #         "C": self.C.item(),
-    #     }
-
     def to_dict(self, dim: int) -> dict[str, Any]:
-        N = 100
-        if dim == 2:
-            samples = self.samples2D_full(N, epsilon=0.0)
-        elif dim == 3:
-            samples = self.samples2D_half(N, epsilon=0.0)
-        # TODO implement sphere in tlmviewer, for now lathe surface
         return {
-            "type": "surface-lathe",
-            "samples": samples.tolist(),
+            "type": "surface-sag",
+            "sag-type": "sphere",
+            "diameter": self.diameter,
+            "C": self.C.item()
         }
 
 
