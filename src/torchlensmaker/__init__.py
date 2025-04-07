@@ -18,6 +18,7 @@
 from torchlensmaker.core.physics import *
 from torchlensmaker.core.outline import *
 from torchlensmaker.core.surfaces import *
+from torchlensmaker.core.sag_functions import *
 from torchlensmaker.core.transforms import *
 from torchlensmaker.core.intersect import *
 from torchlensmaker.core.full_forward import *

@@ -37,11 +37,11 @@ def isflat(s: tlm.LocalSurface) -> bool:
         isinstance(s, tlm.Plane)
         or (
             isinstance(s, tlm.Sphere)
-            and torch.allclose(s.C, torch.tensor(0.0, dtype=s.dtype))
+            and torch.allclose(s.sag_function.C, torch.tensor(0.0, dtype=s.dtype))
         )
         or (
             isinstance(s, tlm.Parabola)
-            and torch.allclose(s.A, torch.tensor(0.0, dtype=s.dtype))
+            and torch.allclose(s.sag_function.A, torch.tensor(0.0, dtype=s.dtype))
         )
     )
 

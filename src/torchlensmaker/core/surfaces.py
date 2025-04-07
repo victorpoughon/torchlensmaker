@@ -37,6 +37,7 @@ from torchlensmaker.core.collision_detection import (
 from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
 
+from torchlensmaker.core.sag_functions import SagFunction, Spherical, Parabolic, Aspheric
 
 from typing import Optional, Any
 
@@ -189,7 +190,7 @@ class Plane(LocalSurface):
         return {
             "type": "surface-plane",
             "radius": self.outline.max_radius(),
-            "clip_planes": self.outline.clip_planes()
+            "clip_planes": self.outline.clip_planes(),
         }
 
 
@@ -354,7 +355,7 @@ class SagSurface(ImplicitSurface):
     a surface x coordinate in an arbitrary meridional plane (x,r) as a function
     of the distance to the principal axis: x = g(r).
 
-    Derived classes provide the sag function and its gradient in
+    Sag function classes provide the sag function and its gradient in
     both 2 and 3 dimensions. This class then uses it to create the implicit
     function F representing the corresponding implicit surface.
 
@@ -366,11 +367,13 @@ class SagSurface(ImplicitSurface):
     def __init__(
         self,
         diameter: float,
+        sag_function: SagFunction,
         collision_method: CollisionMethod = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
         super().__init__(collision_method=collision_method, dtype=dtype)
         self.diameter = diameter
+        self.sag_function = sag_function
 
     def mask_function(self, points: Tensor) -> Tensor:
         return within_radius(self.diameter / 2, points)
@@ -382,6 +385,9 @@ class SagSurface(ImplicitSurface):
             dtype=self.dtype,
         )
 
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return self.sag_function.parameters()
+
     def bounding_radius(self) -> float:
         """
         Any point on the surface has a distance to the center that is less
@@ -389,61 +395,10 @@ class SagSurface(ImplicitSurface):
         """
         return math.sqrt((self.diameter / 2) ** 2 + self.extent_x() ** 2)
 
-    def g(self, r: Tensor) -> Tensor:
-        """
-        2D sag function $g(r)$
-
-        Args:
-        * r: batched tensor of shape (...)
-
-        Returns:
-        * batched tensor of shape (...)
-        """
-        raise NotImplementedError
-
-    def g_grad(self, r: Tensor) -> Tensor:
-        """
-        Derivative of the 2D sag function $g'(r)$
-
-        Args:
-        * r: batched tensor of shape (...)
-
-        Returns:
-        * batched tensor of shape (...)
-        """
-        raise NotImplementedError
-
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        """
-        3D sag function $G(X, Y) = g(\\sqrt{y^2 + z^2})$
-
-        Args:
-        * y: batched tensor of shape (...)
-        * z: batched tensor of shape (...)
-
-        Returns:
-        * batched tensor of shape (...)
-        """
-        raise NotImplementedError
-
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        """
-        Gradient of the 3D sag function $\\nabla G(y, z)$
-
-        Args:
-        * y: batched tensor of shape (...)
-        * z: batched tensor of shape (...)
-
-        Returns:
-        * grad_y: batched tensor of shape (...)
-        * grad_z: batched tensor of shape (...)
-        """
-        raise NotImplementedError
-
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        sag_f = self.g(r) - x
+        sag_f = self.sag_function.g(r) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_f, fallback.f(points))
@@ -451,7 +406,9 @@ class SagSurface(ImplicitSurface):
     def f_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        sag_f_grad = torch.stack((-torch.ones_like(x), self.g_grad(r)), dim=-1)
+        sag_f_grad = torch.stack(
+            (-torch.ones_like(x), self.sag_function.g_grad(r)), dim=-1
+        )
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(
@@ -463,7 +420,7 @@ class SagSurface(ImplicitSurface):
     def F(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        sag_F = self.G(y, z) - x
+        sag_F = self.sag_function.G(y, z) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_F, fallback.F(points))
@@ -471,7 +428,7 @@ class SagSurface(ImplicitSurface):
     def F_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        grad_y, grad_z = self.G_grad(y, z)
+        grad_y, grad_z = self.sag_function.G_grad(y, z)
         sag_F_grad = torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
@@ -483,40 +440,21 @@ class SagSurface(ImplicitSurface):
 
     def extent_x(self) -> Tensor:
         r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        return self.g(r)
+        return self.sag_function.g(r)
 
     def samples2D_full(self, N, epsilon):
         start = -(1 - epsilon) * self.diameter / 2
         end = (1 - epsilon) * self.diameter / 2
         r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.g(r)
+        x = self.sag_function.g(r)
         return torch.stack((x, r), dim=-1)
 
     def samples2D_half(self, N, epsilon):
         start = 0.0
         end = (1 - epsilon) * self.diameter / 2
         r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.g(r)
+        x = self.sag_function.g(r)
         return torch.stack((x, r), dim=-1)
-
-
-def safe_sqrt(radicand: Tensor) -> Tensor:
-    """
-    Gradient safe version of torch.sqrt() that returns 0 where radicand <= 0
-    """
-    ok = radicand > 0
-    safe = torch.zeros_like(radicand)
-    return torch.sqrt(torch.where(ok, radicand, safe))
-
-
-def safe_div(dividend: Tensor, divisor: Tensor) -> Tensor:
-    """
-    Gradient safe version of torch.div() that returns dividend where divisor == 0
-    """
-
-    ok = divisor != torch.zeros((), dtype=divisor.dtype)
-    safe = torch.ones_like(divisor)
-    return torch.div(dividend, torch.where(ok, divisor, safe))
 
 
 class Sphere(SagSurface):
@@ -570,49 +508,24 @@ class Sphere(SagSurface):
 
         assert C_tensor.dim() == 0
         assert C_tensor.dtype == dtype
-        self.C = C_tensor
 
-        super().__init__(
-            diameter=diameter, collision_method=collision_method, dtype=dtype
-        )
+        sag_function = Spherical(C_tensor)
+
+        super().__init__(diameter, sag_function, collision_method, dtype)
 
     def radius(self) -> float:
         "Utility function to get radius from internal curvature"
-        return torch.div(torch.tensor(1.0, dtype=self.dtype), self.C).item()
+        return torch.div(torch.tensor(1.0, dtype=self.dtype), self.sag_function.C).item()
 
     def testname(self) -> str:
-        return f"Sphere-{self.diameter:.2f}-{self.C.item():.2f}"
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
-
-    def g(self, r: Tensor) -> Tensor:
-        C = self.C
-        r2 = torch.pow(r, 2)
-        return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
-
-    def g_grad(self, r: Tensor) -> Tensor:
-        C = self.C
-        # TODO add a clamp here to avoid div by zero? or make sure fallback has an epsilon
-        return safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
-
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        C = self.C
-        r2 = torch.pow(y, 2) + torch.pow(z, 2)
-        return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
-
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        C = self.C
-        r2 = torch.pow(y, 2) + torch.pow(z, 2)
-        denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
-        return safe_div(y * C, denom), safe_div(z * C, denom)
+        return f"Sphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}"
 
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sag",
             "sag-type": "sphere",
             "diameter": self.diameter,
-            "C": self.C.item()
+            "C": self.sag_function.C.item(), # TODO add sag_function.to_dict
         }
 
 
@@ -623,40 +536,25 @@ class Parabola(SagSurface):
         self,
         diameter: float,
         A: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype = torch.float64
     ):
-        self.A = to_tensor(A, default_dtype=dtype)
-        assert dtype == self.A.dtype, (
-            f"Inconsistent dtype between surface and parameter (surface: {dtype}) (parameter: {self.A.dtype})"
-        )
-
-        super().__init__(diameter, dtype=dtype)
+        if isinstance(A, torch.Tensor):
+            assert A.dtype == dtype
+        A_tensor = to_tensor(A, default_dtype=dtype)
+        sag_function = Parabolic(A_tensor)
+        super().__init__(diameter, sag_function, dtype=dtype)
 
     def testname(self) -> str:
-        return f"Parabola-{self.diameter:.2f}-{self.A.item():.2f}"
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
-
-    def g(self, r: Tensor) -> Tensor:
-        return torch.mul(self.A, torch.pow(r, 2))
-
-    def g_grad(self, r: Tensor) -> Tensor:
-        return 2 * self.A * r
-
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        return torch.mul(self.A, (y**2 + z**2))
-
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        return 2 * self.A * y, 2 * self.A * z
+        return f"Parabola-{self.diameter:.2f}-{self.sag_function.A.item():.2f}"
 
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sag",
             "sag-type": "parabola",
             "diameter": self.diameter,
-            "A": self.A.item()
+            "A": self.sag_function.A.item(),
         }
+
 
 class SphereR(LocalSurface):
     """
@@ -920,80 +818,29 @@ class Asphere(SagSurface):
         R: int | float | nn.Parameter,
         K: int | float | nn.Parameter,
         A4: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype = torch.float64
     ):
-        self.C: torch.Tensor
+        # TODO assert dtypes are the same
+        # TODO assert shapes
+
         if isinstance(R, nn.Parameter):
-            self.C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
+            C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
         else:
-            self.C = torch.as_tensor(1.0 / R, dtype=dtype)
-        assert self.C.dim() == 0
+            C = to_tensor(1.0 / R, default_dtype=dtype)
 
-        self.K = to_tensor(K, default_dtype=dtype)
-        self.A4 = to_tensor(A4, default_dtype=dtype)
+        if isinstance(R, torch.Tensor):
+            assert R.dtype == dtype
 
-        assert dtype == self.C.dtype, (
-            f"Inconsistent dtype between surface and parameter C (surface: {dtype}) (parameter: {self.C.dtype})"
-        )
-        assert dtype == self.K.dtype, (
-            f"Inconsistent dtype between surface and parameter K (surface: {dtype}) (parameter: {self.K.dtype})"
-        )
-        assert dtype == self.A4.dtype, (
-            f"Inconsistent dtype between surface and parameter A4 (surface: {dtype}) (parameter: {self.A4.dtype})"
-        )
+        # TODO support parameterization
+        K = to_tensor(K, default_dtype=dtype)
+        A4 = to_tensor(A4, default_dtype=dtype)
 
-        super().__init__(diameter, dtype=dtype)
+        sag_function = Aspheric(C, K, A4)
+
+        super().__init__(diameter, sag_function, dtype=dtype)
 
     def testname(self) -> str:
-        return f"Asphere-{self.diameter:.2f}-{self.C.item():.2f}-{self.K.item():.2f}-{self.A4.item():.6f}"
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        possible = {
-            "C": self.C,
-            "K": self.K,
-            "A4": self.A4,
-        }
-        return {
-            name: value
-            for name, value in possible.items()
-            if isinstance(value, nn.Parameter)
-        }
-
-    def g(self, r: Tensor) -> Tensor:
-        r2 = torch.pow(r, 2)
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-        return torch.div(
-            C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)
-        ) + A4 * torch.pow(r2, 2)
-
-    def g_grad(self, r: Tensor) -> Tensor:
-        r2 = torch.pow(r, 2)
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-
-        return torch.div(C * r, torch.sqrt(1 - (1 + K) * r2 * C2)) + 4 * A4 * torch.pow(
-            r, 3
-        )
-
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-        r2 = y**2 + z**2
-
-        return torch.div(
-            C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)
-        ) + A4 * torch.pow(r2, 2)
-
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        K, C, A4 = self.K, self.C, self.A4
-        C2 = torch.pow(C, 2)
-        r2 = y**2 + z**2
-
-        denom = torch.sqrt(1 - (1 + K) * r2 * C2)
-        coeffs_term = 4 * A4 * r2
-
-        return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
+        return f"Asphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}-{self.sag_function.K.item():.2f}-{self.sag_function.A4.item():.6f}"
 
     def to_dict(self, dim: int) -> dict[str, Any]:
         N = 100
