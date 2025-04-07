@@ -14,4 +14,4 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
-    - dependency-name: "lodash:*"
+    - dependency-name: "tlmviewer"
