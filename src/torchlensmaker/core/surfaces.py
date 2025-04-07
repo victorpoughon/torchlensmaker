@@ -481,6 +481,10 @@ class SagSurface(ImplicitSurface):
             fallback.F_grad(points),
         )
 
+    def extent_x(self) -> Tensor:
+        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+        return self.g(r)
+
     def samples2D_full(self, N, epsilon):
         start = -(1 - epsilon) * self.diameter / 2
         end = (1 - epsilon) * self.diameter / 2
@@ -582,11 +586,6 @@ class Sphere(SagSurface):
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
 
-    def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        C = self.C
-        return torch.div(C * r**2, 1 + torch.sqrt(1 - (r * C) ** 2))
-
     def g(self, r: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(r, 2)
@@ -638,11 +637,6 @@ class Parabola(SagSurface):
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
-
-    def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        ret = torch.as_tensor(self.A * r**2, dtype=self.dtype)
-        return ret
 
     def g(self, r: Tensor) -> Tensor:
         return torch.mul(self.A, torch.pow(r, 2))
@@ -964,15 +958,6 @@ class Asphere(SagSurface):
             for name, value in possible.items()
             if isinstance(value, nn.Parameter)
         }
-
-    def extent_x(self) -> Tensor:
-        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        r2 = r**2
-        C, K, A4 = self.C, self.K, self.A4
-        C2 = torch.pow(C, 2)
-        return torch.add(
-            torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)), A4 * r2**2
-        )
 
     def g(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
