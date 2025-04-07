@@ -510,7 +510,7 @@ def safe_div(dividend: Tensor, divisor: Tensor) -> Tensor:
     Gradient safe version of torch.div() that returns dividend where divisor == 0
     """
 
-    ok = divisor != torch.zeros(1, dtype=divisor.dtype)
+    ok = divisor != torch.zeros((), dtype=divisor.dtype)
     safe = torch.ones_like(divisor)
     return torch.div(dividend, torch.where(ok, divisor, safe))
 

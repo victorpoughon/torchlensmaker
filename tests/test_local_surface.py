@@ -224,18 +224,20 @@ def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
 
     for surface in [s for s in surfaces if isinstance(s, tlm.ImplicitSurface)]:
         lim = 50  # TODO use 4*bbox.radial here instead of hardcoded limit
+        points0 = torch.zeros((dim,), dtype=surface.dtype)
         points1 = sample_grid(lim, N, dim, dtype=surface.dtype)
 
         # We're going to check that F and F_grad work with an arbitrary
         # number of batch dimensions.
         points2, points3, points4 = extra_batch_dims(points1, [4, 5, 6])
 
+        assert points0.shape == (dim,)
         assert points1.shape == (B1, dim)
         assert points2.shape == (4, B1, dim)
         assert points3.shape == (5, 4, B1, dim)
         assert points4.shape == (6, 5, 4, B1, dim)
 
-        for points in (points1, points2, points3, points4):
+        for points in (points0, points1, points2, points3, points4):
             F = surface.Fd(points)
             F_grad = surface.Fd_grad(points)
 
