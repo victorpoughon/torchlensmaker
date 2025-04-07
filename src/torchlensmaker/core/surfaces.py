@@ -523,9 +523,8 @@ class Sphere(SagSurface):
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sag",
-            "sag-type": "sphere",
             "diameter": self.diameter,
-            "C": self.sag_function.C.item(), # TODO add sag_function.to_dict
+            "sag-function": self.sag_function.to_dict(dim),
         }
 
 
@@ -550,9 +549,8 @@ class Parabola(SagSurface):
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sag",
-            "sag-type": "parabola",
             "diameter": self.diameter,
-            "A": self.sag_function.A.item(),
+            "sag-function": self.sag_function.to_dict(dim)
         }
 
 

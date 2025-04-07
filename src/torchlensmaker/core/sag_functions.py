@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from typing import TypeAlias
+from typing import TypeAlias, Any
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -77,6 +77,9 @@ class SagFunction:
         """
         raise NotImplementedError
 
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        raise NotImplementedError
+
 
 class Spherical(SagFunction):
     def __init__(self, C: torch.Tensor | nn.Parameter):
@@ -106,6 +109,9 @@ class Spherical(SagFunction):
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {"sag-type": "spherical", "C": self.C.item()}
+
 
 class Parabolic(SagFunction):
     def __init__(self, A: torch.Tensor | nn.Parameter):
@@ -127,10 +133,18 @@ class Parabolic(SagFunction):
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         return 2 * self.A * y, 2 * self.A * z
 
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {"sag-type": "parabolic", "A": self.A.item()}
+
 
 # TODO split into conical and aspheric coefficients
 class Aspheric(SagFunction):
-    def __init__(self, C: torch.Tensor | nn.Parameter, K: torch.Tensor | nn.Parameter, A4: torch.Tensor | nn.Parameter):
+    def __init__(
+        self,
+        C: torch.Tensor | nn.Parameter,
+        K: torch.Tensor | nn.Parameter,
+        A4: torch.Tensor | nn.Parameter,
+    ):
         assert C.dim() == 0
         assert K.dim() == 0
         assert A4.dim() == 0
@@ -186,3 +200,6 @@ class Aspheric(SagFunction):
         coeffs_term = 4 * A4 * r2
 
         return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
+
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {} # TODO
