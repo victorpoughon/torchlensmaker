@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from typing import TypeAlias, Any
+from typing import TypeAlias, Any, List
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -137,69 +137,121 @@ class Parabolic(SagFunction):
         return {"sag-type": "parabolic", "A": self.A.item()}
 
 
-# TODO split into conical and aspheric coefficients
-class Aspheric(SagFunction):
+class Conical(SagFunction):
     def __init__(
         self,
-        C: torch.Tensor | nn.Parameter,
-        K: torch.Tensor | nn.Parameter,
-        A4: torch.Tensor | nn.Parameter,
+        C: torch.Tensor,
+        K: torch.Tensor,
     ):
         assert C.dim() == 0
         assert K.dim() == 0
-        assert A4.dim() == 0
-
         self.C = C
         self.K = K
-        self.A4 = A4
 
     def parameters(self) -> dict[str, nn.Parameter]:
-        possible = {
-            "C": self.C,
-            "K": self.K,
-            "A4": self.A4,
-        }
         return {
-            name: value
-            for name, value in possible.items()
-            if isinstance(value, nn.Parameter)
+            name: param
+            for name, param in {"C": self.C, "K": self.K}.items()
+            if isinstance(param, nn.Parameter)
         }
 
     def g(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
-        K, C, A4 = self.K, self.C, self.A4
+        K, C = self.K, self.C
         C2 = torch.pow(C, 2)
-        return torch.div(
-            C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)
-        ) + A4 * torch.pow(r2, 2)
+        return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
 
     def g_grad(self, r: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
-        K, C, A4 = self.K, self.C, self.A4
+        K, C = self.K, self.C
         C2 = torch.pow(C, 2)
 
-        return torch.div(C * r, torch.sqrt(1 - (1 + K) * r2 * C2)) + 4 * A4 * torch.pow(
-            r, 3
-        )
+        return torch.div(C * r, torch.sqrt(1 - (1 + K) * r2 * C2))
 
     def G(self, y: Tensor, z: Tensor) -> Tensor:
-        K, C, A4 = self.K, self.C, self.A4
+        K, C = self.K, self.C
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
 
-        return torch.div(
-            C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2)
-        ) + A4 * torch.pow(r2, 2)
+        return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
 
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        K, C, A4 = self.K, self.C, self.A4
+        K, C = self.K, self.C
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
 
         denom = torch.sqrt(1 - (1 + K) * r2 * C2)
-        coeffs_term = 4 * A4 * r2
 
-        return (C * y) / denom + y * coeffs_term, (C * z) / denom + z * coeffs_term
+        return (C * y) / denom, (C * z) / denom
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
-        return {} # TODO
+        return {"sag-type": "conical", "K": self.K.item(), "C": self.C.item()}
+
+
+def vbroad(base: Tensor, vector: Tensor) -> Tensor:
+    """
+    Broadcasts a 1D tensor to be compatible with the dimensions of a batched tensor.
+
+    Args:
+    * base: A batched tensor of shape (...)
+    * vector: A 1D tensor of shape (M)
+
+    Returns:
+    * A view of the vector tensor with shape (M, ...) that is broadcastable with the base tensor.
+    """
+    assert vector.dim() == 1
+    return vector.view(vector.shape[0], *([1] * base.dim()))
+
+
+class Aspheric(SagFunction):
+    """
+    Aspheric coefficient polynomial of the form:
+    $c_0 r^4 + c_1 r^6 + c_2 r^8 + ...$
+    """
+
+    def __init__(
+        self,
+        coefficients: torch.Tensor,
+    ):
+        assert coefficients.dim() == 1
+        self.coefficients = coefficients
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return (
+            {"coefficients": self.coefficients}
+            if isinstance(self.coefficients, nn.Parameter)
+            else {}
+        )
+
+    def g(self, r: Tensor) -> Tensor:
+        i = vbroad(r, torch.arange(len(self.coefficients)))
+        coefficients = vbroad(r, self.coefficients)
+
+        return torch.sum(coefficients * torch.pow(r, 4 + 2 * i), dim=0)
+
+    def g_grad(self, r: Tensor) -> Tensor:
+        i = vbroad(r, torch.arange(len(self.coefficients)))
+        coefficients = vbroad(r, self.coefficients)
+
+        return torch.sum(coefficients * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
+
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
+        r2 = y**2 + z**2
+        i = vbroad(r2, torch.arange(len(self.coefficients)))
+        coefficients = vbroad(r2, self.coefficients)
+
+        return torch.sum(coefficients * torch.pow(r2, 2 + i), dim=0)
+
+    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+        r2 = y**2 + z**2
+        i = vbroad(r2, torch.arange(len(self.coefficients)))
+        coefficients = vbroad(r2, self.coefficients)
+
+        coeffs_term = torch.sum(
+            coefficients * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0
+        )
+
+        return y * coeffs_term, z * coeffs_term
+
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {"sag-type": "aspheric", "coefficients": self.coefficients.tolist()}

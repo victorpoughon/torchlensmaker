@@ -456,6 +456,13 @@ class SagSurface(ImplicitSurface):
         x = self.sag_function.g(r)
         return torch.stack((x, r), dim=-1)
 
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        return {
+            "type": "surface-sag",
+            "diameter": self.diameter,
+            "sag-function": self.sag_function.to_dict(dim),
+        }
+
 
 class Sphere(SagSurface):
     """
@@ -520,13 +527,6 @@ class Sphere(SagSurface):
     def testname(self) -> str:
         return f"Sphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}"
 
-    def to_dict(self, dim: int) -> dict[str, Any]:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter,
-            "sag-function": self.sag_function.to_dict(dim),
-        }
-
 
 class Parabola(SagSurface):
     "Sag surface for a parabola $X = A R^2$"
@@ -545,13 +545,6 @@ class Parabola(SagSurface):
 
     def testname(self) -> str:
         return f"Parabola-{self.diameter:.2f}-{self.sag_function.A.item():.2f}"
-
-    def to_dict(self, dim: int) -> dict[str, Any]:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter,
-            "sag-function": self.sag_function.to_dict(dim)
-        }
 
 
 class SphereR(LocalSurface):
@@ -806,48 +799,4 @@ class SphereR(LocalSurface):
             "type": "surface-sphere-r",
             "diameter": self.diameter,
             "R": self.R.item(),
-        }
-
-
-class Asphere(SagSurface):
-    def __init__(
-        self,
-        diameter: float,
-        R: int | float | nn.Parameter,
-        K: int | float | nn.Parameter,
-        A4: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64
-    ):
-        # TODO assert dtypes are the same
-        # TODO assert shapes
-
-        if isinstance(R, nn.Parameter):
-            C = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
-        else:
-            C = to_tensor(1.0 / R, default_dtype=dtype)
-
-        if isinstance(R, torch.Tensor):
-            assert R.dtype == dtype
-
-        # TODO support parameterization
-        K = to_tensor(K, default_dtype=dtype)
-        A4 = to_tensor(A4, default_dtype=dtype)
-
-        sag_function = Aspheric(C, K, A4)
-
-        super().__init__(diameter, sag_function, dtype=dtype)
-
-    def testname(self) -> str:
-        return f"Asphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}-{self.sag_function.K.item():.2f}-{self.sag_function.A4.item():.6f}"
-
-    def to_dict(self, dim: int) -> dict[str, Any]:
-        N = 100
-        if dim == 2:
-            samples = self.samples2D_full(N, epsilon=0.0)
-        elif dim == 3:
-            samples = self.samples2D_half(N, epsilon=0.0)
-        # TODO implement asphere in tlmviewer, for now lathe surface
-        return {
-            "type": "surface-lathe",
-            "samples": samples.tolist(),
         }
