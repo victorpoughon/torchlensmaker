@@ -1,4 +1,3 @@
-
 from typing import Iterable
 
 import torch
@@ -16,11 +15,6 @@ Test all surfaces using the methods of the common base class LocalSurface().
 All methods are tested here, except local_collide() which is only tested for the
 basic stuff, without labeled data. A full test is in test_local_collide.
 """
-
-
-def test_testname(surfaces: list[tlm.LocalSurface]) -> None:
-    for s in surfaces:
-        assert len(s.testname()) > 0
 
 
 def test_todict(surfaces: list[tlm.LocalSurface]) -> None:
@@ -61,7 +55,7 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         assert torch.all(torch.isfinite(zero2))
         assert torch.all(torch.isfinite(extent2))
         assert zero2.dtype == s.dtype
-        assert extent2.dtype == s.dtype, s.testname()
+        assert extent2.dtype == s.dtype, s.to_dict()
         assert torch.allclose(zero2, torch.tensor(0.0, dtype=s.dtype))
         if not isflat(s):
             assert not torch.allclose(extent2, torch.tensor(0.0, dtype=s.dtype))

@@ -60,10 +60,6 @@ class LocalSurface:
     def __init__(self, dtype: torch.dtype = torch.float64):
         self.dtype = dtype
 
-    def testname(self) -> str:
-        "A string for identification in test cases"
-        raise NotImplementedError
-
     def parameters(self) -> dict[str, nn.Parameter]:
         raise NotImplementedError
 
@@ -206,9 +202,6 @@ class SquarePlane(Plane):
         self.side_length = side_length
         super().__init__(SquareOutline(side_length), dtype)
 
-    def testname(self) -> str:
-        return f"SquarePlane-{self.side_length}"
-
 
 class CircularPlane(Plane):
     "aka disk"
@@ -216,9 +209,6 @@ class CircularPlane(Plane):
     def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
         self.diameter = diameter
         super().__init__(CircularOutline(diameter), dtype)
-
-    def testname(self) -> str:
-        return f"CircularPlane-{self.diameter}"
 
 
 class ImplicitSurface(LocalSurface):
@@ -533,9 +523,6 @@ class Sphere(SagSurface):
             torch.tensor(1.0, dtype=self.dtype), self.sag_function.C
         ).item()
 
-    def testname(self) -> str:
-        return f"Sphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}"
-
 
 class Parabola(SagSurface):
     "Sag surface for a parabola $X = A R^2$"
@@ -551,9 +538,6 @@ class Parabola(SagSurface):
         A_tensor = to_tensor(A, default_dtype=dtype)
         sag_function = Parabolic(A_tensor)
         super().__init__(diameter, sag_function, dtype=dtype)
-
-    def testname(self) -> str:
-        return f"Parabola-{self.diameter:.2f}-{self.sag_function.A.item():.2f}"
 
 
 class Asphere(SagSurface):
@@ -593,9 +577,6 @@ class Asphere(SagSurface):
 
         super().__init__(diameter, sag_function, collision_method, dtype)
     
-    def testname(self) -> str:
-        return "Asphere"
-
 
 class SphereR(LocalSurface):
     """
@@ -643,12 +624,6 @@ class SphereR(LocalSurface):
 
         assert self.R.dim() == 0
         assert self.R.dtype == self.dtype
-
-    def __str__(self) -> str:
-        return f"SphereR({self.diameter}, {self.R.item()})"
-
-    def testname(self) -> str:
-        return str(self)
 
     def parameters(self) -> dict[str, nn.Parameter]:
         if isinstance(self.R, nn.Parameter):

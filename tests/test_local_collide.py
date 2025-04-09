@@ -131,7 +131,8 @@ def test_expected_collide(
 
     print("Checking collision")
     print("Ray generator:", test_cases_all_surfaces.generator)
-    print("Surface = ", surface.testname())
+    print("Surface: ", surface.__class__.__name__)
+    print("to_dict(2): ", surface.to_dict(2))
     print("expected collide:", test_cases_all_surfaces.expected_collide)
     print("dim", P.shape[1])
     print("dtype", surface.dtype)
