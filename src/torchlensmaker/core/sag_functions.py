@@ -255,3 +255,38 @@ class Aspheric(SagFunction):
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
         return {"sag-type": "aspheric", "coefficients": self.coefficients.tolist()}
+
+
+class SagSum(SagFunction):
+    """
+    Sag function that is the sum of other sag functions
+    """
+
+    def __init__(self, terms):
+        assert all((isinstance(a, SagFunction) for a in terms))
+        self.terms = terms
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return {
+            f"{str(i)}_{name}": p
+            for i, t in enumerate(self.terms)
+            for name, p in t.parameters().items()
+        }
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        return {"sag-type": "sum", "terms": [t.to_dict(dim) for t in self.terms]}
+
+    def g(self, r: Tensor) -> Tensor:
+        return torch.sum(torch.stack([t.g(r) for t in self.terms], dim=0), dim=0)
+
+    def g_grad(self, r: Tensor) -> Tensor:
+        return torch.sum(torch.stack([t.g_grad(r) for t in self.terms], dim=0), dim=0)
+
+    def G(self, y: Tensor, z: Tensor) -> Tensor:
+        return torch.sum(torch.stack([t.G(y, z) for t in self.terms], dim=0), dim=0)
+
+    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+        grads = [t.G_grad(y, z) for t in self.terms]
+        grad_y = torch.sum(torch.stack([g[0] for g in grads], dim=0), dim=0)
+        grad_z = torch.sum(torch.stack([g[1] for g in grads], dim=0), dim=0)
+        return grad_y, grad_z
