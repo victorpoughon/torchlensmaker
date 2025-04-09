@@ -21,12 +21,13 @@ Tensor = torch.Tensor
 
 
 def to_tensor(
-    val: int | float | torch.Tensor,
+    val: int | float | torch.Tensor | list[float | int],
     default_dtype: torch.dtype = torch.float64,
 ) -> Tensor:
-    if not isinstance(val, torch.Tensor):
-        return torch.as_tensor(val, dtype=default_dtype)
-    return val
+    if isinstance(val, torch.Tensor):
+        return val
+
+    return torch.as_tensor(val, dtype=default_dtype)
 
 
 def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:
