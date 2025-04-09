@@ -566,17 +566,16 @@ class Asphere(SagSurface):
             assert coefficients.dtype == dtype
             assert coefficients.dim() == 1
 
-        R_tensor = to_tensor(1./R, default_dtype=dtype)
+        R_tensor = to_tensor(1.0 / R, default_dtype=dtype)
         K_tensor = to_tensor(K, default_dtype=dtype)
         coefficients_tensor = to_tensor(coefficients, default_dtype=dtype)
 
-        sag_function = SagSum([
-            Conical(R_tensor, K_tensor),
-            Aspheric(coefficients_tensor)
-        ])
+        sag_function = SagSum(
+            [Conical(R_tensor, K_tensor), Aspheric(coefficients_tensor)]
+        )
 
         super().__init__(diameter, sag_function, collision_method, dtype)
-    
+
 
 class SphereR(LocalSurface):
     """

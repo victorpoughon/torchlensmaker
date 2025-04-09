@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from typing import TypeAlias, Any, List
+from typing import TypeAlias, Any
 
 Tensor: TypeAlias = torch.Tensor
 

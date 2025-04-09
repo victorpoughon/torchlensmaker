@@ -31,7 +31,6 @@ from typing import Any
 from torchlensmaker.core.surfaces import (
     LocalSurface,
     ImplicitSurface,
-    Plane,
 )
 
 from torchlensmaker.core.transforms import (
