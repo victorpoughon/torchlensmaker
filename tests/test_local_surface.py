@@ -23,6 +23,12 @@ def test_testname(surfaces: list[tlm.LocalSurface]) -> None:
         assert len(s.testname()) > 0
 
 
+def test_todict(surfaces: list[tlm.LocalSurface]) -> None:
+    for s in surfaces:
+        assert len(s.to_dict(2)) > 0
+        assert len(s.to_dict(3)) > 0
+
+
 def test_parameters(surfaces: list[tlm.LocalSurface]) -> None:
     for s in surfaces:
         params = s.parameters()
