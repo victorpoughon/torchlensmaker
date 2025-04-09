@@ -37,7 +37,14 @@ from torchlensmaker.core.collision_detection import (
 from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
 
-from torchlensmaker.core.sag_functions import SagFunction, Spherical, Parabolic, Aspheric
+from torchlensmaker.core.sag_functions import (
+    SagFunction,
+    Spherical,
+    Parabolic,
+    Aspheric,
+    Conical,
+    SagSum,
+)
 
 from typing import Optional, Any
 
@@ -522,7 +529,9 @@ class Sphere(SagSurface):
 
     def radius(self) -> float:
         "Utility function to get radius from internal curvature"
-        return torch.div(torch.tensor(1.0, dtype=self.dtype), self.sag_function.C).item()
+        return torch.div(
+            torch.tensor(1.0, dtype=self.dtype), self.sag_function.C
+        ).item()
 
     def testname(self) -> str:
         return f"Sphere-{self.diameter:.2f}-{self.sag_function.C.item():.2f}"
@@ -535,7 +544,7 @@ class Parabola(SagSurface):
         self,
         diameter: float,
         A: int | float | nn.Parameter,
-        dtype: torch.dtype = torch.float64
+        dtype: torch.dtype = torch.float64,
     ):
         if isinstance(A, torch.Tensor):
             assert A.dtype == dtype
@@ -545,6 +554,47 @@ class Parabola(SagSurface):
 
     def testname(self) -> str:
         return f"Parabola-{self.diameter:.2f}-{self.sag_function.A.item():.2f}"
+
+
+class Asphere(SagSurface):
+    """
+    Sag surface for the Asphere model
+
+    An asphere is a conical base + aspheric coefficients
+    """
+
+    def __init__(
+        self,
+        diameter: float,
+        R: int | float | nn.Parameter,
+        K: int | float | nn.Parameter,
+        coefficients: list[int | float] | torch.Tensor,
+        collision_method: CollisionMethod = default_collision_method,
+        dtype: torch.dtype = torch.float64,
+    ):
+        if isinstance(R, torch.Tensor):
+            assert R.dtype == dtype
+            assert R.dim() == 0
+        if isinstance(K, torch.Tensor):
+            assert K.dtype == dtype
+            assert K.dim() == 0
+        if isinstance(coefficients, torch.Tensor):
+            assert coefficients.dtype == dtype
+            assert coefficients.dim() == 1
+
+        R_tensor = to_tensor(1./R, default_dtype=dtype)
+        K_tensor = to_tensor(K, default_dtype=dtype)
+        coefficients_tensor = to_tensor(coefficients, default_dtype=dtype)
+
+        sag_function = SagSum([
+            Conical(R_tensor, K_tensor),
+            Aspheric(coefficients_tensor)
+        ])
+
+        super().__init__(diameter, sag_function, collision_method, dtype)
+    
+    def testname(self) -> str:
+        return "Asphere"
 
 
 class SphereR(LocalSurface):
