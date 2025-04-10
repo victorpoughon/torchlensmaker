@@ -188,19 +188,19 @@ class Conical(SagFunction):
         return {"sag-type": "conical", "K": self.K.item(), "C": self.C.item()}
 
 
-def vbroad(base: Tensor, vector: Tensor) -> Tensor:
+def vbroad(vector: Tensor, base: int) -> Tensor:
     """
     Broadcasts a 1D tensor to be compatible with the dimensions of a batched tensor.
 
     Args:
-    * base: A batched tensor of shape (...)
+    * base: Number of dimensions of some batched tensor of shape (...)
     * vector: A 1D tensor of shape (M)
 
     Returns:
     * A view of the vector tensor with shape (M, ...) that is broadcastable with the base tensor.
     """
     assert vector.dim() == 1
-    return vector.view(vector.shape[0], *([1] * base.dim()))
+    return vector.view(vector.shape[0], *([1] * base))
 
 
 class Aspheric(SagFunction):
@@ -224,28 +224,28 @@ class Aspheric(SagFunction):
         )
 
     def g(self, r: Tensor) -> Tensor:
-        i = vbroad(r, torch.arange(len(self.coefficients)))
-        coefficients = vbroad(r, self.coefficients)
+        i = vbroad(torch.arange(len(self.coefficients)), r.dim())
+        coefficients = vbroad(self.coefficients, r.dim())
 
         return torch.sum(coefficients * torch.pow(r, 4 + 2 * i), dim=0)
 
     def g_grad(self, r: Tensor) -> Tensor:
-        i = vbroad(r, torch.arange(len(self.coefficients)))
-        coefficients = vbroad(r, self.coefficients)
+        i = vbroad(torch.arange(len(self.coefficients)), r.dim())
+        coefficients = vbroad(self.coefficients, r.dim())
 
         return torch.sum(coefficients * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
 
     def G(self, y: Tensor, z: Tensor) -> Tensor:
         r2 = y**2 + z**2
-        i = vbroad(r2, torch.arange(len(self.coefficients)))
-        coefficients = vbroad(r2, self.coefficients)
+        i = vbroad(torch.arange(len(self.coefficients)), r2.dim())
+        coefficients = vbroad(self.coefficients, r2.dim())
 
         return torch.sum(coefficients * torch.pow(r2, 2 + i), dim=0)
 
     def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
         r2 = y**2 + z**2
-        i = vbroad(r2, torch.arange(len(self.coefficients)))
-        coefficients = vbroad(r2, self.coefficients)
+        i = vbroad(torch.arange(len(self.coefficients)), r2.dim())
+        coefficients = vbroad(self.coefficients, r2.dim())
 
         coeffs_term = torch.sum(
             coefficients * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0
