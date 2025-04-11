@@ -102,35 +102,44 @@ class SagFunction:
 
 
 class Spherical(SagFunction):
-    def __init__(self, C: torch.Tensor | nn.Parameter):
+    def __init__(self, C: torch.Tensor, normalize: bool = False):
         assert C.dim() == 0
         self.C = C
+        self.normalize = normalize
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
 
+    def unnorm(self, tau: Tensor) -> Tensor:
+        assert tau.dim() == 0
+        return self.C / tau if self.normalize else self.C
+
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
-        C = self.C
+        C = self.unnorm(tau)
         r2 = torch.pow(r, 2)
         return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
     def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
-        C = self.C
+        C = self.unnorm(tau)
         return safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
-        C = self.C
+        C = self.unnorm(tau)
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
         return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
     def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
-        C = self.C
+        C = self.unnorm(tau)
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
-        return {"sag-type": "spherical", "C": self.C.item()}
+        return {
+            "sag-type": "spherical",
+            "C": self.C.item(),
+            **({"normalize": self.normalize} if self.normalize else {}),
+        }
 
 
 class Parabolic(SagFunction):

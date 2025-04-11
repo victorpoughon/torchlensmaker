@@ -488,6 +488,7 @@ class Sphere(SagSurface):
         diameter: float,
         R: int | float | nn.Parameter | None = None,
         C: int | float | nn.Parameter | None = None,
+        normalize : bool = False,
         collision_method: CollisionMethod = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
@@ -498,12 +499,6 @@ class Sphere(SagSurface):
 
         C_tensor: torch.Tensor | nn.Parameter
         if C is None and R is not None:
-            if torch.abs(torch.as_tensor(R)) <= diameter / 2:
-                raise RuntimeError(
-                    f"Sphere radius (R={R}) must be strictly greater than half the surface diameter (D/2={diameter / 2}) "
-                    f"(To model an exact half-sphere, use SphereR)."
-                )
-
             if isinstance(R, nn.Parameter):
                 C_tensor = nn.Parameter(torch.tensor(1.0 / R.item(), dtype=R.dtype))
             else:
@@ -514,12 +509,20 @@ class Sphere(SagSurface):
             else:
                 C_tensor = torch.as_tensor(C, dtype=dtype)
 
-        # TODO move domain error check here
+        # Domain error check
+        tau = diameter / 2
+        C_unnormed = C_tensor / tau if normalize else C_tensor
+        if torch.abs(1. / C_unnormed) <= tau:
+            raise RuntimeError(
+                f"Sphere radius must be strictly greater than half the surface diameter (D/2={diameter / 2}) "
+                f"(To model an exact half-sphere, use SphereR)."
+            )
+
 
         assert C_tensor.dim() == 0
         assert C_tensor.dtype == dtype
 
-        sag_function = Spherical(C_tensor)
+        sag_function = Spherical(C_tensor, normalize)
 
         super().__init__(diameter, sag_function, collision_method, dtype)
 
@@ -560,9 +563,9 @@ class Asphere(SagSurface):
         R: int | float | nn.Parameter,
         K: int | float | nn.Parameter,
         coefficients: list[int | float] | torch.Tensor,
-        collision_method: CollisionMethod = default_collision_method,
         normalize_conical: bool = False,
         normalize_aspheric: bool = False,
+        collision_method: CollisionMethod = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
         if isinstance(R, torch.Tensor):
@@ -582,8 +585,10 @@ class Asphere(SagSurface):
         # This prevents against initializing with out of domain K value,
         # but not getting there during optimization.
         # TODO add an Asphere model reparameterized with softplus
-        if diameter / 2 >= torch.sqrt(1/(C_tensor**2 * (1+K_tensor))):
-            raise ValueError("Out of domain asphere parameters")
+        tau = diameter / 2
+        C_unnormed = C_tensor / tau if normalize_conical else C_tensor
+        if diameter / 2 >= torch.sqrt(1/(C_unnormed**2 * (1+K_tensor))):
+            raise ValueError(f"Out of domain asphere parameters {C_tensor} {K_tensor}")
 
         sag_function = SagSum(
             [
