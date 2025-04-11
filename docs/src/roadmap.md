@@ -41,6 +41,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Cubic Bezier Spline
 * Linear Spline
 * Implicit version of SphereR
+* ConicalSoftPlus: conical sag function without invalid domain, reparameterized with softplus
 * Convert between surface types by fitting samples
 * Improve `Outline` support
 * use rtol / atol in `contains()` instead of bare tol
@@ -153,6 +154,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * clean up code layout in tlmviewer.py / render_sequence
 * clean up code in scene.ts
 * fix visible inner disk when rendering two half spheres
+* timeline support (slider for iterations, ray variable, zoom factor)
 
 ## Testing
 
