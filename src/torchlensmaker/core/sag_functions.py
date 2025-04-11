@@ -42,50 +42,54 @@ def safe_div(dividend: Tensor, divisor: Tensor) -> Tensor:
 
 
 class SagFunction:
-    def g(self, r: Tensor) -> Tensor:
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
         """
         2D sag function $g(r)$
 
         Args:
         * r: batched tensor of shape (...)
+        * tau: normalization factor (0-dim)
 
         Returns:
         * batched tensor of shape (...)
         """
         raise NotImplementedError
 
-    def g_grad(self, r: Tensor) -> Tensor:
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
         """
         Derivative of the 2D sag function $g'(r)$
 
         Args:
         * r: batched tensor of shape (...)
+        * tau: normalization factor (0-dim)
 
         Returns:
         * batched tensor of shape (...)
         """
         raise NotImplementedError
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         """
         3D sag function $G(X, Y) = g(\\sqrt{y^2 + z^2})$
 
         Args:
         * y: batched tensor of shape (...)
         * z: batched tensor of shape (...)
+        * tau: normalization factor (0-dim)
 
         Returns:
         * batched tensor of shape (...)
         """
         raise NotImplementedError
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
         """
         Gradient of the 3D sag function $\\nabla G(y, z)$
 
         Args:
         * y: batched tensor of shape (...)
         * z: batched tensor of shape (...)
+        * tau: normalization factor (0-dim)
 
         Returns:
         * grad_y: batched tensor of shape (...)
@@ -105,21 +109,21 @@ class Spherical(SagFunction):
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"C": self.C} if isinstance(self.C, nn.Parameter) else {}
 
-    def g(self, r: Tensor) -> Tensor:
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(r, 2)
         return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
-    def g_grad(self, r: Tensor) -> Tensor:
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
         C = self.C
         return safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         C = self.C
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
         return safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
         C = self.C
         r2 = torch.pow(y, 2) + torch.pow(z, 2)
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
@@ -137,16 +141,16 @@ class Parabolic(SagFunction):
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
 
-    def g(self, r: Tensor) -> Tensor:
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
         return torch.mul(self.A, torch.pow(r, 2))
 
-    def g_grad(self, r: Tensor) -> Tensor:
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
         return 2 * self.A * r
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         return torch.mul(self.A, (y**2 + z**2))
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
         return 2 * self.A * y, 2 * self.A * z
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
@@ -158,11 +162,13 @@ class Conical(SagFunction):
         self,
         C: torch.Tensor,
         K: torch.Tensor,
+        normalize: bool = False,
     ):
         assert C.dim() == 0
         assert K.dim() == 0
         self.C = C
         self.K = K
+        self.normalize = normalize
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {
@@ -171,28 +177,35 @@ class Conical(SagFunction):
             if isinstance(param, nn.Parameter)
         }
 
-    def g(self, r: Tensor) -> Tensor:
+    def unnorm(self, tau: Tensor) -> tuple[Tensor, Tensor]:
+        assert tau.dim() == 0
+        if self.normalize:
+            return self.C / tau, self.K
+        else:
+            return self.C, self.K
+
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
-        K, C = self.K, self.C
+        C, K = self.unnorm(tau)
         C2 = torch.pow(C, 2)
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
 
-    def g_grad(self, r: Tensor) -> Tensor:
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
-        K, C = self.K, self.C
+        C, K = self.unnorm(tau)
         C2 = torch.pow(C, 2)
 
         return torch.div(C * r, torch.sqrt(1 - (1 + K) * r2 * C2))
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        K, C = self.K, self.C
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
+        C, K = self.unnorm(tau)
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
 
         return torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        K, C = self.K, self.C
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
+        C, K = self.unnorm(tau)
         C2 = torch.pow(C, 2)
         r2 = y**2 + z**2
 
@@ -201,7 +214,12 @@ class Conical(SagFunction):
         return (C * y) / denom, (C * z) / denom
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
-        return {"sag-type": "conical", "K": self.K.item(), "C": self.C.item()}
+        return {
+            "sag-type": "conical",
+            "K": self.K.item(),
+            "C": self.C.item(),
+            **({"normalize": self.normalize} if self.normalize else {}),
+        }
 
 
 def vbroad(vector: Tensor, base: int) -> Tensor:
@@ -225,12 +243,27 @@ class Aspheric(SagFunction):
     $c_0 r^4 + c_1 r^6 + c_2 r^8 + ...$
     """
 
-    def __init__(
-        self,
-        coefficients: torch.Tensor,
-    ):
+    def __init__(self, coefficients: torch.Tensor, normalize: bool = False):
         assert coefficients.dim() == 1
         self.coefficients = coefficients
+        self.normalize = normalize
+        self.i = torch.arange(len(coefficients))  # indexing of coefficients
+
+    def unnorm(self, tau: Tensor) -> Tensor:
+        """
+        Computes the unnormalized coefficients of the sag function given the
+        normalization factor tau if normalization is enabled.
+
+        When normalizion is enabled, the internal coefficients of the sag
+        function are stored in their normalized form.
+        """
+
+        assert tau.dim() == 0
+        if self.normalize:
+            i = self.i
+            return self.coefficients / torch.pow(tau, 3 + 2 * i)
+        else:
+            return self.coefficients
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return (
@@ -239,38 +272,40 @@ class Aspheric(SagFunction):
             else {}
         )
 
-    def g(self, r: Tensor) -> Tensor:
-        i = vbroad(torch.arange(len(self.coefficients)), r.dim())
-        coefficients = vbroad(self.coefficients, r.dim())
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
+        alphas = vbroad(self.unnorm(tau), r.dim())
+        i = vbroad(self.i, r.dim())
 
-        return torch.sum(coefficients * torch.pow(r, 4 + 2 * i), dim=0)
+        return torch.sum(alphas * torch.pow(r, 4 + 2 * i), dim=0)
 
-    def g_grad(self, r: Tensor) -> Tensor:
-        i = vbroad(torch.arange(len(self.coefficients)), r.dim())
-        coefficients = vbroad(self.coefficients, r.dim())
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
+        alphas = vbroad(self.unnorm(tau), r.dim())
+        i = vbroad(self.i, r.dim())
 
-        return torch.sum(coefficients * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
+        return torch.sum(alphas * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         r2 = y**2 + z**2
-        i = vbroad(torch.arange(len(self.coefficients)), r2.dim())
-        coefficients = vbroad(self.coefficients, r2.dim())
+        alphas = vbroad(self.unnorm(tau), r2.dim())
+        i = vbroad(self.i, r2.dim())
 
-        return torch.sum(coefficients * torch.pow(r2, 2 + i), dim=0)
+        return torch.sum(alphas * torch.pow(r2, 2 + i), dim=0)
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
         r2 = y**2 + z**2
-        i = vbroad(torch.arange(len(self.coefficients)), r2.dim())
-        coefficients = vbroad(self.coefficients, r2.dim())
+        alphas = vbroad(self.unnorm(tau), r2.dim())
+        i = vbroad(self.i, r2.dim())
 
-        coeffs_term = torch.sum(
-            coefficients * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0
-        )
+        coeffs_term = torch.sum(alphas * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0)
 
         return y * coeffs_term, z * coeffs_term
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
-        return {"sag-type": "aspheric", "coefficients": self.coefficients.tolist()}
+        return {
+            "sag-type": "aspheric",
+            "coefficients": self.coefficients.tolist(),
+            **({"normalize": self.normalize} if self.normalize else {}),
+        }
 
 
 class SagSum(SagFunction):
@@ -292,17 +327,21 @@ class SagSum(SagFunction):
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {"sag-type": "sum", "terms": [t.to_dict(dim) for t in self.terms]}
 
-    def g(self, r: Tensor) -> Tensor:
-        return torch.sum(torch.stack([t.g(r) for t in self.terms], dim=0), dim=0)
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
+        return torch.sum(torch.stack([t.g(r, tau) for t in self.terms], dim=0), dim=0)
 
-    def g_grad(self, r: Tensor) -> Tensor:
-        return torch.sum(torch.stack([t.g_grad(r) for t in self.terms], dim=0), dim=0)
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
+        return torch.sum(
+            torch.stack([t.g_grad(r, tau) for t in self.terms], dim=0), dim=0
+        )
 
-    def G(self, y: Tensor, z: Tensor) -> Tensor:
-        return torch.sum(torch.stack([t.G(y, z) for t in self.terms], dim=0), dim=0)
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
+        return torch.sum(
+            torch.stack([t.G(y, z, tau) for t in self.terms], dim=0), dim=0
+        )
 
-    def G_grad(self, y: Tensor, z: Tensor) -> tuple[Tensor, Tensor]:
-        grads = [t.G_grad(y, z) for t in self.terms]
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
+        grads = [t.G_grad(y, z, tau) for t in self.terms]
         grad_y = torch.sum(torch.stack([g[0] for g in grads], dim=0), dim=0)
         grad_z = torch.sum(torch.stack([g[1] for g in grads], dim=0), dim=0)
         return grad_y, grad_z

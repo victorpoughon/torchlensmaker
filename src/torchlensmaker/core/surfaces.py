@@ -395,7 +395,8 @@ class SagSurface(ImplicitSurface):
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        sag_f = self.sag_function.g(r) - x
+        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+        sag_f = self.sag_function.g(r, tau) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_f, fallback.f(points))
@@ -403,8 +404,9 @@ class SagSurface(ImplicitSurface):
     def f_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
+        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
         sag_f_grad = torch.stack(
-            (-torch.ones_like(x), self.sag_function.g_grad(r)), dim=-1
+            (-torch.ones_like(x), self.sag_function.g_grad(r, tau)), dim=-1
         )
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
@@ -417,7 +419,8 @@ class SagSurface(ImplicitSurface):
     def F(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        sag_F = self.sag_function.G(y, z) - x
+        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+        sag_F = self.sag_function.G(y, z, tau) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_F, fallback.F(points))
@@ -425,7 +428,8 @@ class SagSurface(ImplicitSurface):
     def F_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        grad_y, grad_z = self.sag_function.G_grad(y, z)
+        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+        grad_y, grad_z = self.sag_function.G_grad(y, z, tau)
         sag_F_grad = torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
@@ -437,7 +441,7 @@ class SagSurface(ImplicitSurface):
 
     def extent_x(self) -> Tensor:
         r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        return self.sag_function.g(r)
+        return self.sag_function.g(r, tau=r)
 
     def samples2D_full(self, N, epsilon):
         start = -(1 - epsilon) * self.diameter / 2
@@ -554,6 +558,8 @@ class Asphere(SagSurface):
         K: int | float | nn.Parameter,
         coefficients: list[int | float] | torch.Tensor,
         collision_method: CollisionMethod = default_collision_method,
+        normalize_conical: bool = False,
+        normalize_aspheric: bool = False,
         dtype: torch.dtype = torch.float64,
     ):
         if isinstance(R, torch.Tensor):
@@ -566,12 +572,21 @@ class Asphere(SagSurface):
             assert coefficients.dtype == dtype
             assert coefficients.dim() == 1
 
-        R_tensor = to_tensor(1.0 / R, default_dtype=dtype)
+        C_tensor = to_tensor(1.0 / R, default_dtype=dtype)
         K_tensor = to_tensor(K, default_dtype=dtype)
         coefficients_tensor = to_tensor(coefficients, default_dtype=dtype)
 
+        # This prevents against initializing with out of domain K value,
+        # but not getting there during optimization.
+        # TODO add an Asphere model reparameterized with softplus
+        if diameter / 2 >= torch.sqrt(1/(C_tensor**2 * (1+K_tensor))):
+            raise ValueError("Out of domain asphere parameters")
+
         sag_function = SagSum(
-            [Conical(R_tensor, K_tensor), Aspheric(coefficients_tensor)]
+            [
+                Conical(C_tensor, K_tensor, normalize_conical),
+                Aspheric(coefficients_tensor, normalize_aspheric),
+            ]
         )
 
         super().__init__(diameter, sag_function, collision_method, dtype)
