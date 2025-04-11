@@ -514,6 +514,8 @@ class Sphere(SagSurface):
             else:
                 C_tensor = torch.as_tensor(C, dtype=dtype)
 
+        # TODO move domain error check here
+
         assert C_tensor.dim() == 0
         assert C_tensor.dtype == dtype
 
@@ -535,12 +537,13 @@ class Parabola(SagSurface):
         self,
         diameter: float,
         A: int | float | nn.Parameter,
+        normalize: bool = False,
         dtype: torch.dtype = torch.float64,
     ):
         if isinstance(A, torch.Tensor):
             assert A.dtype == dtype
         A_tensor = to_tensor(A, default_dtype=dtype)
-        sag_function = Parabolic(A_tensor)
+        sag_function = Parabolic(A_tensor, normalize)
         super().__init__(diameter, sag_function, dtype=dtype)
 
 

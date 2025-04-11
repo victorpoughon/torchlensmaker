@@ -134,27 +134,43 @@ class Spherical(SagFunction):
 
 
 class Parabolic(SagFunction):
-    def __init__(self, A: torch.Tensor | nn.Parameter):
+    def __init__(
+        self,
+        A: torch.Tensor,
+        normalize: bool = False,
+    ):
         assert A.dim() == 0
         self.A = A
+        self.normalize = normalize
 
     def parameters(self) -> dict[str, nn.Parameter]:
         return {"A": self.A} if isinstance(self.A, nn.Parameter) else {}
 
+    def unnorm(self, tau: Tensor) -> Tensor:
+        return self.A / tau if self.normalize else self.A
+
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
-        return torch.mul(self.A, torch.pow(r, 2))
+        A = self.unnorm(tau)
+        return torch.mul(A, torch.pow(r, 2))
 
     def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
-        return 2 * self.A * r
+        A = self.unnorm(tau)
+        return 2 * A * r
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
-        return torch.mul(self.A, (y**2 + z**2))
+        A = self.unnorm(tau)
+        return torch.mul(A, (y**2 + z**2))
 
     def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
-        return 2 * self.A * y, 2 * self.A * z
+        A = self.unnorm(tau)
+        return 2 * A * y, 2 * A * z
 
     def to_dict(self, _dim: int) -> dict[str, Any]:
-        return {"sag-type": "parabolic", "A": self.A.item()}
+        return {
+            "sag-type": "parabolic",
+            "A": self.A.item(),
+            **({"normalize": self.normalize} if self.normalize else {}),
+        }
 
 
 class Conical(SagFunction):
