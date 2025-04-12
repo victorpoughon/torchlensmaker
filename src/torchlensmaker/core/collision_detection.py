@@ -22,12 +22,12 @@ from functools import partial
 
 from dataclasses import dataclass
 
-Tensor = torch.Tensor
-
 from typing import TYPE_CHECKING, Optional, Callable, Any
 
 if TYPE_CHECKING:
     from torchlensmaker.core.surfaces import ImplicitSurface, LocalSurface
+
+Tensor = torch.Tensor
 
 
 def surface_f(
@@ -160,6 +160,7 @@ def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
     t = -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
     # Surface maximum bounding radius
+    # intersect ray with bbox OR compute bounding radius of bbox
     br = math.sqrt((surface.diameter / 2) ** 2 + surface.extent_x() ** 2)
 
     # Sample the domain to make initialization values
