@@ -94,3 +94,19 @@ def cartesian_prod2d_optional(
         return A, B
     else:
         return cartesian_prod2d(A, B)
+
+
+def bbroad(vector: Tensor, nbatch: int) -> Tensor:
+    """
+    Expoands a tensor to be compatible with the dimensions of a batched tensor
+    by appending batch dimensions as needed.
+
+    Args:
+    * vector: A tensor of shape M
+    * nbatch: Number of dimensions of some batched tensor
+
+    Returns:
+    * A view of the vector tensor with shape (*M, ...) that is broadcastable
+      with the batched tensor.
+    """
+    return vector.view(*vector.shape, *([1] * nbatch))

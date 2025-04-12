@@ -16,7 +16,7 @@
 
 import torch
 import torch.nn as nn
-
+from torchlensmaker.core.tensor_manip import bbroad
 from typing import TypeAlias, Any, Sequence
 
 Tensor: TypeAlias = torch.Tensor
@@ -259,38 +259,6 @@ class Conical(SagFunction):
         }
 
 
-# TODO remove
-def vbroad(vector: Tensor, base: int) -> Tensor:
-    """
-    Broadcasts a 1D tensor to be compatible with the dimensions of a batched tensor.
-
-    Args:
-    * base: Number of dimensions of some batched tensor of shape (...)
-    * vector: A 1D tensor of shape (M)
-
-    Returns:
-    * A view of the vector tensor with shape (M, ...) that is broadcastable with the base tensor.
-    """
-    assert vector.dim() == 1
-    return vector.view(vector.shape[0], *([1] * base))
-
-
-def bbroad(vector: Tensor, nbatch: int) -> Tensor:
-    """
-    Expoands a tensor to be compatible with the dimensions of a batched tensor
-    by appending batch dimensions as needed.
-
-    Args:
-    * vector: A tensor of shape M
-    * nbatch: Number of dimensions of some batched tensor
-
-    Returns:
-    * A view of the vector tensor with shape (*M, ...) that is broadcastable
-      with the batched tensor.
-    """
-    return vector.view(*vector.shape, *([1] * nbatch))
-
-
 class Aspheric(SagFunction):
     """
     Aspheric coefficient polynomial of the form:
@@ -334,28 +302,28 @@ class Aspheric(SagFunction):
         )
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
-        alphas = vbroad(self.unnorm(tau), r.dim())
-        i = vbroad(self.i, r.dim())
+        alphas = bbroad(self.unnorm(tau), r.dim())
+        i = bbroad(self.i, r.dim())
 
         return torch.sum(alphas * torch.pow(r, 4 + 2 * i), dim=0)
 
     def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
-        alphas = vbroad(self.unnorm(tau), r.dim())
-        i = vbroad(self.i, r.dim())
+        alphas = bbroad(self.unnorm(tau), r.dim())
+        i = bbroad(self.i, r.dim())
 
         return torch.sum(alphas * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         r2 = y**2 + z**2
-        alphas = vbroad(self.unnorm(tau), r2.dim())
-        i = vbroad(self.i, r2.dim())
+        alphas = bbroad(self.unnorm(tau), r2.dim())
+        i = bbroad(self.i, r2.dim())
 
         return torch.sum(alphas * torch.pow(r2, 2 + i), dim=0)
 
     def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
         r2 = y**2 + z**2
-        alphas = vbroad(self.unnorm(tau), r2.dim())
-        i = vbroad(self.i, r2.dim())
+        alphas = bbroad(self.unnorm(tau), r2.dim())
+        i = bbroad(self.i, r2.dim())
 
         coeffs_term = torch.sum(alphas * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0)
 
@@ -445,7 +413,7 @@ class XYPolynomial(SagFunction):
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         C = bbroad(self.unnorm(tau), y.dim())
-        p, q = vbroad(self.p, y.dim()), vbroad(self.q, y.dim())
+        p, q = bbroad(self.p, y.dim()), bbroad(self.q, y.dim())
 
         yp = torch.pow(y, p).unsqueeze(1)
         zq = torch.pow(z, q).unsqueeze(0)
