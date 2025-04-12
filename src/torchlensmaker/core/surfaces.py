@@ -440,6 +440,11 @@ class SagSurface(ImplicitSurface):
         )
 
     def extent_x(self) -> Tensor:
+        if self.sag_function.is_freeform():
+            raise RuntimeError("Can't compute X extent of a freeform surface")
+        
+        # TODO this is actually wrong for asphere, max could be inside the curve
+        # to replace with inf/sup 
         r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
         return self.sag_function.g(r, tau=r)
 

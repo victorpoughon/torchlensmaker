@@ -42,6 +42,15 @@ def safe_div(dividend: Tensor, divisor: Tensor) -> Tensor:
 
 
 class SagFunction:
+    def __init__(self, symmetric: bool):
+        self._symmetric = symmetric
+
+    def is_symmetric(self) -> bool:
+        return self._symmetric
+
+    def is_freeform(self) -> bool:
+        return not self._symmetric
+
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         """
         2D sag function $g(r)$
@@ -103,6 +112,7 @@ class SagFunction:
 
 class Spherical(SagFunction):
     def __init__(self, C: torch.Tensor, normalize: bool = False):
+        super().__init__(symmetric=True)
         assert C.dim() == 0
         self.C = C
         self.normalize = normalize
@@ -148,6 +158,7 @@ class Parabolic(SagFunction):
         A: torch.Tensor,
         normalize: bool = False,
     ):
+        super().__init__(symmetric=True)
         assert A.dim() == 0
         self.A = A
         self.normalize = normalize
@@ -189,6 +200,7 @@ class Conical(SagFunction):
         K: torch.Tensor,
         normalize: bool = False,
     ):
+        super().__init__(symmetric=True)
         assert C.dim() == 0
         assert K.dim() == 0
         self.C = C
@@ -247,6 +259,7 @@ class Conical(SagFunction):
         }
 
 
+# TODO remove
 def vbroad(vector: Tensor, base: int) -> Tensor:
     """
     Broadcasts a 1D tensor to be compatible with the dimensions of a batched tensor.
@@ -285,6 +298,7 @@ class Aspheric(SagFunction):
     """
 
     def __init__(self, coefficients: torch.Tensor, normalize: bool = False):
+        super().__init__(symmetric=True)
         assert coefficients.dim() == 1
         self.coefficients = coefficients
         self.normalize = normalize
@@ -302,6 +316,8 @@ class Aspheric(SagFunction):
         # I wonder if it would it be better to store the coefficient in
         # normalized form by default, and write g() in normal form (using
         # r/tau)?
+        # maybe should be stored in the form that will be most often used
+        # or have two version of the class
 
         assert tau.dim() == 0
         if self.normalize:
@@ -359,6 +375,7 @@ class SagSum(SagFunction):
     """
 
     def __init__(self, terms: Sequence[SagFunction]):
+        super().__init__(symmetric=all((f.is_symmetric() for f in terms)))
         assert all((isinstance(a, SagFunction) for a in terms))
         self.terms = terms
 
@@ -402,6 +419,7 @@ class XYPolynomial(SagFunction):
     """
 
     def __init__(self, coefficients: Tensor, normalize: bool = False):
+        super().__init__(symmetric=False)
         assert coefficients.dim() == 2
         self.coefficients = coefficients
         self.normalize = normalize
@@ -424,12 +442,6 @@ class XYPolynomial(SagFunction):
             if isinstance(self.coefficients, nn.Parameter)
             else {}
         )
-
-    def g(self, r: Tensor, tau: Tensor) -> Tensor:
-        raise RuntimeError("XYPolynomial is a freeform model, it does not reduce to 2D")
-
-    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
-        raise RuntimeError("XYPolynomial is a freeform model, it does not reduce to 2D")
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         C = bbroad(self.unnorm(tau), y.dim())
@@ -471,7 +483,10 @@ class XYPolynomial(SagFunction):
 
         return innery.sum(dim=0).sum(dim=0), innerz.sum(dim=0).sum(dim=0)
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        assert dim == 3, (
+            "XYPolynomial is a freeform model, it can only be sampled in 3D"
+        )
         return {
             "sag-type": "xypolynomial",
             "coefficients": self.coefficients.tolist(),

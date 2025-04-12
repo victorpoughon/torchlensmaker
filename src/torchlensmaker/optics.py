@@ -236,14 +236,17 @@ class KinematicSurface(nn.Module):
         "Additional transform that applies to the next element"
 
         assert dtype == self.surface.dtype
-        T = self.surface.extent(dim)
 
         # Subtract first anchor, add second anchor
         anchor0 = (
-            [TranslateTransform(-self.scale * T)] if self.anchors[0] == "extent" else []
+            [TranslateTransform(-self.scale * self.surface.extent(dim))]
+            if self.anchors[0] == "extent"
+            else []
         )
         anchor1 = (
-            [TranslateTransform(self.scale * T)] if self.anchors[1] == "extent" else []
+            [TranslateTransform(self.scale * self.surface.extent(dim))]
+            if self.anchors[1] == "extent"
+            else []
         )
 
         return list(anchor0) + list(anchor1)
@@ -259,10 +262,8 @@ class KinematicSurface(nn.Module):
 
         scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
 
-        extent_translate = -self.scale * self.surface.extent(dim)
-
         anchor: Sequence[TransformBase] = (
-            [TranslateTransform(extent_translate)]
+            [TranslateTransform(-self.scale * self.surface.extent(dim))]
             if self.anchors[0] == "extent"
             else []
         )
