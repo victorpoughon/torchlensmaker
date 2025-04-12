@@ -392,11 +392,14 @@ class SagSurface(ImplicitSurface):
         """
         return math.sqrt((self.diameter / 2) ** 2 + self.extent_x() ** 2)
 
+    def tau(self) -> Tensor:
+        "Half-diameter and normalization factor"
+        return torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+
     def f(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        sag_f = self.sag_function.g(r, tau) - x
+        sag_f = self.sag_function.g(r, self.tau()) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_f, fallback.f(points))
@@ -404,9 +407,8 @@ class SagSurface(ImplicitSurface):
     def f_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
         sag_f_grad = torch.stack(
-            (-torch.ones_like(x), self.sag_function.g_grad(r, tau)), dim=-1
+            (-torch.ones_like(x), self.sag_function.g_grad(r, self.tau())), dim=-1
         )
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
@@ -419,8 +421,7 @@ class SagSurface(ImplicitSurface):
     def F(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        sag_F = self.sag_function.G(y, z, tau) - x
+        sag_F = self.sag_function.G(y, z, self.tau()) - x
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
         return torch.where(mask, sag_F, fallback.F(points))
@@ -428,8 +429,7 @@ class SagSurface(ImplicitSurface):
     def F_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        tau = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        grad_y, grad_z = self.sag_function.G_grad(y, z, tau)
+        grad_y, grad_z = self.sag_function.G_grad(y, z, self.tau())
         sag_F_grad = torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
         mask = self.mask_function(points)
         fallback = self.fallback_surface()
@@ -452,14 +452,14 @@ class SagSurface(ImplicitSurface):
         start = -(1 - epsilon) * self.diameter / 2
         end = (1 - epsilon) * self.diameter / 2
         r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.sag_function.g(r)
+        x = self.sag_function.g(r, self.tau())
         return torch.stack((x, r), dim=-1)
 
     def samples2D_half(self, N, epsilon):
         start = 0.0
         end = (1 - epsilon) * self.diameter / 2
         r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.sag_function.g(r)
+        x = self.sag_function.g(r, self.tau())
         return torch.stack((x, r), dim=-1)
 
     def to_dict(self, dim: int) -> dict[str, Any]:
