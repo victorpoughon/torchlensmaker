@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import TypeAlias, Any
+from typing import TypeAlias, Any, Sequence
 
 Tensor: TypeAlias = torch.Tensor
 
@@ -262,6 +262,22 @@ def vbroad(vector: Tensor, base: int) -> Tensor:
     return vector.view(vector.shape[0], *([1] * base))
 
 
+def bbroad(vector: Tensor, nbatch: int) -> Tensor:
+    """
+    Expoands a tensor to be compatible with the dimensions of a batched tensor
+    by appending batch dimensions as needed.
+
+    Args:
+    * vector: A tensor of shape M
+    * nbatch: Number of dimensions of some batched tensor
+
+    Returns:
+    * A view of the vector tensor with shape (*M, ...) that is broadcastable
+      with the batched tensor.
+    """
+    return vector.view(*vector.shape, *([1] * nbatch))
+
+
 class Aspheric(SagFunction):
     """
     Aspheric coefficient polynomial of the form:
@@ -282,6 +298,10 @@ class Aspheric(SagFunction):
         When normalizion is enabled, the internal coefficients of the sag
         function are stored in their normalized form.
         """
+
+        # I wonder if it would it be better to store the coefficient in
+        # normalized form by default, and write g() in normal form (using
+        # r/tau)?
 
         assert tau.dim() == 0
         if self.normalize:
@@ -338,7 +358,7 @@ class SagSum(SagFunction):
     Sag function that is the sum of other sag functions
     """
 
-    def __init__(self, terms):
+    def __init__(self, terms: Sequence[SagFunction]):
         assert all((isinstance(a, SagFunction) for a in terms))
         self.terms = terms
 
@@ -370,3 +390,90 @@ class SagSum(SagFunction):
         grad_y = torch.sum(torch.stack([g[0] for g in grads], dim=0), dim=0)
         grad_z = torch.sum(torch.stack([g[1] for g in grads], dim=0), dim=0)
         return grad_y, grad_z
+
+
+class XYPolynomial(SagFunction):
+    r"""
+    XY Polynomial freeform model.
+
+    $$
+    G(y,z) = \sum C_{p,q} y^p z^p
+    $$
+    """
+
+    def __init__(self, coefficients: Tensor, normalize: bool = False):
+        assert coefficients.dim() == 2
+        self.coefficients = coefficients
+        self.normalize = normalize
+        # indexing
+        self.p = torch.arange(self.coefficients.shape[0])
+        self.q = torch.arange(self.coefficients.shape[1])
+
+    def unnorm(self, tau: Tensor) -> Tensor:
+        if self.normalize:
+            taup = torch.pow(tau, self.p)
+            tauq = torch.pow(tau, self.q)
+            denom = torch.outer(taup, tauq)
+            return self.coefficients * tau / denom
+        else:
+            return self.coefficients
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return (
+            {"coefficients": self.coefficients}
+            if isinstance(self.coefficients, nn.Parameter)
+            else {}
+        )
+
+    def g(self, r: Tensor, tau: Tensor) -> Tensor:
+        raise RuntimeError("XYPolynomial is a freeform model, it does not reduce to 2D")
+
+    def g_grad(self, r: Tensor, tau: Tensor) -> Tensor:
+        raise RuntimeError("XYPolynomial is a freeform model, it does not reduce to 2D")
+
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
+        C = bbroad(self.unnorm(tau), y.dim())
+        p, q = vbroad(self.p, y.dim()), vbroad(self.q, y.dim())
+
+        yp = torch.pow(y, p).unsqueeze(1)
+        zq = torch.pow(z, q).unsqueeze(0)
+        xy = yp * zq
+
+        return torch.sum(torch.sum(C * xy, dim=0), dim=0)
+
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
+        C = bbroad(self.unnorm(tau), y.dim())
+
+        # We need four different indexing tensors:
+        # 0 to p, 1 to p, 0 to q, 1 to q
+        # and each need to be broadcastable with y and z
+        p = bbroad(torch.arange(self.coefficients.shape[0]), y.dim())
+        q = bbroad(torch.arange(self.coefficients.shape[1]), y.dim())
+        pd = bbroad(torch.arange(1, self.coefficients.shape[0]), y.dim())
+        qd = bbroad(torch.arange(1, self.coefficients.shape[1]), y.dim())
+
+        # We also need "reduced" views of C that don't contain
+        # the first index droped by differentiation
+        Cpd = C[1:]
+        Cqd = C[:, 1:]
+
+        print(pd.shape, Cpd.shape)
+        print(qd.shape, Cqd.shape)
+
+        yp = torch.pow(y, p).unsqueeze(1)
+        zq = torch.pow(z, q).unsqueeze(0)
+
+        ypd = torch.pow(y, pd - 1).unsqueeze(1)
+        innery = pd.unsqueeze(1) * Cpd * ypd * zq
+
+        zqd = torch.pow(z, qd - 1).unsqueeze(0)
+        innerz = qd.unsqueeze(0) * Cqd * yp * zqd
+
+        return innery.sum(dim=0).sum(dim=0), innerz.sum(dim=0).sum(dim=0)
+
+    def to_dict(self, _dim: int) -> dict[str, Any]:
+        return {
+            "sag-type": "xypolynomial",
+            "coefficients": self.coefficients.tolist(),
+            **({"normalize": self.normalize} if self.normalize else {}),
+        }
