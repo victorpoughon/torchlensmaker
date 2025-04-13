@@ -46,10 +46,20 @@ class SagFunction:
         self._symmetric = symmetric
 
     def is_symmetric(self) -> bool:
+        "True iff the function is symmetric around the X axis"
         return self._symmetric
 
     def is_freeform(self) -> bool:
+        "True iff the function is not symmetric around the X axis"
         return not self._symmetric
+
+    def bounds(self, tau: Tensor) -> Tensor:
+        """Lower and upper bounds
+
+        Returns a tensor of shape (2,) that contains a best estimate lower and
+        upper bounds on the function range given the input domain (-tau, tau)
+        """
+        raise NotImplementedError
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         """
@@ -110,6 +120,16 @@ class SagFunction:
         raise NotImplementedError
 
 
+def bounds_g(sag: SagFunction, coefficient: Tensor, tau: Tensor) -> Tensor:
+    "Bounds for a symmetric sag function that's simply g(tau) depending on the sign of a single coefficient"
+
+    zero = torch.zeros((), dtype=coefficient.dtype)
+    if coefficient > 0:
+        return torch.stack((zero, sag.g(tau, tau)), dim=0)
+    else:
+        return torch.stack((sag.g(tau, tau), zero), dim=0)
+
+
 class Spherical(SagFunction):
     def __init__(self, C: torch.Tensor, normalize: bool = False):
         super().__init__(symmetric=True)
@@ -123,6 +143,9 @@ class Spherical(SagFunction):
     def unnorm(self, tau: Tensor) -> Tensor:
         assert tau.dim() == 0
         return self.C / tau if self.normalize else self.C
+
+    def bounds(self, tau: Tensor) -> Tensor:
+        return bounds_g(self, self.C, tau)
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         C = self.unnorm(tau)
@@ -168,6 +191,9 @@ class Parabolic(SagFunction):
 
     def unnorm(self, tau: Tensor) -> Tensor:
         return self.A / tau if self.normalize else self.A
+
+    def bounds(self, tau: Tensor) -> Tensor:
+        return bounds_g(self, self.A, tau)
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         A = self.unnorm(tau)
@@ -221,6 +247,9 @@ class Conical(SagFunction):
         else:
             return self.C, self.K
 
+    def bounds(self, tau: Tensor) -> Tensor:
+        return bounds_g(self, self.C, tau)
+
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         r2 = torch.pow(r, 2)
         C, K = self.unnorm(tau)
@@ -272,6 +301,13 @@ class Aspheric(SagFunction):
         self.normalize = normalize
         self.i = torch.arange(len(coefficients))  # indexing of coefficients
 
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return (
+            {"coefficients": self.coefficients}
+            if isinstance(self.coefficients, nn.Parameter)
+            else {}
+        )
+
     def unnorm(self, tau: Tensor) -> Tensor:
         """
         Computes the unnormalized coefficients of the sag function given the
@@ -294,11 +330,24 @@ class Aspheric(SagFunction):
         else:
             return self.coefficients
 
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return (
-            {"coefficients": self.coefficients}
-            if isinstance(self.coefficients, nn.Parameter)
-            else {}
+    def bounds(self, tau: Tensor) -> Tensor:
+        # This estimation is straightforward but coarse
+        # it would be possible to find exact bounds by finding all roots of the derivative
+        # can do it analytically up to 3 coefficients TODO
+        alphas = self.unnorm(tau)
+        i = self.i
+        dtype = self.coefficients.dtype
+
+        # split the sum into positive and negative terms
+        nalphas = torch.clamp(alphas, max=torch.tensor(0.0, dtype=dtype))
+        palphas = torch.clamp(alphas, min=torch.tensor(0.0, dtype=dtype))
+
+        return torch.stack(
+            (
+                torch.sum(nalphas * torch.pow(tau, 4 + 2 * i)),
+                torch.sum(palphas * torch.pow(tau, 4 + 2 * i)),
+            ),
+            dim=0,
         )
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
@@ -354,8 +403,12 @@ class SagSum(SagFunction):
             for name, p in t.parameters().items()
         }
 
-    def to_dict(self, dim: int) -> dict[str, Any]:
-        return {"sag-type": "sum", "terms": [t.to_dict(dim) for t in self.terms]}
+    def bounds(self, tau: Tensor) -> Tensor:
+        # this works because:
+        # min(f(x) + g(x)) >= min(f(x)) + min(g(x))
+        # max(f(x) + g(x)) <= max(f(x)) + max(g(x))
+        stack = torch.stack([t.bounds(tau) for t in self.terms], dim=0)
+        return torch.stack((torch.sum(stack[:, 0]), torch.sum(stack[:, 1])), dim=0)
 
     def g(self, r: Tensor, tau: Tensor) -> Tensor:
         return torch.sum(torch.stack([t.g(r, tau) for t in self.terms], dim=0), dim=0)
@@ -375,6 +428,9 @@ class SagSum(SagFunction):
         grad_y = torch.sum(torch.stack([g[0] for g in grads], dim=0), dim=0)
         grad_z = torch.sum(torch.stack([g[1] for g in grads], dim=0), dim=0)
         return grad_y, grad_z
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        return {"sag-type": "sum", "terms": [t.to_dict(dim) for t in self.terms]}
 
 
 class XYPolynomial(SagFunction):

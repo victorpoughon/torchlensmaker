@@ -441,12 +441,27 @@ class SagSurface(ImplicitSurface):
 
     def extent_x(self) -> Tensor:
         if self.sag_function.is_freeform():
+            # just use bounds() even for freeform?
             raise RuntimeError("Can't compute X extent of a freeform surface")
-        
+
         # TODO this is actually wrong for asphere, max could be inside the curve
-        # to replace with inf/sup 
+        # to replace with sag.bounds()?
         r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
         return self.sag_function.g(r, tau=r)
+
+    def bcyl(self) -> Tensor:
+        """Bounding cylinder
+        Returns a tensor of shape (3,) where entries are [xmin, xmax, radius]
+        """
+
+        tau = torch.tensor(self.diameter / 2, dtype=self.dtype)
+        return torch.cat(
+            (
+                self.sag_function.bounds(tau),
+                tau.unsqueeze(0),
+            ),
+            dim=0,
+        )
 
     def samples2D_full(self, N, epsilon):
         start = -(1 - epsilon) * self.diameter / 2
@@ -467,6 +482,7 @@ class SagSurface(ImplicitSurface):
             "type": "surface-sag",
             "diameter": self.diameter,
             "sag-function": self.sag_function.to_dict(dim),
+            "bcyl": self.bcyl().tolist(),
         }
 
 
@@ -493,7 +509,7 @@ class Sphere(SagSurface):
         diameter: float,
         R: int | float | nn.Parameter | None = None,
         C: int | float | nn.Parameter | None = None,
-        normalize : bool = False,
+        normalize: bool = False,
         collision_method: CollisionMethod = default_collision_method,
         dtype: torch.dtype = torch.float64,
     ):
@@ -517,12 +533,11 @@ class Sphere(SagSurface):
         # Domain error check
         tau = diameter / 2
         C_unnormed = C_tensor / tau if normalize else C_tensor
-        if torch.abs(1. / C_unnormed) <= tau:
+        if torch.abs(1.0 / C_unnormed) <= tau:
             raise RuntimeError(
                 f"Sphere radius must be strictly greater than half the surface diameter (D/2={diameter / 2}) "
                 f"(To model an exact half-sphere, use SphereR)."
             )
-
 
         assert C_tensor.dim() == 0
         assert C_tensor.dtype == dtype
@@ -554,6 +569,10 @@ class Parabola(SagSurface):
         sag_function = Parabolic(A_tensor, normalize)
         super().__init__(diameter, sag_function, dtype=dtype)
 
+
+# TODO
+class Conic(SagSurface):
+    ...
 
 class Asphere(SagSurface):
     """
@@ -592,7 +611,7 @@ class Asphere(SagSurface):
         # TODO add an Asphere model reparameterized with softplus
         tau = diameter / 2
         C_unnormed = C_tensor / tau if normalize_conical else C_tensor
-        if diameter / 2 >= torch.sqrt(1/(C_unnormed**2 * (1+K_tensor))):
+        if diameter / 2 >= torch.sqrt(1 / (C_unnormed**2 * (1 + K_tensor))):
             raise ValueError(f"Out of domain asphere parameters {C_tensor} {K_tensor}")
 
         sag_function = SagSum(
