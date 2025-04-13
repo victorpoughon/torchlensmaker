@@ -50,6 +50,10 @@ def intersect(
     assert P.shape[1] == V.shape[1]
     assert P.shape[1] in {2, 3}
 
+    # Special case for zero rays
+    if P.shape[0] == 0:
+        return torch.zeros_like(P), torch.zeros_like(V), torch.full((P.shape[0],), False)
+
     # Convert rays to surface local frame
     Ps = transform.inverse_points(P)
     Vs = transform.inverse_vectors(V)

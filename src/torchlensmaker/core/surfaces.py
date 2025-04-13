@@ -571,8 +571,8 @@ class Parabola(SagSurface):
 
 
 # TODO
-class Conic(SagSurface):
-    ...
+class Conic(SagSurface): ...
+
 
 class Asphere(SagSurface):
     """

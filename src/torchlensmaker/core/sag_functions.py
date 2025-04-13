@@ -451,6 +451,13 @@ class XYPolynomial(SagFunction):
         self.p = torch.arange(self.coefficients.shape[0])
         self.q = torch.arange(self.coefficients.shape[1])
 
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return (
+            {"coefficients": self.coefficients}
+            if isinstance(self.coefficients, nn.Parameter)
+            else {}
+        )
+
     def unnorm(self, tau: Tensor) -> Tensor:
         if self.normalize:
             taup = torch.pow(tau, self.p)
@@ -459,13 +466,10 @@ class XYPolynomial(SagFunction):
             return self.coefficients * tau / denom
         else:
             return self.coefficients
-
-    def parameters(self) -> dict[str, nn.Parameter]:
-        return (
-            {"coefficients": self.coefficients}
-            if isinstance(self.coefficients, nn.Parameter)
-            else {}
-        )
+    
+    def bounds(self, tau: Tensor) -> Tensor:
+        # TODO
+        return torch.tensor([-1., 1., 1.], dtype=self.coefficients.dtype)
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         C = bbroad(self.unnorm(tau), y.dim())
