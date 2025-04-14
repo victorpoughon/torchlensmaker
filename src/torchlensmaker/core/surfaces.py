@@ -440,14 +440,7 @@ class SagSurface(ImplicitSurface):
         )
 
     def extent_x(self) -> Tensor:
-        if self.sag_function.is_freeform():
-            # just use bounds() even for freeform?
-            raise RuntimeError("Can't compute X extent of a freeform surface")
-
-        # TODO this is actually wrong for asphere, max could be inside the curve
-        # to replace with sag.bounds()?
-        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
-        return self.sag_function.g(r, tau=r)
+        return torch.max(torch.abs(self.sag_function.bounds(self.tau())))
 
     def bcyl(self) -> Tensor:
         """Bounding cylinder
