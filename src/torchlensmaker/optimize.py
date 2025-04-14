@@ -99,7 +99,7 @@ def optimize(
         for n, param in optics.named_parameters():
             parameters_record[n].append(param.detach().clone())
 
-        # Compute gradients for gradient magniture
+        # Compute gradients for gradient magnitude
         # and sanity check that gradient isn't nan or inf
         grad = get_all_gradients(optics)
         if torch.isnan(grad).any():
