@@ -110,3 +110,13 @@ def bbroad(vector: Tensor, nbatch: int) -> Tensor:
       with the batched tensor.
     """
     return vector.view(*vector.shape, *([1] * nbatch))
+
+
+def is_integral(dtype: torch.dtype) -> bool:
+    return dtype in {
+        torch.uint8,
+        torch.int8,
+        torch.int16,
+        torch.int32,
+        torch.int64,
+    }

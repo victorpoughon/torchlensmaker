@@ -19,6 +19,9 @@ import torch.nn as nn
 from torchlensmaker.core.tensor_manip import bbroad
 from typing import TypeAlias, Any, Sequence
 
+import torchlensmaker.core.intari as intari
+
+
 Tensor: TypeAlias = torch.Tensor
 
 
@@ -468,8 +471,17 @@ class XYPolynomial(SagFunction):
             return self.coefficients
     
     def bounds(self, tau: Tensor) -> Tensor:
-        # TODO
-        return torch.tensor([-1., 1., 1.], dtype=self.coefficients.dtype)
+        alphas = self.unnorm(tau)
+        P, Q = self.coefficients.shape
+        p = self.p.unsqueeze(1).tile((1, Q))
+        q = self.q.unsqueeze(0).tile((P, 1))
+
+        yp = intari.monomial(p, tau)
+        zq = intari.monomial(q, tau)
+        prod = intari.product(yp, zq)
+        mat = intari.scalar(alphas, prod)
+
+        return mat.sum(dim=0).sum(dim=0)
 
     def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
         C = bbroad(self.unnorm(tau), y.dim())
@@ -496,9 +508,6 @@ class XYPolynomial(SagFunction):
         # the first index droped by differentiation
         Cpd = C[1:]
         Cqd = C[:, 1:]
-
-        print(pd.shape, Cpd.shape)
-        print(qd.shape, Cqd.shape)
 
         yp = torch.pow(y, p).unsqueeze(1)
         zq = torch.pow(z, q).unsqueeze(0)
