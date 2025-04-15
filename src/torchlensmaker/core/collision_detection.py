@@ -146,33 +146,6 @@ def init_closest_origin(surface: LocalSurface, P: Tensor, V: Tensor) -> Tensor:
     return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
 
-def init_brd(surface: LocalSurface, P: Tensor, V: Tensor, B: int) -> Tensor:
-    """
-    Bounding radius domain initialization
-
-    Returns:
-        * tensor of shape (B, N)
-    """
-
-    N, D = P.shape
-
-    # Compute t so that P + tV is the point on the ray closest to the origin
-    t = -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
-
-    # Surface maximum bounding radius
-    # intersect ray with bbox OR compute bounding radius of bbox
-    br = math.sqrt((surface.diameter / 2) ** 2 + surface.extent_x() ** 2)
-
-    # Sample the domain to make initialization values
-    start, end = t - br, t + br
-    s = torch.linspace(0, 1, B)
-
-    # Compute start + (end - start)*s with broadcasting
-    brd = start.unsqueeze(0) * (1 - s).unsqueeze(1) + end.unsqueeze(0) * s.unsqueeze(1)
-    assert brd.shape == (B, N)
-    return brd
-
-
 @dataclass
 class CollisionDetectionResult:
     # Final t values
@@ -197,12 +170,13 @@ class CollisionMethod:
     """
     Dfferentiable iterative collision detection for implicit surfaces.
 
-    Collision detection is made up of in four phases:
+    Collision detection is made up of four phases:
 
     0. Initialize multiple starting t values for each ray by sampling each rays
        intersection with the surface bounding box.
 
-    1. Coarse phase: run a fixed number of iterative steps of algorithm A
+    1. Coarse phase: run a fixed number of iterative steps of algorithm A,
+       updating all points of all rays in parallel.
 
     2. Fine phase: pick the best t value for each ray, then run a fixed number
        of iterative steps of algorithm B
@@ -212,9 +186,6 @@ class CollisionMethod:
     This class configures everything above (algorithms, number of steps, etc.).
     """
 
-    # initialization method
-    init: Callable[[ImplicitSurface, Tensor, Tensor], Tensor]
-
     # Algorithms
     algoA: CollisionAlgorithm
     algoB: CollisionAlgorithm
@@ -223,6 +194,7 @@ class CollisionMethod:
     close_filter_threshold: float
     num_iterA: int
     num_iterB: int
+    B: int
 
     name: str
 
@@ -231,23 +203,37 @@ class CollisionMethod:
         surface: ImplicitSurface,
         P: Tensor,
         V: Tensor,
+        tmin: Tensor,
+        tmax: Tensor,
         history: bool = False,
     ) -> CollisionDetectionResult:
+        """
+        tmin and tmax must be such that all points within P+tminV and P+tmaxV are within the valid domain of the implicit surface F function
+
+        TODO check we are safe for any ordering of tmin, tmax, i.e. if tmax < tmin
+        """
+
         # Sanity checks
         assert P.dim() == V.dim() == 2
         assert P.shape == V.shape
         assert P.shape[-1] in (2, 3)
         assert isinstance(P, Tensor) and P.dim() == 2
         assert isinstance(V, Tensor) and V.dim() == 2
-
-        # Initialize solutions t
-        init_t = self.init(surface, P, V)
-        assert init_t.shape[1] == P.shape[0]
+        assert tmin.shape == tmax.shape
+        assert tmin.dim() == tmax.dim() == 1
 
         # Tensor dimensions
         N = P.shape[0]  # Number of rays
         D = P.shape[1]  # Rays dimension (2 or 3)
-        B = init_t.shape[0]  # Number of solutions per ray for algo A
+        B = self.B
+
+        # Initialize solutions t
+        t_sample = torch.linspace(0., 1., B, dtype=P.dtype)
+
+        # init_t :: (B, N)
+        t_sample.unsqueeze(-1).expand((B, N))
+        init_t = tmin + t_sample.unsqueeze(-1) * (tmax - tmin)
+        assert init_t.shape == (B, N)
 
         # History tensors, if requested
         if history:
@@ -313,12 +299,12 @@ class CollisionMethod:
 
 
 default_collision_method = CollisionMethod(
-    init=partial(init_brd, B=12),
     algoA=Newton(damping=0.8),
     algoB=Newton(damping=0.8),
     algoC=Newton(damping=0.8),
     num_iterA=20,
     num_iterB=10,
+    B = 12,
     close_filter_threshold=1e-5,
     name="Default collision method",
 )

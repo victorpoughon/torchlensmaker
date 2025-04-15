@@ -36,6 +36,7 @@ from torchlensmaker.core.collision_detection import (
 )
 from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
+from torchlensmaker.core.cylinder_collision import rays_cylinder_collision
 
 from torchlensmaker.core.sag_functions import (
     SagFunction,
@@ -223,10 +224,16 @@ class ImplicitSurface(LocalSurface):
     ):
         super().__init__(dtype=dtype)
         self.collision_method = collision_method
+    
+    def bcyl(self) -> Tensor:
+        raise NotImplementedError
 
     def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
         if tol is None:
             tol = {torch.float32: 1e-4, torch.float64: 1e-7}[self.dtype]
+
+        # TODO if removing diameterbandsurface, check bounds/bcyl before calling F
+        # because points might be out of g() domain
 
         dim = points.shape[1]
 
@@ -239,18 +246,52 @@ class ImplicitSurface(LocalSurface):
         return torch.sqrt(torch.sum(self.Fd(points) ** 2) / N).item()
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
-        t = self.collision_method(self, P, V, history=False).t
+        N, dim = P.shape
+        dtype = P.dtype
 
-        local_points = P + t.unsqueeze(-1).expand_as(V) * V
+        # Get bounding cylinder and compute ray-cylinder intersection
+        xmin, xmax, tau = self.bcyl().unbind()
+        if dim == 3:
+            t1, t2, cylinder_hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
+        else:
+            ...  # TODO 2D ray-box collision
+
+        # Split rays into definitly not colliding, and possibly colliding ("maybe")
+        P_maybe, V_maybe = P[cylinder_hit_mask], V[cylinder_hit_mask]
+        tmin, tmax = t1[cylinder_hit_mask], t2[cylinder_hit_mask]
+
+        # Run iterative collision method on possibly colliding rays
+        t = self.collision_method(self, P_maybe, V_maybe, tmin, tmax, history=False).t
+
+        # TODO to remove DiameterBandSurface add clamp(tmin, tmax) in iterations
+
+        # two kinds of non colliding rays at this points:
+        # - non colliding from before bounding cylinder check
+        # - non colliding after iterations complete, t will make a non colliding point
+
+        local_points = P_maybe + t.unsqueeze(-1).expand_as(V_maybe) * V_maybe
         local_normals = self.normals(local_points)
-
-        # If there is no intersection, collision detection won't converge
-        # and points will not be on the surface
-        # So verify intersection here and filter points
-        # that aren't on the surface
         valid = self.contains(local_points)
 
-        return t, local_normals, valid
+        # final t: t made into total N shape
+        cylinder_hit_mask_indices = cylinder_hit_mask.nonzero().squeeze(-1)
+        final_t = torch.zeros((N,), dtype=torch.float64).index_put(
+            (cylinder_hit_mask_indices,), t
+        )
+
+        default_normal = unit_vector(dim, dtype)
+        final_normals = (
+            default_normal.unsqueeze(0)
+            .expand(N, dim)
+            .index_put((cylinder_hit_mask_indices,), local_normals)
+        )
+
+        # final mask: cylinder_hit_mask combined with contains(local_points) mask
+        final_valid = torch.full((N,), False).index_put(
+            (cylinder_hit_mask_indices,), valid
+        )
+
+        return final_t, final_normals, final_valid
 
     def normals(self, points: Tensor) -> Tensor:
         # To get the normals of an implicit surface,
