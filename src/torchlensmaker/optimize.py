@@ -112,7 +112,7 @@ def optimize(
 
         if i % show_every == 0 or i == num_iter - 1:
             iter_str = f"[{i + 1:>3}/{num_iter}]"
-            L_str = f"L= {loss.item():>6.3f} | grad norm= {torch.linalg.norm(grad)}"
+            L_str = f"L= {loss.item():>6.5f} | grad norm= {torch.linalg.norm(grad)}"
             print(f"{iter_str} {L_str}")
 
     return OptimizationRecord(num_iter, parameters_record, loss_record, optics)

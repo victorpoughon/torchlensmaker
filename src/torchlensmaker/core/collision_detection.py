@@ -208,7 +208,8 @@ class CollisionMethod:
         history: bool = False,
     ) -> CollisionDetectionResult:
         """
-        tmin and tmax must be such that all points within P+tminV and P+tmaxV are within the valid domain of the implicit surface F function
+        tmin and tmax must be such that all points within P+tminV and P+tmaxV
+        are within the valid domain of the implicit surface F function
 
         TODO check we are safe for any ordering of tmin, tmax, i.e. if tmax < tmin
         """
@@ -223,9 +224,7 @@ class CollisionMethod:
         assert tmin.dim() == tmax.dim() == 1
 
         # Tensor dimensions
-        N = P.shape[0]  # Number of rays
-        D = P.shape[1]  # Rays dimension (2 or 3)
-        B = self.B
+        (N, _), B = P.shape, self.B
 
         # Initialize solutions t
         t_sample = torch.linspace(0., 1., B, dtype=P.dtype)
@@ -240,7 +239,7 @@ class CollisionMethod:
             history_coarse = torch.zeros((B, N, self.num_iterA), dtype=surface.dtype)
             history_fine = torch.zeros((N, self.num_iterB), dtype=surface.dtype)
 
-        br = surface.bounding_radius()
+        max_delta = torch.abs(tmax - tmin) / B
 
         with torch.no_grad():
             # Iteration tensor t
@@ -248,7 +247,11 @@ class CollisionMethod:
 
             # Coarse phase (multiple beams)
             for ia in range(self.num_iterA):
-                t = t - self.algoA.delta(surface, P, V, t, max_delta=br / B)
+                t = torch.clamp(
+                    t - self.algoA.delta(surface, P, V, t, max_delta),
+                    min=tmin,
+                    max=tmax,
+                )
                 if history:
                     history_coarse[:, :, ia] = t.clone()
 
@@ -281,14 +284,20 @@ class CollisionMethod:
 
             # Fine phase (single beam)
             for ib in range(self.num_iterB):
-                t = t - self.algoB.delta(
-                    surface, P, V, t, max_delta=br / (B * self.num_iterA)
+                t = torch.clamp(
+                    t - self.algoB.delta(surface, P, V, t, max_delta),
+                    min=tmin,
+                    max=tmax,
                 )
                 if history:
                     history_fine[:, ib] = t
 
         # Differentiable phase: one iteration for backwards pass
-        t = t - self.algoC.delta(surface, P, V, t, max_delta=br)
+        t = torch.clamp(
+            t - self.algoC.delta(surface, P, V, t, max_delta=max_delta),
+            min=tmin,
+            max=tmax,
+        )
 
         return CollisionDetectionResult(
             t[0, :],

@@ -228,19 +228,6 @@ class ImplicitSurface(LocalSurface):
     def bcyl(self) -> Tensor:
         raise NotImplementedError
 
-    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
-        if tol is None:
-            tol = {torch.float32: 1e-4, torch.float64: 1e-7}[self.dtype]
-
-        # TODO if removing diameterbandsurface, check bounds/bcyl before calling F
-        # because points might be out of g() domain
-
-        dim = points.shape[1]
-
-        F = self.F if dim == 3 else self.f
-
-        return torch.abs(F(points)) < tol
-
     def rmse(self, points: Tensor) -> float:
         N = sum(points.shape[:-1])
         return torch.sqrt(torch.sum(self.Fd(points) ** 2) / N).item()
@@ -337,54 +324,6 @@ class ImplicitSurface(LocalSurface):
         raise NotImplementedError
 
 
-class DiameterBandSurfaceSq(ImplicitSurface):
-    "Distance to edge points"
-
-    def __init__(self, Ax: Tensor, Ar: Tensor, dtype: torch.dtype = torch.float64):
-        super().__init__(dtype=dtype)
-        self.Ax = Ax
-        self.Ar = Ar
-
-    def f(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        X, R = points.unbind(-1)
-        Ax, Ar = self.Ax, self.Ar
-        return torch.sqrt((X - Ax) ** 2 + (torch.abs(R) - Ar) ** 2)
-
-    def f_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 2
-        X, R = points.unbind(-1)
-        Ax, Ar = self.Ax, self.Ar
-        sq = self.f(points)
-        return torch.stack(
-            ((X - Ax) / sq, torch.sign(R) * (torch.abs(R) - Ar) / sq), dim=-1
-        )
-
-    def F(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        X, Y, Z = points.unbind(-1)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        return torch.sqrt((X - Ax) ** 2 + (torch.sqrt(R2) - Ar) ** 2)
-
-    def F_grad(self, points: Tensor) -> Tensor:
-        assert points.shape[-1] == 3
-        X, Y, Z = points.unbind(-1)
-        R2 = Y**2 + Z**2
-        Ax, Ar = self.Ax, self.Ar
-        sq = self.F(points)
-        sqr2 = torch.sqrt(R2)
-        quot = (sqr2 - Ar) / (sqr2 * sq)
-        return torch.stack(
-            (
-                (X - Ax) / sq,
-                Y * quot,
-                Z * quot,
-            ),
-            dim=-1,
-        )
-
-
 class SagSurface(ImplicitSurface):
     """
     Axially symmetric implicit surface defined by a sag function.
@@ -416,16 +355,10 @@ class SagSurface(ImplicitSurface):
     def mask_function(self, points: Tensor) -> Tensor:
         return within_radius(self.diameter / 2, points)
 
-    def fallback_surface(self) -> DiameterBandSurfaceSq:
-        return DiameterBandSurfaceSq(
-            Ax=self.extent_x(),
-            Ar=torch.as_tensor(self.diameter / 2, dtype=self.dtype),
-            dtype=self.dtype,
-        )
-
     def parameters(self) -> dict[str, nn.Parameter]:
         return self.sag_function.parameters()
 
+    # TODO remove?
     def bounding_radius(self) -> float:
         """
         Any point on the surface has a distance to the center that is less
@@ -438,47 +371,28 @@ class SagSurface(ImplicitSurface):
         return torch.as_tensor(self.diameter / 2, dtype=self.dtype)
 
     def f(self, points: Tensor) -> Tensor:
+        "points are assumed to be within the bcyl domain"
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        sag_f = self.sag_function.g(r, self.tau()) - x
-        mask = self.mask_function(points)
-        fallback = self.fallback_surface()
-        return torch.where(mask, sag_f, fallback.f(points))
+        return self.sag_function.g(r, self.tau()) - x
 
     def f_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 2
         x, r = points.unbind(-1)
-        sag_f_grad = torch.stack(
+        return torch.stack(
             (-torch.ones_like(x), self.sag_function.g_grad(r, self.tau())), dim=-1
-        )
-        mask = self.mask_function(points)
-        fallback = self.fallback_surface()
-        return torch.where(
-            mask.unsqueeze(-1).expand(*mask.size(), 2),
-            sag_f_grad,
-            fallback.f_grad(points),
         )
 
     def F(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
-        sag_F = self.sag_function.G(y, z, self.tau()) - x
-        mask = self.mask_function(points)
-        fallback = self.fallback_surface()
-        return torch.where(mask, sag_F, fallback.F(points))
+        return self.sag_function.G(y, z, self.tau()) - x
 
     def F_grad(self, points: Tensor) -> Tensor:
         assert points.shape[-1] == 3
         x, y, z = points.unbind(-1)
         grad_y, grad_z = self.sag_function.G_grad(y, z, self.tau())
-        sag_F_grad = torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
-        mask = self.mask_function(points)
-        fallback = self.fallback_surface()
-        return torch.where(
-            mask.unsqueeze(-1).expand(*mask.size(), 3),
-            sag_F_grad,
-            fallback.F_grad(points),
-        )
+        return torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
 
     def extent_x(self) -> Tensor:
         return torch.max(torch.abs(self.sag_function.bounds(self.tau())))
@@ -496,6 +410,34 @@ class SagSurface(ImplicitSurface):
             ),
             dim=0,
         )
+
+    def contains(self, points: Tensor, tol: Optional[float] = None) -> Tensor:
+        if tol is None:
+            tol = {torch.float32: 1e-4, torch.float64: 1e-7}[self.dtype]
+
+        N, dim = points.shape
+
+        # Check points are within the diameter
+        r2 = points[:, 1] if dim == 2 else points[:, 1] ** 2 + points[:, 2] ** 2
+        within_diameter = r2 <= self.diameter**2
+
+        tau = self.tau()
+        zeros1d = torch.zeros_like(points[:, 1])
+        zeros2d = torch.zeros_like(r2)
+
+        # If within diameter, check the sag equation x = g(r)
+        if dim == 2:
+            safe_input = torch.where(within_diameter, torch.sqrt(r2), zeros2d)
+            sagG = self.sag_function.g(safe_input, tau)
+            G = torch.where(within_diameter, sagG, zeros2d)
+        else:
+            safe_input_y = torch.where(within_diameter, points[:, 1], zeros1d)
+            safe_input_z = torch.where(within_diameter, points[:, 2], zeros1d)
+            sagG = self.sag_function.G(safe_input_y, safe_input_z, tau)
+            G = torch.where(within_diameter, sagG, zeros2d)
+
+        within_tol = torch.abs(G - points[:, 0]) < tol
+        return torch.logical_and(within_diameter, within_tol)
 
     def samples2D_full(self, N, epsilon):
         start = -(1 - epsilon) * self.diameter / 2
