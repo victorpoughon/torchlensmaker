@@ -119,9 +119,13 @@ def optimize(
 
 
 def plot_optimization_record(record: OptimizationRecord) -> None:
+    if record.num_iter == 0:
+        return
+
     optics = record.optics
     parameters = record.parameters
     loss = record.loss
+
 
     # Plot parameters and loss
     fig, (ax1, ax2) = plt.subplots(2, 1)
