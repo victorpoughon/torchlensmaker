@@ -233,6 +233,9 @@ class ImplicitSurface(LocalSurface):
         return torch.sqrt(torch.sum(self.Fd(points) ** 2) / N).item()
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+        assert P.dtype == V.dtype == self.dtype
+        assert P.shape == V.shape
+        
         N, dim = P.shape
         dtype = P.dtype
 
@@ -544,6 +547,10 @@ class Parabola(SagSurface):
         A_tensor = to_tensor(A, default_dtype=dtype)
         sag_function = Parabolic(A_tensor, normalize)
         super().__init__(diameter, sag_function, dtype=dtype)
+    
+    @property
+    def A(self):
+        return self.sag_function.A
 
 
 # TODO
