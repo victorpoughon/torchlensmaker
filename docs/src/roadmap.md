@@ -14,6 +14,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Add "try it live" functionality with pyodide / jupyterlite / etc.
 * Document lens inner vs outer thickness
 * Custom nbconvert markdown template for clearer text output cells: https://stackoverflow.com/questions/56229030
+* Document sag functions (normalization, sag algebra, how to make a custom one)
 
 ## Examples
 
@@ -38,18 +39,23 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 
 ## Surfaces
 
+### Sag functions
+* implement more polynomials from TH thesis in both python and ts
+* SagProduct: product of two sag functions (see TH thesis)
+* OffsetYZ sag function transform
+* Operators syntactic sugar
+* ConicalSoftPlus: conical sag function without invalid domain, reparameterized with softplus
+
+### General surfaces
+
 * Cubic Bezier Spline
 * Linear Spline
 * Implicit version of SphereR
-* ConicalSoftPlus: conical sag function without invalid domain, reparameterized with softplus
 * Convert between surface types by fitting samples
 * Improve `Outline` support
 * use rtol / atol in `contains()` instead of bare tol
 * rename `samples()` epsilon argument to clarify what it does
 * implementation of parabola without Sag but direct solve of the quadratic collision equation
-* Non axially symmetric surfaces
-* Replace `Surface.testname()` by `__str__()`
-* In sag surface make sure there is an inner where() for safe backwards when masking
 
 ## Materials
 
@@ -121,6 +127,12 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 
 ## TLMVIEWER
 
+* option to view sag surface x coordinate
+* option to view sag surface gradient (color by dot product with X unit vector)
+* rewrite asphere glsl vertex shader to unwrapped style (no pow)
+* ignore rays when computing camera auto zoom
+* set camera to XY / YZ / XZ
+* UI ideas from "TLM 3D surfaces rendering ideas" obsidian note
 * Better rendering of Aperture
 * Better rendering of ImagePlane
 * Better rendering of surfaces in 3D
@@ -130,7 +142,6 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * lens cosmetic edge
 * Show/Hide cosmetic edges
 * dont show legend div if title is empty
-* default bbox zoom for 3D view
 * Support multiple scenes (2D / 3D / more)
 * add option for light sources: draw rays a bit before their origins to see them better
 * Group elements:
@@ -151,20 +162,25 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 * Support object and base coordinate color rendering for rays in 3D (use [2D colormaps](https://dominikjaeckle.com/projects/color2d/)?)
 * Better handle of window resize with threejs `onWindowResize()`
 * "tlmviewer loaded" should show version
-* clean up code layout in tlmviewer.py / render_sequence
+* clean up/reorganize code layout in tlmviewer.py / render_sequence.py
 * clean up code in scene.ts
 * fix visible inner disk when rendering two half spheres
 * timeline support (slider for iterations, ray variable, zoom factor)
 
 ## Testing
 
+* test_notebooks: test sag sum in collision detection demo
+* unit tests: add sagsum and other sag functions to surfaces unit tests
+* unit test: test sag functions
 * optical elements unit tests:
-    lens maker equation
+    alone, and as part of a stack
     setup a stack, call forward, check loss value aginst expected
     check loss is differentiable, and gradient is finite
 * test_local_collide: add tangent test cases specific to surfaces*
 * Fix collision tests with rays that have `V_X == 0`
 * same sign for offset in generators for sphere and sphereR
+* faster unit tests
+
 
 ## Advanced topics
 
