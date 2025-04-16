@@ -36,7 +36,7 @@ from torchlensmaker.core.collision_detection import (
 )
 from torchlensmaker.core.geometry import unit_vector, within_radius
 from torchlensmaker.core.collision_detection import init_closest_origin
-from torchlensmaker.core.cylinder_collision import rays_cylinder_collision
+from torchlensmaker.core.cylinder_collision import rays_cylinder_collision, rays_rectangle_collision
 
 from torchlensmaker.core.sag_functions import (
     SagFunction,
@@ -86,7 +86,7 @@ class LocalSurface:
         """
         Unit vectors normal to the surface at input points of shape (..., D)
         All dimensions except the last one are batch dimensions
-        Input points are not necessarily on the surface
+        Input points are expected to be on, or at least near, the surface
         """
         raise NotImplementedError
 
@@ -236,21 +236,21 @@ class ImplicitSurface(LocalSurface):
         N, dim = P.shape
         dtype = P.dtype
 
-        # Get bounding cylinder and compute ray-cylinder intersection
-        xmin, xmax, tau = self.bcyl().unbind()
-        if dim == 3:
-            t1, t2, cylinder_hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
-        else:
-            ...  # TODO 2D ray-box collision
+        with torch.no_grad():
+            # Get bounding cylinder and compute ray-cylinder intersection
+            xmin, xmax, tau = self.bcyl().unbind()
+            if dim == 3:
+                t1, t2, hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
+            else:
+                t1, t2, hit_mask = rays_rectangle_collision(P, V, xmin, xmax, -tau, tau)
 
-        # Split rays into definitly not colliding, and possibly colliding ("maybe")
-        P_maybe, V_maybe = P[cylinder_hit_mask], V[cylinder_hit_mask]
-        tmin, tmax = t1[cylinder_hit_mask], t2[cylinder_hit_mask]
+            # Split rays into definitly not colliding, and possibly colliding ("maybe")
+            P_maybe, V_maybe = P[hit_mask], V[hit_mask]
+            tmin, tmax = t1[hit_mask], t2[hit_mask]
 
         # Run iterative collision method on possibly colliding rays
+        # TODO if no "maybe rays", skip this call, because tmin tmax are empty when N=0
         t = self.collision_method(self, P_maybe, V_maybe, tmin, tmax, history=False).t
-
-        # TODO to remove DiameterBandSurface add clamp(tmin, tmax) in iterations
 
         # two kinds of non colliding rays at this points:
         # - non colliding from before bounding cylinder check
@@ -261,21 +261,21 @@ class ImplicitSurface(LocalSurface):
         valid = self.contains(local_points)
 
         # final t: t made into total N shape
-        cylinder_hit_mask_indices = cylinder_hit_mask.nonzero().squeeze(-1)
-        final_t = torch.zeros((N,), dtype=torch.float64).index_put(
-            (cylinder_hit_mask_indices,), t
+        hit_mask_indices = hit_mask.nonzero().squeeze(-1)
+        final_t = torch.zeros((N,), dtype=t.dtype).index_put(
+            (hit_mask_indices,), t
         )
 
         default_normal = unit_vector(dim, dtype)
         final_normals = (
             default_normal.unsqueeze(0)
             .expand(N, dim)
-            .index_put((cylinder_hit_mask_indices,), local_normals)
+            .index_put((hit_mask_indices,), local_normals)
         )
 
         # final mask: cylinder_hit_mask combined with contains(local_points) mask
         final_valid = torch.full((N,), False).index_put(
-            (cylinder_hit_mask_indices,), valid
+            (hit_mask_indices,), valid
         )
 
         return final_t, final_normals, final_valid
@@ -418,16 +418,16 @@ class SagSurface(ImplicitSurface):
         N, dim = points.shape
 
         # Check points are within the diameter
-        r2 = points[:, 1] if dim == 2 else points[:, 1] ** 2 + points[:, 2] ** 2
-        within_diameter = r2 <= self.diameter**2
+        r = torch.abs(points[:, 1]) if dim == 2 else torch.sqrt(points[:, 1] ** 2 + points[:, 2] ** 2)
+        within_diameter = r <= self.diameter
 
         tau = self.tau()
         zeros1d = torch.zeros_like(points[:, 1])
-        zeros2d = torch.zeros_like(r2)
+        zeros2d = torch.zeros_like(r)
 
         # If within diameter, check the sag equation x = g(r)
         if dim == 2:
-            safe_input = torch.where(within_diameter, torch.sqrt(r2), zeros2d)
+            safe_input = torch.where(within_diameter, r, zeros2d)
             sagG = self.sag_function.g(safe_input, tau)
             G = torch.where(within_diameter, sagG, zeros2d)
         else:

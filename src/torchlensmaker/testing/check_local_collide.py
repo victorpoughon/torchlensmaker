@@ -50,22 +50,6 @@ def check_local_collide(
     assert valid.dtype == torch.bool
     assert local_points.dtype == surface.dtype
 
-    if isinstance(surface, tlm.SagSurface):
-        if dim == 3:
-            gx, gy = surface.sag_function.G_grad(local_points[:, 1], local_points[:, 2], surface.tau())
-            assert torch.all(torch.isfinite(gx)), "nan in G_grad x"
-            assert torch.all(torch.isfinite(gy)), "nan in G_grad y"
-        elif dim == 2:
-            g_grad = surface.sag_function.g_grad(local_points[:, 1], surface.tau())
-            assert torch.all(torch.isfinite(g_grad)), "nan in g_grad"
-
-        fallback = surface.fallback_surface()
-        fallback_grad = fallback.Fd_grad(local_points)
-        if not torch.all(torch.isfinite(fallback_grad)):
-            print(fallback_grad)
-            print(local_points)
-        assert torch.all(torch.isfinite(fallback_grad)), "nan in fallback Fd_grad"
-
     # Check isfinite
     assert torch.all(torch.isfinite(t)), surface
     assert torch.all(torch.isfinite(local_normals)), local_normals

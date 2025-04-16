@@ -24,7 +24,7 @@ from typing import TypeAlias
 Tensor: TypeAlias = torch.Tensor
 
 
-def unit_vector(dim: int, dtype: torch.dtype) -> Tensor:
+def unit_vector(dim: int, dtype: torch.dtype = torch.float64) -> Tensor:
     "Unit vector along the X axis"
     return torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype)))
 
@@ -77,3 +77,48 @@ def within_radius(radius: float, points: torch.Tensor) -> torch.Tensor:
     else:
         y, z = points.select(-1, 1), points.select(-1, 2)
         return torch.le(y**2 + z**2, radius**2)
+
+
+def sample_grid2d(
+    N: int,
+    xmin: torch.Tensor,
+    xmax: torch.Tensor,
+    ymin: torch.Tensor,
+    ymax: torch.Tensor,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    x = torch.linspace(xmin, xmax, N, dtype=dtype)
+    y = torch.linspace(ymin, ymax, N, dtype=dtype)
+    X, Y = torch.meshgrid(x, y, indexing="ij")
+    grid = torch.stack((X, Y), dim=-1).reshape(-1, 2)
+    return grid
+
+
+def sample_cylinder(
+    N: int,
+    xmin: torch.Tensor,
+    xmax: torch.Tensor,
+    tau: torch.Tensor,
+    dtype: torch.dtype,
+) -> torch.Tensor:
+    """
+    Generate a grid of points within a cylinder defined by xmin, xmax, and tau.
+    """
+    theta = torch.linspace(0, 2 * torch.pi, N, dtype=dtype)
+    r = torch.linspace(0, tau, N, dtype=dtype)
+    x = torch.linspace(xmin, xmax, N, dtype=dtype)
+
+    X, R, Theta = torch.meshgrid(x, r, theta, indexing="ij")
+
+    Y = R * torch.cos(Theta)
+    Z = R * torch.sin(Theta)
+    
+    grid = torch.stack((X, Y, Z), dim=-1).reshape(-1, 3)
+    return grid
+
+
+def sample_bcyl(N: int, xmin: torch.Tensor, xmax: torch.Tensor, tau: torch.Tensor, dim: int, dtype: torch.dtype):
+    if dim == 2:
+        return sample_grid2d(N, xmin, xmax, -tau, tau, dtype)
+    else:
+        return sample_cylinder(N, xmin, xmax, tau, dtype)

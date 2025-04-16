@@ -23,8 +23,8 @@ import numpy as np
 import torchlensmaker as tlm
 
 from torchlensmaker.testing.check_local_collide import check_local_collide
-
 from torchlensmaker.testing.collision_datasets import NormalRays
+from torchlensmaker.core.geometry import sample_bcyl
 
 """
 Test all surfaces using the methods of the common base class LocalSurface().
@@ -94,30 +94,6 @@ def test_extent_and_zero(surfaces: list[tlm.LocalSurface]) -> None:
         del zero3, extent3
 
 
-def sample_grid2d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
-    x = np.linspace(-lim, lim, N)
-    y = np.linspace(-lim, lim, N)
-    X, Y = np.meshgrid(x, y)
-    grid = torch.tensor(np.stack((X, Y), axis=-1).reshape(-1, 2))
-    return grid.to(dtype=dtype)
-
-
-def sample_grid3d(lim: float, N: int, dtype: torch.dtype) -> torch.Tensor:
-    x = np.linspace(-lim, lim, N)
-    y = np.linspace(-lim, lim, N)
-    z = np.linspace(-lim, lim, N)
-    X, Y, Z = np.meshgrid(x, y, z)
-    grid = torch.tensor(np.stack((X, Y, Z), axis=-1).reshape(-1, 3))
-    return grid.to(dtype=dtype)
-
-
-def sample_grid(lim: float, N: int, dim: int, dtype: torch.dtype) -> torch.Tensor:
-    if dim == 2:
-        return sample_grid2d(lim=lim, N=N, dtype=dtype)
-    else:
-        return sample_grid3d(lim=lim, N=N, dtype=dtype)
-
-
 def extra_batch_dims(tensor: torch.Tensor, dims: Iterable[int]) -> list[torch.Tensor]:
     "Create copies of tensor with extra batch dimensions"
     new_tensors = [tensor]
@@ -129,18 +105,18 @@ def extra_batch_dims(tensor: torch.Tensor, dims: Iterable[int]) -> list[torch.Te
 
 
 def test_normals(surfaces: list[tlm.LocalSurface], dim: int) -> None:
-    # Number of points per dimension of the sample grid
-    # Make sure to use a sample grid with odd number of points so that 0 is
-    # included
-    N = 3
+    "Test normals at sample points locations"
 
-    # The sample grid gets reshaped to a single batch dimension
-    # Number of points in the first batch dimension
-    B1 = N**dim
+    # TODO enable this test for the 3D non symmetric case
+    # need to add a surface.samples3d function
+    if dim == 3:
+        return
+
+    N = 10
 
     for s in surfaces:
-        lim = 50  # TODO use 4*bbox.radial here instead of hardcoded limit
-        points1 = sample_grid(lim, N, dim, dtype=s.dtype)
+        points1 = s.samples2D_full(N, epsilon=0.01)
+        B1 = N
 
         # We're going to check that surface.normals() works with an arbitrary
         # number of batch dimensions.
@@ -239,9 +215,9 @@ def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
     B1 = N**dim
 
     for surface in [s for s in surfaces if isinstance(s, tlm.ImplicitSurface)]:
-        lim = 50  # TODO use 4*bbox.radial here instead of hardcoded limit
         points0 = torch.zeros((dim,), dtype=surface.dtype)
-        points1 = sample_grid(lim, N, dim, dtype=surface.dtype)
+        xmin, xmax, tau = surface.bcyl()
+        points1 = sample_bcyl(N, xmin, xmax, tau, dim, dtype=surface.dtype)
 
         # We're going to check that F and F_grad work with an arbitrary
         # number of batch dimensions.

@@ -222,6 +222,7 @@ class CollisionMethod:
         assert isinstance(V, Tensor) and V.dim() == 2
         assert tmin.shape == tmax.shape
         assert tmin.dim() == tmax.dim() == 1
+        assert tmin.shape[0] == tmax.shape[0] == P.shape[0]
 
         # Tensor dimensions
         (N, _), B = P.shape, self.B
