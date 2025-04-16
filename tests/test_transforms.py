@@ -10,9 +10,12 @@ from torchlensmaker.core.transforms import (
     ComposeTransform,
 )
 
-from torchlensmaker.core.surfaces import (
+from torchlensmaker.surfaces.conics import (
     Sphere,
     Parabola,
+)
+    
+from torchlensmaker.surfaces.plane import (
     SquarePlane,
     CircularPlane,
 )

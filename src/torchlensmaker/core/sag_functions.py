@@ -55,6 +55,9 @@ class SagFunction:
     def is_freeform(self) -> bool:
         "True iff the function is not symmetric around the X axis"
         return not self._symmetric
+    
+    def parameters(self) -> dict[str, nn.Parameter]:
+        raise NotImplementedError
 
     def bounds(self, tau: Tensor) -> Tensor:
         """Lower and upper bounds

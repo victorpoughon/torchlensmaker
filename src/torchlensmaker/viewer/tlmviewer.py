@@ -28,10 +28,8 @@ from importlib.metadata import version
 
 from typing import Any
 
-from torchlensmaker.core.surfaces import (
-    LocalSurface,
-    ImplicitSurface,
-)
+from torchlensmaker.surfaces.local_surface import LocalSurface
+from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
 from torchlensmaker.core.transforms import (
     TransformBase,

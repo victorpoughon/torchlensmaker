@@ -14,9 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from torchlensmaker.surfaces.local_surface import LocalSurface
+from torchlensmaker.surfaces.plane import CircularPlane
+from torchlensmaker.surfaces.conics import Parabola, Sphere
+from torchlensmaker.lenses import LensBase
+
 import os
 import torch.nn as nn
-import torchlensmaker as tlm
 import build123d as bd
 from os.path import join
 
@@ -31,19 +35,19 @@ def tuplelist(arr: Any) -> Any:
     return [tuple(e) for e in arr]
 
 
-def sketch_circular_plane(plane: tlm.CircularPlane) -> bd.Sketch:
+def sketch_circular_plane(plane: CircularPlane) -> bd.Sketch:
     y = plane.outline.max_radius()
     return bd.Line([(0, -y), (0, y)])
 
 
-def sketch_parabola(parabola: tlm.Parabola) -> bd.Sketch:
+def sketch_parabola(parabola: Parabola) -> bd.Sketch:
     a: float = parabola.A.item()
     r: float = parabola.diameter / 2
 
     return bd.Bezier((a * r**2, -r), (-a * r**2, 0), (a * r**2, r))
 
 
-def sketch_sphere(sphere: tlm.Sphere) -> bd.Sketch:
+def sketch_sphere(sphere: Sphere) -> bd.Sketch:
     y = -sphere.diameter / 2
     X = sphere.extent_x().item()
     R = sphere.radius()
@@ -54,19 +58,19 @@ def sketch_sphere(sphere: tlm.Sphere) -> bd.Sketch:
         return bd.RadiusArc((X, -y), (X, y), -R)
 
 
-def surface_to_sketch(surface: tlm.LocalSurface) -> bd.Sketch:
+def surface_to_sketch(surface: LocalSurface) -> bd.Sketch:
     try:
         func = {
-            tlm.Parabola: sketch_parabola,
-            tlm.CircularPlane: sketch_circular_plane,
-            tlm.Sphere: sketch_sphere,
+            Parabola: sketch_parabola,
+            CircularPlane: sketch_circular_plane,
+            Sphere: sketch_sphere,
         }[type(surface)]
         return func(surface)  # type: ignore
     except KeyError:
         raise RuntimeError(f"Unsupported surface type {type(surface)}")
 
 
-def lens_to_part(lens: tlm.LensBase) -> bd.Part:
+def lens_to_part(lens: LensBase) -> bd.Part:
     inner_thickness = lens.inner_thickness().detach().item()
 
     curve1 = bd.scale(
@@ -104,7 +108,7 @@ def export_all_step(optics: nn.Sequential, folder_path: str) -> None:
     "Export polygons of lenses in the the optical stack"
 
     for j, element in enumerate(optics):
-        if isinstance(element, tlm.LensBase):
+        if isinstance(element, LensBase):
             path = join(folder_path, f"lens{j}.step")
             part = lens_to_part(element)
             bd.export_step(part, path)

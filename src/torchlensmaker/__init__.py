@@ -17,7 +17,7 @@
 # Core
 from torchlensmaker.core.physics import *
 from torchlensmaker.core.outline import *
-from torchlensmaker.core.surfaces import *
+from torchlensmaker.surfaces.sphere_r import *
 from torchlensmaker.core.sag_functions import *
 from torchlensmaker.core.transforms import *
 from torchlensmaker.core.intersect import *
@@ -25,6 +25,13 @@ from torchlensmaker.core.full_forward import *
 from torchlensmaker.core.collision_detection import *
 from torchlensmaker.core.parameter import *
 from torchlensmaker.core.geometry import *
+
+# Surfaces
+from torchlensmaker.surfaces.conics import *
+from torchlensmaker.surfaces.sphere_r import *
+from torchlensmaker.surfaces.implicit_surface import *
+from torchlensmaker.surfaces.local_surface import *
+from torchlensmaker.surfaces.plane import *
 
 # Optics
 from torchlensmaker.optical_data import *

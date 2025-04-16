@@ -27,7 +27,7 @@ from torchlensmaker.core.transforms import (
     forward_kinematic,
     spherical_rotation,
 )
-from torchlensmaker.core.surfaces import (
+from torchlensmaker.surfaces.plane import (
     LocalSurface,
     CircularPlane,
 )
