@@ -30,7 +30,7 @@ from torchlensmaker.analysis.colors import (
     color_blocked,
 )
 
-import torchlensmaker.viewer as viewer
+from . import tlmviewer
 
 import json
 
@@ -110,7 +110,7 @@ def render_rays_until(
     t = (end - P[:, 0]) / V[:, 0]
     ends = P + t.unsqueeze(1).expand_as(V) * V
     return [
-        viewer.render_rays(
+        tlmviewer.render_rays(
             P,
             ends,
             variables=variables,
@@ -139,7 +139,7 @@ def render_rays_length(
         length = length.unsqueeze(1).expand_as(V)
 
     return [
-        viewer.render_rays(
+        tlmviewer.render_rays(
             P,
             P + length * V,
             variables=variables,
@@ -150,64 +150,114 @@ def render_rays_length(
     ]
 
 
-class KinematicSurfaceArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        dim, dtype = (
-            input_tree[module].transforms[0].dim,
-            input_tree[module].transforms[0].dtype,
+class Artist:
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        raise NotImplementedError
+
+    def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        raise NotImplementedError
+
+
+@dataclass
+class Collective:
+    "Group of artists"
+
+    artists: Dict[type, Artist]
+    ray_variables: RayVariables
+    input_tree: dict[nn.Module, tlm.OpticalData]
+    output_tree: dict[nn.Module, tlm.OpticalData]
+
+    def match_artist(self, module: nn.Module) -> Optional[Artist]:
+        "Match an artist to a module"
+
+        artists: list[Artist] = [
+            a for typ, a in self.artists.items() if isinstance(module, typ)
+        ]
+
+        return None if len(artists) == 0 else artists[0]
+
+    def render_module(self, module: nn.Module) -> list[Any]:
+        artist = self.match_artist(module)
+
+        if artist is None:
+            return []
+
+        # Let the artist render the module
+        return artist.render_module(
+            self,
+            module,
         )
-        chain = input_tree[module].transforms + module.surface_transform(dim, dtype)
+
+    def render_rays(self, module: nn.Module) -> list[Any]:
+        artist = self.match_artist(module)
+
+        if artist is None:
+            return []
+
+        # Let the artist render the rays
+        return artist.render_rays(
+            self,
+            module,
+        )
+
+    def render_joints(self, module: nn.Module) -> list[Any]:
+        dim, dtype = (
+            self.input_tree[module].transforms[0].dim,
+            self.input_tree[module].transforms[0].dtype,
+        )
+
+        # Final transform list
+        tflist = self.output_tree[module].transforms
+
+        points = []
+
+        for i in range(len(tflist)):
+            tf = tlm.forward_kinematic(tflist[: i + 1])
+            joint = tf.direct_points(torch.zeros((dim,), dtype=dtype))
+
+            points.append(joint.tolist())
+
+        return [{"type": "points", "data": points, "layers": [LAYER_JOINTS]}]
+
+
+class KinematicSurfaceArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        dim, dtype = (
+            collective.input_tree[module].transforms[0].dim,
+            collective.input_tree[module].transforms[0].dtype,
+        )
+        chain = collective.input_tree[module].transforms + module.surface_transform(
+            dim, dtype
+        )
         transform = tlm.forward_kinematic(chain)
 
-        return [viewer.render_surface(module.surface, transform, dim=transform.dim)]
+        return [tlmviewer.render_surface(module.surface, transform, dim=transform.dim)]
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        return render_rays(module.element, input_tree, output_tree, ray_variables)
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        return collective.render_rays(module.element)
 
 
-class CollisionSurfaceArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        points = output_tree[module].P
-        normals = output_tree[module].normals
+class CollisionSurfaceArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        points = collective.output_tree[module].P
+        normals = collective.output_tree[module].normals
 
         # return viewer.render_collisions(points, normals)
         return []
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        inputs = input_tree[module]
-        outputs = output_tree[module]
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        inputs = collective.input_tree[module]
+        outputs = collective.output_tree[module]
         # If rays are not blocked, render simply all rays from collision to collision
         if outputs.blocked is None:
             return [
-                viewer.render_rays(
+                tlmviewer.render_rays(
                     inputs.P,
                     outputs.P,
-                    variables=ray_variables_dict(inputs, ray_variables.variables),
-                    domain=ray_variables.domain,
+                    variables=ray_variables_dict(
+                        inputs, collective.ray_variables.variables
+                    ),
+                    domain=collective.ray_variables.domain,
                     default_color=color_valid,
                     layer=LAYER_VALID_RAYS,
                 )
@@ -219,13 +269,13 @@ class CollisionSurfaceArtist:
 
             group_valid = (
                 [
-                    viewer.render_rays(
+                    tlmviewer.render_rays(
                         inputs.P[valid],
                         outputs.P,
                         variables=ray_variables_dict(
-                            inputs, ray_variables.variables, valid
+                            inputs, collective.ray_variables.variables, valid
                         ),
-                        domain=ray_variables.domain,
+                        domain=collective.ray_variables.domain,
                         default_color=color_valid,
                         layer=LAYER_VALID_RAYS,
                     )
@@ -241,9 +291,9 @@ class CollisionSurfaceArtist:
                     V,
                     inputs.target()[0],
                     variables=ray_variables_dict(
-                        inputs, ray_variables.variables, outputs.blocked
+                        inputs, collective.ray_variables.variables, outputs.blocked
                     ),
-                    domain=ray_variables.domain,
+                    domain=collective.ray_variables.domain,
                     default_color=color_blocked,
                     layer=LAYER_BLOCKED_RAYS,
                 )
@@ -254,25 +304,13 @@ class CollisionSurfaceArtist:
             return group_valid + group_blocked
 
 
-class FocalPointArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        target = input_tree[module].target().unsqueeze(0)
-        return [viewer.render_points(target, color_focal_point)]
+class FocalPointArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        target = collective.input_tree[module].target().unsqueeze(0)
+        return [tlmviewer.render_points(target, color_focal_point)]
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
-        inputs = input_tree[module]
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        inputs = collective.input_tree[module]
 
         # Distance from ray origin P to target
         dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
@@ -284,156 +322,68 @@ class FocalPointArtist:
             inputs.V,
             t,
             layer=LAYER_VALID_RAYS,
-            variables=ray_variables_dict(inputs, ray_variables.variables),
-            domain=ray_variables.domain,
+            variables=ray_variables_dict(inputs, collective.ray_variables.variables),
+            domain=collective.ray_variables.domain,
             default_color=color_valid,
         )
 
 
-def render_joints(
-    module: nn.Module,
-    input_tree: dict[nn.Module, tlm.OpticalData],
-    output_tree: dict[nn.Module, tlm.OpticalData],
-    ray_variables: RayVariables,
-) -> list[Any]:
-    dim, dtype = (
-        input_tree[module].transforms[0].dim,
-        input_tree[module].transforms[0].dtype,
-    )
-
-    # Final transform list
-    tflist = output_tree[module].transforms
-
-    points = []
-
-    for i in range(len(tflist)):
-        tf = tlm.forward_kinematic(tflist[: i + 1])
-        joint = tf.direct_points(torch.zeros((dim,), dtype=dtype))
-
-        points.append(joint.tolist())
-
-    return [{"type": "points", "data": points, "layers": [LAYER_JOINTS]}]
-
-
-class EndArtist:
+class EndArtist(Artist):
     def __init__(self, end: float):
         self.end = end
 
-    def render_rays(
-        self,
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         return render_rays_length(
-            output_tree[module].P,
-            output_tree[module].V,
+            collective.output_tree[module].P,
+            collective.output_tree[module].V,
             self.end,
-            variables=ray_variables_dict(output_tree[module], ray_variables.variables),
-            domain=ray_variables.domain,
+            variables=ray_variables_dict(
+                collective.output_tree[module], collective.ray_variables.variables
+            ),
+            domain=collective.ray_variables.domain,
             default_color=color_valid,
             layer=LAYER_OUTPUT_RAYS,
         )
 
 
-class SequentialArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+class SequentialArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(render_module(child, input_tree, output_tree, ray_variables))
+            nodes.extend(collective.render_module(child))
         return nodes
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(render_rays(child, input_tree, output_tree, ray_variables))
+            nodes.extend(collective.render_rays(child))
         return nodes
 
 
-class LensArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+class LensArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(
-            render_module(module.surface1, input_tree, output_tree, ray_variables)
-        )
-        nodes.extend(
-            render_module(module.surface2, input_tree, output_tree, ray_variables)
-        )
+        nodes.extend(collective.render_module(module.surface1))
+        nodes.extend(collective.render_module(module.surface2))
         return nodes
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(
-            render_rays(module.surface1, input_tree, output_tree, ray_variables)
-        )
-        nodes.extend(
-            render_rays(module.surface2, input_tree, output_tree, ray_variables)
-        )
+        nodes.extend(collective.render_rays(module.surface1))
+        nodes.extend(collective.render_rays(module.surface2))
         return nodes
 
 
-class SubTransformArtist:
-    @staticmethod
-    def render_module(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+class SubTransformArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(
-            render_module(module.element, input_tree, output_tree, ray_variables)
-        )
+        nodes.extend(collective.render_module(module.element))
         return nodes
 
-    @staticmethod
-    def render_rays(
-        module: nn.Module,
-        input_tree: dict[nn.Module, tlm.OpticalData],
-        output_tree: dict[nn.Module, tlm.OpticalData],
-        ray_variables: RayVariables,
-    ) -> list[Any]:
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(
-            render_rays(module.element, input_tree, output_tree, ray_variables)
-        )
+        nodes.extend(collective.render_rays(module.element))
         return nodes
-
-
-artists_dict: Dict[type, type] = {
-    nn.Sequential: SequentialArtist,
-    tlm.FocalPoint: FocalPointArtist,
-    tlm.LensBase: LensArtist,
-    tlm.Offset: SubTransformArtist,
-    tlm.Rotate: SubTransformArtist,
-    tlm.KinematicSurface: KinematicSurfaceArtist,
-    tlm.CollisionSurface: CollisionSurfaceArtist,
-}
 
 
 def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
@@ -449,50 +399,15 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
         print()
 
 
-def render_module(
-    module: nn.Module,
-    input_tree: dict[nn.Module, tlm.OpticalData],
-    output_tree: dict[nn.Module, tlm.OpticalData],
-    ray_variables: RayVariables,
-) -> list[Any]:
-    # find matching artists for this module, use the first one for rendering
-    artists: list[Any] = [
-        a for typ, a in artists_dict.items() if isinstance(module, typ)
-    ]
-
-    if len(artists) == 0:
-        return []
-
-    artist = artists[0]
-    nodes = []
-
-    # Render element itself
-    nodes.extend(artist.render_module(module, input_tree, output_tree, ray_variables))
-
-    return nodes
-
-
-def render_rays(
-    module: nn.Module,
-    input_tree: dict[nn.Module, tlm.OpticalData],
-    output_tree: dict[nn.Module, tlm.OpticalData],
-    ray_variables: RayVariables,
-) -> list[Any]:
-    # find matching artists for this module, use the first one for rendering
-    artists: list[Any] = [
-        a for typ, a in artists_dict.items() if isinstance(module, typ)
-    ]
-
-    if len(artists) == 0:
-        return []
-
-    artist = artists[0]
-    nodes = []
-
-    # Render rays
-    nodes.extend(artist.render_rays(module, input_tree, output_tree, ray_variables))
-
-    return nodes
+default_artists: Dict[type, Artist] = {
+    nn.Sequential: SequentialArtist(),
+    tlm.FocalPoint: FocalPointArtist(),
+    tlm.LensBase: LensArtist(),
+    tlm.Offset: SubTransformArtist(),
+    tlm.Rotate: SubTransformArtist(),
+    tlm.KinematicSurface: KinematicSurfaceArtist(),
+    tlm.CollisionSurface: CollisionSurfaceArtist(),
+}
 
 
 def render_sequence(
@@ -502,7 +417,9 @@ def render_sequence(
     sampling: dict[str, Any],
     end: Optional[float] = None,
     title: str = "",
+    extra_artists: Dict[type, Artist] = {},
 ) -> Any:
+    # Evaluate the model with forward_tree to keep all intermediate outputs
     input_tree, output_tree = tlm.forward_tree(
         optics, tlm.default_input(sampling, dim, dtype)
     )
@@ -510,22 +427,26 @@ def render_sequence(
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables = RayVariables.from_optical_data(output_tree.values())
 
-    scene = viewer.new_scene("2D" if dim == 2 else "3D")
+    # Initialize the artist collective
+    collective = Collective(
+        {**default_artists, **extra_artists}, ray_variables, input_tree, output_tree
+    )
+
+    # Initialize the scene
+    scene = tlmviewer.new_scene("2D" if dim == 2 else "3D")
 
     # Render the top level module
-    scene["data"].extend(render_module(optics, input_tree, output_tree, ray_variables))
+    scene["data"].extend(collective.render_module(optics))
 
     # Render rays
-    scene["data"].extend(render_rays(optics, input_tree, output_tree, ray_variables))
+    scene["data"].extend(collective.render_rays(optics))
 
     # Render kinematic chain joints
-    scene["data"].extend(render_joints(optics, input_tree, output_tree, ray_variables))
+    scene["data"].extend(collective.render_joints(optics))
 
     # Render output rays with end argument
     if end is not None:
-        scene["data"].extend(
-            EndArtist(end).render_rays(optics, input_tree, output_tree, ray_variables)
-        )
+        scene["data"].extend(EndArtist(end).render_rays(collective, optics))
 
     if title != "":
         scene["title"] = title
@@ -554,18 +475,19 @@ def show(
     ndigits: int | None = 8,
     controls: object | None = None,
     return_scene: bool = False,
-) -> None:
+    extra_artists: Dict[type, Artist] = {},
+) -> None | Any:
     "Render an optical stack and show it with ipython display"
 
     if sampling is None:
         sampling = default_sampling(optics, dim, dtype)
 
-    scene = render_sequence(optics, dim, dtype, sampling, end, title)
+    scene = render_sequence(optics, dim, dtype, sampling, end, title, extra_artists)
 
     if controls is not None:
         scene["controls"] = controls
 
-    viewer.display_scene(scene, ndigits)
+    tlmviewer.display_scene(scene, ndigits)
 
     return scene if return_scene else None
 
@@ -603,7 +525,7 @@ def export_json(
         scene["controls"] = controls
 
     if ndigits is not None:
-        scene = viewer.truncate_scene(scene, ndigits)
+        scene = tlmviewer.truncate_scene(scene, ndigits)
 
     with open(filename, "w") as f:
         json.dump(scene, f)
