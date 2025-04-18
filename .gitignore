@@ -13,3 +13,7 @@ node_modules/
 
 # tlmviewer
 tlmviewer-*.js
+
+## xxchallenge stuff
+**.stl
+**.step

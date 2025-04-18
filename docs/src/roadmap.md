@@ -127,6 +127,7 @@ This is a big list of things I'd like to do with Torch Lens Maker. Feel free to 
 
 ## TLMVIEWER
 
+* fix tlmviewer in notebook executed in vscode
 * option to view sag surface x coordinate
 * option to view sag surface gradient (color by dot product with X unit vector)
 * rewrite asphere glsl vertex shader to unwrapped style (no pow)
