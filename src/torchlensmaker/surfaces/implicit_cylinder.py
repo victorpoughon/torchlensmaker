@@ -34,6 +34,8 @@ def sd_capped_cylinder_x(
 
     return torch.add(min_term, length_term)
 
+def sqrt_safe2(v):
+    return torch.sqrt(torch.clamp(v, min=torch.finfo(v.dtype).tiny))
 
 def sccx_unbatched(
     x: torch.Tensor,
@@ -46,7 +48,7 @@ def sccx_unbatched(
     "Unbatched version of sd_capped_cylinder_x"
 
     # Radial distance in YZ-plane
-    radial = torch.sqrt(y**2 + z**2) - tau
+    radial = sqrt_safe2(y**2 + z**2) - tau
 
     # Axial distance along X-axis
     axial = torch.maximum(xmin - x, x - xmax)
