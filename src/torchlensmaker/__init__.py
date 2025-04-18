@@ -32,6 +32,7 @@ from torchlensmaker.surfaces.sphere_r import *
 from torchlensmaker.surfaces.implicit_surface import *
 from torchlensmaker.surfaces.local_surface import *
 from torchlensmaker.surfaces.plane import *
+from torchlensmaker.surfaces.implicit_cylinder import *
 
 # Optics
 from torchlensmaker.optical_data import *

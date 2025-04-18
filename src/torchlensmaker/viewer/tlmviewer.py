@@ -26,7 +26,7 @@ from pathlib import Path
 
 from importlib.metadata import version
 
-from typing import Any
+from typing import Any, Optional
 
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
@@ -223,13 +223,16 @@ def render_rays(
     return node
 
 
-def render_points(points: Tensor, color: str = "white") -> Any:
-    # TODO render points sizes in screen coordinates
+def render_points(
+    points: Tensor, color: str = "white", radius: Optional[float] = None
+) -> Any:
+    # TODO option to render points sizes in screen coordinates
     assert points.dim() == 2
     return {
         "type": "points",
         "data": points.tolist(),
         "color": color,
+        **({"radius": radius} if radius is not None else {}),
     }
 
 
