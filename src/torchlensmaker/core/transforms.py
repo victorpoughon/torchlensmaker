@@ -193,22 +193,3 @@ def forward_kinematic(transforms: Sequence[TransformBase]) -> ComposeTransform:
     "Compose transforms that describe a forward kinematic chain"
 
     return ComposeTransform(list(reversed(transforms)))
-
-
-def spherical_rotation(
-    angle1: Tensor, angle2: Tensor, dim: int, dtype: torch.dtype
-) -> LinearTransform:
-    """
-    A two angle rotation around the Z, then Y axis.
-    In 3D, the second rotation value is ignored.
-    """
-
-    if dim == 2:
-        M = rotation_matrix_2D(angle1)
-        return LinearTransform(M, M.T)
-    else:
-        M = euler_angles_to_matrix(
-            torch.stack((torch.tensor(0, dtype=dtype), angle1, angle2)),
-            "XZY",
-        ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
-        return LinearTransform(M, M.T)

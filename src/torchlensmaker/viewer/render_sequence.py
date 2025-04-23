@@ -16,13 +16,22 @@
 
 import torch
 import torch.nn as nn
-import torchlensmaker as tlm
 
 from typing import Any, Optional, Dict, Iterable
 from collections import defaultdict
 from dataclasses import dataclass
 
+from torchlensmaker.core.transforms import forward_kinematic
 from torchlensmaker.core.tensor_manip import filter_optional_mask
+from torchlensmaker.optical_data import OpticalData, default_input
+from torchlensmaker.optics import (
+    FocalPoint,
+    KinematicSurface,
+    CollisionSurface,
+)
+from torchlensmaker.elements.kinematics import SubChain
+from torchlensmaker.lenses import LensBase
+from torchlensmaker.core.full_forward import forward_tree
 
 from torchlensmaker.analysis.colors import (
     color_valid,
@@ -52,7 +61,7 @@ class RayVariables:
 
     @classmethod
     def from_optical_data(
-        cls, optical_data: Iterable[tlm.OpticalData]
+        cls, optical_data: Iterable[OpticalData]
     ) -> "RayVariables":
         variables: set[str] = set()
         domain: defaultdict[str, list[float]] = defaultdict(
@@ -76,7 +85,7 @@ class RayVariables:
 
 
 def ray_variables_dict(
-    data: tlm.OpticalData, variables: list[str], valid: Optional[Tensor] = None
+    data: OpticalData, variables: list[str], valid: Optional[Tensor] = None
 ) -> dict[str, Tensor]:
     "Convert ray variables from an OpticalData object to a dict of Tensors"
     d = {}
@@ -164,8 +173,8 @@ class Collective:
 
     artists: Dict[type, Artist]
     ray_variables: RayVariables
-    input_tree: dict[nn.Module, tlm.OpticalData]
-    output_tree: dict[nn.Module, tlm.OpticalData]
+    input_tree: dict[nn.Module, OpticalData]
+    output_tree: dict[nn.Module, OpticalData]
 
     def match_artist(self, module: nn.Module) -> Optional[Artist]:
         "Match an artist to a module"
@@ -212,7 +221,7 @@ class Collective:
         points = []
 
         for i in range(len(tflist)):
-            tf = tlm.forward_kinematic(tflist[: i + 1])
+            tf = forward_kinematic(tflist[: i + 1])
             joint = tf.direct_points(torch.zeros((dim,), dtype=dtype))
 
             points.append(joint.tolist())
@@ -229,7 +238,7 @@ class KinematicSurfaceArtist(Artist):
         chain = collective.input_tree[module].transforms + module.surface_transform(
             dim, dtype
         )
-        transform = tlm.forward_kinematic(chain)
+        transform = forward_kinematic(chain)
 
         return [tlmviewer.render_surface(module.surface, transform, dim=transform.dim)]
 
@@ -374,15 +383,15 @@ class LensArtist(Artist):
         return nodes
 
 
-class SubTransformArtist(Artist):
+class SubChainArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(collective.render_module(module.element))
+        nodes.extend(collective.render_module(module._sequential))
         return nodes
 
     def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         nodes = []
-        nodes.extend(collective.render_rays(module.element))
+        nodes.extend(collective.render_rays(module._sequential))
         return nodes
 
 
@@ -401,12 +410,11 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 default_artists: Dict[type, Artist] = {
     nn.Sequential: SequentialArtist(),
-    tlm.FocalPoint: FocalPointArtist(),
-    tlm.LensBase: LensArtist(),
-    tlm.Offset: SubTransformArtist(),
-    tlm.Rotate: SubTransformArtist(),
-    tlm.KinematicSurface: KinematicSurfaceArtist(),
-    tlm.CollisionSurface: CollisionSurfaceArtist(),
+    FocalPoint: FocalPointArtist(),
+    LensBase: LensArtist(),
+    SubChain: SubChainArtist(),
+    KinematicSurface: KinematicSurfaceArtist(),
+    CollisionSurface: CollisionSurfaceArtist(),
 }
 
 
@@ -420,8 +428,8 @@ def render_sequence(
     extra_artists: Dict[type, Artist] = {},
 ) -> Any:
     # Evaluate the model with forward_tree to keep all intermediate outputs
-    input_tree, output_tree = tlm.forward_tree(
-        optics, tlm.default_input(sampling, dim, dtype)
+    input_tree, output_tree = forward_tree(
+        optics, default_input(sampling, dim, dtype)
     )
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer

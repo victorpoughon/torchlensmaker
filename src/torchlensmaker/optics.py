@@ -25,7 +25,6 @@ from torchlensmaker.core.transforms import (
     TranslateTransform,
     LinearTransform,
     forward_kinematic,
-    spherical_rotation,
 )
 from torchlensmaker.surfaces.plane import (
     LocalSurface,
@@ -63,22 +62,6 @@ def linear_magnification(
     return mag, residuals
 
 
-class KinematicElement(nn.Module):
-    """
-    Skeleton element that appends a transform to the kinematic chain
-    """
-
-    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
-        "Transform that gets appended to the kinematic chain by this element"
-        raise NotImplementedError
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.dim, inputs.dtype
-        return inputs.replace(
-            transforms=inputs.transforms + [self.kinematic_transform(dim, dtype)],
-        )
-
-
 class FocalPoint(nn.Module):
     def __init__(self) -> None:
         super().__init__()
@@ -109,101 +92,15 @@ class FocalPoint(nn.Module):
         return inputs.replace(loss=inputs.loss + loss)
 
 
-class Gap(KinematicElement):
-    def __init__(self, offset: float | int | Tensor):
+
+
+class Marker(nn.Module):
+    def __init__(self, text: str):
         super().__init__()
-        assert isinstance(offset, (float, int, torch.Tensor))
-        if isinstance(offset, torch.Tensor):
-            assert offset.dim() == 0
-
-        # Gap is always stored as float64, but it's converted to the sampling
-        # dtype when creating the corresponding transform in forward()
-        self.offset = torch.as_tensor(offset, dtype=torch.float64)
-
-    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
-        translate_vector = torch.cat(
-            (
-                self.offset.unsqueeze(0).to(dtype=dtype),
-                torch.zeros(dim - 1, dtype=dtype),
-            )
-        )
-
-        return TranslateTransform(translate_vector)
-
-
-class Turn(KinematicElement):
-    "Apply a rotation (in degrees) to the kinematic chain"
-
-    def __init__(self, angles: tuple[float | int, float | int] | Tensor):
-        super().__init__()
-
-        if not isinstance(angles, torch.Tensor):
-            angles = torch.as_tensor(angles, dtype=torch.float64)
-
-        self.angles = angles
-
-    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> TransformBase:
-        radangles = torch.deg2rad(self.angles)
-        return spherical_rotation(radangles[0], radangles[1], dim, dtype)
-
-
-class Offset(nn.Module):
-    "Offset the given optical element but don't affect the kinematic chain"
-
-    def __init__(self, element: nn.Module, x=0, y=0, z=0):
-        super().__init__()
-        self.element = element
-        self.x = to_tensor(x)
-        self.y = to_tensor(y)
-        self.z = to_tensor(z)
+        self.text = text
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.dim, inputs.dtype
-
-        if dim == 2:
-            T = torch.stack((self.x, self.y), dim=0)
-        else:
-            T = torch.stack((self.x, self.y, self.z), dim=0)
-
-        chain = inputs.transforms + [TranslateTransform(T)]
-
-        # give that chain to the contained element
-        element_input = inputs.replace(transforms=chain)
-
-        element_output: OpticalData = self.element(element_input)
-
-        # but return original transforms
-        return element_output.replace(transforms=inputs.transforms)
-
-
-class Rotate(nn.Module):
-    "Rotate the given other optical element but don't affect the kinematic chain"
-
-    # TODO should split 2D and 3D rotation
-    # so that when a 3D rotation is used, 2D mode is properly undefined
-    # instead of ignoring the second angle
-    def __init__(
-        self, element: nn.Module, angles: tuple[float | int, float | int] | Tensor
-    ):
-        super().__init__()
-        self.element = element
-        if not isinstance(angles, torch.Tensor):
-            self.angles = torch.deg2rad(torch.as_tensor(angles, dtype=torch.float64))
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim, dtype = inputs.dim, inputs.dtype
-
-        chain = inputs.transforms + [
-            spherical_rotation(self.angles[0], self.angles[1], dim, dtype)
-        ]
-
-        # give that chain to the contained element
-        element_input = inputs.replace(transforms=chain)
-
-        element_output: OpticalData = self.element(element_input)
-
-        # but return original transforms
-        return element_output.replace(transforms=inputs.transforms)
+        return inputs
 
 
 class KinematicSurface(nn.Module):
