@@ -35,9 +35,12 @@ from torchlensmaker.surfaces.plane import *
 from torchlensmaker.surfaces.implicit_cylinder import *
 
 # Optics
+from torchlensmaker.elements.sequential import Sequential
+from torchlensmaker.elements.utils import *
 from torchlensmaker.elements.kinematics import *
+from torchlensmaker.elements.optical_surfaces import *
+
 from torchlensmaker.optical_data import *
-from torchlensmaker.optics import *
 from torchlensmaker.lenses import *
 from torchlensmaker.light_sources import *
 from torchlensmaker.materials import *

@@ -3,6 +3,11 @@ import torch.func
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
 
+from typing import TypeAlias
+
+Tensor: TypeAlias = torch.Tensor
+
+
 def sd_capped_cylinder_x(
     p: torch.Tensor, xmin: torch.Tensor, xmax: torch.Tensor, tau: torch.Tensor
 ) -> torch.Tensor:
@@ -34,8 +39,10 @@ def sd_capped_cylinder_x(
 
     return torch.add(min_term, length_term)
 
-def sqrt_safe2(v):
+
+def sqrt_safe2(v: Tensor) -> Tensor:
     return torch.sqrt(torch.clamp(v, min=torch.finfo(v.dtype).tiny))
+
 
 def sccx_unbatched(
     x: torch.Tensor,

@@ -20,6 +20,8 @@ from dataclasses import dataclass, replace
 
 from typing import Any, Optional, TypeAlias
 
+from torchlensmaker.core.tensor_manip import filter_optional_tensor
+
 from torchlensmaker.core.transforms import (
     TransformBase,
     IdentityTransform,
@@ -54,10 +56,6 @@ class OpticalData:
     P: Tensor
     V: Tensor
 
-    # Surface normals at the rays origin
-    # Present if rays collided with a surface in the previous element
-    normals: Optional[Tensor]
-
     # Rays variables
     # Tensors of shape (N, 2|3) or None
     rays_base: Optional[Tensor]
@@ -74,12 +72,6 @@ class OpticalData:
 
     # Material model for this batch of rays
     material: MaterialModel
-
-    # Mask array indicating which rays from the previous data in the sequence
-    # were blocked by the previous optical element. "blocked" includes hitting
-    # an absorbing surface but also not hitting anything
-    # None or Tensor of shape (N,)
-    blocked: Optional[Tensor]
 
     # Loss accumulator
     # Tensor of dim 0
@@ -113,6 +105,13 @@ class OpticalData:
             return self.rays_wavelength
         else:
             raise RuntimeError(f"Unknown or unavailable ray variable '{color_dim}'")
+    
+    def filter_variables(self, valid: Tensor) -> "OpticalData":
+        return self.replace(
+            rays_base = filter_optional_tensor(self.rays_base, valid),
+            rays_object = filter_optional_tensor(self.rays_object, valid),
+            rays_wavelength = filter_optional_tensor(self.rays_wavelength, valid),
+        )
 
 
 def default_input(
@@ -127,7 +126,6 @@ def default_input(
         transforms=[IdentityTransform(dim, dtype)],
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
-        normals=None,
         rays_base=None,
         rays_object=None,
         rays_image=None,
@@ -136,6 +134,5 @@ def default_input(
         var_object=None,
         var_wavelength=None,
         material=get_material_model("vacuum"),
-        blocked=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )

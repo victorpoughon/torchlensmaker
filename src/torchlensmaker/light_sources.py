@@ -22,7 +22,7 @@ from torchlensmaker.core.tensor_manip import (
     cartesian_prod2d,
     to_tensor,
 )
-from torchlensmaker.optics import OpticalData
+from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.core.transforms import forward_kinematic
 from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector

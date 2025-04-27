@@ -25,7 +25,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Callable, Any
 
 if TYPE_CHECKING:
-    from torchlensmaker.surfaces.sphere_r import ImplicitSurface, LocalSurface
+    from torchlensmaker.surfaces.implicit_cylinder import ImplicitSurface
+    from torchlensmaker.surfaces.local_surface import LocalSurface
 
 Tensor = torch.Tensor
 

@@ -109,7 +109,7 @@ def rays_rectangle_collision(
     xmax: torch.Tensor,
     ymin: torch.Tensor,
     ymax: torch.Tensor,
-):
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Rays-rectangle collision in 2D
     
     Collision detection between 2D rays and a 2D axis aligned rectangle
