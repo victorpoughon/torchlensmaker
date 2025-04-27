@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.geometry import rotated_unit_vector
-from torchlensmaker.surfaces.sphere_r import LocalSurface
+from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
 import math
 

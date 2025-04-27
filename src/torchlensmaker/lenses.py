@@ -64,12 +64,6 @@ def anchor_abs(
     return transform.direct_points(point)
 
 
-# Lens:
-# - KinematicSurface(CollisionSurface, RefractiveBoundary)
-# - Gap
-# - KinematicSurface(CollisionSurface, RefractiveBoundary)
-
-
 def anchor_thickness(
     lens: nn.Module, anchor: Anchor, dim: int, dtype: torch.dtype
 ) -> Tensor:
@@ -82,11 +76,11 @@ def anchor_thickness(
 
     s1_transform = tlm.forward_kinematic(
         input_tree[lens.surface1].transforms
-        + lens.surface1.surface_transform(dim, dtype)
+        + lens.surface1.collision_surface.surface_transform(dim, dtype)
     )
     s2_transform = tlm.forward_kinematic(
         input_tree[lens.surface2].transforms
-        + lens.surface2.surface_transform(dim, dtype)
+        + lens.surface2.collision_surface.surface_transform(dim, dtype)
     )
 
     a1 = anchor_abs(lens.surface1.surface, s1_transform, anchor)
@@ -161,9 +155,9 @@ class Lens(LensBase):
         )
 
     def forward(self, inputs):
-        out = self.surface1(inputs)
+        out, _ = self.surface1(inputs)
         out = self.gap(out)
-        out = self.surface2(out)
+        out, _ = self.surface2(out)
         return out
 
 
@@ -199,9 +193,9 @@ class BiLens(LensBase):
         )
 
     def forward(self, inputs):
-        out = self.surface1(inputs)
+        out, _ = self.surface1(inputs)
         out = self.gap(out)
-        out = self.surface2(out)
+        out, _ = self.surface2(out)
         return out
 
 

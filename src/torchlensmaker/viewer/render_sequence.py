@@ -17,21 +17,28 @@
 import torch
 import torch.nn as nn
 
-from typing import Any, Optional, Dict, Iterable
+from typing import Any, Optional, Dict, Iterable, Callable
 from collections import defaultdict
 from dataclasses import dataclass
 
-from torchlensmaker.core.transforms import forward_kinematic
+from torchlensmaker.core.transforms import forward_kinematic, TransformBase
 from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.optical_data import OpticalData, default_input
-from torchlensmaker.optics import (
-    FocalPoint,
-    KinematicSurface,
-    CollisionSurface,
-)
+from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.elements.kinematics import SubChain
+from torchlensmaker.elements.optical_surfaces import (
+    CollisionSurface,
+    ReflectiveSurface,
+    RefractiveSurface,
+    Aperture,
+    ImagePlane,
+    FocalPoint,
+)
 from torchlensmaker.lenses import LensBase
+
+# from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
+from torchlensmaker.light_sources import LightSourceBase, Wavelength
 
 from torchlensmaker.analysis.colors import (
     color_valid,
@@ -60,9 +67,7 @@ class RayVariables:
     domain: dict[str, list[float]]
 
     @classmethod
-    def from_optical_data(
-        cls, optical_data: Iterable[OpticalData]
-    ) -> "RayVariables":
+    def from_optical_data(cls, optical_data: Iterable[OpticalData]) -> "RayVariables":
         variables: set[str] = set()
         domain: defaultdict[str, list[float]] = defaultdict(
             lambda: [float("+inf"), float("-inf")]
@@ -173,8 +178,8 @@ class Collective:
 
     artists: Dict[type, Artist]
     ray_variables: RayVariables
-    input_tree: dict[nn.Module, OpticalData]
-    output_tree: dict[nn.Module, OpticalData]
+    input_tree: dict[nn.Module, Any]
+    output_tree: dict[nn.Module, Any]
 
     def match_artist(self, module: nn.Module) -> Optional[Artist]:
         "Match an artist to a module"
@@ -229,88 +234,111 @@ class Collective:
         return [{"type": "points", "data": points, "layers": [LAYER_JOINTS]}]
 
 
-class KinematicSurfaceArtist(Artist):
+class ForwardArtist(Artist):
+    "Forward rendering to a subobject"
+
+    def __init__(self, getter: Callable[[nn.Module], nn.Module]):
+        super().__init__()
+        self.getter = getter
+
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        dim, dtype = (
-            collective.input_tree[module].transforms[0].dim,
-            collective.input_tree[module].transforms[0].dtype,
-        )
-        chain = collective.input_tree[module].transforms + module.surface_transform(
-            dim, dtype
-        )
-        transform = forward_kinematic(chain)
+        return collective.render_module(self.getter(module))
 
-        return [tlmviewer.render_surface(module.surface, transform, dim=transform.dim)]
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        return collective.render_rays(module.element)
+    def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return collective.render_rays(self.getter(module))
 
 
 class CollisionSurfaceArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        points = collective.output_tree[module].P
-        normals = collective.output_tree[module].normals
+        inputs = collective.input_tree[module]
+        dim, dtype = inputs.dim, inputs.dtype
 
-        # return viewer.render_collisions(points, normals)
-        return []
+        chain = inputs.transforms + module.surface_transform(dim, dtype)
+        tf = forward_kinematic(chain)
+
+        return [tlmviewer.render_surface(module.surface, tf, dim)]
 
     def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         inputs = collective.input_tree[module]
-        outputs = collective.output_tree[module]
-        # If rays are not blocked, render simply all rays from collision to collision
-        if outputs.blocked is None:
-            return [
+        t: Tensor
+        normals: Tensor
+        valid: Tensor
+        new_chain: list[TransformBase]
+        t, normals, valid, new_chain = collective.output_tree[module]
+
+        collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
+        hits = valid.sum()
+        misses = (~valid).sum()
+
+        # Render hit rays
+        rays_hit = (
+            [
                 tlmviewer.render_rays(
-                    inputs.P,
-                    outputs.P,
+                    inputs.P[valid],
+                    collision_points[valid],
                     variables=ray_variables_dict(
-                        inputs, collective.ray_variables.variables
+                        inputs, collective.ray_variables.variables, valid
                     ),
                     domain=collective.ray_variables.domain,
                     default_color=color_valid,
                     layer=LAYER_VALID_RAYS,
                 )
             ]
+            if hits > 0
+            else []
+        )
 
-        # Else, split into colliding and non colliding rays using blocked mask
-        else:
-            valid = ~outputs.blocked
-
-            group_valid = (
-                [
-                    tlmviewer.render_rays(
-                        inputs.P[valid],
-                        outputs.P,
-                        variables=ray_variables_dict(
-                            inputs, collective.ray_variables.variables, valid
-                        ),
-                        domain=collective.ray_variables.domain,
-                        default_color=color_valid,
-                        layer=LAYER_VALID_RAYS,
-                    )
-                ]
-                if inputs.P[valid].numel() > 0
-                else []
+        # Render miss rays - rays absorbed because not colliding
+        rays_miss = (
+            render_rays_until(
+                inputs.P[~valid],
+                inputs.V[~valid],
+                inputs.target()[0],
+                variables=ray_variables_dict(
+                    inputs, collective.ray_variables.variables, ~valid
+                ),
+                domain=collective.ray_variables.domain,
+                default_color=color_blocked,
+                layer=LAYER_BLOCKED_RAYS,
             )
+            if misses > 0
+            else []
+        )
 
-            P, V = inputs.P[outputs.blocked], inputs.V[outputs.blocked]
-            if P.numel() > 0:
-                group_blocked = render_rays_until(
-                    P,
-                    V,
-                    inputs.target()[0],
+        return rays_hit + rays_miss
+
+
+class RefractiveSurfaceArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return collective.render_module(module.collision_surface)
+
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        inputs = collective.input_tree[module]
+        output, valid_refraction = collective.output_tree[module]
+
+        t, _, collision_valid, _ = collective.output_tree[module.collision_surface]
+        collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
+        tir_mask = torch.logical_and(~valid_refraction, collision_valid)
+
+        # render tir absorbed rays
+        # TODO make a ray type for it in tlmviewer
+        if module._tir == "absorb" and tir_mask.sum() > 0:
+            rays_tir = [
+                tlmviewer.render_rays(
+                    inputs.P[tir_mask],
+                    collision_points[tir_mask],
                     variables=ray_variables_dict(
-                        inputs, collective.ray_variables.variables, outputs.blocked
+                        inputs, collective.ray_variables.variables, tir_mask
                     ),
                     domain=collective.ray_variables.domain,
-                    default_color=color_blocked,
-                    layer=LAYER_BLOCKED_RAYS,
+                    default_color="pink",
+                    layer=LAYER_VALID_RAYS,  # TODO remove layers
                 )
+            ]
+        else:
+            rays_tir = []
 
-            else:
-                group_blocked = []
-
-            return group_valid + group_blocked
+        return collective.render_rays(module.collision_surface) + rays_tir
 
 
 class FocalPointArtist(Artist):
@@ -383,18 +411,6 @@ class LensArtist(Artist):
         return nodes
 
 
-class SubChainArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        nodes = []
-        nodes.extend(collective.render_module(module._sequential))
-        return nodes
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        nodes = []
-        nodes.extend(collective.render_rays(module._sequential))
-        return nodes
-
-
 def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
     for module, inputs, outputs in execute_list:
         print(type(module))
@@ -409,12 +425,15 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 
 default_artists: Dict[type, Artist] = {
-    nn.Sequential: SequentialArtist(),
+    Sequential: SequentialArtist(),
     FocalPoint: FocalPointArtist(),
     LensBase: LensArtist(),
-    SubChain: SubChainArtist(),
-    KinematicSurface: KinematicSurfaceArtist(),
+    SubChain: ForwardArtist(lambda mod: mod._sequential),
     CollisionSurface: CollisionSurfaceArtist(),
+    ReflectiveSurface: ForwardArtist(lambda mod: mod.collision_surface),
+    RefractiveSurface: RefractiveSurfaceArtist(),
+    Aperture: ForwardArtist(lambda mod: mod.collision_surface),
+    ImagePlane: ForwardArtist(lambda mod: mod.collision_surface),
 }
 
 
@@ -428,12 +447,15 @@ def render_sequence(
     extra_artists: Dict[type, Artist] = {},
 ) -> Any:
     # Evaluate the model with forward_tree to keep all intermediate outputs
-    input_tree, output_tree = forward_tree(
-        optics, default_input(sampling, dim, dtype)
-    )
+    input_tree, output_tree = forward_tree(optics, default_input(sampling, dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
-    ray_variables = RayVariables.from_optical_data(output_tree.values())
+    light_sources_outputs = [
+        output
+        for mod, output in output_tree.items()
+        if isinstance(mod, (LightSourceBase, Wavelength))
+    ]
+    ray_variables = RayVariables.from_optical_data(light_sources_outputs)
 
     # Initialize the artist collective
     collective = Collective(

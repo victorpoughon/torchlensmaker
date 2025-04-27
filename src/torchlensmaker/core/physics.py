@@ -46,7 +46,7 @@ def refraction(
     n1: float | Tensor,
     n2: float | Tensor,
     critical_angle: RefractionCriticalAngleMode = "drop",
-) -> Tensor:
+) -> tuple[Tensor, Tensor]:
     """
     Vector based refraction (Snell's law).
 

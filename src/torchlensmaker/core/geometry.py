@@ -117,7 +117,7 @@ def sample_cylinder(
     return grid
 
 
-def sample_bcyl(N: int, xmin: torch.Tensor, xmax: torch.Tensor, tau: torch.Tensor, dim: int, dtype: torch.dtype):
+def sample_bcyl(N: int, xmin: torch.Tensor, xmax: torch.Tensor, tau: torch.Tensor, dim: int, dtype: torch.dtype) -> torch.Tensor:
     if dim == 2:
         return sample_grid2d(N, xmin, xmax, -tau, tau, dtype)
     else:

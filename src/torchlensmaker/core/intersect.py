@@ -16,7 +16,7 @@
 
 import torch
 
-from torchlensmaker.surfaces.sphere_r import LocalSurface
+from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.core.transforms import TransformBase
 
 Tensor = torch.Tensor
@@ -41,7 +41,7 @@ def intersect(
         transform: transform applied to the surface
 
     Returns:
-        points: valid collision points
+        t: valid collision distances
         normals: valid surface normals at the collision points
         valid: bool tensor (N,) indicating which rays do collide with the surface
     """
@@ -52,7 +52,7 @@ def intersect(
 
     # Special case for zero rays
     if P.shape[0] == 0:
-        return torch.zeros_like(P), torch.zeros_like(V), torch.full((P.shape[0],), False)
+        return torch.zeros(P.shape[0], dtype=P.dtype), torch.zeros_like(V), torch.full((P.shape[0],), False)
 
     # Convert rays to surface local frame
     Ps = transform.inverse_points(P)
@@ -62,26 +62,18 @@ def intersect(
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 
     # Compute collision points and convert normals to global frame
-    points = P + t.unsqueeze(1).expand_as(V) * V
     normals = transform.direct_vectors(local_normals)
-
-    # remove non valid (non intersecting) points
-    # do this before computing global frame?
-    points = points[valid]
-    normals = normals[valid]
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection
     # i.e. the normal such that dot(normal, ray) < 0
-    dot = torch.sum(normals * V[valid], dim=1)
+    dot = torch.sum(normals * V, dim=1)
     opposite_normals = torch.where(
         (dot > 0).unsqueeze(1).expand_as(normals), -normals, normals
     )
 
-    assert points.shape == opposite_normals.shape
     assert valid.shape == (P.shape[0],)
-    assert torch.all(torch.isfinite(points))
     assert torch.all(torch.isfinite(opposite_normals))
     assert torch.all(torch.isfinite(valid))
 
-    return points, opposite_normals, valid
+    return t, opposite_normals, valid

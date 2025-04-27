@@ -25,6 +25,7 @@ from torchlensmaker.core.transforms import (
     LinearTransform,
     forward_kinematic,
 )
+from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
@@ -32,23 +33,11 @@ from typing import TypeAlias
 
 Tensor: TypeAlias = torch.Tensor
 
-"""
-SubChain
-AbsoluteTransform
-RelativeTransform
-
-Gap
-
-Rotate3D
-Translate2D
-Translate3D
-"""
-
 
 class SubChain(nn.Module):
     def __init__(self, *children: nn.Module):
         super().__init__()
-        self._sequential = nn.Sequential(*children)
+        self._sequential = Sequential(*children)
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         output = self._sequential(inputs)
@@ -125,7 +114,7 @@ class Rotate2D(RelativeTransform):
         super().__init__()
         self._angle = to_tensor(angle)
 
-    def tf(self, dim: int, dtype: torch.dtype) -> OpticalData:
+    def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         assert dim == 2
         M = rotation_matrix_2D(torch.deg2rad(self._angle))
         return LinearTransform(M, M.T)
@@ -171,3 +160,28 @@ class MixedDim(nn.Module):
             return self._dim2(inputs)
         else:
             return self._dim3(inputs)
+
+
+class Rotate(MixedDim):
+    """Mixed dimension rotation
+
+    The second angle is ignored in 2D.
+    """
+
+    def __init__(self, angles: tuple[float | int, float | int] | Tensor):
+        super().__init__(dim2=Rotate2D(angles[0]), dim3=Rotate3D(angles))
+
+
+class Translate(MixedDim):
+    """Mixed dimension translation
+
+    In 2D, the z coordinate is ignored, and the y coordinate stands for the r (radial) coordinate.
+    """
+
+    def __init__(
+        self,
+        x: Tensor | float = 0.0,
+        y: Tensor | float = 0.0,
+        z: Tensor | float = 0.0,
+    ):
+        super().__init__(dim2=Translate2D(x, y), dim3=Translate3D(x, y, z))

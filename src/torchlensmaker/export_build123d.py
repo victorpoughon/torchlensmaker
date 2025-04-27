@@ -18,6 +18,7 @@ from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.plane import CircularPlane
 from torchlensmaker.surfaces.conics import Parabola, Sphere
 from torchlensmaker.lenses import LensBase
+from torchlensmaker.elements.sequential import Sequential
 
 import os
 import torch.nn as nn
@@ -74,10 +75,10 @@ def lens_to_part(lens: LensBase) -> bd.Part:
     inner_thickness = lens.inner_thickness().detach().item()
 
     curve1 = bd.scale(
-        surface_to_sketch(lens.surface1.surface), (lens.surface1.scale, 1.0, 1.0)
+        surface_to_sketch(lens.surface1.surface), (lens.surface1.collision_surface.scale, 1.0, 1.0)
     )
     curve2 = bd.Pos(inner_thickness, 0.0) * bd.scale(
-        surface_to_sketch(lens.surface2.surface), (lens.surface2.scale, 1.0, 1.0)
+        surface_to_sketch(lens.surface2.surface), (lens.surface2.collision_surface.scale, 1.0, 1.0)
     )
 
     # Find the "top most" point on the curve
@@ -104,7 +105,7 @@ def lens_to_part(lens: LensBase) -> bd.Part:
     return part
 
 
-def export_all_step(optics: nn.Sequential, folder_path: str) -> None:
+def export_all_step(optics: Sequential, folder_path: str) -> None:
     "Export polygons of lenses in the the optical stack"
 
     for j, element in enumerate(optics):
