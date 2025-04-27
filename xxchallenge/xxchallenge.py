@@ -120,14 +120,20 @@ class RodArtist:
         return []
 
 
-class RaysViewer(nn.Module):
+class RaysViewerPlane(nn.Module):
     "Utility component to vizualize rays distribution"
 
-    def __init__(self, title):
+    def __init__(self, diameter, title):
         super().__init__()
         self.title = title
+        surface = tlm.CircularPlane(diameter, dtype=torch.float64)
+        self.collision_surface = tlm.CollisionSurface(surface)
 
     def forward(self, inputs):
+
+        # Collision detection
+        t, normals, valid_collision, new_chain = self.collision_surface(inputs)
+        collision_points = inputs.P + t.unsqueeze(-1).expand_as(inputs.V) * inputs.V
 
         if "disable_viewer" not in inputs.sampling:
             with torch.inference_mode():
@@ -135,7 +141,7 @@ class RaysViewer(nn.Module):
                 # plot YZ linear distribution
                 # plot MN angular distribution
 
-                X, Y, Z = inputs.P.unbind(-1)
+                X, Y, Z = collision_points.unbind(-1)
                 L, M, N = inputs.V.unbind(-1)
 
                 f, (ax1, ax2) = plt.subplots(1, 2)
@@ -147,16 +153,3 @@ class RaysViewer(nn.Module):
                 f.suptitle(self.title)
         
         return inputs
-
-
-class RaysViewerPlane(tlm.KinematicSurface):
-    def __init__(self, diameter, title):
-        self.diameter = diameter
-        surface = tlm.CircularPlane(diameter, dtype=torch.float64)
-        element = nn.Sequential(
-            tlm.CollisionSurface(surface),
-            RaysViewer(title),
-        )
-        super().__init__(
-            element=element, surface=surface, scale=1.0, anchors=("origin", "origin")
-        )
