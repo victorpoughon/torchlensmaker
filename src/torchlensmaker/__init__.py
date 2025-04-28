@@ -39,10 +39,10 @@ from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.elements.utils import *
 from torchlensmaker.elements.kinematics import *
 from torchlensmaker.elements.optical_surfaces import *
+from torchlensmaker.elements.light_sources import *
 
 from torchlensmaker.optical_data import *
 from torchlensmaker.lenses import *
-from torchlensmaker.light_sources import *
 from torchlensmaker.materials import *
 from torchlensmaker.sampling import *
 

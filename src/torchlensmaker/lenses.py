@@ -115,6 +115,9 @@ class LensBase(LensMaterialsMixin, nn.Module):
         "Thickness at the outer radius of the lens"
         return anchor_thickness(self, "extent", 3, torch.float64)
 
+    def forward(self, inputs: tlm.OpticalData) -> tlm.OpticalData:
+        return tlm.Sequential(self.surface1, self.gap, self.surface2)(inputs)  
+
 
 class Lens(LensBase):
     """
@@ -152,13 +155,7 @@ class Lens(LensBase):
             self.exit_material,
             scale=scale2,
             anchors=(anchors[1], anchors[0]),
-        )
-
-    def forward(self, inputs):
-        out, _ = self.surface1(inputs)
-        out = self.gap(out)
-        out, _ = self.surface2(out)
-        return out
+        ) 
 
 
 class BiLens(LensBase):
@@ -191,12 +188,6 @@ class BiLens(LensBase):
             scale=-1.0,
             anchors=(anchors[1], anchors[0]),
         )
-
-    def forward(self, inputs):
-        out, _ = self.surface1(inputs)
-        out = self.gap(out)
-        out, _ = self.surface2(out)
-        return out
 
 
 class PlanoLens(Lens):

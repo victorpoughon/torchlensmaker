@@ -38,7 +38,7 @@ from torchlensmaker.lenses import LensBase
 
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
-from torchlensmaker.light_sources import LightSourceBase, Wavelength
+from torchlensmaker.elements.light_sources import LightSourceBase, Wavelength
 
 from torchlensmaker.analysis.colors import (
     color_valid,

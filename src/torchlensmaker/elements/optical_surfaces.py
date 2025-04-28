@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal
+from typing import Sequence, Optional, TypeAlias, Literal, cast
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.core.transforms import (
@@ -292,7 +292,7 @@ class RefractiveSurface(nn.Module):
 
     def sequential(self, data: OpticalData) -> OpticalData:
         output, _ = self(data)
-        return output
+        return cast(OpticalData, output)
 
 
 class Aperture(nn.Module):
