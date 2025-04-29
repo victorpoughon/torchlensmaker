@@ -18,8 +18,6 @@ import torch
 import functools
 from collections.abc import Sequence
 
-from torchlensmaker.core.rot2d import rotation_matrix_2D
-from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
 # for shorter type annotations
 Tensor = torch.Tensor

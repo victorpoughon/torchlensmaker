@@ -24,8 +24,6 @@ def check_local_collide(
 ) -> None:
     "Call surface.local_collide() and performs tests on the output"
 
-    dim = P.shape[-1]
-
     # Check that rays are the correct dtype
     assert P.dtype == surface.dtype
     assert V.dtype == surface.dtype
@@ -63,7 +61,6 @@ def check_local_collide(
     )
 
     if isinstance(surface, tlm.ImplicitSurface):
-        N = sum(P.shape[:-1])
         rmse = surface.rmse(local_points)
     else:
         rmse = None

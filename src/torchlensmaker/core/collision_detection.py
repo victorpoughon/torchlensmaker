@@ -17,12 +17,10 @@
 from __future__ import annotations
 
 import torch
-import math
-from functools import partial
 
 from dataclasses import dataclass
 
-from typing import TYPE_CHECKING, Optional, Callable, Any
+from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
     from torchlensmaker.surfaces.implicit_cylinder import ImplicitSurface

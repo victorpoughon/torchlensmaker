@@ -50,7 +50,7 @@ class TensorFrame:
             else:
                 idx = [self.columns.index(n) for n in names]
             return self.data[:, idx]
-        except:
+        except ValueError:
             raise KeyError(f"TensorFrame doesn't have column(s): {names}")
 
     def masked(self, mask: torch.Tensor) -> TensorFrame:

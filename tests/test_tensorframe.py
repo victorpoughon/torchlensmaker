@@ -1,3 +1,4 @@
+import pytest
 import torch
 from torchlensmaker.core.tensorframe import TensorFrame
 
@@ -89,3 +90,19 @@ def test_stack() -> None:
 
     assert torch.all(tf3.data == torch.tensor([[1, 2], [1, 2], [3, 4], [3, 4]]))
     assert tf3.columns == tf1.columns == tf2.columns
+
+
+def test_missing_column() -> None:
+    N = 2
+    tf1 = TensorFrame(
+        torch.column_stack(
+            (
+                torch.full((N,), 1),
+                torch.full((N,), 2),
+            )
+        ),
+        ["a", "b"],
+    )
+
+    with pytest.raises(KeyError):
+        tf1.get("c")

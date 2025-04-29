@@ -18,11 +18,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from typing import Any, Sequence
-
-Tensor = torch.Tensor
-
 from torchlensmaker.core.tensor_manip import to_tensor
+from typing import Any, Sequence, TypeAlias
+
+Tensor: TypeAlias = torch.Tensor
 
 
 class Sampler:

@@ -14,51 +14,130 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+# ruff: noqa: F401
+
+######
 # Core
-from torchlensmaker.core.physics import *
-from torchlensmaker.core.outline import *
-from torchlensmaker.surfaces.sphere_r import *
-from torchlensmaker.core.sag_functions import *
-from torchlensmaker.core.transforms import *
+######
+
+from torchlensmaker.core.physics import reflection, refraction
+from torchlensmaker.core.transforms import (
+    TransformBase,
+    LinearTransform,
+    ComposeTransform,
+    TranslateTransform,
+    IdentityTransform,
+)
 from torchlensmaker.core.intersect import *
 from torchlensmaker.core.full_forward import *
 from torchlensmaker.core.collision_detection import *
 from torchlensmaker.core.parameter import *
 from torchlensmaker.core.geometry import *
+from torchlensmaker.core.sag_functions import (
+    Spherical,
+    Parabolic,
+    Aspheric,
+    XYPolynomial,
+    Conical,
+    SagSum,
+    SagFunction,
+)
+# from torchlensmaker.core.outline import *
 
+##########
 # Surfaces
-from torchlensmaker.surfaces.conics import *
-from torchlensmaker.surfaces.sphere_r import *
-from torchlensmaker.surfaces.implicit_surface import *
-from torchlensmaker.surfaces.local_surface import *
-from torchlensmaker.surfaces.plane import *
-from torchlensmaker.surfaces.implicit_cylinder import *
+##########
 
-# Optics
+from torchlensmaker.surfaces.sphere_r import SphereR
+from torchlensmaker.surfaces.conics import Sphere, Parabola, Conic, Asphere
+from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
+from torchlensmaker.surfaces.local_surface import LocalSurface
+from torchlensmaker.surfaces.plane import Plane, CircularPlane, SquarePlane
+from torchlensmaker.surfaces.implicit_cylinder import ImplicitCylinder
+from torchlensmaker.surfaces.sag_surface import SagSurface
+
+##################
+# Optical elements
+##################
+
 from torchlensmaker.elements.sequential import Sequential
-from torchlensmaker.elements.utils import *
-from torchlensmaker.elements.kinematics import *
-from torchlensmaker.elements.optical_surfaces import *
-from torchlensmaker.elements.light_sources import *
+from torchlensmaker.elements.utils import MixedDim
+from torchlensmaker.elements.kinematics import (
+    SubChain,
+    AbsoluteTransform,
+    RelativeTransform,
+    Gap,
+    Rotate3D,
+    Rotate2D,
+    Translate2D,
+    Translate3D,
+    Rotate,
+    Translate,
+)
+from torchlensmaker.elements.optical_surfaces import (
+    CollisionSurface,
+    ReflectiveSurface,
+    RefractiveSurface,
+    Aperture,
+    FocalPoint,
+    ImagePlane,
+    linear_magnification,
+)
+from torchlensmaker.elements.light_sources import (
+    LightSourceBase,
+    RaySource,
+    PointSourceAtInfinity,
+    PointSource,
+    ObjectAtInfinity,
+    Object,
+    Wavelength,
+)
 
-from torchlensmaker.optical_data import *
-from torchlensmaker.lenses import *
-from torchlensmaker.materials import *
+# Top level stuff - to be reorganized
+from torchlensmaker.optical_data import OpticalData, default_input
+from torchlensmaker.lenses import LensBase, BiLens, Lens, PlanoLens
+from torchlensmaker.materials import (
+    MaterialModel,
+    NonDispersiveMaterial,
+    CauchyMaterial,
+    SellmeierMaterial,
+)
+
+##########
+# Sampling
+##########
+
 from torchlensmaker.sampling import *
 
+##############
 # Optimization
-from torchlensmaker.optimize import *
+##############
 
+import torch.optim as optim
+from torchlensmaker.optimize import (
+    optimize,
+    OptimizationRecord,
+    plot_optimization_record,
+)
+
+########
 # Viewer
+########
+
 import torchlensmaker.viewer.tlmviewer as viewer
 from torchlensmaker.viewer.render_sequence import *
 
-
+##########
 # Analysis
+##########
+
 from torchlensmaker.analysis.plot_magnification import plot_magnification
 from torchlensmaker.analysis.plot_material_model import plot_material_models
 from torchlensmaker.analysis.spot_diagram import spot_diagram
 
+##################
 # Export build123d
+##################
+
 import torchlensmaker.export_build123d as export
 from torchlensmaker.export_build123d import show_part

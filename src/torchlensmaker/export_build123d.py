@@ -21,7 +21,6 @@ from torchlensmaker.lenses import LensBase
 from torchlensmaker.elements.sequential import Sequential
 
 import os
-import torch.nn as nn
 import build123d as bd
 from os.path import join
 

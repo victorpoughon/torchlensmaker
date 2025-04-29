@@ -17,8 +17,6 @@
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
-from typing import Any
-
 
 class Marker(nn.Module):
     "WIP"
