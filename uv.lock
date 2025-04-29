@@ -2373,7 +2373,7 @@ requires-dist = [
     { name = "notebook", specifier = ">=7" },
     { name = "pytest", marker = "extra == 'test'", specifier = "~=8.3.3" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.2" },
-    { name = "torch", specifier = ">=2.4.1,<2.7.0" },
+    { name = "torch", specifier = ">=2.4.1,<2.8.0" },
 ]
 
 [[package]]
