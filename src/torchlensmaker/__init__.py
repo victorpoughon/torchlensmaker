@@ -27,12 +27,18 @@ from torchlensmaker.core.transforms import (
     ComposeTransform,
     TranslateTransform,
     IdentityTransform,
+    forward_kinematic,
 )
-from torchlensmaker.core.intersect import *
-from torchlensmaker.core.full_forward import *
-from torchlensmaker.core.collision_detection import *
-from torchlensmaker.core.parameter import *
-from torchlensmaker.core.geometry import *
+from torchlensmaker.core.intersect import intersect
+from torchlensmaker.core.full_forward import forward_tree, full_forward
+
+from torchlensmaker.core.parameter import parameter
+from torchlensmaker.core.geometry import (
+    unit_vector,
+    rotated_unit_vector,
+    unit2d_rot,
+    unit3d_rot,
+)
 from torchlensmaker.core.sag_functions import (
     Spherical,
     Parabolic,
@@ -42,7 +48,6 @@ from torchlensmaker.core.sag_functions import (
     SagSum,
     SagFunction,
 )
-# from torchlensmaker.core.outline import *
 
 ##########
 # Surfaces
@@ -107,7 +112,14 @@ from torchlensmaker.materials import (
 # Sampling
 ##########
 
-from torchlensmaker.sampling import *
+from torchlensmaker.sampling import (
+    dense,
+    random_uniform,
+    random_normal,
+    exact,
+    init_sampling,
+    Sampler,
+)
 
 ##############
 # Optimization
@@ -125,7 +137,13 @@ from torchlensmaker.optimize import (
 ########
 
 import torchlensmaker.viewer.tlmviewer as viewer
-from torchlensmaker.viewer.render_sequence import *
+from torchlensmaker.viewer.render_sequence import (
+    show,
+    show2d,
+    show3d,
+    export_json,
+    render_sequence,
+)
 
 ##########
 # Analysis
