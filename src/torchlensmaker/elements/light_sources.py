@@ -246,7 +246,7 @@ class Object(LightSourceBase):
         return fullP, fullV, rays_base, rays_object, angles, NX
 
 
-def cartesian_wavelength(inputs, ray_var):
+def cartesian_wavelength(inputs: OpticalData, ray_var: Tensor) -> OpticalData:
     "Add wavelength var by doing cartesian product with existing vars"
 
     N = inputs.P.shape[0]
@@ -279,7 +279,7 @@ def cartesian_wavelength(inputs, ray_var):
 class Wavelength(nn.Module):
     def __init__(self, lower: float | int, upper: float | int):
         super().__init__()
-        self.lower, self.upper = lower, upper
+        self.lower, self.upper = to_tensor(lower), to_tensor(upper)
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         if inputs.rays_wavelength is not None:

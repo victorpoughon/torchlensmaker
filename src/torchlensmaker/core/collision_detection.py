@@ -23,7 +23,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional, Any
 
 if TYPE_CHECKING:
-    from torchlensmaker.surfaces.implicit_cylinder import ImplicitSurface
+    from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
     from torchlensmaker.surfaces.local_surface import LocalSurface
 
 Tensor = torch.Tensor
@@ -56,7 +56,7 @@ class CollisionAlgorithm:
         P: Tensor,
         V: Tensor,
         t: Tensor,
-        max_delta: float,
+        max_delta: Tensor,
     ) -> Tensor:
         raise NotImplementedError
 
@@ -74,7 +74,7 @@ class Newton(CollisionAlgorithm):
         P: Tensor,
         V: Tensor,
         t: Tensor,
-        max_delta: float,
+        max_delta: Tensor,
     ) -> Tensor:
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
@@ -101,7 +101,7 @@ class GD(CollisionAlgorithm):
         P: Tensor,
         V: Tensor,
         t: Tensor,
-        max_delta: float,
+        max_delta: Tensor,
     ) -> Tensor:
         F, F_grad = surface_f(surface, P, V, t)
         dot = torch.sum(F_grad * V, dim=-1)
@@ -123,7 +123,7 @@ class LM(CollisionAlgorithm):
         P: Tensor,
         V: Tensor,
         t: Tensor,
-        max_delta: float,
+        max_delta: Tensor,
     ) -> Tensor:
         "Levenberg-Marquardt"
 

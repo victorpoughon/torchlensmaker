@@ -89,7 +89,7 @@ class ImplicitCylinder(ImplicitSurface):
             return sccx_unbatched(x, y, z, self.xmin, self.xmax, self.tau)
 
         # Add batch dimensions
-        G = torch.func.grad(bind, (0, 1, 2))
+        G = torch.func.grad(bind, (0, 1, 2)) # type: ignore
         for i in range(points.dim() - 1):
             G = torch.vmap(G)
 

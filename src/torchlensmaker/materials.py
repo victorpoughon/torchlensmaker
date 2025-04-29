@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
+from torchlensmaker.core.tensor_manip import to_tensor
 from copy import copy
 
 Tensor = torch.Tensor
@@ -35,15 +36,19 @@ class MaterialModel:
 
 
 class NonDispersiveMaterial(MaterialModel):
-    def __init__(self, n: float, name: str = default_material_model_name):
+    def __init__(self, n: float | Tensor, name: str = default_material_model_name):
         super().__init__(name)
-        self.n = n
 
-    def is_dispersive(self):
+        if isinstance(n, Tensor):
+            assert n.dim() == 0
+
+        self.n = to_tensor(n)
+
+    def is_dispersive(self) -> bool:
         return False
 
     def refractive_index(self, W: Tensor) -> Tensor:
-        return torch.full_like(W, self.n)
+        return self.n.expand_as(W)
 
     def __str__(self) -> str:
         return f"{type(self).__name__}(name={repr(self.name)}, n={self.n})"
@@ -64,17 +69,18 @@ class CauchyMaterial(MaterialModel):
         self.C = C
         self.D = D
 
-    def is_dispersive(self):
+    def is_dispersive(self) -> bool:
         return True
 
     def refractive_index(self, W: Tensor) -> Tensor:
         Wmicro = W / 1000
-        return (
+        index: Tensor = (
             torch.full_like(Wmicro, self.A)
             + self.B / torch.pow(Wmicro, 2)
             + self.C / torch.pow(Wmicro, 4)
             + self.D / torch.pow(Wmicro, 6)
         )
+        return index
 
     def __str__(self) -> str:
         return f"{type(self).__name__}(name={repr(self.name)}, A={self.A}, B={self.B}, C={self.C}, D={self.D})"
@@ -95,10 +101,10 @@ class SellmeierMaterial(MaterialModel):
         self.B1, self.B2, self.B3 = B1, B2, B3
         self.C1, self.C2, self.C3 = C1, C2, C3
 
-    def is_dispersive(self):
+    def is_dispersive(self) -> bool:
         return True
 
-    def refractive_index(self, W) -> Tensor:
+    def refractive_index(self, W: Tensor) -> Tensor:
         # wavelength in micrometers
         Wm = W / 1000
         W2 = torch.pow(Wm, 2)
@@ -121,7 +127,7 @@ class SellmeierMaterial(MaterialModel):
 # These are "default" materials in the sense that they are the models
 # that will be picked when using a string material argument, as in: material="water"
 # any material argument can also be a MaterialModel object directly for more advanced usage
-default_material_models = [
+default_material_models: list[MaterialModel] = [
     NonDispersiveMaterial(1.0, name="vacuum"),
     NonDispersiveMaterial(1.00027, name="air"),
     # Bashkatov, Alexey & Genina, Elina. (2003).
