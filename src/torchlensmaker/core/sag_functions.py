@@ -173,7 +173,7 @@ class Spherical(SagFunction):
         denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
         return safe_div(y * C, denom), safe_div(z * C, denom)
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "sag-type": "spherical",
             "C": self.C.item(),
@@ -217,7 +217,7 @@ class Parabolic(SagFunction):
         A = self.unnorm(tau)
         return 2 * A * y, 2 * A * z
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "sag-type": "parabolic",
             "A": self.A.item(),
@@ -285,7 +285,7 @@ class Conical(SagFunction):
 
         return (C * y) / denom, (C * z) / denom
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "sag-type": "conical",
             "K": self.K.item(),
@@ -384,7 +384,7 @@ class Aspheric(SagFunction):
 
         return y * coeffs_term, z * coeffs_term
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "sag-type": "aspheric",
             "coefficients": self.coefficients.tolist(),

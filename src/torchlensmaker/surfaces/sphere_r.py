@@ -273,7 +273,7 @@ class SphereR(LocalSurface):
 
         return init_t + t, local_normals, valid
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sphere-r",
             "diameter": self.diameter,

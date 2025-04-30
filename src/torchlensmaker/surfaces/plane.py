@@ -85,7 +85,7 @@ class Plane(LocalSurface):
             self.outline.contains(points, tol), torch.abs(points.select(-1, 0)) < tol
         )
 
-    def to_dict(self, _dim: int) -> dict[str, Any]:
+    def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-plane",
             "radius": self.outline.max_radius(),
