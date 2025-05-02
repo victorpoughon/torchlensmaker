@@ -437,6 +437,7 @@ default_artists: Dict[type, Artist] = {
 }
 
 
+# TODO rename
 def render_sequence(
     optics: nn.Module,
     dim: int,
