@@ -53,6 +53,13 @@ class OptimizationRecord:
     def plot(self) -> None:
         plot_optimization_record(self)
 
+    def best(self) -> None:
+        best_loss, idx = self.loss.min(dim=0)
+        print(f"Best loss {best_loss.item()} at iteration {idx + 1} / {self.num_iter}")
+        for n, p in self.parameters.items():
+            print("   ", n, p[idx])
+        print()
+
 
 def optimize(
     optics: nn.Module,
@@ -125,7 +132,6 @@ def plot_optimization_record(record: OptimizationRecord) -> None:
     optics = record.optics
     parameters = record.parameters
     loss = record.loss
-
 
     # Plot parameters and loss
     fig, (ax1, ax2) = plt.subplots(2, 1)
