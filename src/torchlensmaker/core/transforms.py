@@ -50,7 +50,7 @@ class TransformBase:
 
     def __repr__(self) -> str:
         return (
-            f"[{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}]"
+            f"<{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}>"
         )
 
     def direct_points(self, points: Tensor) -> Tensor:
