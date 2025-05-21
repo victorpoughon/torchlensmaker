@@ -44,6 +44,7 @@ from torchlensmaker.core.sag_functions import (
     Parabolic,
     Aspheric,
     XYPolynomial,
+    XYPolynomialN,
     Conical,
     SagSum,
     SagFunction,

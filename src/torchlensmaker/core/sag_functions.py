@@ -532,3 +532,99 @@ class XYPolynomial(SagFunction):
             "coefficients": self.coefficients.tolist(),
             **({"normalize": self.normalize} if self.normalize else {}),
         }
+
+
+class XYPolynomialN(SagFunction):
+    r"""
+    XY Polynomial freeform model, with normalized coefficients.
+    This is somewhat experimental. I'd like to maybe refactor all sag functions to have
+    a normalized version instead of a normalize argument.
+    """
+
+    def __init__(self, coefficients: Tensor):
+        super().__init__(symmetric=False)
+        assert coefficients.dim() == 2
+        self.coefficients = coefficients
+        # indexing
+        self.p = torch.arange(self.coefficients.shape[0])
+        self.q = torch.arange(self.coefficients.shape[1])
+
+    def parameters(self) -> dict[str, nn.Parameter]:
+        return (
+            {"coefficients": self.coefficients}
+            if isinstance(self.coefficients, nn.Parameter)
+            else {}
+        )
+
+    def unnorm(self, tau: Tensor) -> Tensor:
+        taup = torch.pow(tau, self.p)
+        tauq = torch.pow(tau, self.q)
+        denom = torch.outer(taup, tauq)
+        return self.coefficients * tau / denom
+    
+    def bounds(self, tau: Tensor) -> Tensor:
+        alphas = self.unnorm(tau)
+        P, Q = self.coefficients.shape
+        p = self.p.unsqueeze(1).tile((1, Q))
+        q = self.q.unsqueeze(0).tile((P, 1))
+
+        yp = intari.monomial(p, tau)
+        zq = intari.monomial(q, tau)
+        prod = intari.product(yp, zq)
+        mat = intari.scalar(alphas, prod)
+
+        return mat.sum(dim=0).sum(dim=0)
+
+    def G(self, y: Tensor, z: Tensor, tau: Tensor) -> Tensor:
+
+        Y = y/tau
+        Z = z/tau
+
+        C = bbroad(self.coefficients, y.dim())
+        p, q = bbroad(self.p, y.dim()), bbroad(self.q, y.dim())
+
+        yp = torch.pow(Y, p).unsqueeze(1)
+        zq = torch.pow(Z, q).unsqueeze(0)
+        xy = yp * zq
+
+        return torch.sum(torch.sum(C * xy, dim=0), dim=0)
+
+    def G_grad(self, y: Tensor, z: Tensor, tau: Tensor) -> tuple[Tensor, Tensor]:
+        Y = y/tau
+        Z = z/tau
+
+        C = bbroad(self.coefficients, y.dim())
+
+        # We need four different indexing tensors:
+        # 0 to p, 1 to p, 0 to q, 1 to q
+        # and each need to be broadcastable with y and z
+        p = bbroad(torch.arange(self.coefficients.shape[0]), y.dim())
+        q = bbroad(torch.arange(self.coefficients.shape[1]), y.dim())
+        pd = bbroad(torch.arange(1, self.coefficients.shape[0]), y.dim())
+        qd = bbroad(torch.arange(1, self.coefficients.shape[1]), y.dim())
+
+        # We also need "reduced" views of C that don't contain
+        # the first index droped by differentiation
+        Cpd = C[1:]
+        Cqd = C[:, 1:]
+
+        yp = torch.pow(Y, p).unsqueeze(1)
+        zq = torch.pow(Z, q).unsqueeze(0)
+
+        ypd = torch.pow(Y, pd - 1).unsqueeze(1)
+        innery = pd.unsqueeze(1) * Cpd * ypd * zq
+
+        zqd = torch.pow(Z, qd - 1).unsqueeze(0)
+        innerz = qd.unsqueeze(0) * Cqd * yp * zqd
+
+        return innery.sum(dim=0).sum(dim=0), innerz.sum(dim=0).sum(dim=0)
+
+    def to_dict(self, dim: int) -> dict[str, Any]:
+        assert dim == 3, (
+            "XYPolynomial is a freeform model, it can only be sampled in 3D"
+        )
+        return {
+            "sag-type": "xypolynomial",
+            "coefficients": self.coefficients.tolist(),
+            "normalize": True
+        }
