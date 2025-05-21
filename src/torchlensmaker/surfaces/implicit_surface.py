@@ -62,17 +62,16 @@ class ImplicitSurface(LocalSurface):
         N, dim = P.shape
         dtype = P.dtype
 
-        with torch.no_grad():
-            # Get bounding cylinder and compute ray-cylinder intersection
-            xmin, xmax, tau = self.bcyl().unbind()
-            if dim == 3:
-                t1, t2, hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
-            else:
-                t1, t2, hit_mask = rays_rectangle_collision(P, V, xmin, xmax, -tau, tau)
+        # Get bounding cylinder and compute ray-cylinder intersection
+        xmin, xmax, tau = self.bcyl().unbind()
+        if dim == 3:
+            t1, t2, hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
+        else:
+            t1, t2, hit_mask = rays_rectangle_collision(P, V, xmin, xmax, -tau, tau)
 
-            # Split rays into definitly not colliding, and possibly colliding ("maybe")
-            P_maybe, V_maybe = P[hit_mask], V[hit_mask]
-            tmin, tmax = t1[hit_mask], t2[hit_mask]
+        # Split rays into definitly not colliding, and possibly colliding ("maybe")
+        P_maybe, V_maybe = P[hit_mask], V[hit_mask]
+        tmin, tmax = t1[hit_mask], t2[hit_mask]
 
         # Run iterative collision method on possibly colliding rays
         # TODO if no "maybe rays", skip this call, because tmin tmax are empty when N=0
