@@ -61,6 +61,24 @@ class AbsoluteTransform(nn.Module):
         return inputs.replace(transforms=new_chain)
 
 
+class AbsolutePosition(nn.Module):
+    def __init__(
+        self,
+        x: int | float | Tensor = 0.0,
+        y: int | float | Tensor = 0.0,
+        z: int | float | Tensor = 0.0,
+    ):
+        super().__init__()
+        self.x, self.y, self.z = to_tensor(x), to_tensor(y), to_tensor(z)
+
+    def forward(self, chain: KinematicChain) -> KinematicChain:
+        return [TranslateTransform(torch.stack((self.x, self.y, self.z), dim=-1))]
+
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        new_chain = self(inputs.transforms)
+        return inputs.replace(transforms=new_chain)
+
+
 class RelativeTransform(nn.Module):
     def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         "Transform that gets appended to the kinematic chain by this element"

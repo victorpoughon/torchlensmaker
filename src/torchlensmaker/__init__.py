@@ -70,6 +70,7 @@ from torchlensmaker.elements.utils import MixedDim
 from torchlensmaker.elements.kinematics import (
     SubChain,
     AbsoluteTransform,
+    AbsolutePosition,
     RelativeTransform,
     Gap,
     Rotate3D,
