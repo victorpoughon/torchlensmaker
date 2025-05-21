@@ -100,20 +100,18 @@ class Gap(RelativeTransform):
 class Rotate3D(RelativeTransform):
     "3D rotation (in degrees)"
 
-    def __init__(self, angles: tuple[float | int, float | int] | Tensor):
+    def __init__(self, y: int | float | Tensor = 0.0, z: int | float | Tensor = 0.0):
         super().__init__()
-
-        if not isinstance(angles, torch.Tensor):
-            angles = torch.as_tensor(angles, dtype=torch.float64)
-
-        self.angles = angles
+        self.y = to_tensor(y)
+        self.z = to_tensor(z)
 
     def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         assert dim == 3
-        radangles = torch.deg2rad(self.angles)
+
+        radangles = torch.deg2rad(torch.stack((self.y, self.z)))
         M = euler_angles_to_matrix(
             torch.stack((torch.tensor(0, dtype=dtype), radangles[0], radangles[1])),
-            "XZY",
+            "XYZ",
         ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
         return LinearTransform(M, M.T)
 
@@ -165,7 +163,7 @@ class Rotate(MixedDim):
     """
 
     def __init__(self, angles: tuple[float | int, float | int] | Tensor):
-        super().__init__(dim2=Rotate2D(angles[0]), dim3=Rotate3D(angles))
+        super().__init__(dim2=Rotate2D(angles[0]), dim3=Rotate3D(angles[0], angles[1]))
 
 
 class Translate(MixedDim):
