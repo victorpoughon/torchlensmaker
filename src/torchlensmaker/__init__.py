@@ -145,6 +145,7 @@ from torchlensmaker.viewer.render_sequence import (
     show3d,
     export_json,
     render_sequence,
+    ForwardArtist,
 )
 
 ##########
