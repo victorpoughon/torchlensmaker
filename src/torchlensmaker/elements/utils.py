@@ -17,8 +17,6 @@
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
-from typing import cast
-
 
 class Marker(nn.Module):
     "WIP"
@@ -29,18 +27,3 @@ class Marker(nn.Module):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         return inputs
-
-
-class MixedDim(nn.Module):
-    "2D or 3D branch for sequential mode"
-
-    def __init__(self, dim2: nn.Module, dim3: nn.Module):
-        super().__init__()
-        self._dim2 = dim2
-        self._dim3 = dim3
-
-    def sequential(self, data: OpticalData) -> OpticalData:
-        if data.dim == 2:
-            return cast(OpticalData, self._dim2.sequential(data))
-        else:
-            return cast(OpticalData, self._dim3.sequential(data))

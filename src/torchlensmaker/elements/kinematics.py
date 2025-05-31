@@ -25,30 +25,23 @@ from torchlensmaker.core.transforms import (
     LinearTransform,
 )
 from torchlensmaker.elements.sequential import Sequential
-from torchlensmaker.elements.utils import MixedDim
 from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
-from typing import TypeAlias, Sequence
+from typing import TypeAlias, Sequence, cast
 
 Tensor: TypeAlias = torch.Tensor
 KinematicChain: TypeAlias = Sequence[TransformBase]
 
 
-class SubChain(nn.Module):
-    def __init__(self, *children: nn.Module):
-        super().__init__()
-        self._sequential = Sequential(*children)
+class KinematicElement(nn.Module):
+    """Base class for kinematic elements
+    """
 
     def forward(self, chain: KinematicChain) -> KinematicChain:
-        return chain
-
-    def sequential(self, inputs: OpticalData) -> OpticalData:
-        output: OpticalData = self._sequential(inputs)
-        new_chain = self(inputs.transforms)
-        return output.replace(transforms=new_chain)
+        raise NotImplementedError
 
 
-class AbsoluteTransform(nn.Module):
+class AbsoluteTransform(KinematicElement):
     def __init__(self, tf: TransformBase):
         super().__init__()
         self.tf = tf
@@ -56,12 +49,8 @@ class AbsoluteTransform(nn.Module):
     def forward(self, chain: KinematicChain) -> KinematicChain:
         return [self.tf]
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
-        new_chain = self(inputs.transforms)
-        return inputs.replace(transforms=new_chain)
 
-
-class AbsolutePosition(nn.Module):
+class AbsolutePosition(KinematicElement):
     def __init__(
         self,
         x: int | float | Tensor = 0.0,
@@ -74,12 +63,8 @@ class AbsolutePosition(nn.Module):
     def forward(self, chain: KinematicChain) -> KinematicChain:
         return [TranslateTransform(torch.stack((self.x, self.y, self.z), dim=-1))]
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
-        new_chain = self(inputs.transforms)
-        return inputs.replace(transforms=new_chain)
 
-
-class RelativeTransform(nn.Module):
+class RelativeTransform(KinematicElement):
     def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         "Transform that gets appended to the kinematic chain by this element"
         raise NotImplementedError
@@ -88,10 +73,6 @@ class RelativeTransform(nn.Module):
         assert len(chain) > 0
         # There is some mypy BS here about Sequence and covariant typing
         return chain + [self.tf(chain[0].dim, chain[0].dtype)]  # type: ignore[operator,no-any-return]
-
-    def sequential(self, inputs: OpticalData) -> OpticalData:
-        new_chain = self(inputs.transforms)
-        return inputs.replace(transforms=new_chain)
 
 
 class Gap(RelativeTransform):
@@ -172,6 +153,21 @@ class Translate2D(RelativeTransform):
 
     def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         return TranslateTransform(torch.stack((self._x, self._r), dim=-1))
+
+
+class MixedDim(KinematicElement):
+    "2D or 3D branch for a kinematic element"
+
+    def __init__(self, dim2: KinematicChain, dim3: KinematicChain):
+        super().__init__()
+        self._dim2 = dim2
+        self._dim3 = dim3
+
+    def forward(self, chain: KinematicChain) -> KinematicChain:
+        if chain[0].dim == 2:
+            return cast(KinematicChain, self._dim2(chain))
+        else:
+            return cast(KinematicChain, self._dim3(chain))
 
 
 class Rotate(MixedDim):

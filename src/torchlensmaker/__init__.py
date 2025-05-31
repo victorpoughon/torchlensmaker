@@ -67,8 +67,10 @@ from torchlensmaker.surfaces.sag_surface import SagSurface
 ##################
 
 from torchlensmaker.elements.sequential import Sequential
-from torchlensmaker.elements.utils import MixedDim
 from torchlensmaker.elements.kinematics import (
+    KinematicElement,
+    KinematicChain,
+    MixedDim,
     SubChain,
     AbsoluteTransform,
     AbsolutePosition,

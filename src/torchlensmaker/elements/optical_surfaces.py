@@ -40,6 +40,7 @@ from torchlensmaker.core.physics import (
 from torchlensmaker.core.intersect import intersect
 
 from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential import SequentialElement
 
 Tensor = torch.Tensor
 
@@ -197,7 +198,8 @@ TIRMode: TypeAlias = Literal["absorb", "reflect"]
 
 
 # TODO add miss mode support
-class RefractiveSurface(nn.Module):
+# TODO support float material= as a shortcut for non-dispersive materials
+class RefractiveSurfaceNS(nn.Module):
     def __init__(
         self,
         surface: LocalSurface,
@@ -290,8 +292,15 @@ class RefractiveSurface(nn.Module):
             transforms=new_chain,
         ), valid_refraction
 
-    def sequential(self, data: OpticalData) -> OpticalData:
-        output, _ = self(data)
+
+class RefractiveSurface(SequentialElement):
+    "Sequential wrapper for RefractiveSurfaceNS"
+    def __init__(self, *args, **kwargs):
+        super().__init_()
+        self._element = RefractiveSurfaceNS(*args, **kwargs)
+
+    def forward(self, data: OpticalData) -> OpticalData:
+        output, _ = self._element(data)
         return cast(OpticalData, output)
 
 
