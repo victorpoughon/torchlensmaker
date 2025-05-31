@@ -14,16 +14,41 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch.nn as nn
+import torch
+
+
+from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 
 
-class Marker(nn.Module):
-    "WIP"
+Tensor = torch.Tensor
 
-    def __init__(self, text: str):
+
+class FocalPoint(SequentialElement):
+    def __init__(self) -> None:
         super().__init__()
-        self.text = text
 
     def forward(self, inputs: OpticalData) -> OpticalData:
-        return inputs
+        dim = inputs.dim
+        N = inputs.P.shape[0]
+
+        X = inputs.target()
+        P = inputs.P
+        V = inputs.V
+
+        # Compute ray-point squared distance distance
+
+        # If 2D, pad to 3D with zeros
+        if dim == 2:
+            X = torch.cat((X, torch.zeros(1)), dim=0)
+            P = torch.cat((P, torch.zeros((N, 1))), dim=1)
+            V = torch.cat((V, torch.zeros((N, 1))), dim=1)
+
+        cross = torch.cross(X - P, V, dim=1)
+        norm = torch.norm(V, dim=1)
+
+        distance = torch.norm(cross, dim=1) / norm
+
+        loss = distance.sum() / N
+
+        return inputs.replace(loss=inputs.loss + loss)

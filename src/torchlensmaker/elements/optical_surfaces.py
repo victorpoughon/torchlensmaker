@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, cast
+from typing import Sequence, Optional, TypeAlias, Literal
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.core.transforms import (
@@ -40,6 +40,7 @@ from torchlensmaker.core.physics import (
 from torchlensmaker.core.intersect import intersect
 
 from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential import SequentialElement
 
 Tensor = torch.Tensor
 
@@ -138,7 +139,7 @@ AnchorType: TypeAlias = Literal["origin", "extent"]
 MissMode: TypeAlias = Literal["absorb", "pass", "error"]
 
 
-class ReflectiveSurface(nn.Module):
+class ReflectiveSurface(SequentialElement):
     def __init__(
         self,
         surface: LocalSurface,
@@ -197,7 +198,8 @@ TIRMode: TypeAlias = Literal["absorb", "reflect"]
 
 
 # TODO add miss mode support
-class RefractiveSurface(nn.Module):
+# TODO support float material= as a shortcut for non-dispersive materials
+class RefractiveSurface(SequentialElement):
     def __init__(
         self,
         surface: LocalSurface,
@@ -292,10 +294,10 @@ class RefractiveSurface(nn.Module):
 
     def sequential(self, data: OpticalData) -> OpticalData:
         output, _ = self(data)
-        return cast(OpticalData, output)
+        return output
 
 
-class Aperture(nn.Module):
+class Aperture(SequentialElement):
     def __init__(self, diameter: float):
         super().__init__()
         surface = CircularPlane(diameter, dtype=torch.float64)  ## TODO dtype
@@ -319,36 +321,6 @@ class Aperture(nn.Module):
         )
 
 
-class FocalPoint(nn.Module):
-    def __init__(self) -> None:
-        super().__init__()
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim = inputs.dim
-        N = inputs.P.shape[0]
-
-        X = inputs.target()
-        P = inputs.P
-        V = inputs.V
-
-        # Compute ray-point squared distance distance
-
-        # If 2D, pad to 3D with zeros
-        if dim == 2:
-            X = torch.cat((X, torch.zeros(1)), dim=0)
-            P = torch.cat((P, torch.zeros((N, 1))), dim=1)
-            V = torch.cat((V, torch.zeros((N, 1))), dim=1)
-
-        cross = torch.cross(X - P, V, dim=1)
-        norm = torch.norm(V, dim=1)
-
-        distance = torch.norm(cross, dim=1) / norm
-
-        loss = distance.sum() / N
-
-        return inputs.replace(loss=inputs.loss + loss)
-
-
 def linear_magnification(
     object_coordinates: Tensor, image_coordinates: Tensor
 ) -> tuple[Tensor, Tensor]:
@@ -361,7 +333,7 @@ def linear_magnification(
     return mag, residuals
 
 
-class ImagePlane(nn.Module):
+class ImagePlane(SequentialElement):
     """
     Linear magnification circular image plane
 

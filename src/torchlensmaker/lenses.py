@@ -19,6 +19,7 @@ import torch.nn as nn
 import torchlensmaker as tlm
 
 from torchlensmaker.materials import MaterialModel, get_material_model
+from torchlensmaker.elements.sequential import SequentialElement
 
 from typing import Any, Optional, Literal
 
@@ -101,7 +102,7 @@ class LensMaterialsMixin:
         super().__init__(**kwargs)
 
 
-class LensBase(LensMaterialsMixin, nn.Module):
+class LensBase(LensMaterialsMixin, SequentialElement):
     "A base class to share common lens functions"
 
     def __init__(self, **kwargs: Any) -> None:
