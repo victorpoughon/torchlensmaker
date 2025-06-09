@@ -23,7 +23,7 @@ dependencies = [
 test = [
     "nbstripout-fast",
     "nbmake~=1.5.4",
-    "pytest~=8.3.3",
+    "pytest>=8.3.3,<8.5.0",
     "nbstripout",
 ]
 dev = [
