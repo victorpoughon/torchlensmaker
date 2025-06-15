@@ -23,6 +23,7 @@ from torchlensmaker.core.tensor_manip import (
     to_tensor,
 )
 from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential import SequentialElement
 
 from torchlensmaker.core.transforms import forward_kinematic
 from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector
@@ -39,7 +40,7 @@ from typing import Any, Optional
 Tensor = torch.Tensor
 
 
-class LightSourceBase(nn.Module):
+class LightSourceBase(SequentialElement):
     def __init__(self, material: str | MaterialModel = "air"):
         super().__init__()
         self.material = get_material_model(material)
@@ -276,7 +277,7 @@ def cartesian_wavelength(inputs: OpticalData, ray_var: Tensor) -> OpticalData:
     )
 
 
-class Wavelength(nn.Module):
+class Wavelength(SequentialElement):
     def __init__(self, lower: float | int, upper: float | int):
         super().__init__()
         self.lower, self.upper = to_tensor(lower), to_tensor(upper)

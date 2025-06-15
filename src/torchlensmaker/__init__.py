@@ -66,12 +66,11 @@ from torchlensmaker.surfaces.sag_surface import SagSurface
 # Optical elements
 ##################
 
-from torchlensmaker.elements.sequential import Sequential
+from torchlensmaker.elements.sequential import Sequential, SubChain, SequentialElement
 from torchlensmaker.elements.kinematics import (
     KinematicElement,
     KinematicChain,
     MixedDim,
-    SubChain,
     AbsoluteTransform,
     AbsolutePosition,
     RelativeTransform,
@@ -88,7 +87,6 @@ from torchlensmaker.elements.optical_surfaces import (
     ReflectiveSurface,
     RefractiveSurface,
     Aperture,
-    FocalPoint,
     ImagePlane,
     linear_magnification,
 )
@@ -101,6 +99,7 @@ from torchlensmaker.elements.light_sources import (
     Object,
     Wavelength,
 )
+from torchlensmaker.elements.focal_point import FocalPoint
 
 # Top level stuff - to be reorganized
 from torchlensmaker.optical_data import OpticalData, default_input

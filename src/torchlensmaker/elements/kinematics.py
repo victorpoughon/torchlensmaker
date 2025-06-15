@@ -24,7 +24,6 @@ from torchlensmaker.core.transforms import (
     TranslateTransform,
     LinearTransform,
 )
-from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 from typing import TypeAlias, Sequence, cast
@@ -39,6 +38,9 @@ class KinematicElement(nn.Module):
 
     def forward(self, chain: KinematicChain) -> KinematicChain:
         raise NotImplementedError
+
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return data.replace(transforms=self(data.transforms))
 
 
 class AbsoluteTransform(KinematicElement):

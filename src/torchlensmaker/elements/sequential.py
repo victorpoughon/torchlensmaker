@@ -17,28 +17,19 @@
 import torch.nn as nn
 
 from torchlensmaker.optical_data import OpticalData
-from torchlensmaker.elements.kinematics import KinematicElement
-
-from typing import overload
-from collections import OrderedDict
 
 
 class SequentialElement(nn.Module):
     """Base class for sequential elements"""
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        raise NotImplementedError
+    def sequential(self, data: OpticalData) -> OpticalData:
+        # default implementation just calls forward, can be overwritten
+        return self(data)
 
-
-class SequentialKinematicElement(SequentialElement):
-    "Wraps a KinematicElement into a SequentialElement"
-
-    def __init__(self, element: KinematicElement):
-        super().__init__()
-        self._element = element
-
-    def forward(self, data: OpticalData) -> OpticalData:
-        return data.replace(transforms=self(data.transforms))
+    def reverse(self) -> "SequentialElement":
+        raise NotImplementedError(
+            f"reverse() method not implemented for type {type(self).__name__}"
+        )
 
 
 class SubChain(SequentialElement):
@@ -52,34 +43,8 @@ class SubChain(SequentialElement):
         return output.replace(transforms=new_chain)
 
 
-def sequential_wrap(element: nn.Module | None) -> SequentialElement:
-    "Wrap element to make it sequential"
-    if isinstance(SequentialElement, element):
-        return element
-    
-    if isinstance(element, KinematicElement):
-        return SequentialKinematicElement(element)
-    else:
-        raise RuntimeError(f"Cannot use {element} in a Sequential model")
-
-
-class Sequential(SequentialElement):
-    @overload
-    def __init__(self, *args: nn.Module) -> None:
-        ...
-
-    @overload
-    def __init__(self, arg: 'OrderedDict[str, nn.Module]') -> None:
-        ...
-
-    def __init__(self, *args):
-        super().__init__()
-    
-        if len(args) == 1 and isinstance(args[0], OrderedDict):
-            for key, module in args[0].items():
-                wrapped = sequential_wrap(module)
-                self.add_module(key, wrapped)
-        else:
-            for idx, module in enumerate(args):
-                wrapped = sequential_wrap(module)
-                self.add_module(str(idx), wrapped)
+class Sequential(nn.Sequential, SequentialElement):
+    def forward(self, data: OpticalData) -> OpticalData:
+        for module in self:
+            data = module.sequential(data)
+        return data
