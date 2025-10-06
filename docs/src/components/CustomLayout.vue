@@ -1,7 +1,8 @@
 <script setup>
-import DefaultTheme from 'vitepress/theme'
+import DefaultTheme from "vitepress/theme";
+import { withBase } from "vitepress";
 
-const { Layout } = DefaultTheme
+const { Layout } = DefaultTheme;
 </script>
 
 <style scoped>
@@ -27,10 +28,12 @@ a {
   <Layout>
     <template #aside-top>
       <p>
-        Hello! I'm <a class="vp-link" href="https://victorpoughon.fr/">Victor</a>, the author of this project.<br>I'm <a
-          href="/about/#funding">looking for funding</a>
-        to be able to keep working on&nbsp;it. If you can, please consider donating or
-        sponsoring.<br>Thank&nbsp;you!&nbsp;❤️
+        Hello! I'm
+        <a class="vp-link" href="https://victorpoughon.fr/">Victor</a>, the
+        author of this project.<br />I'm
+        <a :href="withBase('/about/#funding')">looking for funding</a> to be
+        able to keep working on&nbsp;it. If you can, please consider donating or
+        sponsoring.<br />Thank&nbsp;you!&nbsp;❤️
       </p>
     </template>
   </Layout>
