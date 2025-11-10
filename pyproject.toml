@@ -13,7 +13,7 @@ classifiers = [
 ]
 dependencies = [
   "torch>=2.4.1,<2.8.0",
-  "build123d ~= 0.9.1",
+  "build123d >= 0.9.1,< 0.11.0",
   "matplotlib>=3.9.2,<3.11.0",
   "colorcet >= 3",
   "notebook >= 7",
