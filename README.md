@@ -71,14 +71,17 @@ powerful way to design mechanical 3D systems and this project is an exploration
 of that, but for optical systems.
 
 > [!WARNING]
-> This project is in its very early stages, I've got a [very long
-> roadmap](https://victorpoughon.github.io/torchlensmaker/roadmap) planned and
-> I'm [looking for
-> funding](https://victorpoughon.github.io/torchlensmaker/about#funding) to be
-> able to keep working on it full time! If you can, please consider donating,
-> sponsoring or even hiring me! 😊💚
-> 
-> Also, the API **will** change without warning. A stable release is still very far in the future.
+> This project is in its very early stages, the API **will** change without
+> warning. A stable release is still very far in the future.
+
+## Funding
+
+This project is funded through [NGI0 Commons Fund](https://nlnet.nl/commonsfund), a fund established by [NLnet](https://nlnet.nl) with financial support from the European Commission's [Next Generation Internet](https://ngi.eu) program. Learn more at the [NLnet project page](https://nlnet.nl/project/Torch-LensMaker).
+
+[<img src="https://nlnet.nl/logo/banner.png" alt="NLnet foundation logo" width="20%" />](https://nlnet.nl)
+[<img src="https://nlnet.nl/image/logos/NGI0_tag.svg" alt="NGI Zero Logo" width="20%" />](https://nlnet.nl/commonsfund)
+
+Also please consider [sponsoring me on GitHub](https://github.com/sponsors/victorpoughon) or [Buying me a Coffee](https://buymeacoffee.com/victorpoughon) to support the future of open-source optical modeling. Thank you! 💚
 
 ## Features
 
