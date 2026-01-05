@@ -2,11 +2,11 @@
 
 Torch Lens Maker is designed to support many surfaces. Currently supported are:
 
-* [CircularPlane](/modeling/surfaces#circularplane): A circular planar surface (aka a disk)
-* [Sphere](/modeling/surfaces#sphere): with curvature parameterization
-* [SphereR](/modeling/surfaces#spherer): Sphere with radius parameterization
-* [Parabola](/modeling/surfaces#parabola): A parabola on the X axis $x = a r^2$
-* [Asphere](/modeling/surfaces#asphere): The [asphere model](https://en.wikipedia.org/wiki/Aspheric_lens) often used in optics
+* [CircularPlane](/doc/modeling/surfaces#circularplane): A circular planar surface (aka a disk)
+* [Sphere](/doc/modeling/surfaces#sphere): with curvature parameterization
+* [SphereR](/doc/modeling/surfaces#spherer): Sphere with radius parameterization
+* [Parabola](/doc/modeling/surfaces#parabola): A parabola on the X axis $x = a r^2$
+* [Asphere](/doc/modeling/surfaces#asphere): The [asphere model](https://en.wikipedia.org/wiki/Aspheric_lens) often used in optics
 
 ::: warning Work in progress
 More surface types coming soon, hopefully 😁 I also want to document how to add custom surfaces easily, as a lot of work as gone into that while designing the library. Basically any sag function $x = g(r)$ can be added, or even any implicit surface described by $F(x,y,z) = 0$, not necessarily axially symmetric.

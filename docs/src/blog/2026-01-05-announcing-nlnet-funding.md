@@ -1,5 +1,4 @@
 ---
-
 title: Torch Lens Maker receives NLnet grant
 description: Torch Lens Maker has received a grant from the NLnet foundation.
 date: 2026-01-05
@@ -47,3 +46,7 @@ During this time, development effort with be focused on the following areas:
 
 As part of this new grant I'm also creating this development blog. This will
 help communication about the project, new releases, and other ideas!
+
+You can [subscribe to the blog with RSS](https://victorpoughon.github.io/torchlensmaker/feed.rss).
+
+Happy coding! 💻

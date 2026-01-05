@@ -1,4 +1,7 @@
-import { defineConfig } from "vitepress";
+import { defineConfig, createContentLoader, type SiteConfig } from "vitepress";
+import path from "path";
+import { writeFileSync } from "fs";
+import { Feed } from "feed";
 
 // Vite plugins
 import version from "vite-plugin-package-version";
@@ -17,6 +20,7 @@ export default defineConfig({
     ],
   ],
   base: "/torchlensmaker/",
+  buildEnd: buildRSS,
   themeConfig: {
     logo: "/logos/tlmlogo_black150.png",
     notFound: {
@@ -24,8 +28,10 @@ export default defineConfig({
     },
 
     footer: {
-      message: 'Released under the <a href="https://github.com/vuejs/vitepress/blob/main/LICENSE">GPL-3.0 license</a>.',
-      copyright: 'Copyright © 2024-present <a href="https://victorpoughon.fr">Victor Poughon</a>'
+      message:
+        'Released under the <a href="https://github.com/vuejs/vitepress/blob/main/LICENSE">GPL-3.0 license</a>.',
+      copyright:
+        'Copyright © 2024-present <a href="https://victorpoughon.fr">Victor Poughon</a>',
     },
 
     nav: [
@@ -108,7 +114,10 @@ export default defineConfig({
         {
           text: "Blog",
           items: [
-            { text: "Torch Lens Maker receives NLnet grant", link: "/blog/2026-01-05-announcing-nlnet-funding" },
+            {
+              text: "Torch Lens Maker receives NLnet grant",
+              link: "/blog/2026-01-05-announcing-nlnet-funding",
+            },
           ],
         },
       ],
@@ -162,3 +171,47 @@ export default defineConfig({
     server: { host: true },
   },
 });
+
+async function buildRSS(config: SiteConfig) {
+  const hostname: string = "https://victorpoughon.github.io/torchlensmaker";
+
+  const feed = new Feed({
+    title: "",
+    description: "Torch Lens Maker Blog",
+    id: hostname,
+    link: hostname,
+    language: "en",
+    copyright: "Copyright (c) 2024-present, Victor Poughon",
+  });
+
+  // You might need to adjust this if your Markdown files
+  // are located in a subfolder
+  const posts = await createContentLoader("blog/*.md", {
+    excerpt: true,
+    render: true,
+  }).load();
+
+  posts.sort(
+    (a, b) =>
+      +new Date(b.frontmatter.date as string) -
+      +new Date(a.frontmatter.date as string)
+  );
+
+  for (const { url, excerpt, frontmatter, html } of posts) {
+    feed.addItem({
+      title: frontmatter.title,
+      id: `${hostname}${url}`,
+      link: `${hostname}${url}`,
+      description: excerpt,
+      author: [
+        {
+          name: "Victor Poughon",
+          link: "https://victorpoughon.fr",
+        },
+      ],
+      date: frontmatter.date,
+    });
+  }
+
+  writeFileSync(path.join(config.outDir, "feed.rss"), feed.rss2());
+}

@@ -78,7 +78,7 @@ On top of that, after having tried software like
 powerful way to design mechanical 3D systems and this project is an exploration
 of that, but for optical systems.
 
-If you are feeling ready, feel free to jump in and [browse examples](/examples).
+If you are feeling ready, feel free to jump in and [browse examples](/examples/).
 
 To get started with writting code, see [getting started](/doc/getting-started).
 
