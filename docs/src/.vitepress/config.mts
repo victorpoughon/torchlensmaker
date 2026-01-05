@@ -23,11 +23,16 @@ export default defineConfig({
       quote: "Sorry!",
     },
 
+    footer: {
+      message: 'Released under the <a href="https://github.com/vuejs/vitepress/blob/main/LICENSE">GPL-3.0 license</a>.',
+      copyright: 'Copyright © 2024-present <a href="https://victorpoughon.fr">Victor Poughon</a>'
+    },
+
     nav: [
       { text: "Home", link: "/" },
       { text: "Documentation", link: "/doc/getting-started" },
       { text: "Examples", link: "/examples" },
-      // { text: "Blog", link: "/blog" },
+      { text: "Blog", link: "/blog/2026-01-05-announcing-nlnet-funding" },
       { text: "About", link: "/about" },
       {
         text: "Community",
@@ -102,7 +107,9 @@ export default defineConfig({
       "/blog/": [
         {
           text: "Blog",
-          items: [],
+          items: [
+            { text: "Torch Lens Maker receives NLnet grant", link: "/blog/2026-01-05-announcing-nlnet-funding" },
+          ],
         },
       ],
     },
