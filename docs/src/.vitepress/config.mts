@@ -17,6 +17,7 @@ export default defineConfig({
 
     nav: [
       { text: 'Documentation', link: '/' },
+      { text: 'Examples', link: '/examples' },
       { text: 'About', link: '/about' },
       {
         text: 'Community',
@@ -33,9 +34,9 @@ export default defineConfig({
         text: 'Introduction',
         items: [
           { text: 'Welcome', link: '/'},
-          { text: 'Features', link: '/features' },
-          { text: 'Installation', link: '/installation' },
-          { text: 'Getting Started', link: '/getting-started' },
+          { text: 'Getting Started', link: '/doc/getting-started' },
+          { text: 'Installation', link: '/doc/installation' },
+          { text: 'Features', link: '/doc/features' },
         ]
       },
       {
@@ -58,16 +59,16 @@ export default defineConfig({
       {
         text: 'Modeling',
         items: [
-          { text: 'Light Sources', link: '/modeling/light_sources'},
-          { text: 'Surfaces', link: '/modeling/surfaces'},
-          { text: 'Sampling', link: '/modeling/sampling'}
+          { text: 'Light Sources', link: '/doc/modeling/light_sources'},
+          { text: 'Surfaces', link: '/doc/modeling/surfaces'},
+          { text: 'Sampling', link: '/doc/modeling/sampling'}
         ]
       },
 
       {
         text: 'Advanced Topics',
         items: [
-          { text: 'Collision detection', link: '/advanced/collision_detection'}
+          { text: 'Collision detection', link: '/doc/advanced/collision_detection'}
         ]
       }
     ],

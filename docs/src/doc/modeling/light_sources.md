@@ -2,12 +2,12 @@
 
 Currently supported light sources:
 
-* [RaySource](/modeling/light_sources#raysource): A single light ray. (Sampling dimensions: None)
-* [PointSource](/modeling/light_sources#pointsource): A point source on the kinematic chain. (Sampling dimensions: `base`)
-* [PointSourceAtInfinity](/modeling/light_sources#pointsourceatinfinity): A point source at infinity. (Sampling dimensions: `base`)
-* [Object](/modeling/light_sources#object): A circular object on the kinematic chain. (Sampling dimensions: `base`, `object`)
-* [ObjectAtInfinity](/modeling/light_sources#objectatinfinity): A circular object at infinity. (Sampling dimensions: `base`, `object`)
-* [Wavelength](/modeling/light_sources#wavelength): A virtual light source that adds wavelength data to existing non chromatic light rays. (Sampling dimensions: `wavelength`)
+* [RaySource](/doc/modeling/light_sources#raysource): A single light ray. (Sampling dimensions: None)
+* [PointSource](/doc/modeling/light_sources#pointsource): A point source on the kinematic chain. (Sampling dimensions: `base`)
+* [PointSourceAtInfinity](/doc/modeling/light_sources#pointsourceatinfinity): A point source at infinity. (Sampling dimensions: `base`)
+* [Object](/doc/modeling/light_sources#object): A circular object on the kinematic chain. (Sampling dimensions: `base`, `object`)
+* [ObjectAtInfinity](/doc/modeling/light_sources#objectatinfinity): A circular object at infinity. (Sampling dimensions: `base`, `object`)
+* [Wavelength](/doc/modeling/light_sources#wavelength): A virtual light source that adds wavelength data to existing non chromatic light rays. (Sampling dimensions: `wavelength`)
 
 
 ## RaySource
