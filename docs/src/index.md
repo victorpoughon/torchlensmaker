@@ -1,6 +1,12 @@
 ---
 # https://vitepress.dev/reference/default-theme-home-page
 layout: doc
+sidebar: false
+aside: false
+
+next:
+  text: 'Getting Started'
+  link: '/doc/getting-started'
 ---
 
 <LogoTitle/>
@@ -11,6 +17,7 @@ differentiable geometric optics based on [PyTorch](https://pytorch.org/).
 Currently a very experimental project, the goal is to be able to design complex
 real-world optical systems (lenses, mirrors, etc.) using modern computer code
 and state-of-the art numerical optimization.
+
 
 ```python
 import torchlensmaker as tlm
@@ -71,10 +78,11 @@ On top of that, after having tried software like
 powerful way to design mechanical 3D systems and this project is an exploration
 of that, but for optical systems.
 
-::: warning Experimental project!
-This project is in its very early stages, I've got a [very long roadmap](/roadmap) planned
-and I'm [looking for funding](/about#funding) to be able to keep working on it full time! If you
-can, please consider donating, sponsoring or even hiring me! 😊💚
+If you are feeling ready, feel free to jump in and [browse examples](/examples).
 
-Also, the API **will** change without warning. A stable release is still very far in the future.
+To get started with writting code, see [getting started](/doc/getting-started).
+
+::: warning Experimental project!
+This project is in its very early stages: the API is not stable and **will**
+change without warning. A stable release is still far in the future.
 :::

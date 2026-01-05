@@ -1,10 +1,22 @@
-
 :root {
-    --vp-c-brand-1: #d8824d;
-    --vp-c-brand-2: #7c4a2b;
-    --vp-code-color: --vp-c-text-1;
+  --vp-c-brand-1: #d8824d;
+  --vp-c-brand-2: #7c4a2b;
+  --vp-code-color: --vp-c-text-1;
 
-    --vp-code-font-size: 12px;
-  }
+  --vp-code-font-size: 12px;
+}
 
+/* .vitepress/theme/custom.css */
+.VPHome {
+  /* centers the content */
+  max-width: 800px;
+  margin: 0 auto;
+}
 
+/* If using the default theme’s home “main” wrapper: */
+.VPHome .VPHomeHero,
+.VPHome .VPHomeFeatures {
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}

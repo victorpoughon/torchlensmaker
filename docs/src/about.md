@@ -1,3 +1,8 @@
+---
+layout: doc
+sidebar: false
+---
+
 <script setup>
 import Newsletter from './components/Newsletter.vue';
 </script>
