@@ -26,7 +26,7 @@ a {
 
 <template>
   <Layout>
-    <template #aside-top>
+    <!-- <template #aside-top>
       <p>
         Hello! I'm
         <a class="vp-link" href="https://victorpoughon.fr/">Victor</a>, the
@@ -35,6 +35,6 @@ a {
         able to keep working on&nbsp;it. If you can, please consider donating or
         sponsoring.<br />Thank&nbsp;you!&nbsp;❤️
       </p>
-    </template>
+    </template> -->
   </Layout>
 </template>
