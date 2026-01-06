@@ -54,3 +54,23 @@ Python notebook are embeded into the documentation as `.md` files. To export a n
 ## Using a local version of tlmviewer for a local documentation build
 
 Update the version of tlmviewer in `docs/package.json` to point to your local checkout of tlmviewer.
+
+## Useful local commands
+
+```sh
+# Clear output from notebooks
+uv run ./scripts/nbstripall.sh
+
+# Start local notebook server
+uv run jupyter notebook
+
+# Execute a notebook
+uv run jupyter nbconvert --execute --to notebook test_notebooks/demo_dispersion.ipynb
+
+# Run test notebooks / examples
+uv run pytest --nbmake test_notebooks/*.ipynb
+uv run pytest --nbmake docs/src/examples/*.ipynb
+
+# Run unit tests
+uv run pytest
+```
