@@ -29,7 +29,7 @@ export default defineConfig({
 
     footer: {
       message:
-        'Released under the <a href="https://github.com/vuejs/vitepress/blob/main/LICENSE">GPL-3.0 license</a>.',
+        'Released under the <a href="https://github.com/victorpoughon/torchlensmaker/blob/main/LICENSE">GPL-3.0 license</a>.',
       copyright:
         'Copyright © 2024-present <a href="https://victorpoughon.fr">Victor Poughon</a>',
     },

@@ -171,20 +171,10 @@ all lenses in the future to be designed with 5 figures closed-source commercial
 software, we can do better! Look at how machine learning enjoys state of the art
 open-source tooling. Let's do the same for optics!
 
-## Funding
+<hr/>
 
-I've been working on this project for a few months now on my own time. I'd love
-to keep working on it as much as possible!
+For more info, check out [Torch Lens Maker documentation](https://victorpoughon.github.io/torchlensmaker/).
 
-I am looking for sponsorship, contracting or donations to be able to keep
-working on this project. If you are interested in sponsoring open-source
-development of Torch Lens Maker, please reach out or make a donation! Thank
-you!
+Torch Lens Maker is released under the [GPL-3.0 license](https://github.com/victorpoughon/torchlensmaker/blob/main/LICENSE).
 
-* [Sponsor Torch Lens Maker on GitHub](https://github.com/sponsors/victorpoughon)
-* [Buy me a coffee](https://buymeacoffee.com/victorpoughon)
-
-You can also find personal contact info on [my website](https://victorpoughon.fr/).
-
-For project updates, feel free to subscribe to
-[the mailing list](https://victorpoughon.github.io/torchlensmaker/about#newsletter).
+Copyright © 2024-present [Victor Poughon](https://victorpoughon.fr).
