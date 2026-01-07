@@ -17,6 +17,9 @@ dependencies = [
   "matplotlib>=3.9.2,<3.11.0",
   "colorcet >= 3",
   "notebook >= 7",
+  "onnx>=1.20.0",
+  "onnxscript>=0.5.7",
+  "jaxtyping>=0.3.5",
 ]
 
 [project.optional-dependencies]
@@ -25,6 +28,7 @@ test = [
     "nbmake~=1.5.4",
     "pytest>=8.3.3,<8.5.0",
     "nbstripout",
+    "onnxruntime>=1.23.2",
 ]
 dev = [
     "ruff>=0.11.2",
