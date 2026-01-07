@@ -1,5 +1,5 @@
 # This file is part of Torch Lens Maker
-# Copyright (C) 2025 Victor Poughon
+# Copyright (C) 2024-present Victor Poughon
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
