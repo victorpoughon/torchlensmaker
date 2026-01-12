@@ -52,6 +52,9 @@ class TransformBase:
         return (
             f"<{type(self).__name__} {hex(id(self))} dim={self.dim} dtype={self.dtype}>"
         )
+    
+    def inverse(self) -> 'TransformBase':
+        raise NotImplementedError
 
     def direct_points(self, points: Tensor) -> Tensor:
         raise NotImplementedError
@@ -77,6 +80,9 @@ class TransformBase:
 
 
 class IdentityTransform(TransformBase):
+    def inverse(self) -> "IdentityTransform":
+        return self
+
     def direct_points(self, points: Tensor) -> Tensor:
         return points
 
@@ -102,6 +108,9 @@ class TranslateTransform(TransformBase):
     def __init__(self, T: Tensor):
         super().__init__(T.shape[0], T.dtype)
         self.T = T
+
+    def inverse(self) -> "TranslateTransform":
+        return TranslateTransform(-self.T)
 
     def direct_points(self, points: Tensor) -> Tensor:
         return points + self.T
@@ -130,6 +139,9 @@ class LinearTransform(TransformBase):
         super().__init__(A.shape[0], A.dtype)
         self.A = A
         self.A_inv = A_inv
+
+    def inverse(self) -> "LinearTransform":
+        return LinearTransform(self.A_inv, self.A)
 
     def direct_points(self, points: Tensor) -> Tensor:
         return points @ self.A.T
@@ -160,6 +172,9 @@ class ComposeTransform(TransformBase):
         assert sum([t.dim == transforms[0].dim for t in transforms]) == len(transforms)
         super().__init__(transforms[0].dim, transforms[0].dtype)
         self.transforms = transforms
+
+    def inverse(self) -> "ComposeTransform":
+        return ComposeTransform(list(reversed([t.inverse() for t in self.transforms])))
 
     def direct_points(self, points: Tensor) -> Tensor:
         for t in self.transforms:
