@@ -45,12 +45,12 @@ class Plane(LocalSurface):
     def samples2D_half(self, N: int, epsilon: float) -> Tensor:
         maxr = (1.0 - epsilon) * self.outline.max_radius()
         r = torch.linspace(0, maxr, N, dtype=self.dtype)
-        return torch.stack((torch.zeros(N), r), dim=-1)
+        return torch.stack((torch.zeros(N, dtype=self.dtype), r), dim=-1)
 
     def samples2D_full(self, N: int, epsilon: float) -> Tensor:
         maxr = (1.0 - epsilon) * self.outline.max_radius()
         r = torch.linspace(-maxr, maxr, N, dtype=self.dtype)
-        return torch.stack((torch.zeros(N), r), dim=-1)
+        return torch.stack((torch.zeros(N, dtype=self.dtype), r), dim=-1)
 
     def local_collide(self, P: Tensor, V: Tensor) -> tuple[Tensor, Tensor, Tensor]:
         # Nominal case: rays are not perpendicular to the X axis

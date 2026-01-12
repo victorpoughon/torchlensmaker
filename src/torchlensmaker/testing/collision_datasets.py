@@ -38,6 +38,7 @@ def make_samples(
     else:
         root = math.ceil(math.sqrt(N))
         samples = make_samples3D(surface.samples2D_full(root, epsilon=epsilon), root)
+    assert surface.dtype == samples.dtype, (dim, surface.dtype, samples.dtype)
     return samples, surface.normals(samples)
 
 
@@ -193,7 +194,7 @@ def make_samples3D(samples2D: torch.Tensor, M: int) -> torch.Tensor:
     circle
     """
     step = 2 * torch.pi / M
-    angles = torch.linspace(0, (M - 1) * step, M, device=samples2D.device)
+    angles = torch.linspace(0, (M - 1) * step, M, dtype=samples2D.dtype, device=samples2D.device)
     cosθ = torch.cos(angles)
     sinθ = torch.sin(angles)
 

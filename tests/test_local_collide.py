@@ -115,10 +115,10 @@ def test_expected_collide(
 
     offset_space = torch.cat(
         (
-            torch.logspace(-6, 2, 5),
-            torch.linspace(0.0, 50.0, 5),
-            -torch.logspace(-6, 2, 5),
-            -torch.linspace(0.0, 50.0, 5),
+            torch.logspace(-6, 2, 5, dtype=surface.dtype),
+            torch.linspace(0.0, 50.0, 5, dtype=surface.dtype),
+            -torch.logspace(-6, 2, 5, dtype=surface.dtype),
+            -torch.linspace(0.0, 50.0, 5, dtype=surface.dtype),
         ),
         dim=0,
     )
@@ -128,6 +128,8 @@ def test_expected_collide(
     # Add copies of rays but with origin points moved along the direction
     # this is to check the collision detection dependence on rays origins
     P, V = make_offset_rays(genP, genV, offset_space)
+
+    P, V = P.to(dtype=surface.dtype), V.to(dtype=surface.dtype)
 
     print("Checking collision")
     print("Ray generator:", test_cases_all_surfaces.generator)
