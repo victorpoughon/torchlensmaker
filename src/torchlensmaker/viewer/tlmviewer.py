@@ -31,10 +31,7 @@ from typing import Any, Optional
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
-from torchlensmaker.core.transforms import (
-    TransformBase,
-    IdentityTransform,
-)
+from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, hom_identity
 
 Tensor = torch.Tensor
 
@@ -168,7 +165,7 @@ def new_scene(mode: str) -> Any:
 
 def render_surface(
     surface: ImplicitSurface,
-    transform: TransformBase,
+    dfk: HomMatrix,
     dim: int,
 ) -> object:
     """
@@ -179,7 +176,7 @@ def render_surface(
     obj = surface.to_dict(dim)
 
     # Add the matrix transform
-    obj["matrix"] = transform.hom_matrix().tolist()
+    obj["matrix"] = dfk.tolist()
 
     return obj
 
@@ -189,7 +186,9 @@ def render_surface_local(
     dim: int,
 ) -> Any:
     return render_surface(
-        surface, IdentityTransform(dim=dim, dtype=surface.dtype), dim=dim
+        surface,
+        hom_identity(dim, dtype=surface.dtype, device=torch.device("cpu")),  # TODO gpu support
+        dim=dim,
     )
 
 

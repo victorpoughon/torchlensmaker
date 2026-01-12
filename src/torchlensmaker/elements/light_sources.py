@@ -22,10 +22,10 @@ from torchlensmaker.core.tensor_manip import (
     cartesian_prod2d,
     to_tensor,
 )
+from torchlensmaker.new_kinematics.homogeneous_geometry import transform_rays
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 
-from torchlensmaker.core.transforms import forward_kinematic
 from torchlensmaker.core.geometry import unit_vector, rotated_unit_vector
 
 from torchlensmaker.sampling.samplers import (
@@ -66,8 +66,7 @@ class LightSourceBase(SequentialElement):
         )
 
         # Apply kinematic transform
-        tf = forward_kinematic(inputs.transforms)
-        P, V = tf.direct_rays(P, V)
+        P, V = transform_rays(inputs.dfk, P, V)
 
         # TODO need better way to store var basis if we want to properly support multiple light source in a scene
 

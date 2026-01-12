@@ -21,6 +21,7 @@ from typing import Any, Optional, Dict
 
 
 from torchlensmaker.optical_data import default_input
+from torchlensmaker.elements.kinematics import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,
@@ -48,6 +49,7 @@ from .artists import (
     LensArtist,
     ForwardArtist,
     EndArtist,
+    KinematicArtist,
 )
 
 import json
@@ -78,6 +80,7 @@ default_artists: Dict[type, list[Artist]] = {
     RefractiveSurface: [RefractiveSurfaceArtist()],
     Aperture: [ForwardArtist(lambda mod: mod.collision_surface)],
     ImagePlane: [ForwardArtist(lambda mod: mod.collision_surface)],
+    KinematicElement: [KinematicArtist()],
 }
 
 

@@ -107,9 +107,7 @@ def forward_tree(
 
     # Define the forward hook
     def hook(mod: nn.Module, inp: Any, out: Any) -> None:
-        # inp[0] here restricts us to forward() first argument
-        # so this only works with single argument forward() functions
-        input_tree[mod] = inp[0]
+        input_tree[mod] = inp[0] if len(inp) == 1 else inp
         output_tree[mod] = out
 
     # Register forward hooks to every module recursively

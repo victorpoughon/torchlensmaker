@@ -141,6 +141,8 @@ def kinematic_chain_append(
         hom_inv: Inverse transform of the new joint
     """
     assert hom.shape == hom_inv.shape == dfk.shape == ifk.shape
+    assert hom.dtype == hom_inv.dtype == dfk.dtype == ifk.dtype
+
     return (
         dfk @ hom,
         hom_inv @ ifk,
@@ -163,6 +165,13 @@ def kinematic_chain_extend(
         homs: List of new joints direct transforms
         homs_inv: List of new joints inverse transforms
     """
+    assert dfk.dtype == ifk.dtype
+    assert dfk.shape == ifk.shape
+
+    assert all([dfk.dtype == h.dtype for h in homs])
+    assert all([dfk.dtype == h.dtype for h in homs_inv])
+    assert all([dfk.device == h.device for h in homs])
+    assert all([dfk.device == h.device for h in homs_inv])
 
     new_dfk = functools.reduce(lambda t1, t2: t1 @ t2, [dfk, *homs])
     new_ifk = functools.reduce(lambda t1, t2: t2 @ t1, [ifk, *homs_inv])

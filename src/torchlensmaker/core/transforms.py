@@ -18,6 +18,7 @@ import torch
 import functools
 from collections.abc import Sequence
 
+from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix
 
 # for shorter type annotations
 Tensor = torch.Tensor
@@ -202,7 +203,7 @@ class ComposeTransform(TransformBase):
         )
 
 
-def forward_kinematic(transforms: Sequence[TransformBase]) -> ComposeTransform:
-    "Compose transforms that describe a forward kinematic chain"
-
-    return ComposeTransform(list(reversed(transforms)))
+def kinematics_old_to_new(tfs: list[TransformBase]) -> tuple[list[HomMatrix], list[HomMatrix]]:
+    homs = [tf.hom_matrix() for tf in tfs]
+    homs_inv = [tf.inverse().hom_matrix() for tf in tfs]
+    return homs, homs_inv

@@ -22,10 +22,10 @@ from typing import Any, Optional, TypeAlias
 
 from torchlensmaker.core.tensor_manip import filter_optional_tensor
 
-from torchlensmaker.core.transforms import (
-    TransformBase,
-    IdentityTransform,
-    forward_kinematic,
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    HomMatrix,
+    hom_identity,
+    transform_points,
 )
 
 from torchlensmaker.materials import (
@@ -48,8 +48,9 @@ class OpticalData:
     # Sampling configuration for each variable
     sampling: dict[str, Sampler]
 
-    # Transform kinematic chain
-    transforms: list[TransformBase]
+    # Forward kinematic chain
+    dfk: HomMatrix  # direct
+    ifk: HomMatrix  # inverse
 
     # Parametric light rays P + tV
     # Tensors of shape (N, 2|3)
@@ -77,11 +78,8 @@ class OpticalData:
     # Tensor of dim 0
     loss: torch.Tensor
 
-    def tf(self) -> TransformBase:
-        return forward_kinematic(self.transforms)
-
     def target(self) -> Tensor:
-        return self.tf().direct_points(torch.zeros((self.dim,), dtype=self.dtype))
+        return transform_points(self.dfk, torch.zeros((self.dim,), dtype=self.dtype))
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
@@ -105,12 +103,12 @@ class OpticalData:
             return self.rays_wavelength
         else:
             raise RuntimeError(f"Unknown or unavailable ray variable '{color_dim}'")
-    
+
     def filter_variables(self, valid: Tensor) -> "OpticalData":
         return self.replace(
-            rays_base = filter_optional_tensor(self.rays_base, valid),
-            rays_object = filter_optional_tensor(self.rays_object, valid),
-            rays_wavelength = filter_optional_tensor(self.rays_wavelength, valid),
+            rays_base=filter_optional_tensor(self.rays_base, valid),
+            rays_object=filter_optional_tensor(self.rays_object, valid),
+            rays_wavelength=filter_optional_tensor(self.rays_wavelength, valid),
         )
 
 
@@ -119,11 +117,14 @@ def default_input(
     dim: int,
     dtype: torch.dtype = torch.float64,
 ) -> OpticalData:
+    dfk, ifk = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
+
     return OpticalData(
         dim=dim,
         dtype=dtype,
         sampling=init_sampling(sampling),
-        transforms=[IdentityTransform(dim, dtype)],
+        dfk=dfk,
+        ifk=ifk,
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
         rays_base=None,

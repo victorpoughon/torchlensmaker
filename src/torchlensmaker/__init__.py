@@ -27,7 +27,6 @@ from torchlensmaker.core.transforms import (
     ComposeTransform,
     TranslateTransform,
     IdentityTransform,
-    forward_kinematic,
 )
 from torchlensmaker.core.intersect import intersect
 from torchlensmaker.core.full_forward import forward_tree, full_forward
@@ -48,6 +47,21 @@ from torchlensmaker.core.sag_functions import (
     Conical,
     SagSum,
     SagFunction,
+)
+
+############
+# Kinematics
+############
+
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    HomMatrix2D,
+    HomMatrix3D,
+    HomMatrix,
+    transform_points,
+    transform_vectors,
+    hom_identity,
+    hom_identity_2d,
+    hom_identity_3d,
 )
 
 ##########
@@ -71,7 +85,6 @@ from torchlensmaker.elements.kinematics import (
     KinematicElement,
     KinematicChain,
     MixedDim,
-    AbsoluteTransform,
     AbsolutePosition,
     RelativeTransform,
     Gap,

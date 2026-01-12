@@ -25,6 +25,10 @@ from torchlensmaker.core.transforms import (
     TranslateTransform,
     LinearTransform,
 )
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    HomMatrix,
+    kinematic_chain_append,
+)
 from torchlensmaker.core.rot2d import rotation_matrix_2D
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 from typing import TypeAlias, Sequence, cast
@@ -34,23 +38,14 @@ KinematicChain: TypeAlias = Sequence[TransformBase]
 
 
 class KinematicElement(SequentialElement):
-    """Base class for kinematic elements
-    """
+    """Base class for kinematic elements"""
 
-    def forward(self, chain: KinematicChain) -> KinematicChain:
+    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         raise NotImplementedError
 
     def sequential(self, data: OpticalData) -> OpticalData:
-        return data.replace(transforms=self(data.transforms))
-
-
-class AbsoluteTransform(KinematicElement):
-    def __init__(self, tf: TransformBase):
-        super().__init__()
-        self.tf = tf
-
-    def forward(self, chain: KinematicChain) -> KinematicChain:
-        return [self.tf]
+        dfk, ifk = self(data.dfk, data.ifk)
+        return data.replace(dfk=dfk, ifk=ifk)
 
 
 class AbsolutePosition(KinematicElement):
@@ -63,8 +58,11 @@ class AbsolutePosition(KinematicElement):
         super().__init__()
         self.x, self.y, self.z = to_tensor(x), to_tensor(y), to_tensor(z)
 
-    def forward(self, chain: KinematicChain) -> KinematicChain:
-        return [TranslateTransform(torch.stack((self.x, self.y, self.z), dim=-1))]
+    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
+        tf = TranslateTransform(torch.stack((self.x, self.y, self.z), dim=-1))
+        tf_inv = tf.inverse()
+        hom, hom_inv = tf.hom_matrix(), tf_inv.hom_matrix()
+        return hom, hom_inv
 
 
 class RelativeTransform(KinematicElement):
@@ -72,10 +70,12 @@ class RelativeTransform(KinematicElement):
         "Transform that gets appended to the kinematic chain by this element"
         raise NotImplementedError
 
-    def forward(self, chain: KinematicChain) -> KinematicChain:
-        assert len(chain) > 0
-        # There is some mypy BS here about Sequence and covariant typing
-        return chain + [self.tf(chain[0].dim, chain[0].dtype)]  # type: ignore[operator,no-any-return]
+    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
+        dim, dtype = dfk.shape[0] - 1, dfk.dtype
+        tf = self.tf(dim, dtype)
+        # TODO note some dtype is broken here
+        hom, hom_inv = tf.hom_matrix().to(dtype=dtype), tf.inverse().hom_matrix().to(dtype=dtype)
+        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
 
 
 class Gap(RelativeTransform):
@@ -127,7 +127,7 @@ class Rotate2D(RelativeTransform):
 
     def tf(self, dim: int, dtype: torch.dtype) -> TransformBase:
         assert dim == 2
-        M = rotation_matrix_2D(torch.deg2rad(self._angle))
+        M = rotation_matrix_2D(torch.deg2rad(self._angle)).to(dtype=dtype)
         return LinearTransform(M, M.T)
 
 
@@ -161,16 +161,17 @@ class Translate2D(RelativeTransform):
 class MixedDim(KinematicElement):
     "2D or 3D branch for a kinematic element"
 
-    def __init__(self, dim2: KinematicChain, dim3: KinematicChain):
+    def __init__(self, dim2: nn.Module, dim3: nn.Module):
         super().__init__()
         self._dim2 = dim2
         self._dim3 = dim3
 
-    def forward(self, chain: KinematicChain) -> KinematicChain:
-        if chain[0].dim == 2:
-            return cast(KinematicChain, self._dim2(chain))
+    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
+        dim = dfk.shape[0] - 1
+        if dim == 2:
+            return self._dim2(dfk, ifk)
         else:
-            return cast(KinematicChain, self._dim3(chain))
+            return self._dim3(dfk, ifk)
 
 
 class Rotate(MixedDim):

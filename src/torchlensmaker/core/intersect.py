@@ -17,7 +17,7 @@
 import torch
 
 from torchlensmaker.surfaces.local_surface import LocalSurface
-from torchlensmaker.core.transforms import TransformBase
+from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, transform_points, transform_vectors
 
 Tensor = torch.Tensor
 
@@ -26,7 +26,8 @@ def intersect(
     surface: LocalSurface,
     P: Tensor,
     V: Tensor,
-    transform: TransformBase,
+    hom: HomMatrix,
+    hom_inv: HomMatrix
 ) -> tuple[Tensor, Tensor, Tensor]:
     """
     Surface-rays collision detection
@@ -38,7 +39,8 @@ def intersect(
         P: (N, 2|3) tensor, rays origins
         V: (N, 2|3) tensor, rays vectors
         surface: surface to collide with
-        transform: transform applied to the surface
+        hom: direct transform homogeneous matrix
+        hom_inv: inverse transform homogeneous matrix
 
     Returns:
         t: valid collision distances
@@ -55,14 +57,14 @@ def intersect(
         return torch.zeros(P.shape[0], dtype=P.dtype), torch.zeros_like(V), torch.full((P.shape[0],), False)
 
     # Convert rays to surface local frame
-    Ps = transform.inverse_points(P)
-    Vs = transform.inverse_vectors(V)
+    Ps = transform_points(hom_inv, P)
+    Vs = transform_vectors(hom_inv, V)
 
     # Collision detection in the surface local frame
     t, local_normals, valid = surface.local_collide(Ps, Vs)
 
     # Compute collision points and convert normals to global frame
-    normals = transform.direct_vectors(local_normals)
+    normals = transform_vectors(hom, local_normals)
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection

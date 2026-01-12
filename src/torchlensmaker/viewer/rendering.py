@@ -22,7 +22,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, TypeAlias, Iterable
 
-from torchlensmaker.core.transforms import forward_kinematic
+from torchlensmaker.new_kinematics.homogeneous_geometry import transform_points
 from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.optical_data import OpticalData
 
@@ -39,6 +39,9 @@ class Artist:
         raise NotImplementedError
 
     def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        raise NotImplementedError
+
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
         raise NotImplementedError
 
 
@@ -131,20 +134,11 @@ class Collective:
         return list(chain(*renders))
 
     def render_joints(self, module: nn.Module) -> list[Any]:
-        dim, dtype = (
-            self.input_tree[module].transforms[0].dim,
-            self.input_tree[module].transforms[0].dtype,
-        )
+        artists = self.match_artists(module)
 
-        # Final transform list
-        tflist = self.output_tree[module].transforms
+        if len(artists) == 0:
+            return []
 
-        points = []
-
-        for i in range(len(tflist)):
-            tf = forward_kinematic(tflist[: i + 1])
-            joint = tf.direct_points(torch.zeros((dim,), dtype=dtype))
-
-            points.append(joint.tolist())
-
-        return [{"type": "points", "data": points, "layers": [LAYER_JOINTS]}]
+        # Let the artists render and flatten their returned lists
+        renders = [a.render_joints(self, module) for a in artists]
+        return list(chain(*renders))

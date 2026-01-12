@@ -24,7 +24,10 @@ from torchlensmaker.core.transforms import (
     TransformBase,
     TranslateTransform,
     LinearTransform,
-    forward_kinematic,
+    kinematics_old_to_new,
+)
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    kinematic_chain_extend,
 )
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.plane import CircularPlane
@@ -43,6 +46,7 @@ from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 
 Tensor = torch.Tensor
+
 
 
 class CollisionSurface(nn.Module):
@@ -121,18 +125,25 @@ class CollisionSurface(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         # Collision detection with the surface
-        surface_tf = forward_kinematic(
-            inputs.transforms + list(self.surface_transform(dim, dtype))
+        homs, homs_inv = kinematics_old_to_new(self.surface_transform(dim, dtype))
+        surface_dfk, surface_ifk = kinematic_chain_extend(
+            inputs.dfk, inputs.ifk, homs, homs_inv
         )
+
         t, collision_normals, collision_valid = intersect(
             self.surface,
             inputs.P,
             inputs.V,
-            surface_tf,
+            surface_dfk,
+            surface_ifk,
         )
 
-        new_chain = inputs.transforms + list(self.kinematic_transform(dim, dtype))
-        return t, collision_normals, collision_valid, new_chain
+        new_homs, new_homs_inv = kinematics_old_to_new(self.kinematic_transform(dim, dtype))
+        new_dfk, new_ifk = kinematic_chain_extend(
+            inputs.dfk, inputs.ifk, new_homs, new_homs_inv
+        )
+
+        return t, collision_normals, collision_valid, new_dfk, new_ifk
 
 
 AnchorType: TypeAlias = Literal["origin", "extent"]
@@ -156,7 +167,7 @@ class ReflectiveSurface(SequentialElement):
         return self.collision_surface.surface
 
     def forward(self, data: OpticalData) -> OpticalData:
-        t, normals, valid, new_chain = self.collision_surface(data)
+        t, normals, valid, new_dfk, new_ifk = self.collision_surface(data)
 
         # full frame collision points
         collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
@@ -167,9 +178,7 @@ class ReflectiveSurface(SequentialElement):
         if self._miss == "absorb":
             # return hits only
             return data.filter_variables(valid).replace(
-                P=collision_points[valid],
-                V=reflected,
-                transforms=new_chain,
+                P=collision_points[valid], V=reflected, dfk=new_dfk, ifk=new_ifk
             )
 
         elif self._miss == "pass":
@@ -177,7 +186,8 @@ class ReflectiveSurface(SequentialElement):
             return data.replace(
                 P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid]),
                 V=data.V.masked_scatter(valid.unsqueeze(-1), reflected),
-                transforms=new_chain,
+                dfk=new_dfk,
+                ifk=new_ifk,
             )
 
         elif self._miss == "error":
@@ -188,9 +198,7 @@ class ReflectiveSurface(SequentialElement):
                 )
             # return all rays as hits
             return data.replace(
-                P=collision_points,
-                V=reflected,
-                transforms=new_chain,
+                P=collision_points, V=reflected, dfk=new_dfk, ifk=new_ifk
             )
 
 
@@ -221,7 +229,7 @@ class RefractiveSurface(SequentialElement):
 
     def forward(self, data: OpticalData) -> tuple[OpticalData, Tensor]:
         # Collision detection
-        t, normals, valid_collision, new_chain = self.collision_surface(data)
+        t, normals, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         # Zero rays special case
@@ -289,7 +297,8 @@ class RefractiveSurface(SequentialElement):
             rays_object=new_rays_object,
             rays_wavelength=new_rays_wavelength,
             material=self.material,
-            transforms=new_chain,
+            dfk=new_dfk,
+            ifk=new_ifk,
         ), valid_refraction
 
     def sequential(self, data: OpticalData) -> OpticalData:
@@ -305,7 +314,7 @@ class Aperture(SequentialElement):
 
     def forward(self, data: OpticalData) -> OpticalData:
         # Collision detection
-        t, _, valid_collision, new_chain = self.collision_surface(data)
+        t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         # Keep colliding rays only
@@ -317,7 +326,8 @@ class Aperture(SequentialElement):
             rays_wavelength=filter_optional_tensor(
                 data.rays_wavelength, valid_collision
             ),
-            transforms=new_chain,  # correct but useless cause Aperture is only circular plane currently
+            dfk=new_dfk,
+            ifk=new_ifk,  # correct but useless cause Aperture is only circular plane currently
         )
 
 
@@ -360,7 +370,7 @@ class ImagePlane(SequentialElement):
             return data
 
         # Collision detection
-        t, _, valid_collision, new_chain = self.collision_surface(data)
+        t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         if data.rays_object is None:

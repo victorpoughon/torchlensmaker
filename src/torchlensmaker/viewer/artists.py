@@ -19,8 +19,12 @@ import torch.nn as nn
 
 from typing import Any, Callable
 
+from torchlensmaker.core.transforms import TransformBase, kinematics_old_to_new
 
-from torchlensmaker.core.transforms import forward_kinematic, TransformBase
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    kinematic_chain_extend,
+    transform_points,
+)
 
 
 from torchlensmaker.analysis.colors import (
@@ -111,24 +115,26 @@ class ForwardArtist(Artist):
     def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
         return collective.render_rays(self.getter(module))
 
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return collective.render_joints(self.getter(module))
+
 
 class CollisionSurfaceArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         inputs = collective.input_tree[module]
         dim, dtype = inputs.dim, inputs.dtype
 
-        chain = inputs.transforms + module.surface_transform(dim, dtype)
-        tf = forward_kinematic(chain)
+        homs, homs_inv = kinematics_old_to_new(module.surface_transform(dim, dtype))
+        dfk, ifk = kinematic_chain_extend(inputs.dfk, inputs.ifk, homs, homs_inv)
 
-        return [tlmviewer.render_surface(module.surface, tf, dim)]
+        return [tlmviewer.render_surface(module.surface, dfk, dim)]
 
     def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         inputs = collective.input_tree[module]
         t: Tensor
         normals: Tensor
         valid: Tensor
-        new_chain: list[TransformBase]
-        t, normals, valid, new_chain = collective.output_tree[module]
+        t, normals, valid, _, _ = collective.output_tree[module]
 
         collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
         hits = valid.sum()
@@ -171,6 +177,18 @@ class CollisionSurfaceArtist(Artist):
 
         return rays_hit + rays_miss
 
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        dim, dtype = (
+            collective.input_tree[module].dfk.shape[0] - 1,
+            collective.input_tree[module].dfk.dtype,
+        )
+
+        inputs = collective.input_tree[module]
+        origin = torch.zeros((dim,), dtype=dtype)
+        joint = transform_points(inputs.dfk, origin)
+
+        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]
+
 
 class RefractiveSurfaceArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
@@ -180,7 +198,7 @@ class RefractiveSurfaceArtist(Artist):
         inputs = collective.input_tree[module]
         output, valid_refraction = collective.output_tree[module]
 
-        t, _, collision_valid, _ = collective.output_tree[module.collision_surface]
+        t, _, collision_valid, _, _ = collective.output_tree[module.collision_surface]
         collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
         tir_mask = torch.logical_and(~valid_refraction, collision_valid)
 
@@ -203,6 +221,9 @@ class RefractiveSurfaceArtist(Artist):
             rays_tir = []
 
         return collective.render_rays(module.collision_surface) + rays_tir
+
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return collective.render_joints(module.collision_surface)
 
 
 class FocalPointArtist(Artist):
@@ -227,6 +248,18 @@ class FocalPointArtist(Artist):
             domain=collective.ray_variables.domain,
             default_color=color_valid,
         )
+
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        dim, dtype = (
+            collective.input_tree[module].dfk.shape[0] - 1,
+            collective.input_tree[module].dfk.dtype,
+        )
+
+        inputs = collective.input_tree[module]
+        origin = torch.zeros((dim,), dtype=dtype)
+        joint = transform_points(inputs.dfk, origin)
+
+        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]
 
 
 class EndArtist(Artist):
@@ -260,6 +293,12 @@ class SequentialArtist(Artist):
             nodes.extend(collective.render_rays(child))
         return nodes
 
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        nodes = []
+        for child in module.children():
+            nodes.extend(collective.render_joints(child))
+        return nodes
+
 
 class LensArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
@@ -273,3 +312,26 @@ class LensArtist(Artist):
         nodes.extend(collective.render_rays(module.surface1))
         nodes.extend(collective.render_rays(module.surface2))
         return nodes
+
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return []
+
+
+class KinematicArtist(Artist):
+    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return []
+
+    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        return []
+
+    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        dfk, ifk = collective.input_tree[module]
+        dim, dtype = (
+            dfk.shape[0] - 1,
+            dfk.dtype,
+        )
+
+        origin = torch.zeros((dim,), dtype=dtype)
+        joint = transform_points(dfk, origin)
+
+        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]

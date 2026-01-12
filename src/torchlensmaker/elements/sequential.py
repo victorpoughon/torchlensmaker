@@ -44,8 +44,7 @@ class SubChain(SequentialElement):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         output: OpticalData = self._sequential(inputs)
-        new_chain = inputs.transforms
-        return output.replace(transforms=new_chain)
+        return output.replace(dfk=inputs.dfk, ifk=inputs.ifk)
 
 
 class Sequential(nn.Sequential, SequentialElement):
