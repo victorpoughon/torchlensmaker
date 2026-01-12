@@ -73,4 +73,10 @@ uv run pytest --nbmake docs/src/examples/*.ipynb
 
 # Run unit tests
 uv run pytest
+
+# Run unit test, show output
+uv run pytest -rP
+
+# Run unit test, keep temporary file outputs
+uv run pytest --basetemp tmp/
 ```
