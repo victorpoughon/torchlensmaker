@@ -145,9 +145,9 @@ class SphereR(LocalSurface):
 
     def center(self, dim: int) -> Tensor:
         if dim == 2:
-            return torch.tensor([self.R, 0.0])
+            return torch.tensor([self.R, 0.0], dtype=self.dtype)
         else:
-            return torch.tensor([self.R, 0.0, 0.0])
+            return torch.tensor([self.R, 0.0, 0.0], dtype=self.dtype)
 
     def normals(self, points: Tensor) -> Tensor:
         batch, dim, dtype = points.shape[:-1], points.shape[-1], self.dtype
