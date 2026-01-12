@@ -22,10 +22,13 @@ Tensor = torch.Tensor
 
 def to_tensor(
     val: int | float | torch.Tensor | list[float | int],
-    default_dtype: torch.dtype = torch.float64,
+    default_dtype: torch.dtype | None = None,
 ) -> Tensor:
     if isinstance(val, torch.Tensor):
         return val
+
+    if default_dtype is None:
+        default_dtype = torch.get_default_dtype()
 
     return torch.as_tensor(val, dtype=default_dtype)
 
