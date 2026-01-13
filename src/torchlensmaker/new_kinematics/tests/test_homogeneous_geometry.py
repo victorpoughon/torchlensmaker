@@ -25,6 +25,7 @@ from torchlensmaker.new_kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_identity_2d,
     hom_identity_3d,
+    hom_identity,
     hom_translate_2d,
     hom_translate_3d,
     hom_rotate_2d,
@@ -50,8 +51,11 @@ def transforms_2d() -> list[tuple[HomMatrix, HomMatrix]]:
     t4 = kinematic_chain_append(*t3, *t2)
     t5 = kinematic_chain_append(*t4, *t4)
     t6 = kinematic_chain_extend(*base, [t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
+    t7 = hom_identity(
+        2, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    )
 
-    return [base, t1, t2, t3, t4, t5, t6]
+    return [base, t1, t2, t3, t4, t5, t6, t7]
 
 
 def test_transform_functions_2d() -> None:
@@ -113,8 +117,11 @@ def transforms_3d() -> list[tuple[HomMatrix, HomMatrix]]:
     t4 = kinematic_chain_append(*t3, *t2)
     t5 = kinematic_chain_append(*t4, *t4)
     t6 = kinematic_chain_extend(*base, [t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
+    t7 = hom_identity(
+        3, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    )
 
-    return [base, t1, t2, t3, t4, t5, t6]
+    return [base, t1, t2, t3, t4, t5, t6, t7]
 
 
 def test_transform_functions_3d() -> None:
