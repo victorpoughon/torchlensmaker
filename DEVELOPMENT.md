@@ -85,4 +85,7 @@ uv run pytest -rP
 
 # Run unit test, keep temporary file outputs
 uv run pytest --basetemp tmp/
+
+# Run unit tests with coverage report
+uv run pytest --cov-report=term-missing  --cov=src/torchlensmaker/new_kinematics/ src/torchlensmaker/new_kinematics/tests/
 ```
