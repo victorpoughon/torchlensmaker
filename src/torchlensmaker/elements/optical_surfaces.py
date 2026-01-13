@@ -235,7 +235,7 @@ class RefractiveSurface(SequentialElement):
         # Zero rays special case
         # (needs to happen after self.collision_surface is called to enable rendering of it)
         if data.P.numel() == 0:
-            return data.replace(material=self.material), torch.full(
+            return data.replace(material=self.material, dfk=new_dfk, ifk=new_ifk), torch.full(
                 (data.P.shape[0],), True
             )
 
