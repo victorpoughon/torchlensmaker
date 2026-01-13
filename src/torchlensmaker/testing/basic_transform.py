@@ -17,7 +17,7 @@
 import torch
 
 from torchlensmaker.surfaces.sphere_r import LocalSurface
-
+from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix
 from torchlensmaker.core.transforms import (
     TransformBase,
     LinearTransform,
@@ -37,7 +37,7 @@ def basic_transform(
     thetas: float | list[float],
     translate: list[float],
     dtype: torch.dtype = torch.float64,
-) -> Callable[[LocalSurface], TransformBase]:
+) -> Callable[[LocalSurface], tuple [HomMatrix, HomMatrix]]:
     """
     Compound transform used for testing
 
@@ -79,6 +79,7 @@ def basic_transform(
         # translate
         transforms.append(TranslateTransform(torch.as_tensor(translate, dtype=dtype)))
 
-        return ComposeTransform(transforms)
+        tf = ComposeTransform(transforms)
+        return tf.hom_matrix(), tf.inverse().hom_matrix()
 
     return makeit
