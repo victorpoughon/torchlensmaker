@@ -22,11 +22,11 @@ import torchlensmaker as tlm
 optics = tlm.Sequential(
     tlm.PointSource(beam_angular_size=105, material="water-nd"),
     tlm.Gap(2),
-    tlm.RefractiveSurface(tlm.CircularPlane(15), critical_angle="reflect", material="air"),
+    tlm.RefractiveSurface(tlm.CircularPlane(15), tir="reflect", material="air"),
 )
 ```
 
-Note how we are setting the `critical_angle` property of the refractive surface to `"reflect"`. This parameter controls how rays behave when total internal reflection occurs. By default, `RefractiveSurface` will consider those rays "blocked" because they are not desired in typical optical system design. But here, total internal reflection is the whole point of Snell's Window! So we enable it with this setting.
+Note how we are setting the `tir` property of the refractive surface to `"reflect"`. This parameter controls how rays behave when total internal reflection occurs. By default, `RefractiveSurface` will consider those rays "absorbed" because they are not desired in typical optical system design. But here, total internal reflection is the whole point of Snell's Window! So we enable it with this setting.
 
 That's it! We can view the model with tlmviewer, by sampling it along its only dimension: the base dimension. Let's make it 100 rays in 2D, and 2000 in 3D.
 

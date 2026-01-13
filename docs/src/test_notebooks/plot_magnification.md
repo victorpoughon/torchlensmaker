@@ -3,14 +3,13 @@
 
 ```python
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torchlensmaker as tlm
 
 surface = tlm.Sphere(diameter=15, R=tlm.parameter(25))
 lens = tlm.BiLens(surface, material = 'BK7-nd', outer_thickness=1.5)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=18.5),
     tlm.Gap(10),
     lens,
@@ -25,7 +24,7 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, sampling={"base": 100})
 ```
 
-    2.surface1.C Parameter containing:
+    2.surface1.collision_surface.C Parameter containing:
     tensor(0.0400, dtype=torch.float64, requires_grad=True)
 
 
@@ -55,27 +54,27 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, sampling={"base": 100})
 ```
 
-    [  1/100] L=  1.569 | grad norm= 161.9366932906055
-    [  6/100] L=  0.782 | grad norm= 155.031634717428
-    [ 11/100] L=  0.109 | grad norm= 8.59728848028433
-    [ 16/100] L=  0.362 | grad norm= 146.7432224095572
-    [ 21/100] L=  0.210 | grad norm= 147.74137333402
-    [ 26/100] L=  0.152 | grad norm= 82.59451332417011
-    [ 31/100] L=  0.167 | grad norm= 82.77446890236837
-    [ 36/100] L=  0.113 | grad norm= 8.862112336619418
-    [ 41/100] L=  0.117 | grad norm= 9.115631464186867
-    [ 46/100] L=  0.113 | grad norm= 8.847457422109148
-    [ 51/100] L=  0.109 | grad norm= 8.586596272281758
-    [ 56/100] L=  0.109 | grad norm= 8.599382275065631
-    [ 61/100] L=  0.112 | grad norm= 8.83414124398887
-    [ 66/100] L=  0.113 | grad norm= 8.877469060183468
-    [ 71/100] L=  0.112 | grad norm= 8.800366538928447
-    [ 76/100] L=  0.109 | grad norm= 8.644746370611514
-    [ 81/100] L=  0.108 | grad norm= 8.54647374100854
-    [ 86/100] L=  0.108 | grad norm= 8.560481822989336
-    [ 91/100] L=  0.109 | grad norm= 8.637634069506674
-    [ 96/100] L=  0.108 | grad norm= 8.564525030391389
-    [100/100] L=  0.108 | grad norm= 8.556902462663446
+    [  1/100] L= 1.56896 | grad norm= 161.9366932906054
+    [  6/100] L= 0.78248 | grad norm= 155.03163471742798
+    [ 11/100] L= 0.10873 | grad norm= 8.597288480284188
+    [ 16/100] L= 0.36217 | grad norm= 146.74322240955695
+    [ 21/100] L= 0.20955 | grad norm= 147.74137333401978
+    [ 26/100] L= 0.15194 | grad norm= 82.59451332417002
+    [ 31/100] L= 0.16661 | grad norm= 82.7744689023683
+    [ 36/100] L= 0.11278 | grad norm= 8.862112336619262
+    [ 41/100] L= 0.11690 | grad norm= 9.115631464186738
+    [ 46/100] L= 0.11255 | grad norm= 8.84745742210896
+    [ 51/100] L= 0.10857 | grad norm= 8.586596272281632
+    [ 56/100] L= 0.10876 | grad norm= 8.599382275065514
+    [ 61/100] L= 0.11234 | grad norm= 8.834141243988748
+    [ 66/100] L= 0.11303 | grad norm= 8.877469060183374
+    [ 71/100] L= 0.11182 | grad norm= 8.800366538928339
+    [ 76/100] L= 0.10944 | grad norm= 8.64474637061142
+    [ 81/100] L= 0.10798 | grad norm= 8.546473741008505
+    [ 86/100] L= 0.10818 | grad norm= 8.560481822989201
+    [ 91/100] L= 0.10933 | grad norm= 8.637634069506536
+    [ 96/100] L= 0.10824 | grad norm= 8.564525030391259
+    [100/100] L= 0.10813 | grad norm= 8.55690246266337
 
 
 
@@ -84,7 +83,7 @@ tlm.show(optics, dim=3, sampling={"base": 100})
     
 
 
-    Final arc radius: 33.23939861777343
+    Final arc radius: 33.2393986177735
     Outer thickness: tensor(1.5000, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
     Inner thickness: tensor(3.2144, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
 

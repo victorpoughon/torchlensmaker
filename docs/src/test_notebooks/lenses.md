@@ -2,12 +2,11 @@
 
 
 ```python
-import torch.nn as nn
 import torchlensmaker as tlm
 
 gap = tlm.Gap(5)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     # 'Bilens' for mirrored symmetric lenses - biconvex / biconcave
     tlm.BiLens(tlm.Sphere(diameter=10, R=20), material = 'BK7-nd', outer_thickness=0.0),
     gap,

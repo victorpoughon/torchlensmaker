@@ -65,8 +65,8 @@ test_data = [
 
     (basic_transform(1.0, "origin", [45., 5., 5.], [-10., 10., -5.]), tlm.SquarePlane(15.)),
 
-    (basic_transform(1.0, "extent", [0., 45., 0.], [150, 30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, A4=0.00045)),
-    (basic_transform(-1.0, "extent", [0., 45., 0.], [150., 30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, A4=0.00045)),
+    (basic_transform(1.0, "extent", [0., 45., 0.], [150, 30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, coefficients=[0.00045])),
+    (basic_transform(-1.0, "extent", [0., 45., 0.], [150., 30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, coefficients=[0.00045])),
 ]
 
 test_surfaces = [s for t, s in test_data]
@@ -81,7 +81,8 @@ def demo(rays):
 
     for transform, surface in test_data:
 
-        points, normals, _ = tlm.intersect(surface, P, V, transform(surface))
+        t, normals, valid = tlm.intersect(surface, P, V, *transform(surface))
+        points = P + t.unsqueeze(-1).expand_as(V)*V
 
         if points.numel() > 0:
             all_points = torch.cat((all_points, points), dim=0)
@@ -94,7 +95,8 @@ def demo(rays):
     scene = tlm.viewer.new_scene("3D")
     scene["data"].append(tlm.viewer.render_rays(rays_start, rays_end, 0))
     scene["data"].extend(tlm.viewer.render_collisions(all_points, all_normals))
-    scene["data"].append(tlm.viewer.render_surfaces(test_surfaces, realized_transforms, dim=3))
+    for s, (hom, hom_inv) in zip(test_surfaces, realized_transforms):
+        scene["data"].append(tlm.viewer.render_surface(s, hom, dim=3))
     
     tlm.viewer.display_scene(scene)
 

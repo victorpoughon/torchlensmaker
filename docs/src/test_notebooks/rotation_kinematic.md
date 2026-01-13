@@ -3,7 +3,6 @@
 
 ```python
 import torch
-import torch.nn as nn
 import torchlensmaker as tlm
 import torch.optim as optim
 
@@ -13,21 +12,24 @@ mirror = tlm.ReflectiveSurface(tlm.SquarePlane(20))
 
 lens = tlm.BiLens(surface, material = 'BK7-nd', outer_thickness=1.0)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=18.5),
     tlm.Gap(10),
     lens,
     
     tlm.Gap(30),
-    tlm.Rotate(mirror, (45, 0)),
+    tlm.SubChain(
+        tlm.MixedDim(dim2=tlm.Rotate2D(45), dim3=tlm.Rotate3D(y=45, z=0)),
+        mirror
+    ),
 
-    tlm.Turn((-90, 0)),
+    tlm.MixedDim(dim2=tlm.Rotate2D(-90), dim3=tlm.Rotate3D(y=-90, z=0)),
     tlm.Gap(30),
     tlm.FocalPoint(),
 )
 
-tlm.show(optics, dim=2)
-tlm.show(optics, dim=3, sampling={"base":100})
+tlm.show2d(optics)
+tlm.show3d(optics, sampling={"base":100})
 ```
 
 

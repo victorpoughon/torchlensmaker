@@ -66,7 +66,7 @@ lenses_rplano = [tlm.PlanoLens(
     reverse=True,
 ) for i in range(nrplano)]
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=0.9*lens_diameter),
     tlm.Gap(10.),
     
@@ -110,8 +110,8 @@ tlm.show(optics, dim=3)
 
 ```python
 def regu_equalparam(_):
-    a1 = surface_plano.a
-    a2 = surface_biconvex.a
+    a1 = surface_plano.sag_function.A
+    a2 = surface_biconvex.sag_function.A
     return 500*torch.pow((500*a1)**2 - (500*a2)**2, 2)
     #params = torch.cat([param.view(-1) for param in optics.parameters()])
     #return torch.pow(torch.diff(1000*torch.abs(params)).sum(), 2)
@@ -148,27 +148,27 @@ print_lens("Reverse plano-convex", lenses_rplano[0])
 
 ```
 
-    [  1/100] L= 84.721 | grad norm= 180027.30859716702
-    [  6/100] L= 10.012 | grad norm= 48586.85753360243
-    [ 11/100] L=  8.915 | grad norm= 45467.74241772557
-    [ 16/100] L= 13.302 | grad norm= 62370.50388286968
-    [ 21/100] L=  5.419 | grad norm= 25824.07799286678
-    [ 26/100] L=  4.480 | grad norm= 15842.663121738253
-    [ 31/100] L=  5.782 | grad norm= 28089.624034440483
-    [ 36/100] L=  4.030 | grad norm= 11638.0559620909
-    [ 41/100] L=  3.772 | grad norm= 9785.112736666892
-    [ 46/100] L=  3.947 | grad norm= 14470.964210249063
-    [ 51/100] L=  3.429 | grad norm= 4729.6565752732095
-    [ 56/100] L=  3.399 | grad norm= 5939.238324531459
-    [ 61/100] L=  3.278 | grad norm= 5355.6202899457285
-    [ 66/100] L=  3.096 | grad norm= 2785.695079791156
-    [ 71/100] L=  3.018 | grad norm= 5088.090779793749
-    [ 76/100] L=  2.871 | grad norm= 2992.8820186164903
-    [ 81/100] L=  2.756 | grad norm= 2519.2939043645542
-    [ 86/100] L=  2.629 | grad norm= 2378.915438707358
-    [ 91/100] L=  2.498 | grad norm= 2648.0570671543073
-    [ 96/100] L=  2.369 | grad norm= 2893.2923444452654
-    [100/100] L=  2.259 | grad norm= 2461.6447550702096
+    [  1/100] L= 84.72069 | grad norm= 180027.30862278357
+    [  6/100] L= 10.01247 | grad norm= 48586.85755590343
+    [ 11/100] L= 8.91487 | grad norm= 45467.74239605879
+    [ 16/100] L= 13.30247 | grad norm= 62370.50386953764
+    [ 21/100] L= 5.41850 | grad norm= 25824.077977854635
+    [ 26/100] L= 4.48008 | grad norm= 15842.663128900638
+    [ 31/100] L= 5.78234 | grad norm= 28089.62404966173
+    [ 36/100] L= 4.02969 | grad norm= 11638.055971416858
+    [ 41/100] L= 3.77202 | grad norm= 9785.112707664568
+    [ 46/100] L= 3.94697 | grad norm= 14470.964187204283
+    [ 51/100] L= 3.42942 | grad norm= 4729.656536109289
+    [ 56/100] L= 3.39896 | grad norm= 5939.238320172063
+    [ 61/100] L= 3.27782 | grad norm= 5355.62028333003
+    [ 66/100] L= 3.09550 | grad norm= 2785.6950266503795
+    [ 71/100] L= 3.01818 | grad norm= 5088.090741496315
+    [ 76/100] L= 2.87060 | grad norm= 2992.8819671020133
+    [ 81/100] L= 2.75578 | grad norm= 2519.293863233731
+    [ 86/100] L= 2.62924 | grad norm= 2378.915392082205
+    [ 91/100] L= 2.49802 | grad norm= 2648.057012700259
+    [ 96/100] L= 2.36887 | grad norm= 2893.292291950819
+    [100/100] L= 2.25898 | grad norm= 2461.6446989914994
 
 
 
@@ -180,14 +180,14 @@ print_lens("Reverse plano-convex", lenses_rplano[0])
     Plano-convex
         inner: 2.714 outer: 1.200
         surface1 []
-        surface2 [-0.0033651619031351706]
+        surface2 [-0.003365161886999925]
     Bi-convex
         inner: 2.716 outer: 1.200
-        surface1 [0.0016848444901051824]
-        surface2 [0.0016848444901051824]
+        surface1 [0.0016848444819891435]
+        surface2 [0.0016848444819891435]
     Reverse plano-convex
         inner: 2.714 outer: 1.200
-        surface1 [-0.0033651619031351706]
+        surface1 [-0.003365161886999925]
         surface2 []
 
 

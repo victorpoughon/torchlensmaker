@@ -65,10 +65,10 @@ test_data = [
 
     (basic_transform(-1.0, "extent", 0., [-15., 0.]), tlm.Sphere(diameter=15, R=18)),
     
-    (basic_transform(-1.0, "origin", 0., [-30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, A4=0.00045)),
-    (basic_transform(-1.0, "origin", 0., [-35., 0.]), tlm.Asphere(diameter=20, R=-20, K=0.8, A4=-0.0003)),
-    (basic_transform(-1.0, "origin", 0., [-40., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, A4=0.000045)),
-    (basic_transform(-1.0, "origin", 0., [-45., 0.]), tlm.Asphere(diameter=20, R=1e6, K=0, A4=0.0)),
+    (basic_transform(-1.0, "origin", 0., [-30., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, coefficients=[0.00045])),
+    (basic_transform(-1.0, "origin", 0., [-35., 0.]), tlm.Asphere(diameter=20, R=-20, K=0.8, coefficients=[-0.0003])),
+    (basic_transform(-1.0, "origin", 0., [-40., 0.]), tlm.Asphere(diameter=20, R=-15, K=-1.2, coefficients=[0.000045])),
+    (basic_transform(-1.0, "origin", 0., [-45., 0.]), tlm.Asphere(diameter=20, R=1e6, K=0, coefficients=[0.0])),
 ]
 
 test_surfaces = [s for t, s in test_data]
@@ -82,7 +82,11 @@ def demo(rays):
 
     # COLLIDE
     for transform, surface in test_data:
-        points, normals, valid = tlm.intersect(surface, P, V, transform(surface))
+        t, normals, valid = tlm.intersect(surface, P, V, *transform(surface))
+        points = P + t.unsqueeze(-1).expand_as(V)*V
+
+        points = points[valid]
+        normals = normals[valid]
 
         assert torch.sum(valid) == points.shape[0] == normals.shape[0]
 
@@ -100,8 +104,10 @@ def demo(rays):
         tlm.viewer.render_rays(rays_start, rays_end, 0)
     )
 
-    scene["data"].append(tlm.viewer.render_surfaces(test_surfaces, [t(s) for t, s in test_data], dim=2))
-
+    for t, s in test_data:
+        hom, _ = t(s)
+        scene["data"].append(tlm.viewer.render_surface(s, hom, dim=2))
+    
      #pprint(scene)
     
     tlm.viewer.display_scene(scene)

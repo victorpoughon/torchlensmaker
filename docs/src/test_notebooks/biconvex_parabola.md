@@ -3,7 +3,6 @@
 
 ```python
 import torch
-import torch.nn as nn
 import torchlensmaker as tlm
 import torch.optim as optim
 
@@ -12,7 +11,7 @@ surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.015))
 
 lens = tlm.BiLens(surface, material="BK7", outer_thickness=1.0)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(beam_diameter=18.5),
     tlm.Wavelength(500, 800),
     tlm.Gap(10),
@@ -38,32 +37,32 @@ tlm.optimize(
     num_iter = 100
 ).plot()
 
-print("Final parabola parameter:", surface.A.item())
+print("Final parabola parameter:", surface.sag_function.A.item())
 print("Outer thickness:", lens.outer_thickness())
 print("Inner thickness:", lens.inner_thickness())
 ```
 
-    [  1/100] L=  2.447 | grad norm= 452.9619009549908
-    [  6/100] L=  1.772 | grad norm= 449.25157905321083
-    [ 11/100] L=  1.103 | grad norm= 445.83217609874936
-    [ 16/100] L=  0.440 | grad norm= 442.67323355051326
-    [ 21/100] L=  0.182 | grad norm= 439.9032571927819
-    [ 26/100] L=  0.345 | grad norm= 439.2102075508755
-    [ 31/100] L=  0.152 | grad norm= 440.0346518863437
-    [ 36/100] L=  0.140 | grad norm= 441.31838181807274
-    [ 41/100] L=  0.080 | grad norm= 425.148702719339
-    [ 46/100] L=  0.091 | grad norm= 440.3003762145692
-    [ 51/100] L=  0.042 | grad norm= 176.87098261684466
-    [ 56/100] L=  0.040 | grad norm= 155.25726849308128
-    [ 61/100] L=  0.044 | grad norm= 254.64243182439472
-    [ 66/100] L=  0.043 | grad norm= 204.1287933832373
-    [ 71/100] L=  0.038 | grad norm= 176.18179471313238
-    [ 76/100] L=  0.036 | grad norm= 100.5678127554538
-    [ 81/100] L=  0.035 | grad norm= 70.39112896163316
-    [ 86/100] L=  0.035 | grad norm= 51.45917604215506
-    [ 91/100] L=  0.034 | grad norm= 12.45866730680031
-    [ 96/100] L=  0.035 | grad norm= 51.45914521608263
-    [100/100] L=  0.034 | grad norm= 12.4604352624838
+    [  1/100] L= 2.44664 | grad norm= 452.9618884131326
+    [  6/100] L= 1.77205 | grad norm= 449.25156671386145
+    [ 11/100] L= 1.10307 | grad norm= 445.83216393762723
+    [ 16/100] L= 0.43969 | grad norm= 442.6732215467563
+    [ 21/100] L= 0.18247 | grad norm= 439.90324532114613
+    [ 26/100] L= 0.34463 | grad norm= 439.2101957117343
+    [ 31/100] L= 0.15203 | grad norm= 440.0346400093066
+    [ 36/100] L= 0.14041 | grad norm= 441.31836988080266
+    [ 41/100] L= 0.07994 | grad norm= 425.14869121288865
+    [ 46/100] L= 0.09076 | grad norm= 440.300364325908
+    [ 51/100] L= 0.04187 | grad norm= 176.87097772671547
+    [ 56/100] L= 0.03977 | grad norm= 155.25726417068657
+    [ 61/100] L= 0.04401 | grad norm= 254.642424997515
+    [ 66/100] L= 0.04265 | grad norm= 204.12878776101755
+    [ 71/100] L= 0.03820 | grad norm= 176.18179004686544
+    [ 76/100] L= 0.03618 | grad norm= 100.56780990442584
+    [ 81/100] L= 0.03462 | grad norm= 70.39112718943763
+    [ 86/100] L= 0.03467 | grad norm= 51.459174495373595
+    [ 91/100] L= 0.03432 | grad norm= 12.458666839218564
+    [ 96/100] L= 0.03467 | grad norm= 51.459143670865416
+    [100/100] L= 0.03434 | grad norm= 12.460434795945261
 
 
 
@@ -72,8 +71,8 @@ print("Inner thickness:", lens.inner_thickness())
     
 
 
-    Final parabola parameter: 0.009488203266875116
-    Outer thickness: tensor(1., dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
+    Final parabola parameter: 0.009488203272067224
+    Outer thickness: tensor(1.0000, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
     Inner thickness: tensor(2.0674, dtype=torch.float64, grad_fn=<LinalgVectorNormBackward0>)
 
 

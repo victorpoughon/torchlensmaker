@@ -23,15 +23,16 @@ import torch
 
 import math
 
-# Use half spheres to model interface boundaries without collision detection ambiguities
+# Use half spheres to model interface boundaries
 radius = 5
 halfsphere = tlm.SphereR(diameter=2*radius, R=radius)
 
 model = tlm.Sequential(
     # Position the light source just above the optical axis
-    tlm.Offset(
+    tlm.SubChain(
+        tlm.Translate(y=5.001),
         tlm.ObjectAtInfinity(10, 0.5),
-        y=5.001),
+    ),
     tlm.Wavelength(400, 660),
     
     # Move the droplet of water some distance away from the source
@@ -41,14 +42,16 @@ model = tlm.Sequential(
     tlm.RefractiveSurface(halfsphere, material="water", anchors=("extent", "extent")),
     
     # Second interface: half sphere (pointing right), reflective
-    tlm.Rotate(
+    tlm.SubChain(
+        tlm.Rotate((-180, 0)),
         tlm.ReflectiveSurface(halfsphere, anchors=("extent", "extent")),
-        [-180, 0]),
+    ),
 
     # Third interface: half sphere (pointing down), refractive water to air
-    tlm.Rotate(
+    tlm.SubChain(
+        tlm.Rotate((60, 0)),
        tlm.RefractiveSurface(halfsphere, material="air", anchors=("extent", "origin")),
-        [60, 0]),
+    ),
 )
 
 # Use rays opacity and thickness to give some illusion of real color

@@ -22,7 +22,7 @@ Let's define a simple optical model that we'll use to demonstrate various ways o
 surface = tlm.Sphere(diameter=15, R=tlm.parameter(32.6656))
 lens = tlm.BiLens(surface, material="BK7", outer_thickness=1.5)
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=5.),
     tlm.Wavelength(400, 800),
     tlm.Gap(1),
@@ -39,7 +39,7 @@ The row and col arguments control the sampling dimension thats use to layout the
 
 ```python
 clear_output()
-tlm.show2d(optics, sampling={"base": tlm.sampling.dense(10), "object": tlm.sampling.dense(3), "wavelength": 3})
+tlm.show2d(optics, sampling={"base": tlm.sampling.dense(10), "object": tlm.sampling.dense(3), "wavelength": 3}, end=10)
 tlm.show3d(optics, sampling={"base": 100, "object": [[np.deg2rad(0), 0.], [np.deg2rad(5), 0.]], "wavelength": 3}, end=100)
 ```
 

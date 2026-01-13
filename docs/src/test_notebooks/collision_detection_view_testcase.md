@@ -19,7 +19,9 @@ from torchlensmaker.testing.collision_datasets import (
 
 from torchlensmaker.core.collision_detection import CollisionMethod, Newton, LM
 
-from torchlensmaker.core.surfaces import CircularPlane, Sphere, SphereR
+from torchlensmaker.surfaces.plane import CircularPlane
+from torchlensmaker.surfaces.conics import Sphere
+from torchlensmaker.surfaces.sphere_r import SphereR
 
 from torchlensmaker.core.geometry import rotated_unit_vector, unit3d_rot, unit2d_rot
 
@@ -50,7 +52,7 @@ test_cases = [
 ]
 
 test_cases = [
-    (tlm.Asphere(10, 50, 1.0, 0.005, dtype=torch.float64),
+    (tlm.Asphere(10, R=50, K=1.0, coefficients=[0.005], dtype=torch.float64),
     FixedRays(dim=2, N=15, direction=torch.tensor([0.1736, 0.9848], dtype=torch.float64), offset=0.0, epsilon=0.01),
     True)
 ]

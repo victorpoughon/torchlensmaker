@@ -6,7 +6,6 @@ This is the example script for the documentation welcome page.
 ```python
 import torchlensmaker as tlm
 
-# Define the optical sequence: a simple lens made of two refractive surfaces
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
     tlm.Gap(15),
@@ -17,34 +16,32 @@ optics = tlm.Sequential(
     tlm.ImagePlane(50),
 )
 
-# Optimize the radius of curvature
 tlm.optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), {"base": 10, "object": 5}, 100)
 
-# Show 2D layout
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
-    [  1/100] L= 161.110 | grad norm= 34027.92132918352
-    [  6/100] L= 88.273 | grad norm= 24824.72953856118
-    [ 11/100] L= 39.426 | grad norm= 16373.459257966973
-    [ 16/100] L= 12.248 | grad norm= 9001.44816291341
-    [ 21/100] L=  1.564 | grad norm= 3071.495725565856
-    [ 26/100] L=  0.324 | grad norm= 1120.9160184216457
-    [ 31/100] L=  2.004 | grad norm= 3485.6156820326296
-    [ 36/100] L=  2.871 | grad norm= 4211.980082166615
-    [ 41/100] L=  2.265 | grad norm= 3719.6828440763443
-    [ 46/100] L=  1.120 | grad norm= 2535.24844357612
-    [ 51/100] L=  0.341 | grad norm= 1167.9203867628376
-    [ 56/100] L=  0.132 | grad norm= 13.884880785644617
-    [ 61/100] L=  0.207 | grad norm= 703.0796822820761
-    [ 66/100] L=  0.267 | grad norm= 942.9408673391762
-    [ 71/100] L=  0.232 | grad norm= 809.7331350515325
-    [ 76/100] L=  0.167 | grad norm= 479.4960834122824
-    [ 81/100] L=  0.134 | grad norm= 126.23700435637802
-    [ 86/100] L=  0.134 | grad norm= 129.77923653501958
-    [ 91/100] L=  0.141 | grad norm= 241.5122542562588
-    [ 96/100] L=  0.139 | grad norm= 225.6937244646029
-    [100/100] L=  0.135 | grad norm= 156.7784315553501
+    [  1/100] L= 161.11003 | grad norm= 34027.92131583918
+    [  6/100] L= 88.27340 | grad norm= 24824.72953394519
+    [ 11/100] L= 39.42606 | grad norm= 16373.459257468054
+    [ 16/100] L= 12.24760 | grad norm= 9001.448163484703
+    [ 21/100] L= 1.56379 | grad norm= 3071.495725685025
+    [ 26/100] L= 0.32416 | grad norm= 1120.9160190576415
+    [ 31/100] L= 2.00424 | grad norm= 3485.6156830311957
+    [ 36/100] L= 2.87056 | grad norm= 4211.9800829695805
+    [ 41/100] L= 2.26533 | grad norm= 3719.6828442996148
+    [ 46/100] L= 1.12010 | grad norm= 2535.2484431358866
+    [ 51/100] L= 0.34067 | grad norm= 1167.9203858515893
+    [ 56/100] L= 0.13163 | grad norm= 13.884879750043755
+    [ 61/100] L= 0.20711 | grad norm= 703.0796831027781
+    [ 66/100] L= 0.26732 | grad norm= 942.9408677398148
+    [ 71/100] L= 0.23172 | grad norm= 809.7331350072187
+    [ 76/100] L= 0.16675 | grad norm= 479.496083049014
+    [ 81/100] L= 0.13404 | grad norm= 126.23700387577502
+    [ 86/100] L= 0.13417 | grad norm= 129.77923694079215
+    [ 91/100] L= 0.14051 | grad norm= 241.51225446917633
+    [ 96/100] L= 0.13938 | grad norm= 225.6937244656427
+    [100/100] L= 0.13535 | grad norm= 156.77843142956834
 
 
 

@@ -7,7 +7,6 @@ Note that it will not be exactly zero because the lens maker equation is an appr
 
 ```python
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torchlensmaker as tlm
 
@@ -38,7 +37,7 @@ surface1 = tlm.Sphere(lens_diameter, R1)
 surface2 = tlm.Sphere(lens_diameter, R2)
 
 # Setup the optical stack with incident parallel rays
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(lens_diameter,  material=tlm.NonDispersiveMaterial(N1)),
     tlm.Gap(10.),
 
@@ -63,7 +62,7 @@ tlm.show(optics, dim=2, end=250)
 ```
 
     Expected focal length (lens's maker equation): 222.2222222222222
-    Loss: 0.053437498604945864
+    Loss: 0.05343749860494636
 
 
 

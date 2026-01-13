@@ -47,12 +47,13 @@ test_data = [
 ]
 
 test_surfaces = [s for t, s in test_data]
-test_transforms = [t(s) for t, s in test_data]
 
 scene = tlm.viewer.new_scene("2D")
 
 
-scene["data"].append(tlm.viewer.render_surfaces(test_surfaces, test_transforms, dim=2))
+for t, s in test_data:    
+    hom, _ = t(s)
+    scene["data"].append(tlm.viewer.render_surface(s, hom, dim=2))
 
 tlm.viewer.display_scene(scene)
 #tlm.viewer.display_scene(scene, ndigits=3, dump=True)
@@ -76,11 +77,11 @@ test_data = [
     (basic_transform(1.0, "origin", [45., -60., 0.], [80., 0., 0.]), tlm.CircularPlane(50.)),
 ]
 
-test_surfaces = [s for t, s in test_data]
-test_transforms = [t(s) for t, s in test_data]
-
 scene = tlm.viewer.new_scene("3D")
-scene["data"].append(tlm.viewer.render_surfaces(test_surfaces, test_transforms, dim=3))
+
+for t, s in test_data:
+    hom, _ = t(s)
+    scene["data"].append(tlm.viewer.render_surface(s, hom, dim=3))
 
 tlm.viewer.display_scene(scene)
 #tlm.viewer.display_scene(scene,ndigits=2,dump=True)
@@ -95,7 +96,6 @@ tlm.viewer.display_scene(scene)
 # Setting initial controls state
 
 import torch
-import torch.nn as nn
 import torchlensmaker as tlm
 import torch.optim as optim
 
@@ -108,7 +108,7 @@ lens = tlm.Lens(surface1, surface2, material="BK7-nd", outer_thickness=2.2)
 focal = 120.5
 
 # Build the optical sequence
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=8, angular_size=30),
     tlm.Gap(15),
     lens,

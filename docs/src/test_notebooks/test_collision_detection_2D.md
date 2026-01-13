@@ -4,7 +4,6 @@
 ```python
 import torchlensmaker as tlm
 import torch
-import torch.nn
 from pprint import pprint
 
 from torchlensmaker.testing.basic_transform import basic_transform
@@ -63,7 +62,11 @@ def demo(title, surface):
 
     # COLLIDE
     for transform in test_transforms:
-        points, normals, valid = tlm.intersect(surface, P, V, transform(surface))
+        hom, hom_inv = transform(surface)
+        t, normals, valid = tlm.intersect(surface, P, V, hom, hom_inv)
+        points = P + t.unsqueeze(-1).expand_as(V)*V
+        points = points[valid]
+        normals = normals[valid]
 
         assert torch.sum(valid) == points.shape[0] == normals.shape[0]
 
@@ -81,7 +84,9 @@ def demo(title, surface):
         tlm.viewer.render_rays(rays_start, rays_end, layer=0)
     )
 
-    scene["data"].append(tlm.viewer.render_surfaces([surface]*len(test_transforms), [t(surface) for t in test_transforms], dim=2))
+    for t in test_transforms:
+        hom, _ = t(surface)
+        scene["data"].append(tlm.viewer.render_surface(surface, hom, dim=2))
     scene["title"] = title
     tlm.viewer.display_scene(scene)
 

@@ -14,6 +14,7 @@ from torchlensmaker.testing.collision_datasets import CollisionDataset
 from torchlensmaker.testing.dataset_view import dataset_view
 
 from torchlensmaker.core.geometry import unit3d_rot
+from torchlensmaker.core.cylinder_collision import rays_cylinder_collision, rays_rectangle_collision
 
 import matplotlib as mpl
 
@@ -30,7 +31,15 @@ def analysis_single_ray(surface, P, V):
 
     dataset_view(surface, P, V, rays_length=100)
 
-    results = surface.collision_method(surface, P, V, history=True)
+    xmin, xmax, tau = surface.bcyl().unbind()
+    if dim == 3:
+        tmin, tmax, hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
+    else:
+        tmin, tmax, hit_mask = rays_rectangle_collision(P, V, xmin, xmax, -tau, tau)
+
+    assert torch.all(hit_mask)
+    
+    results = surface.collision_method(surface, P, V, tmin, tmax, history=True)
     t_solve, t_history = results.t, results.history_fine
     t_min = t_history.min().item()
     t_max = t_history.max().item()
@@ -89,8 +98,8 @@ def analysis_single_ray(surface, P, V):
 
 # 3D baby!
 analysis_single_ray(tlm.Sphere(30, R=20),
-                    P=torch.tensor([5.0, 1.0, 2.0]),
-                    V=unit3d_rot(15.0, 35.0))
+                    P=torch.tensor([5.0, 1.0, 2.0], dtype=torch.float64),
+                    V=unit3d_rot(15.0, 35.0, dtype=torch.float64))
 
 ```
 
@@ -98,8 +107,8 @@ analysis_single_ray(tlm.Sphere(30, R=20),
 <TLMViewer src="./collision_detection_analysis_single_ray_files/collision_detection_analysis_single_ray_0.json?url" />
 
 
-    tensor([-7.8810e-08, -1.5762e-08, -3.1524e-09, -6.3048e-10, -1.2610e-10,
-            -2.5219e-11, -5.0436e-12, -1.0095e-12, -2.0095e-13, -4.0634e-14],
+    tensor([-6.9558e-07, -1.3912e-07, -2.7823e-08, -5.5646e-09, -1.1129e-09,
+            -2.2259e-10, -4.4517e-11, -8.9034e-12, -1.7809e-12, -3.5572e-13],
            dtype=torch.float64)
 
 

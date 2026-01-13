@@ -149,9 +149,9 @@ for N in range(1, 50):
     sum =  48.0
 
 
-    /tmp/ipykernel_30674/2490190196.py:6: RuntimeWarning: invalid value encountered in scalar divide
+    /tmp/ipykernel_75931/2490190196.py:6: RuntimeWarning: invalid value encountered in scalar divide
       alpha = (N-1)/(math.pi*M*(M+1))
-    /tmp/ipykernel_30674/2490190196.py:6: RuntimeWarning: divide by zero encountered in scalar divide
+    /tmp/ipykernel_75931/2490190196.py:6: RuntimeWarning: divide by zero encountered in scalar divide
       alpha = (N-1)/(math.pi*M*(M+1))
 
 

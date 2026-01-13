@@ -29,9 +29,10 @@ tlm.plot_material_models([nssk2, nsk2, f5, nsk16], 400, 800, ["nssk2", "nsk2", "
 diameter = 55
 
 optics = tlm.Sequential(
-    tlm.Offset(
+    tlm.SubChain(
+        tlm.Translate(y=-10, z=-5),
         tlm.ObjectAtInfinity(20, angular_size=30),
-        y=-10),
+    ),
     tlm.Wavelength(400, 600),
     tlm.Gap(20),
     
@@ -75,9 +76,14 @@ optics = tlm.Sequential(
     tlm.ImagePlane(80),
 )
 
-tlm.show(optics, dim=2, end=10, sampling={"base": 5, "object": 3, "wavelength": 3})
+tlm.show2d(optics, end=10, sampling={"base": 5, "object": 3, "wavelength": 3})
+tlm.show3d(optics, end=10, sampling={"base": 5, "object": 3, "wavelength": 3})
 ```
 
 
 <TLMViewer src="./double_gauss_files/double_gauss_0.json?url" />
+
+
+
+<TLMViewer src="./double_gauss_files/double_gauss_1.json?url" />
 

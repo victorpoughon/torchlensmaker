@@ -7,7 +7,6 @@ This problem has many solutions because different surface shape combinations can
 
 ```python
 import torch
-import torch.nn as nn
 import torch.optim as optim
 import torchlensmaker as tlm
 import math
@@ -39,7 +38,7 @@ lens_biconvex = tlm.BiLens(
     outer_thickness = lens_outer_thickness,
 )
 
-optics = nn.Sequential(
+optics = tlm.Sequential(
     tlm.PointSourceAtInfinity(0.9*lens_diamater),
     tlm.Gap(10.),
     lens_biconvex,
@@ -89,27 +88,27 @@ print_thickness("Plano-convex", lens_plano)
 print_thickness("Bi-convex", lens_biconvex)
 ```
 
-    [  1/100] L=  5.693 | grad norm= 365.67909387157397
-    [  6/100] L=  5.144 | grad norm= 367.51879541852355
-    [ 11/100] L=  4.593 | grad norm= 368.97986098990674
-    [ 16/100] L=  4.039 | grad norm= 370.0669665807215
-    [ 21/100] L=  3.484 | grad norm= 370.7870990977098
-    [ 26/100] L=  2.928 | grad norm= 371.14965463656665
-    [ 31/100] L=  2.372 | grad norm= 371.1664493575745
-    [ 36/100] L=  1.816 | grad norm= 370.8516177922875
-    [ 41/100] L=  1.262 | grad norm= 370.221398449639
-    [ 46/100] L=  0.709 | grad norm= 369.29382617789076
-    [ 51/100] L=  0.181 | grad norm= 240.85435844478266
-    [ 56/100] L=  0.264 | grad norm= 366.9804612572807
-    [ 61/100] L=  0.322 | grad norm= 366.81655117431734
-    [ 66/100] L=  0.172 | grad norm= 119.2313414589781
-    [ 71/100] L=  0.147 | grad norm= 86.85149720705407
-    [ 76/100] L=  0.166 | grad norm= 240.7654251537622
-    [ 81/100] L=  0.147 | grad norm= 86.84679008058838
-    [ 86/100] L=  0.136 | grad norm= 118.9199452550004
-    [ 91/100] L=  0.137 | grad norm= 118.92601686222727
-    [ 96/100] L=  0.135 | grad norm= 86.61108524379534
-    [100/100] L=  0.130 | grad norm= 118.86034388580518
+    [  1/100] L= 5.69346 | grad norm= 365.67909387157385
+    [  6/100] L= 5.14444 | grad norm= 367.51879541852327
+    [ 11/100] L= 4.59295 | grad norm= 368.97986098990623
+    [ 16/100] L= 4.03943 | grad norm= 370.0669665807214
+    [ 21/100] L= 3.48440 | grad norm= 370.78709909770964
+    [ 26/100] L= 2.92846 | grad norm= 371.14965463656625
+    [ 31/100] L= 2.37224 | grad norm= 371.1664493575743
+    [ 36/100] L= 1.81646 | grad norm= 370.85161779228747
+    [ 41/100] L= 1.26181 | grad norm= 370.22139844963874
+    [ 46/100] L= 0.70901 | grad norm= 369.29382617789054
+    [ 51/100] L= 0.18072 | grad norm= 240.85435844478243
+    [ 56/100] L= 0.26396 | grad norm= 366.98046125728047
+    [ 61/100] L= 0.32196 | grad norm= 366.81655117431717
+    [ 66/100] L= 0.17200 | grad norm= 119.2313414589781
+    [ 71/100] L= 0.14693 | grad norm= 86.85149720705402
+    [ 76/100] L= 0.16616 | grad norm= 240.76542515376195
+    [ 81/100] L= 0.14668 | grad norm= 86.84679008058835
+    [ 86/100] L= 0.13638 | grad norm= 118.9199452550003
+    [ 91/100] L= 0.13708 | grad norm= 118.92601686222724
+    [ 96/100] L= 0.13458 | grad norm= 86.61108524379534
+    [100/100] L= 0.12958 | grad norm= 118.86034388580525
 
 
 

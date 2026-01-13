@@ -6,7 +6,7 @@ A reflecting telescope, in its basic form, is a very simple design. Two surfaces
 
 *Image from Wikipedia*
 
-For this example, our telescope will be made of two convace mirrors. To spice things up, we'll say that the primary mirror is parabolic, and the secondary is spherical. Of course this can easily be changed, so feel free to download this notebook and play with it. In this example, we will keep the position of the two mirrors constant, and try to optimize the two mirrors curvatures jointly.
+For this example, our telescope will be made of two convave mirrors. To spice things up, we'll say that the primary mirror is parabolic, and the secondary is spherical. Of course this can easily be changed, so feel free to download this notebook and play with it. In this example, we will keep the position of the two mirrors constant, and try to optimize the two mirrors curvatures jointly.
 
 
 ```python
@@ -56,27 +56,27 @@ tlm.optimize(
 ).plot()
 ```
 
-    [  1/100] L=  4.143 | grad norm= 5082.363918620529
-    [  6/100] L=  2.142 | grad norm= 4340.7287936145685
-    [ 11/100] L=  0.756 | grad norm= 4644.1259709838105
-    [ 16/100] L=  0.759 | grad norm= 4603.423573570586
-    [ 21/100] L=  1.231 | grad norm= 4325.102890947149
-    [ 26/100] L=  0.651 | grad norm= 4534.0182712760015
-    [ 31/100] L=  0.422 | grad norm= 4376.47656474204
-    [ 36/100] L=  0.136 | grad norm= 4394.467760993692
-    [ 41/100] L=  0.376 | grad norm= 4442.9357634169955
-    [ 46/100] L=  0.229 | grad norm= 4411.379267391225
-    [ 51/100] L=  0.499 | grad norm= 4307.708008600472
-    [ 56/100] L=  0.664 | grad norm= 4447.6069665453715
-    [ 61/100] L=  0.342 | grad norm= 4308.933241431921
-    [ 66/100] L=  0.037 | grad norm= 4349.463429603535
-    [ 71/100] L=  0.197 | grad norm= 4363.575517844985
-    [ 76/100] L=  0.145 | grad norm= 4351.460623838482
-    [ 81/100] L=  0.120 | grad norm= 4312.586251795746
-    [ 86/100] L=  0.246 | grad norm= 4291.967671380488
-    [ 91/100] L=  0.213 | grad norm= 4292.15663167869
-    [ 96/100] L=  0.004 | grad norm= 1206.8889840433037
-    [100/100] L=  0.011 | grad norm= 4312.224145720371
+    [  1/100] L= 4.14344 | grad norm= 5082.363918620529
+    [  6/100] L= 2.14249 | grad norm= 4340.7287936145685
+    [ 11/100] L= 0.75573 | grad norm= 4644.1259709838105
+    [ 16/100] L= 0.75907 | grad norm= 4603.423573570586
+    [ 21/100] L= 1.23147 | grad norm= 4325.102890947149
+    [ 26/100] L= 0.65098 | grad norm= 4534.018271276002
+    [ 31/100] L= 0.42176 | grad norm= 4376.47656474204
+    [ 36/100] L= 0.13623 | grad norm= 4394.467760993692
+    [ 41/100] L= 0.37602 | grad norm= 4442.9357634169955
+    [ 46/100] L= 0.22948 | grad norm= 4411.379267391225
+    [ 51/100] L= 0.49944 | grad norm= 4307.708008600472
+    [ 56/100] L= 0.66376 | grad norm= 4447.606966545372
+    [ 61/100] L= 0.34224 | grad norm= 4308.9332414319215
+    [ 66/100] L= 0.03716 | grad norm= 4349.463429603535
+    [ 71/100] L= 0.19715 | grad norm= 4363.5755178449845
+    [ 76/100] L= 0.14458 | grad norm= 4351.460623838483
+    [ 81/100] L= 0.11978 | grad norm= 4312.586251795746
+    [ 86/100] L= 0.24557 | grad norm= 4291.967671380488
+    [ 91/100] L= 0.21331 | grad norm= 4292.15663167869
+    [ 96/100] L= 0.00447 | grad norm= 1206.8889840433042
+    [100/100] L= 0.01055 | grad norm= 4312.224145720371
 
 
 

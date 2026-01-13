@@ -300,14 +300,14 @@ def demo_light(a, b, alpha_n, beta_n, function):
     assert torch.all(torch.le(torch.abs(torch.linalg.norm(outcident, dim=1) - 1.0), 1e-5))
 
     surface = tlm.SquarePlane(2.)
-    transform = basic_transform(1.0, "origin", [0, 0, 0], [0, 0, 0])(surface)
+    hom, _ = basic_transform(1.0, "origin", [0, 0, 0], [0, 0, 0])(surface)
 
     # rays to display vectors
     incident_display = torch.column_stack((torch.zeros_like(incident), -incident))
     outcident_display = torch.column_stack((torch.zeros_like(outcident), outcident))
 
     scene = tlm.viewer.new_scene("3D")
-    scene["data"].append(tlm.viewer.render_surfaces([surface], [transform], dim=3))
+    scene["data"].append(tlm.viewer.render_surface(surface, hom, dim=3))
 
     scene["data"].append(tlm.viewer.render_rays(
         incident_display[:, :3],

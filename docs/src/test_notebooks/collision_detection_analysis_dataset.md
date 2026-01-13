@@ -6,17 +6,18 @@ import math
 from torchlensmaker.testing.collision_datasets import NormalRays, FixedRays, OrbitalRays
 from torchlensmaker.testing.dataset_view import convergence_plot
 
-from torchlensmaker.core.geometry import unit2d_rot, unit3d_rot
+from torchlensmaker.core.geometry import unit2d_rot, unit3d_rot, unit_vector
 
 
 from typing import TypeAlias, Any
 
 Tensor: TypeAlias = torch.Tensor
 
-from torchlensmaker.core.collision_detection import init_brd, CollisionAlgorithm, surface_f, default_collision_method
+from torchlensmaker.core.collision_detection import CollisionAlgorithm, surface_f, default_collision_method
+from torchlensmaker.core.cylinder_collision import rays_cylinder_collision, rays_rectangle_collision
 
 
-def view_beams(surface, P, V, t, rays_length=1000):
+def view_beams(surface, P, V, t, rays_length=50):
 
     N, D = P.shape
     B = t.shape[0]
@@ -32,7 +33,8 @@ def view_beams(surface, P, V, t, rays_length=1000):
     assert points.shape == (B*N, D)
     
     scene = tlm.viewer.new_scene("2D" if D == 2 else "3D")
-    scene["data"].append(tlm.viewer.render_surface(surface, D))
+    tf = tlm.IdentityTransform(D, points.dtype)
+    scene["data"].append(tlm.viewer.render_surface(surface, tf.hom_matrix(), D))
     
     rays_start = P - rays_length*V
     rays_end = P + rays_length*V
@@ -59,30 +61,58 @@ def view_coarse_phase(surface, P, V, results):
 ###########
 
 def demo():
-    surface = tlm.Sphere(5, C=0.12)
+    surface = tlm.SagSurface(10, tlm.SagSum([
+        tlm.Conical(C=torch.tensor(0.01999999955296516), K=torch.tensor(1.)),
+        tlm.Aspheric(coefficients=torch.tensor([-0.004999999888241291]))
+    ]))
+    
+        
+    dim = 2
 
     # this one fails with offset= -50 but not 50
     #generator = FixedRays(dim=2, N=35, direction=torch.tensor([0.1736, 0.9848], dtype=torch.float64), offset=-50.0, epsilon=0.05)
 
-    generator = FixedRays(dim=3, N=12, direction=torch.tensor([0., 1., 0.]), offset=10.0, epsilon=0.05)
+    #generator = FixedRays(dim=dim, N=12, direction=unit_vector(dim=dim), offset=10.0, epsilon=0.05)
+    #generator = OrbitalRays(dim=2, N=15, radius=1.1, offset=0.0, epsilon=0.0)
     
-
-    # generator = FixedRays(dim=2, N=15, direction=unit2d_rot(10, dtype=torch.float64), offset=-50.0, epsilon=0.05)
+    generator = FixedRays(dim=2, N=15, direction=unit2d_rot(10, dtype=torch.float64), offset=-30.0, epsilon=0.05)
     
     #generator = FixedRays(dim=3, N=15, direction=unit3d_rot(70., 5., dtype=torch.float64), offset=50.0, epsilon=0.05)
 
     P, V = generator(surface)
+
+
+    # Collision detection instrumented
+
+    N = P.shape[0]
     
-    results = default_collision_method(surface, P, V, history=True)
+    xmin, xmax, tau = surface.bcyl().unbind()
+
+    if dim == 3:
+        t1, t2, hit_mask = rays_cylinder_collision(P, V, xmin, xmax, tau)
+    else:
+        t1, t2, hit_mask = rays_rectangle_collision(P, V, xmin, xmax, -tau, tau)
+
+    P_maybe, V_maybe = P[hit_mask], V[hit_mask]
+    tmin, tmax = t1[hit_mask], t2[hit_mask]
+    
+    results = default_collision_method(surface, P_maybe, V_maybe, tmin, tmax, history=True)
     t = results.t
-    local_points = P + t.unsqueeze(1).expand_as(V) * V
+    local_points = P_maybe + t.unsqueeze(1).expand_as(V_maybe) * V_maybe
 
     #view_coarse_phase(surface, P, V, results)
-    view_beams(surface, P, V, t.unsqueeze(0))
+
+    indices = hit_mask.nonzero().squeeze(-1)
+    final_t = torch.zeros((N,), dtype=t.dtype).index_put(
+        (indices,), t
+    )
+    
+    view_beams(surface, P, V, final_t.unsqueeze(0))
 
     print("rmse:", surface.rmse(local_points))
 
-    convergence_plot(surface, P, V, generator.__class__.__name__)
+    # TODO fix convergence plot
+    #convergence_plot(surface, P, V, generator.__class__.__name__)
 
     assert torch.all(surface.contains(local_points) == True)
 
@@ -93,11 +123,5 @@ demo()
 <TLMViewer src="./collision_detection_analysis_dataset_files/collision_detection_analysis_dataset_0.json?url" />
 
 
-    rmse: 5.10201572555291e-11
-
-
-
-    
-![png](collision_detection_analysis_dataset_files/collision_detection_analysis_dataset_0_2.png)
-    
+    rmse: 3.409889106123456e-14
 
