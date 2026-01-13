@@ -60,6 +60,10 @@ class FuncModule(nn.Module):
 def export_onnx(
     kernel: FunctionalKernel, dtype: torch.dtype, device: torch.device
 ) -> ONNXProgram:
+    """
+    Export a functional kernel to a ONNX program
+    """
+
     example_inputs = (
         *kernel.example_inputs(dtype, device),
         *kernel.example_params(dtype, device),

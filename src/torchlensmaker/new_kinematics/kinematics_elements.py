@@ -35,15 +35,6 @@ from .kinematics_kernels import (
     Translate3DKernel,
 )
 
-"""
-Vocabulary:
-dfk: Direct Forward Kinematic chain
-     The homogeneous matrix for the forward kinematic transform from the
-     kinematic base to the current element
-ifk: Inverse Forward Kinematic chain
-     The inverse matrix of dfk
-"""
-
 
 class Translate2D(nn.Module):
     def __init__(

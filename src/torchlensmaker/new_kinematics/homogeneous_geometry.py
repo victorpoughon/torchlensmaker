@@ -57,6 +57,7 @@ def hom_identity_3d(
 def hom_identity(
     dim: int, dtype: torch.dtype, device: torch.device
 ) -> tuple[HomMatrix, HomMatrix]:
+    "Identity homogeneous transform matrices in 2D or 3D"
     return (
         hom_identity_2d(dtype, device) if dim == 2 else hom_identity_3d(dtype, device)
     )
@@ -214,4 +215,7 @@ def transform_vectors(
 def transform_rays(
     hom: HomMatrix, P: Float[torch.Tensor, "*B D"], V: Float[torch.Tensor, "*B D"]
 ) -> tuple[Float[torch.Tensor, "*B D"], Float[torch.Tensor, "*B D"]]:
+    """
+    Apply a homogeneous transform matrix to a pair of tensors representing rays
+    """
     return transform_points(hom, P), transform_vectors(hom, V)
