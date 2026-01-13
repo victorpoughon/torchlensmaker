@@ -103,7 +103,8 @@ class SagSurface(ImplicitSurface):
         return torch.stack((-torch.ones_like(x), grad_y, grad_z), dim=-1)
 
     def extent_x(self) -> Tensor:
-        return torch.max(torch.abs(self.sag_function.bounds(self.tau())))
+        r = torch.as_tensor(self.diameter / 2, dtype=self.dtype)
+        return self.sag_function.g(r, tau=r)
 
     def bcyl(self) -> Tensor:
         """Bounding cylinder

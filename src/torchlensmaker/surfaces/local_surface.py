@@ -44,7 +44,7 @@ class LocalSurface:
     def extent_x(self) -> torch.Tensor:
         """
         Extent along the X axis
-        i.e. X coordinate of the point on the surface that is furthest along the X axis
+        X coordinate of the point on the surface furthest from the optical axis
         """
         raise NotImplementedError
 
