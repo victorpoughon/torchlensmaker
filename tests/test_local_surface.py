@@ -242,3 +242,9 @@ def test_implicit_surface(surfaces: list[tlm.LocalSurface], dim: int) -> None:
             assert torch.all(torch.isfinite(F_grad))
             assert F.dtype == surface.dtype
             assert F_grad.dtype == surface.dtype
+
+
+
+def test_negative_extent():
+    surface = tlm.Sphere(diameter=30, R=tlm.parameter(-60))
+    assert surface.extent_x().item() < 0
