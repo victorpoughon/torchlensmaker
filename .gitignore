@@ -3,8 +3,10 @@
 __pycache__/
 venv/
 *.egg-info
+.coverage
 
 .vscode
+
 
 # Docs
 node_modules/
