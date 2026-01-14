@@ -18,8 +18,7 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from torchlensmaker.core.transforms import kinematics_old_to_new
-from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, transform_points, kinematic_chain_extend
+from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, transform_points, kinematic_chain_append
 from torchlensmaker.materials import MaterialModel, get_material_model
 from torchlensmaker.elements.sequential import SequentialElement
 
@@ -77,12 +76,12 @@ def anchor_thickness(
         lens, tlm.default_input(sampling={}, dim=dim, dtype=dtype)
     )
 
-    s1_homs, s1_homs_inv = kinematics_old_to_new(lens.surface1.collision_surface.surface_transform(dim, dtype))
-    s1_dfk, s1_ifk = kinematic_chain_extend(input_tree[lens.surface1].dfk, input_tree[lens.surface1].ifk, s1_homs, s1_homs_inv)
+    s1_homs, s1_homs_inv = lens.surface1.collision_surface.surface_transform(dim, dtype)
+    s1_dfk, s1_ifk = kinematic_chain_append(input_tree[lens.surface1].dfk, input_tree[lens.surface1].ifk, s1_homs, s1_homs_inv)
     a1 = anchor_abs(lens.surface1.surface, s1_dfk, anchor)
 
-    s2_homs, s2_homs_inv = kinematics_old_to_new(lens.surface2.collision_surface.surface_transform(dim, dtype))
-    s2_dfk, s2_ifk = kinematic_chain_extend(input_tree[lens.surface2].dfk, input_tree[lens.surface2].ifk, s2_homs, s2_homs_inv)
+    s2_homs, s2_homs_inv = lens.surface2.collision_surface.surface_transform(dim, dtype)
+    s2_dfk, s2_ifk = kinematic_chain_append(input_tree[lens.surface2].dfk, input_tree[lens.surface2].ifk, s2_homs, s2_homs_inv)
     a2 = anchor_abs(lens.surface2.surface, s2_dfk, anchor)
 
     return torch.linalg.vector_norm(a1 - a2)  # type: ignore

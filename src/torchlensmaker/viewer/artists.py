@@ -19,10 +19,8 @@ import torch.nn as nn
 
 from typing import Any, Callable
 
-from torchlensmaker.core.transforms import TransformBase, kinematics_old_to_new
-
 from torchlensmaker.new_kinematics.homogeneous_geometry import (
-    kinematic_chain_extend,
+    kinematic_chain_append,
     transform_points,
 )
 
@@ -124,8 +122,8 @@ class CollisionSurfaceArtist(Artist):
         inputs = collective.input_tree[module]
         dim, dtype = inputs.dim, inputs.dtype
 
-        homs, homs_inv = kinematics_old_to_new(module.surface_transform(dim, dtype))
-        dfk, ifk = kinematic_chain_extend(inputs.dfk, inputs.ifk, homs, homs_inv)
+        homs, homs_inv = module.surface_transform(dim, dtype)
+        dfk, ifk = kinematic_chain_append(inputs.dfk, inputs.ifk, homs, homs_inv)
 
         return [tlmviewer.render_surface(module.surface, dfk, dim)]
 

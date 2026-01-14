@@ -20,14 +20,13 @@ import torch.nn as nn
 from typing import Sequence, Optional, TypeAlias, Literal
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
-from torchlensmaker.core.transforms import (
-    TransformBase,
-    TranslateTransform,
-    LinearTransform,
-    kinematics_old_to_new,
-)
 from torchlensmaker.new_kinematics.homogeneous_geometry import (
     kinematic_chain_extend,
+    kinematic_chain_append,
+    hom_translate,
+    hom_identity,
+    HomMatrix,
+    hom_scale,
 )
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.plane import CircularPlane
@@ -46,7 +45,6 @@ from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 
 Tensor = torch.Tensor
-
 
 
 class CollisionSurface(nn.Module):
@@ -81,52 +79,56 @@ class CollisionSurface(nn.Module):
 
     def kinematic_transform(
         self, dim: int, dtype: torch.dtype
-    ) -> Sequence[TransformBase]:
+    ) -> tuple[HomMatrix, HomMatrix]:
         "Additional transform that applies to the next element"
 
         assert dtype == self.surface.dtype
+        device = torch.device("cpu")  # TODO gpu support
 
         # Subtract first anchor, add second anchor
-        anchor0 = (
-            [TranslateTransform(-self.scale * self.surface.extent(dim))]
-            if self.anchors[0] == "extent"
-            else []
-        )
-        anchor1 = (
-            [TranslateTransform(self.scale * self.surface.extent(dim))]
-            if self.anchors[1] == "extent"
-            else []
-        )
 
-        return list(anchor0) + list(anchor1)
+        # TODO surface.extent() is undefined for some surfaces (XYPolynomial)
+        # so avoid computing it if we don't need it
+
+        if self.anchors == ("extent", "extent"):
+            t0 = hom_translate(-self.scale * self.surface.extent(dim))
+            t1 = hom_translate(self.scale * self.surface.extent(dim))
+            return kinematic_chain_append(*t0, *t1)
+        elif self.anchors == ("extent", "origin"):
+            t0 = hom_translate(-self.scale * self.surface.extent(dim))
+            return t0
+        elif self.anchors == ("origin", "extent"):
+            t1 = hom_translate(self.scale * self.surface.extent(dim))
+            return t1
+        else:
+            return hom_identity(dim, dtype, device)
 
     def surface_transform(
         self, dim: int, dtype: torch.dtype
-    ) -> Sequence[TransformBase]:
+    ) -> tuple[HomMatrix, HomMatrix]:
         "Additional transform that applies to the surface"
 
         assert dtype == self.surface.dtype
-        S = self.scale * torch.eye(dim, dtype=dtype)
-        S_inv = 1.0 / self.scale * torch.eye(dim, dtype=dtype)
+        device = torch.device("cpu")  # TODO gpu support
 
-        scale: Sequence[TransformBase] = [LinearTransform(S, S_inv)]
-
-        anchor: Sequence[TransformBase] = (
-            [TranslateTransform(-self.scale * self.surface.extent(dim))]
-            if self.anchors[0] == "extent"
-            else []
+        tf_scale = hom_scale(
+            dim, torch.as_tensor(self.scale, dtype=dtype, device=device)
         )
 
-        return list(anchor) + list(scale)
+        if self.anchors[0] == "extent":
+            tf_anchor = hom_translate(-self.scale * self.surface.extent(dim))
+            return kinematic_chain_append(*tf_anchor, *tf_scale)
+        else:
+            return tf_scale
 
     def forward(
         self, inputs: OpticalData
-    ) -> tuple[Tensor, Tensor, Tensor, Sequence[TransformBase]]:
+    ) -> tuple[Tensor, Tensor, Tensor, tuple[HomMatrix, HomMatrix]]:
         dim, dtype = inputs.dim, inputs.dtype
 
         # Collision detection with the surface
-        homs, homs_inv = kinematics_old_to_new(self.surface_transform(dim, dtype))
-        surface_dfk, surface_ifk = kinematic_chain_extend(
+        homs, homs_inv = self.surface_transform(dim, dtype)
+        surface_dfk, surface_ifk = kinematic_chain_append(
             inputs.dfk, inputs.ifk, homs, homs_inv
         )
 
@@ -138,8 +140,8 @@ class CollisionSurface(nn.Module):
             surface_ifk,
         )
 
-        new_homs, new_homs_inv = kinematics_old_to_new(self.kinematic_transform(dim, dtype))
-        new_dfk, new_ifk = kinematic_chain_extend(
+        new_homs, new_homs_inv = self.kinematic_transform(dim, dtype)
+        new_dfk, new_ifk = kinematic_chain_append(
             inputs.dfk, inputs.ifk, new_homs, new_homs_inv
         )
 
@@ -235,9 +237,9 @@ class RefractiveSurface(SequentialElement):
         # Zero rays special case
         # (needs to happen after self.collision_surface is called to enable rendering of it)
         if data.P.numel() == 0:
-            return data.replace(material=self.material, dfk=new_dfk, ifk=new_ifk), torch.full(
-                (data.P.shape[0],), True
-            )
+            return data.replace(
+                material=self.material, dfk=new_dfk, ifk=new_ifk
+            ), torch.full((data.P.shape[0],), True)
 
         # Compute indices of refraction (scalars for non dispersive materials,
         # tensors for dispersive materials)

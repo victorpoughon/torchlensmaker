@@ -26,13 +26,6 @@ torch.set_default_dtype(torch.float64)
 ######
 
 from torchlensmaker.core.physics import reflection, refraction
-from torchlensmaker.core.transforms import (
-    TransformBase,
-    LinearTransform,
-    ComposeTransform,
-    TranslateTransform,
-    IdentityTransform,
-)
 from torchlensmaker.core.intersect import intersect
 from torchlensmaker.core.full_forward import forward_tree, full_forward
 
