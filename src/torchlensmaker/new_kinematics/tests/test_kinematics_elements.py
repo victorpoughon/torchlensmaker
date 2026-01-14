@@ -21,6 +21,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
+
 from torchlensmaker.new_kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -35,7 +36,7 @@ from torchlensmaker.new_kinematics.kinematics_elements import (
     TranslateVec3D,
     Rotate2D,
     Rotate3D,
-    AbsolutePosition3D,
+    AbsolutePosition,
     AbsolutePositionVec3D,
     MixedDim,
     Gap,
@@ -44,11 +45,11 @@ from torchlensmaker.new_kinematics.kinematics_elements import (
 )
 
 
-def check_model_eval_and_grad(model: nn.Module, inputs: Any) -> Any:
+def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
     "Evaluate a model forwards and backwards and run sanity checks"
 
     # Check the forward pass
-    outputs: tuple[torch.Tensor, ...] | torch.Tensor = model(inputs)
+    outputs: tuple[torch.Tensor, ...] | torch.Tensor = model(*inputs)
     if not isinstance(outputs, tuple):
         outputs = tuple(
             outputs,
@@ -74,27 +75,29 @@ def check_model_eval_and_grad(model: nn.Module, inputs: Any) -> Any:
 
 
 def check_eval_kinematics_model_2d(
-    model: nn.Module, dtype: torch.dtype, device: torch.device
+    elements: nn.ModuleList, dtype: torch.dtype, device: torch.device
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
-    inputs = hom_identity_2d(dtype, device)
-    outputs = check_model_eval_and_grad(model, inputs)
+    dfk, ifk = hom_identity_2d(dtype, device)
 
-    # Check that output is a valid kinematic chain
-    dfk, ifk = outputs
-    check_valid_kinematic_chain_2d(dfk, ifk, dtype, device) 
+    for model in elements:
+        dfk_out, ifk_out = check_model_eval_and_grad(model, (dfk, ifk))
+
+        # Check that output is a valid kinematic chain
+        check_valid_kinematic_chain_2d(dfk_out, ifk_out, dtype, device)
 
 
 def check_eval_kinematics_model_3d(
-    model: nn.Module, dtype: torch.dtype, device: torch.device
+    elements: nn.ModuleList, dtype: torch.dtype, device: torch.device
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
-    inputs = hom_identity_3d(dtype, device)
-    outputs = check_model_eval_and_grad(model, inputs)
+    dfk, ifk = hom_identity_3d(dtype, device)
 
-    # Check that output is a valid kinematic chain
-    dfk, ifk = outputs
-    check_valid_kinematic_chain_3d(dfk, ifk, dtype, device) 
+    for model in elements:
+        dfk_out, ifk_out = check_model_eval_and_grad(model, (dfk, ifk))
+
+        # Check that output is a valid kinematic chain
+        check_valid_kinematic_chain_3d(dfk_out, ifk_out, dtype, device)
 
 
 def check_valid_kinematic_chain_2d(
@@ -152,17 +155,19 @@ def test_elements_2d() -> None:
 
     T = nn.Parameter(torch.tensor([5.0, 2.0]))
 
-    chain_model_2d = nn.Sequential(
-        Translate2D(),
-        Translate2D(X=torch.tensor(0.1)),
-        Translate2D(Y=torch.tensor(0.2)),
-        Translate2D(
-            X=torch.tensor(0.1),
-            Y=torch.tensor(0.2),
-        ),
-        TranslateVec2D(T),
-        Rotate2D(0.5),
-        Rotate2D(torch.tensor(0.5)),
+    chain_model_2d = nn.ModuleList(
+        [
+            Translate2D(),
+            Translate2D(X=torch.tensor(0.1)),
+            Translate2D(Y=torch.tensor(0.2)),
+            Translate2D(
+                X=torch.tensor(0.1),
+                Y=torch.tensor(0.2),
+            ),
+            TranslateVec2D(T),
+            Rotate2D(0.5),
+            Rotate2D(torch.tensor(0.5)),
+        ]
     )
 
     check_eval_kinematics_model_2d(chain_model_2d, dtype, device)
@@ -175,56 +180,58 @@ def test_elements_3d() -> None:
 
     T3d = nn.Parameter(torch.tensor([5.0, 2.0, -15.0]))
 
-    chain_model_3d = nn.Sequential(
-        AbsolutePosition3D(
-            torch.tensor(1.1),
-            torch.tensor(1.2),
-            torch.tensor(1.3),
-        ),
-        AbsolutePosition3D(
-            X=torch.tensor(1.1),
-        ),
-        AbsolutePosition3D(
-            Y=torch.tensor(1.1),
-        ),
-        AbsolutePosition3D(
-            Z=torch.tensor(1.1),
-        ),
-        AbsolutePositionVec3D(
-            torch.tensor([1.1, 1.2, 1.3]),
-        ),
-        Translate3D(),
-        Translate3D(X=torch.tensor(0.1)),
-        Translate3D(Y=torch.tensor(0.2)),
-        Translate3D(Z=torch.tensor(0.2)),
-        Translate3D(
-            X=torch.tensor(0.1),
-            Y=torch.tensor(0.2),
-        ),
-        Translate3D(
-            X=torch.tensor(0.1),
-            Z=torch.tensor(0.2),
-        ),
-        Translate3D(
-            Y=torch.tensor(0.2),
-            Z=torch.tensor(0.2),
-        ),
-        Translate3D(
-            X=torch.tensor(0.1),
-            Y=torch.tensor(0.2),
-            Z=torch.tensor(0.2),
-        ),
-        TranslateVec3D(T3d),
-        Rotate3D(),
-        Rotate3D(x=0.1),
-        Rotate3D(y=0.2),
-        Rotate3D(x=0.1, y=0.2),
-        Rotate3D(x=torch.tensor(0.1)),
-        Rotate3D(y=torch.tensor(0.2)),
-        Rotate3D(
-            x=torch.tensor(0.1),
-            y=torch.tensor(0.2),
-        ),
+    chain_model_3d = nn.ModuleList(
+        [
+            AbsolutePosition(
+                torch.tensor(1.1),
+                torch.tensor(1.2),
+                torch.tensor(1.3),
+            ),
+            AbsolutePosition(
+                X=torch.tensor(1.1),
+            ),
+            AbsolutePosition(
+                Y=torch.tensor(1.1),
+            ),
+            AbsolutePosition(
+                Z=torch.tensor(1.1),
+            ),
+            AbsolutePositionVec3D(
+                torch.tensor([1.1, 1.2, 1.3]),
+            ),
+            Translate3D(),
+            Translate3D(X=torch.tensor(0.1)),
+            Translate3D(Y=torch.tensor(0.2)),
+            Translate3D(Z=torch.tensor(0.2)),
+            Translate3D(
+                X=torch.tensor(0.1),
+                Y=torch.tensor(0.2),
+            ),
+            Translate3D(
+                X=torch.tensor(0.1),
+                Z=torch.tensor(0.2),
+            ),
+            Translate3D(
+                Y=torch.tensor(0.2),
+                Z=torch.tensor(0.2),
+            ),
+            Translate3D(
+                X=torch.tensor(0.1),
+                Y=torch.tensor(0.2),
+                Z=torch.tensor(0.2),
+            ),
+            TranslateVec3D(T3d),
+            Rotate3D(),
+            Rotate3D(x=0.1),
+            Rotate3D(y=0.2),
+            Rotate3D(x=0.1, y=0.2),
+            Rotate3D(x=torch.tensor(0.1)),
+            Rotate3D(y=torch.tensor(0.2)),
+            Rotate3D(
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
+            ),
+        ]
     )
     check_eval_kinematics_model_3d(chain_model_3d, dtype, device)
 
@@ -234,19 +241,21 @@ def test_elements_mixed() -> None:
     torch.set_default_dtype(dtype)
     torch.set_default_device(device)
 
-    chain_model_mixed = nn.Sequential(
-        MixedDim(
-            Rotate2D(0.1),
-            Rotate3D(x=0.1),
-        ),
-        Gap(5.0),
-        Gap(torch.tensor(5.0)),
-        # Rotate(),
-        Rotate((0.1, 0.2)),
-        Translate(),
-        Translate(x=0.1),
-        Translate(y=0.2),
-        Translate(z=0.3),
+    chain_model_mixed = nn.ModuleList(
+        [
+            MixedDim(
+                Rotate2D(0.1),
+                Rotate3D(x=0.1),
+            ),
+            Gap(5.0),
+            Gap(torch.tensor(5.0)),
+            # Rotate(),
+            Rotate((0.1, 0.2)),
+            Translate(),
+            Translate(x=0.1),
+            Translate(y=0.2),
+            Translate(z=0.3),
+        ]
     )
 
     check_eval_kinematics_model_2d(chain_model_mixed, dtype, device)
