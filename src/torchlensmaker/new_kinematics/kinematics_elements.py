@@ -41,7 +41,7 @@ from torchlensmaker.elements.sequential import SequentialElement
 
 class KinematicElement(SequentialElement):
     def sequential(self, data: OpticalData) -> OpticalData:
-        dfk, ifk = self.forward(data.dfk, data.ifk)
+        dfk, ifk = self(data.dfk, data.ifk)
         return data.replace(dfk=dfk, ifk=ifk)
 
 
