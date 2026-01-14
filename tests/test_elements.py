@@ -2,7 +2,24 @@ import torch
 import torchlensmaker as tlm
 
 
-def test_elements():
+
+def test_elements0():
+    torch.set_default_dtype(torch.float64)
+    torch.set_default_device(torch.device("cpu"))
+
+    optics = tlm.Sequential(
+        tlm.Gap(15),
+    )
+
+    sampling = {"base": 10, "object": 5, "wavelength": 10}
+    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+
+
+def test_elements1():
+    torch.set_default_dtype(torch.float64)
+    torch.set_default_device(torch.device("cpu"))
+
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
         tlm.Wavelength(400, 800),
@@ -20,7 +37,7 @@ def test_elements():
 
 
 def test_elements2():
-    torch.set_default_dtype(torch.float32)
+    torch.set_default_dtype(torch.float64)
     torch.set_default_device(torch.device("cpu"))
 
     S = 5
@@ -52,7 +69,7 @@ def test_elements2():
 
 
 def test_rainbow():
-    torch.set_default_dtype(torch.float32)
+    torch.set_default_dtype(torch.float64)
     torch.set_default_device(torch.device("cpu"))
 
     # Use half spheres to model interface boundaries
@@ -94,7 +111,7 @@ def test_rainbow():
 
 
 def test_elements3():
-    torch.set_default_dtype(torch.float32)
+    torch.set_default_dtype(torch.float64)
     torch.set_default_device(torch.device("cpu"))
 
     optics = tlm.Sequential(
