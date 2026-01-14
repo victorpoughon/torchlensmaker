@@ -16,6 +16,11 @@
 
 # ruff: noqa: F401
 
+import torch
+
+# Double precision is the better choice for most optical applications
+torch.set_default_dtype(torch.float64)
+
 ######
 # Core
 ######
@@ -64,6 +69,19 @@ from torchlensmaker.new_kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 
+from torchlensmaker.new_kinematics.kinematics_elements import (
+    KinematicElement,
+    MixedDim,
+    AbsolutePosition,
+    Gap,
+    Rotate3D,
+    Rotate2D,
+    Translate2D,
+    Translate3D,
+    Rotate,
+    Translate,
+)
+
 ##########
 # Surfaces
 ##########
@@ -81,20 +99,6 @@ from torchlensmaker.surfaces.sag_surface import SagSurface
 ##################
 
 from torchlensmaker.elements.sequential import Sequential, SubChain, SequentialElement
-from torchlensmaker.elements.kinematics import (
-    KinematicElement,
-    KinematicChain,
-    MixedDim,
-    AbsolutePosition,
-    RelativeTransform,
-    Gap,
-    Rotate3D,
-    Rotate2D,
-    Translate2D,
-    Translate3D,
-    Rotate,
-    Translate,
-)
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,
     ReflectiveSurface,
