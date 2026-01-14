@@ -160,17 +160,17 @@ class AbsolutePosition3DKernel(FunctionalKernel):
 
 class Rotate3DKernel(FunctionalKernel):
     input_names = ["dfk_in", "ifk_in"]
-    param_names = ["x", "y"]
+    param_names = ["y", "z"]
     output_names = ["dfk_out", "ifk_out"]
 
     @staticmethod
     def forward(
         dfk: HomMatrix3D,
         ifk: HomMatrix3D,
-        x: Float[torch.Tensor, ""],
         y: Float[torch.Tensor, ""],
+        z: Float[torch.Tensor, ""],
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        hom, hom_inv = hom_rotate_3d(x, y)
+        hom, hom_inv = hom_rotate_3d(y, z)
         return kinematic_chain_append(dfk, ifk, hom, hom_inv)
 
     @staticmethod

@@ -48,18 +48,18 @@ class KinematicElement(SequentialElement):
 class Translate2D(KinematicElement):
     def __init__(
         self,
-        X: Float[torch.Tensor, ""] | float | int = 0.0,
-        Y: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float | int = 0.0,
+        y: Float[torch.Tensor, ""] | float | int = 0.0,
     ):
         super().__init__()
         self.func = Translate2DKernel()
-        self.X = to_tensor(X)
-        self.Y = to_tensor(Y)
+        self.x = to_tensor(x)
+        self.y = to_tensor(y)
 
     def forward(
         self, dfk: HomMatrix2D, ifk: HomMatrix2D
     ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return self.func.forward(dfk, ifk, self.X, self.Y)
+        return self.func.forward(dfk, ifk, self.x, self.y)
 
 
 class TranslateVec2D(KinematicElement):
@@ -80,20 +80,20 @@ class TranslateVec2D(KinematicElement):
 class Translate3D(KinematicElement):
     def __init__(
         self,
-        X: Float[torch.Tensor, ""] | float | int = 0.0,
-        Y: Float[torch.Tensor, ""] | float | int = 0.0,
-        Z: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float | int = 0.0,
+        y: Float[torch.Tensor, ""] | float | int = 0.0,
+        z: Float[torch.Tensor, ""] | float | int = 0.0,
     ):
         super().__init__()
         self.func = Translate3DKernel()
-        self.X = to_tensor(X)
-        self.Y = to_tensor(Y)
-        self.Z = to_tensor(Z)
+        self.x = to_tensor(x)
+        self.y = to_tensor(y)
+        self.z = to_tensor(z)
 
     def forward(
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.X, self.Y, self.Z)
+        return self.func.forward(dfk, ifk, self.x, self.y, self.z)
 
 
 class TranslateVec3D(KinematicElement):
@@ -127,20 +127,20 @@ class Rotate2D(KinematicElement):
 class AbsolutePosition(KinematicElement):
     def __init__(
         self,
-        X: Float[torch.Tensor, ""] | float | int = 0.0,
-        Y: Float[torch.Tensor, ""] | float | int = 0.0,
-        Z: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float | int = 0.0,
+        y: Float[torch.Tensor, ""] | float | int = 0.0,
+        z: Float[torch.Tensor, ""] | float | int = 0.0,
     ):
         super().__init__()
         self.func = AbsolutePosition3DKernel()
-        self.X = to_tensor(X)
-        self.Y = to_tensor(Y)
-        self.Z = to_tensor(Z)
+        self.x = to_tensor(x)
+        self.y = to_tensor(y)
+        self.z = to_tensor(z)
 
     def forward(
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.X, self.Y, self.Z)
+        return self.func.forward(dfk, ifk, self.x, self.y, self.z)
 
 
 class AbsolutePositionVec3D(KinematicElement):
@@ -161,18 +161,18 @@ class AbsolutePositionVec3D(KinematicElement):
 class Rotate3D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
         y: Float[torch.Tensor, ""] | float | int = 0.0,
+        z: Float[torch.Tensor, ""] | float | int = 0.0,
     ):
         super().__init__()
         self.func = Rotate3DKernel()
-        self.x = to_tensor(x)
         self.y = to_tensor(y)
+        self.z = to_tensor(z)
 
     def forward(
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.x, self.y)
+        return self.func.forward(dfk, ifk, self.y, self.z)
 
 
 class MixedDim(KinematicElement):
@@ -192,8 +192,8 @@ class MixedDim(KinematicElement):
 class Gap(KinematicElement):
     def __init__(self, offset: Float[torch.Tensor, ""] | float | int):
         super().__init__()
-        translate_2d = Translate2D(X=offset)
-        translate_3d = Translate3D(X=offset)
+        translate_2d = Translate2D(x=offset)
+        translate_3d = Translate3D(x=offset)
         self.mixed_dim = MixedDim(translate_2d, translate_3d)
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:

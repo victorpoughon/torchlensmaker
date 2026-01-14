@@ -158,11 +158,11 @@ def test_elements_2d() -> None:
     chain_model_2d = nn.ModuleList(
         [
             Translate2D(),
-            Translate2D(X=torch.tensor(0.1)),
-            Translate2D(Y=torch.tensor(0.2)),
+            Translate2D(x=torch.tensor(0.1)),
+            Translate2D(y=torch.tensor(0.2)),
             Translate2D(
-                X=torch.tensor(0.1),
-                Y=torch.tensor(0.2),
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
             ),
             TranslateVec2D(T),
             Rotate2D(0.5),
@@ -188,48 +188,48 @@ def test_elements_3d() -> None:
                 torch.tensor(1.3),
             ),
             AbsolutePosition(
-                X=torch.tensor(1.1),
+                x=torch.tensor(1.1),
             ),
             AbsolutePosition(
-                Y=torch.tensor(1.1),
+                y=torch.tensor(1.1),
             ),
             AbsolutePosition(
-                Z=torch.tensor(1.1),
+                z=torch.tensor(1.1),
             ),
             AbsolutePositionVec3D(
                 torch.tensor([1.1, 1.2, 1.3]),
             ),
             Translate3D(),
-            Translate3D(X=torch.tensor(0.1)),
-            Translate3D(Y=torch.tensor(0.2)),
-            Translate3D(Z=torch.tensor(0.2)),
+            Translate3D(x=torch.tensor(0.1)),
+            Translate3D(y=torch.tensor(0.2)),
+            Translate3D(z=torch.tensor(0.2)),
             Translate3D(
-                X=torch.tensor(0.1),
-                Y=torch.tensor(0.2),
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
             ),
             Translate3D(
-                X=torch.tensor(0.1),
-                Z=torch.tensor(0.2),
+                x=torch.tensor(0.1),
+                z=torch.tensor(0.2),
             ),
             Translate3D(
-                Y=torch.tensor(0.2),
-                Z=torch.tensor(0.2),
+                y=torch.tensor(0.2),
+                z=torch.tensor(0.2),
             ),
             Translate3D(
-                X=torch.tensor(0.1),
-                Y=torch.tensor(0.2),
-                Z=torch.tensor(0.2),
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
+                z=torch.tensor(0.2),
             ),
             TranslateVec3D(T3d),
             Rotate3D(),
-            Rotate3D(x=0.1),
-            Rotate3D(y=0.2),
-            Rotate3D(x=0.1, y=0.2),
-            Rotate3D(x=torch.tensor(0.1)),
-            Rotate3D(y=torch.tensor(0.2)),
+            Rotate3D(y=0.1),
+            Rotate3D(z=0.2),
+            Rotate3D(y=0.1, z=0.2),
+            Rotate3D(y=torch.tensor(0.1)),
+            Rotate3D(z=torch.tensor(0.2)),
             Rotate3D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
+                y=torch.tensor(0.1),
+                z=torch.tensor(0.2),
             ),
         ]
     )
@@ -245,7 +245,7 @@ def test_elements_mixed() -> None:
         [
             MixedDim(
                 Rotate2D(0.1),
-                Rotate3D(x=0.1),
+                Rotate3D(y=0.1),
             ),
             Gap(5.0),
             Gap(torch.tensor(5.0)),
