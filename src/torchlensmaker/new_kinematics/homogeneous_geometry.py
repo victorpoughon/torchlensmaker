@@ -100,6 +100,13 @@ def hom_translate_3d(T: Float[torch.Tensor, "3"]) -> tuple[HomMatrix3D, HomMatri
     )
 
 
+def hom_translate(T: Float[torch.Tensor, " D"]) -> tuple[HomMatrix, HomMatrix]:
+    "Homogeneous transform matrix for a 2D or 3D translation"
+
+    assert T.shape == (2,) or T.shape == (3,)
+    return hom_translate_2d(T) if T.shape[0] == 2 else hom_translate_3d(T)
+
+
 def hom_rotate_2d(theta: Float[torch.Tensor, ""]) -> tuple[HomMatrix2D, HomMatrix2D]:
     "Homogeneous transform matrices for a 2D rotation in radians"
     zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
