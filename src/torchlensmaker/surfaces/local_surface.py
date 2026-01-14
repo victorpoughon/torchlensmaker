@@ -24,8 +24,11 @@ class LocalSurface:
     Abstract base class for all surfaces
     """
 
-    def __init__(self, dtype: torch.dtype = torch.float64):
-        self.dtype = dtype
+    def __init__(self, dtype: torch.dtype | None):
+        if dtype is None:
+            self.dtype = torch.get_default_dtype()
+        else:
+            self.dtype = dtype
 
     def parameters(self) -> dict[str, nn.Parameter]:
         raise NotImplementedError

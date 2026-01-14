@@ -54,7 +54,7 @@ class SagSurface(ImplicitSurface):
         diameter: float,
         sag_function: SagFunction,
         collision_method: CollisionMethod = default_collision_method,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
         super().__init__(collision_method=collision_method, dtype=dtype)
         self.diameter = diameter

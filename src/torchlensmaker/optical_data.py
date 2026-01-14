@@ -115,8 +115,11 @@ class OpticalData:
 def default_input(
     sampling: dict[str, Any],
     dim: int,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype | None = None,
 ) -> OpticalData:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
     dfk, ifk = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
 
     return OpticalData(

@@ -43,7 +43,7 @@ class ImplicitSurface(LocalSurface):
     def __init__(
         self,
         collision_method: CollisionMethod = default_collision_method,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
         super().__init__(dtype=dtype)
         self.collision_method = collision_method

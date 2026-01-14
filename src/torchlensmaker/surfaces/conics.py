@@ -62,8 +62,11 @@ class Sphere(SagSurface):
         C: int | float | nn.Parameter | None = None,
         normalize: bool = False,
         collision_method: CollisionMethod = default_collision_method,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
+        
         if (R is not None and C is not None) or (R is None and C is None):
             raise RuntimeError(
                 "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
