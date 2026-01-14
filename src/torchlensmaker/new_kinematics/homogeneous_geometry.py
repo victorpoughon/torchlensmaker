@@ -145,6 +145,18 @@ def hom_rotate_3d(
     return hom_matrix_3d(M), hom_matrix_3d(M.T)
 
 
+def hom_scale(dim: int, scale: Float[torch.Tensor, ""]) -> tuple[HomMatrix, HomMatrix]:
+    """
+    Homogeneous transform matrices for a scale on all axes
+    """
+
+    H = hom_matrix(scale * torch.eye(dim, dtype=scale.dtype, device=scale.device))
+    H_inv = hom_matrix(
+        torch.reciprocal(scale) * torch.eye(dim, dtype=scale.dtype, device=scale.device)
+    )
+    return H, H_inv
+
+
 def kinematic_chain_append(
     dfk: HomMatrix, ifk: HomMatrix, hom: HomMatrix, hom_inv: HomMatrix
 ) -> tuple[HomMatrix, HomMatrix]:

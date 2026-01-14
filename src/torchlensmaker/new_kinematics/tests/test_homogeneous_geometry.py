@@ -29,6 +29,7 @@ from torchlensmaker.new_kinematics.homogeneous_geometry import (
     hom_matrix_2d,
     hom_matrix_3d,
     hom_matrix,
+    hom_scale,
     hom_rotate_2d,
     hom_rotate_3d,
     hom_translate_2d,
@@ -75,8 +76,10 @@ def transforms_2d() -> list[tuple[HomMatrix, HomMatrix]]:
     )
     t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
     t9 = hom_translate(torch.tensor([0.5, 1.2]))
+    t10 = hom_scale(2, torch.tensor(1.0))
+    t11 = hom_scale(2, torch.tensor(-1.0))
 
-    return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9]
+    return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
 
 def test_transform_functions_2d() -> None:
@@ -143,8 +146,10 @@ def transforms_3d() -> list[tuple[HomMatrix, HomMatrix]]:
     )
     t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
     t9 = hom_translate(torch.tensor([1.0, 2.0, -3.0]))
+    t10 = hom_scale(3, torch.tensor(1.0))
+    t11 = hom_scale(3, torch.tensor(-1.0))
 
-    return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9]
+    return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
 
 def test_transform_functions_3d() -> None:
