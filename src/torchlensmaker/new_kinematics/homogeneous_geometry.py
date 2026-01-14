@@ -27,11 +27,24 @@ HomMatrix3D: TypeAlias = Float[torch.Tensor, "4 4"]
 HomMatrix: TypeAlias = HomMatrix2D | HomMatrix3D
 
 
+def hom_matrix_2d(M: Float[torch.Tensor, "2 2"]) -> HomMatrix2D:
+    "Extend a 2x2 matrix to a homonegenous coordinates 3x3 matrix"
+    right = torch.zeros((2, 1), dtype=M.dtype, device=M.device)
+    bottom = torch.tensor([[0.0, 0.0, 1.0]], dtype=M.dtype, device=M.device)
+    return torch.cat((torch.cat((M, right), dim=1), bottom), dim=0)
+
+
 def hom_matrix_3d(M: Float[torch.Tensor, "3 3"]) -> HomMatrix3D:
     "Extend a 3x3 matrix to a homonegenous coordinates 4x4 matrix"
     right = torch.zeros((3, 1), dtype=M.dtype, device=M.device)
     bottom = torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=M.dtype, device=M.device)
     return torch.cat((torch.cat((M, right), dim=1), bottom), dim=0)
+
+
+def hom_matrix(M: Float[torch.Tensor, "D D"]) -> HomMatrix:
+    "Extend a 2x2 or 3x3 matrix to homogenerous coordinates matrix"
+    assert M.shape == (2, 2) or M.shape == (3, 3)
+    return hom_matrix_2d(M) if M.shape[0] == 2 else hom_matrix_3d(M)
 
 
 def hom_identity_2d(
@@ -150,6 +163,37 @@ def kinematic_chain_append(
     )
 
 
+def hom_compose(
+    homs: list[HomMatrix], homs_inv: list[HomMatrix]
+) -> tuple[HomMatrix, HomMatrix]:
+    """
+    Compose a list of transforms represented by direct and inverse homogeneous
+    matrices, in the order of the input lists.
+
+    Args:
+        homs: list of direct transform homogeneous matrices
+        homs_inv: list of inverse transform homogeneous matrices
+
+    Returns:
+        the composed direct and inverse transform as homogeneous matrices
+    """
+
+    assert len(homs) == len(homs_inv)
+    assert len(homs) >= 1
+
+    dtype, device = homs[0].dtype, homs[0].device
+    assert all(dtype == h.dtype for h in homs)
+    assert all(dtype == h.dtype for h in homs_inv)
+    assert all(device == h.device for h in homs)
+    assert all(device == h.device for h in homs_inv)
+    assert all(h.shape == (3, 3) or h.shape == (4, 4) for h in homs)
+    assert all(h.shape == (3, 3) or h.shape == (4, 4) for h in homs_inv)
+
+    composed_hom = functools.reduce(lambda t1, t2: t2 @ t1, homs)
+    composed_hom_inv = functools.reduce(lambda t1, t2: t1 @ t2, homs_inv)
+    return composed_hom, composed_hom_inv
+
+
 def kinematic_chain_extend(
     dfk: HomMatrix, ifk: HomMatrix, homs: list[HomMatrix], homs_inv: list[HomMatrix]
 ) -> tuple[HomMatrix, HomMatrix]:
@@ -169,6 +213,7 @@ def kinematic_chain_extend(
     assert dfk.dtype == ifk.dtype
     assert dfk.shape == ifk.shape
 
+    assert len(homs) == len(homs_inv)
     assert all([dfk.dtype == h.dtype for h in homs])
     assert all([dfk.dtype == h.dtype for h in homs_inv])
     assert all([dfk.device == h.device for h in homs])

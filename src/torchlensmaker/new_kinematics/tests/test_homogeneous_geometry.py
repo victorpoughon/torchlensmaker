@@ -22,23 +22,41 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.new_kinematics.homogeneous_geometry import (
-    HomMatrix,
+    hom_compose,
     hom_identity_2d,
     hom_identity_3d,
     hom_identity,
-    hom_translate_2d,
-    hom_translate_3d,
+    hom_matrix_2d,
+    hom_matrix_3d,
+    hom_matrix,
     hom_rotate_2d,
     hom_rotate_3d,
-    transform_points,
-    transform_vectors,
-    transform_rays,
+    hom_translate_2d,
+    hom_translate_3d,
+    HomMatrix,
     kinematic_chain_append,
     kinematic_chain_extend,
+    transform_points,
+    transform_rays,
+    transform_vectors,
 )
 
 torch.set_default_dtype(torch.float64)
 torch.set_default_device(torch.device("cpu"))
+
+
+def test_hom_matrix() -> None:
+    id2 = torch.eye(
+        2, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    )
+    hom_id2 = hom_matrix(id2)
+    assert torch.allclose(hom_id2, torch.eye(3, dtype=id2.dtype, device=id2.device))
+
+    id3 = torch.eye(
+        3, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    )
+    hom_id3 = hom_matrix(id3)
+    assert torch.allclose(hom_id3, torch.eye(4, dtype=id2.dtype, device=id2.device))
 
 
 def transforms_2d() -> list[tuple[HomMatrix, HomMatrix]]:
@@ -54,8 +72,9 @@ def transforms_2d() -> list[tuple[HomMatrix, HomMatrix]]:
     t7 = hom_identity(
         2, dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
+    t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
 
-    return [base, t1, t2, t3, t4, t5, t6, t7]
+    return [base, t1, t2, t3, t4, t5, t6, t7, t8]
 
 
 def test_transform_functions_2d() -> None:
@@ -120,8 +139,9 @@ def transforms_3d() -> list[tuple[HomMatrix, HomMatrix]]:
     t7 = hom_identity(
         3, dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
+    t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
 
-    return [base, t1, t2, t3, t4, t5, t6, t7]
+    return [base, t1, t2, t3, t4, t5, t6, t7, t8]
 
 
 def test_transform_functions_3d() -> None:
