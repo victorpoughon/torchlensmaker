@@ -14,21 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-
-from torchlensmaker.surfaces.sphere_r import LocalSurface
-from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix
-from torchlensmaker.core.transforms import (
-    TransformBase,
-    LinearTransform,
-    TranslateTransform,
-    ComposeTransform,
-)
 
 from typing import Callable
 
+import torch
+
+from torchlensmaker.surfaces.sphere_r import LocalSurface
+from torchlensmaker.new_kinematics.homogeneous_geometry import (
+    HomMatrix,
+    hom_matrix_3d,
+    hom_matrix,
+    hom_identity_2d,
+    hom_identity_3d,
+    hom_translate_2d,
+    hom_translate_3d,
+    hom_rotate_2d,
+    hom_rotate_3d,
+    hom_compose,
+)
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
-from torchlensmaker.core.rot2d import rotation_matrix_2D
 
 
 def basic_transform(
@@ -37,7 +41,7 @@ def basic_transform(
     thetas: float | list[float],
     translate: list[float],
     dtype: torch.dtype = torch.float64,
-) -> Callable[[LocalSurface], tuple [HomMatrix, HomMatrix]]:
+) -> Callable[[LocalSurface], tuple[HomMatrix, HomMatrix]]:
     """
     Compound transform used for testing
 
@@ -53,33 +57,45 @@ def basic_transform(
     else:
         raise RuntimeError("invalid arguments to basic_transform")
 
-    def makeit(surface: LocalSurface) -> TransformBase:
+    def makeit2d(surface: LocalSurface) -> tuple[HomMatrix, HomMatrix]:
+        dtype = surface.dtype
+        transforms: list[tuple[HomMatrix, HomMatrix]] = []
+
         # anchor
-        assert dtype == surface.dtype
         anchor_translate = surface.extent(dim)
-        transforms: list[TransformBase] = (
-            [TranslateTransform(-anchor_translate)] if anchor == "extent" else []
-        )
+
+        if anchor == "extent":
+            if dim == 2:
+                transforms.append(hom_translate_2d(-anchor_translate))
+            elif dim == 3:
+                transforms.append(hom_translate_3d(-anchor_translate))
 
         # scale
-        Md = torch.eye(dim, dtype=dtype) * scale
-        Mi = torch.eye(dim, dtype=dtype) * 1 / scale
-        transforms.append(LinearTransform(Md, Mi))
+        Md = hom_matrix(torch.eye(dim, dtype=dtype) * scale)
+        Mi = hom_matrix(torch.eye(dim, dtype=dtype) * 1.0 / scale)
+        transforms.append((Md, Mi))
 
         # rotate
         if dim == 2:
-            Mr = rotation_matrix_2D(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)))
-        else:
+            transforms.append(
+                hom_rotate_2d(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)))
+            )
+        elif dim == 3:
             Mr = euler_angles_to_matrix(
                 torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
             ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
+            Hrot, Hrot_inv = hom_matrix_3d(Mr), hom_matrix_3d(Mr.T)
 
-        transforms.append(LinearTransform(Mr, Mr.T))
+            transforms.append((Hrot, Hrot_inv))
 
         # translate
-        transforms.append(TranslateTransform(torch.as_tensor(translate, dtype=dtype)))
+        if dim == 2:
+            transforms.append(hom_translate_2d(torch.as_tensor(translate, dtype=dtype)))
+        elif dim == 3:
+            transforms.append(hom_translate_3d(torch.as_tensor(translate, dtype=dtype)))
 
-        tf = ComposeTransform(transforms)
-        return tf.hom_matrix(), tf.inverse().hom_matrix()
+        homs = [h for (h, hi) in transforms]
+        homs_inv = [hi for (h, hi) in transforms]
+        return hom_compose(homs, homs_inv)
 
-    return makeit
+    return makeit2d
