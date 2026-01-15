@@ -50,13 +50,13 @@ class OpticalData:
     # Light rays in parametric form: P + tV
     P: Float[torch.Tensor, "N D"]
     V: Float[torch.Tensor, "N D"]
+    rays_wavelength: Float[torch.Tensor, " N"]
 
     # Rays variables
     # Tensors of shape (N, 2|3) or None
     rays_base: Optional[torch.Tensor]
     rays_object: Optional[torch.Tensor]
     rays_image: Optional[torch.Tensor]
-    rays_wavelength: Optional[torch.Tensor]
 
     # Basis of each sampling variable
     # Tensors of shape (*, 2|3)
