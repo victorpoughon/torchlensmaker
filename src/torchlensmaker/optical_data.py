@@ -14,28 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-
+from typing import Any, Optional, TypeAlias
 from dataclasses import dataclass, replace
 
-from typing import Any, Optional, TypeAlias
+import torch
+from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import filter_optional_tensor
-
 from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_identity,
     transform_points,
 )
-
 from torchlensmaker.materials import (
     MaterialModel,
     get_material_model,
 )
-
 from torchlensmaker.sampling.samplers import Sampler, init_sampling
-
-Tensor: TypeAlias = torch.Tensor
 
 
 @dataclass
@@ -52,24 +47,23 @@ class OpticalData:
     dfk: HomMatrix  # direct
     ifk: HomMatrix  # inverse
 
-    # Parametric light rays P + tV
-    # Tensors of shape (N, 2|3)
-    P: Tensor
-    V: Tensor
+    # Light rays in parametric form: P + tV
+    P: Float[torch.Tensor, "N D"]
+    V: Float[torch.Tensor, "N D"]
 
     # Rays variables
     # Tensors of shape (N, 2|3) or None
-    rays_base: Optional[Tensor]
-    rays_object: Optional[Tensor]
-    rays_image: Optional[Tensor]
-    rays_wavelength: Optional[Tensor]
+    rays_base: Optional[torch.Tensor]
+    rays_object: Optional[torch.Tensor]
+    rays_image: Optional[torch.Tensor]
+    rays_wavelength: Optional[torch.Tensor]
 
     # Basis of each sampling variable
     # Tensors of shape (*, 2|3)
     # number of rows is the size of each sampling dimension
-    var_base: Optional[Tensor]
-    var_object: Optional[Tensor]
-    var_wavelength: Optional[Tensor]
+    var_base: Optional[torch.Tensor]
+    var_object: Optional[torch.Tensor]
+    var_wavelength: Optional[torch.Tensor]
 
     # Material model for this batch of rays
     material: MaterialModel
@@ -78,13 +72,13 @@ class OpticalData:
     # Tensor of dim 0
     loss: torch.Tensor
 
-    def target(self) -> Tensor:
+    def target(self) -> torch.Tensor:
         return transform_points(self.dfk, torch.zeros((self.dim,), dtype=self.dtype))
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
 
-    def get_var_optional(self, name: str) -> Optional[Tensor]:
+    def get_var_optional(self, name: str) -> Optional[torch.Tensor]:
         if name == "base":
             return self.var_base
         elif name == "object":
@@ -94,7 +88,7 @@ class OpticalData:
         else:
             raise RuntimeError("Unknown ray variable '{color_dim}'")
 
-    def get_rays(self, color_dim: str) -> Tensor:
+    def get_rays(self, color_dim: str) -> torch.Tensor:
         if color_dim == "base" and self.rays_base is not None:
             return self.rays_base
         elif color_dim == "object" and self.rays_object is not None:
@@ -104,7 +98,7 @@ class OpticalData:
         else:
             raise RuntimeError(f"Unknown or unavailable ray variable '{color_dim}'")
 
-    def filter_variables(self, valid: Tensor) -> "OpticalData":
+    def filter_variables(self, valid: torch.Tensor) -> "OpticalData":
         return self.replace(
             rays_base=filter_optional_tensor(self.rays_base, valid),
             rays_object=filter_optional_tensor(self.rays_object, valid),
