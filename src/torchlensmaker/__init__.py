@@ -18,9 +18,6 @@
 
 import torch
 
-# Double precision is the better choice for most optical applications
-torch.set_default_dtype(torch.float64)
-
 ######
 # Core
 ######
@@ -51,7 +48,7 @@ from torchlensmaker.core.sag_functions import (
 # Kinematics
 ############
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix2D,
     HomMatrix3D,
     HomMatrix,
@@ -62,7 +59,7 @@ from torchlensmaker.new_kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 
-from torchlensmaker.new_kinematics.kinematics_elements import (
+from torchlensmaker.kinematics.kinematics_elements import (
     KinematicElement,
     MixedDim,
     AbsolutePosition,
@@ -173,3 +170,6 @@ from torchlensmaker.analysis.spot_diagram import spot_diagram
 
 import torchlensmaker.export_build123d as export
 from torchlensmaker.export_build123d import show_part
+
+# Double precision is the better choice for most optical applications
+torch.set_default_dtype(torch.float64)

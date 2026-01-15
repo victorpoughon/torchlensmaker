@@ -22,7 +22,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Dict, Optional, TypeAlias, Iterable
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import transform_points
+from torchlensmaker.kinematics.homogeneous_geometry import transform_points
 from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.optical_data import OpticalData
 

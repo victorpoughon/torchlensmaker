@@ -23,7 +23,7 @@ import pytest
 import torch
 import onnxruntime
 
-from torchlensmaker.new_kinematics.kinematics_kernels import (
+from torchlensmaker.kinematics.kinematics_kernels import (
     Translate2DKernel,
     Translate3DKernel,
     Rotate2DKernel,
@@ -31,7 +31,7 @@ from torchlensmaker.new_kinematics.kinematics_kernels import (
     AbsolutePosition3DKernel,
 )
 
-from torchlensmaker.new_kinematics.functional_kernel import export_onnx, FunctionalKernel
+from torchlensmaker.kinematics.functional_kernel import export_onnx, FunctionalKernel
 
 
 kernels_library: Dict[str, FunctionalKernel] = {

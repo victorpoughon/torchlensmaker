@@ -21,7 +21,7 @@ from typing import Any, Optional, Dict
 
 
 from torchlensmaker.optical_data import default_input
-from torchlensmaker.new_kinematics.kinematics_elements import KinematicElement
+from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,

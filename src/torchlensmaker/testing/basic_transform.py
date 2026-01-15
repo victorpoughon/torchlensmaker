@@ -20,7 +20,7 @@ from typing import Callable
 import torch
 
 from torchlensmaker.surfaces.sphere_r import LocalSurface
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_matrix_3d,
     hom_matrix,

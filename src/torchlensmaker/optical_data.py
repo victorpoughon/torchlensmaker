@@ -22,7 +22,7 @@ from typing import Any, Optional, TypeAlias
 
 from torchlensmaker.core.tensor_manip import filter_optional_tensor
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_identity,
     transform_points,

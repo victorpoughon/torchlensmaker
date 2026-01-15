@@ -19,7 +19,7 @@ import torch.nn as nn
 
 from typing import Any, Callable
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_append,
     transform_points,
 )

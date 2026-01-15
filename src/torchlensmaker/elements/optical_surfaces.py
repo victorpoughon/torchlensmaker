@@ -20,7 +20,7 @@ import torch.nn as nn
 from typing import Sequence, Optional, TypeAlias, Literal
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_extend,
     kinematic_chain_append,
     hom_translate,

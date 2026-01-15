@@ -21,7 +21,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_compose,
     hom_identity_2d,
     hom_identity_3d,

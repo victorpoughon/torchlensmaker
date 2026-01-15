@@ -17,7 +17,7 @@
 import torch
 
 from torchlensmaker.surfaces.local_surface import LocalSurface
-from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, transform_points, transform_vectors
+from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, transform_points, transform_vectors
 
 Tensor = torch.Tensor
 

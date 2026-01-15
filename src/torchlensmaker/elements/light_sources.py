@@ -22,7 +22,7 @@ from torchlensmaker.core.tensor_manip import (
     cartesian_prod2d,
     to_tensor,
 )
-from torchlensmaker.new_kinematics.homogeneous_geometry import transform_rays
+from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 

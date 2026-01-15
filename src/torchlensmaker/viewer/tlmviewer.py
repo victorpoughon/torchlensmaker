@@ -31,7 +31,7 @@ from typing import Any, Optional
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import HomMatrix, hom_identity
+from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, hom_identity
 
 Tensor = torch.Tensor
 

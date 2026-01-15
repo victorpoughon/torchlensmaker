@@ -22,14 +22,14 @@ import torch
 import torch.nn as nn
 
 
-from torchlensmaker.new_kinematics.homogeneous_geometry import (
+from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
     HomMatrix2D,
     HomMatrix3D,
 )
 
-from torchlensmaker.new_kinematics.kinematics_elements import (
+from torchlensmaker.kinematics.kinematics_elements import (
     Translate2D,
     TranslateVec2D,
     Translate3D,
