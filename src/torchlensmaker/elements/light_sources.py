@@ -41,9 +41,24 @@ Tensor = torch.Tensor
 
 
 class LightSourceBase(SequentialElement):
-    def __init__(self, material: str | MaterialModel = "air"):
+    def __init__(
+        self,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
         super().__init__()
         self.material = get_material_model(material)
+
+        if isinstance(wavelength, (int, float)):
+            self.wavelength_lower = to_tensor(wavelength)
+            self.wavelength_upper = to_tensor(wavelength)
+        elif isinstance(wavelength, (tuple, list)):
+            self.wavelength_lower = to_tensor(wavelength[0])
+            self.wavelength_upper = to_tensor(wavelength[1])
+        else:
+            raise RuntimeError(
+                f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
+            )
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
@@ -70,7 +85,7 @@ class LightSourceBase(SequentialElement):
 
         # TODO need better way to store var basis if we want to properly support multiple light source in a scene
 
-        return inputs.replace(
+        non_chromatic = inputs.replace(
             P=torch.cat((inputs.P, P), dim=0),
             V=torch.cat((inputs.V, V), dim=0),
             rays_base=cat_optional(inputs.rays_base, rays_base),
@@ -80,8 +95,28 @@ class LightSourceBase(SequentialElement):
             material=self.material,
         )
 
+        # now sample wavelength
+
+        if non_chromatic.rays_wavelength is not None:
+            raise RuntimeError("Rays already have wavelength data")
+
+        if "wavelength" not in non_chromatic.sampling:
+            raise RuntimeError("Missing 'wavelength' key in sampling configuration")
+
+        chromatic_space = non_chromatic.sampling["wavelength"].sample1d(
+            self.wavelength_lower, self.wavelength_upper, non_chromatic.dtype
+        )
+
+        return cartesian_wavelength(non_chromatic, chromatic_space).replace(
+            var_wavelength=chromatic_space
+        )
+
 
 class RaySource(LightSourceBase):
+    """
+    Light source that produces a single ray
+    """
+
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
     ) -> tuple[
@@ -274,28 +309,3 @@ def cartesian_wavelength(inputs: OpticalData, ray_var: Tensor) -> OpticalData:
         rays_object=new_rays_object,
         rays_wavelength=new_var,
     )
-
-
-class Wavelength(SequentialElement):
-    def __init__(self, lower: float | int, upper: float | int):
-        super().__init__()
-        self.lower, self.upper = to_tensor(lower), to_tensor(upper)
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        if inputs.rays_wavelength is not None:
-            raise RuntimeError(
-                "Rays already have wavelength data. Cannot apply Wavelength()."
-            )
-
-        if "wavelength" not in inputs.sampling:
-            raise RuntimeError(
-                "Missing 'wavelength' key in sampling configuration. Cannot apply Wavelength()."
-            )
-
-        chromatic_space = inputs.sampling["wavelength"].sample1d(
-            self.lower, self.upper, inputs.dtype
-        )
-
-        return cartesian_wavelength(inputs, chromatic_space).replace(
-            var_wavelength=chromatic_space
-        )

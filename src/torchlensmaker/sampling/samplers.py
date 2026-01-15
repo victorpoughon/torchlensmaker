@@ -179,6 +179,9 @@ def sampleND(
 def init_sampling(sampling: dict[str, Any]) -> dict[str, Sampler]:
     "Process a sampling dict and make Sampler objects from shortcut options"
 
+    if "wavelength" not in sampling:
+        sampling["wavelength"] = 1
+
     output: dict[str, Sampler] = {}
     for name, value in sampling.items():
         if isinstance(value, (float, int)):

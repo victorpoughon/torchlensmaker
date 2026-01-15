@@ -35,7 +35,7 @@ from torchlensmaker.lenses import LensBase
 
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
-from torchlensmaker.elements.light_sources import LightSourceBase, Wavelength
+from torchlensmaker.elements.light_sources import LightSourceBase
 
 
 from .rendering import Collective, RayVariables
@@ -101,7 +101,7 @@ def render_sequence(
     light_sources_outputs = [
         output
         for mod, output in output_tree.items()
-        if isinstance(mod, (LightSourceBase, Wavelength))
+        if isinstance(mod, (LightSourceBase))
     ]
     ray_variables = RayVariables.from_optical_data(light_sources_outputs)
 

@@ -16,8 +16,7 @@ and state-of-the art numerical optimization.
 import torchlensmaker as tlm
 
 optics = tlm.Sequential(
-    tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
-    tlm.Wavelength(400, 800),
+    tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
     tlm.Gap(15),
     tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
     tlm.Gap(3.419),

@@ -104,7 +104,6 @@ from torchlensmaker.elements.light_sources import (
     PointSource,
     ObjectAtInfinity,
     Object,
-    Wavelength,
 )
 from torchlensmaker.elements.focal_point import FocalPoint
 
