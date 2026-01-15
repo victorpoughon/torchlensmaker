@@ -31,7 +31,7 @@ from torchlensmaker.kinematics.kinematics_kernels import (
     AbsolutePosition3DKernel,
 )
 
-from torchlensmaker.kinematics.functional_kernel import export_onnx, FunctionalKernel
+from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 
 
 kernels_library: Dict[str, FunctionalKernel] = {

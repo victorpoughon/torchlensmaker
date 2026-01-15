@@ -28,7 +28,7 @@ from .homogeneous_geometry import (
     hom_identity_3d,
     kinematic_chain_append,
 )
-from .functional_kernel import FunctionalKernel
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
 class Translate2DKernel(FunctionalKernel):
