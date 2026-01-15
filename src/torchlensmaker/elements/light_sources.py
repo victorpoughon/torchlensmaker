@@ -92,14 +92,9 @@ class LightSourceBase(SequentialElement):
             rays_object=cat_optional(inputs.rays_object, rays_object),
             var_base=var_base,
             var_object=var_object,
-            material=self.material,
         )
 
         # now sample wavelength
-
-        if non_chromatic.rays_wavelength is not None:
-            raise RuntimeError("Rays already have wavelength data")
-
         if "wavelength" not in non_chromatic.sampling:
             raise RuntimeError("Missing 'wavelength' key in sampling configuration")
 
@@ -107,9 +102,14 @@ class LightSourceBase(SequentialElement):
             self.wavelength_lower, self.wavelength_upper, non_chromatic.dtype
         )
 
-        return cartesian_wavelength(non_chromatic, chromatic_space).replace(
+        chromatic = cartesian_wavelength(non_chromatic, chromatic_space).replace(
             var_wavelength=chromatic_space
         )
+
+        # index of refraction
+        rays_index = self.material.refractive_index(chromatic.rays_wavelength)
+
+        return chromatic.replace(rays_index=rays_index)
 
 
 class RaySource(LightSourceBase):

@@ -50,7 +50,12 @@ class OpticalData:
     # Light rays in parametric form: P + tV
     P: Float[torch.Tensor, "N D"]
     V: Float[torch.Tensor, "N D"]
+
+    # Light rays wavelength in nm
     rays_wavelength: Float[torch.Tensor, " N"]
+    
+    # Light rays index of refraction
+    rays_index: Float[torch.Tensor, " N"]
 
     # Rays variables
     # Tensors of shape (N, 2|3) or None
@@ -64,9 +69,6 @@ class OpticalData:
     var_base: Optional[torch.Tensor]
     var_object: Optional[torch.Tensor]
     var_wavelength: Optional[torch.Tensor]
-
-    # Material model for this batch of rays
-    material: MaterialModel
 
     # Loss accumulator
     # Tensor of dim 0
@@ -124,13 +126,13 @@ def default_input(
         ifk=ifk,
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
+        rays_wavelength=torch.empty((0,), dtype=dtype),
+        rays_index=torch.empty((0,), dtype=dtype),
         rays_base=None,
         rays_object=None,
         rays_image=None,
-        rays_wavelength=None,
         var_base=None,
         var_object=None,
         var_wavelength=None,
-        material=get_material_model("vacuum"),
         loss=torch.tensor(0.0, dtype=dtype),
     )

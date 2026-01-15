@@ -237,30 +237,18 @@ class RefractiveSurface(SequentialElement):
         # Zero rays special case
         # (needs to happen after self.collision_surface is called to enable rendering of it)
         if data.P.numel() == 0:
-            return data.replace(
-                material=self.material, dfk=new_dfk, ifk=new_ifk
-            ), torch.full((data.P.shape[0],), True)
+            return data.replace(dfk=new_dfk, ifk=new_ifk), torch.full(
+                (data.P.shape[0],), True
+            )
 
-        # Compute indices of refraction (scalars for non dispersive materials,
-        # tensors for dispersive materials)
-        if (
-            data.rays_wavelength is None
-        ):  # TODO this should be empty but not None when number of rays is zero
-            if not isinstance(data.material, NonDispersiveMaterial) or not isinstance(
-                self.material, NonDispersiveMaterial
-            ):
-                raise RuntimeError(
-                    f"Cannot compute refraction with dispersive material "
-                    f"because optical data has no wavelength variable "
-                    f"(got materials {data.material} and {self.material})"
-                )
-
-            n1 = torch.as_tensor(data.material.n)
-            n2 = torch.as_tensor(self.material.n)
-
-        else:
-            n1 = data.material.refractive_index(data.rays_wavelength)
-            n2 = self.material.refractive_index(data.rays_wavelength)
+        # Compute indices of refraction
+        n1 = data.rays_index
+        n2 = self.material.refractive_index(data.rays_wavelength)
+        assert n1.shape == n2.shape == (data.P.shape[0],), (
+            n1.shape,
+            n2.shape,
+            data.P.shape,
+        )
 
         # Snell's law happens here
         # Compute refraction on the full frame rays (including non-colliding
@@ -282,6 +270,7 @@ class RefractiveSurface(SequentialElement):
             new_rays_wavelength = filter_optional_tensor(
                 data.rays_wavelength, both_valid
             )
+            new_rays_index = filter_optional_tensor(n2, both_valid)
         else:
             # keep tir rays
             new_P = collision_points[valid_collision]
@@ -291,6 +280,7 @@ class RefractiveSurface(SequentialElement):
             new_rays_wavelength = filter_optional_tensor(
                 data.rays_wavelength, valid_collision
             )
+            new_rays_index = filter_optional_tensor(n2, valid_collision)
 
         return data.replace(
             P=new_P,
@@ -298,7 +288,7 @@ class RefractiveSurface(SequentialElement):
             rays_base=new_rays_base,
             rays_object=new_rays_object,
             rays_wavelength=new_rays_wavelength,
-            material=self.material,
+            rays_index=new_rays_index,
             dfk=new_dfk,
             ifk=new_ifk,
         ), valid_refraction
@@ -327,6 +317,9 @@ class Aperture(SequentialElement):
             rays_object=filter_optional_tensor(data.rays_object, valid_collision),
             rays_wavelength=filter_optional_tensor(
                 data.rays_wavelength, valid_collision
+            ),
+            rays_index=filter_optional_tensor(
+                data.rays_index, valid_collision
             ),
             dfk=new_dfk,
             ifk=new_ifk,  # correct but useless cause Aperture is only circular plane currently
