@@ -112,6 +112,7 @@ class TranslateVec3D(KinematicElement):
 
 
 class Rotate2D(KinematicElement):
+    "2D rotation (in degrees)"
     def __init__(self, theta: Float[torch.Tensor, ""] | float | int = 0.0):
         super().__init__()
         self.func = Rotate2DKernel()
@@ -205,7 +206,7 @@ class Rotate(KinematicElement):
         self, angles: tuple[float | int, float | int] | Float[torch.Tensor, "2"]
     ):
         super().__init__()
-        self.mixed_dim = MixedDim(Rotate2D(angles[0]), Rotate3D(angles[0], angles[1]))
+        self.mixed_dim = MixedDim(Rotate2D(angles[0]), Rotate3D(angles[1], angles[0]))
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         return self.mixed_dim(dfk, ifk)

@@ -98,6 +98,8 @@ class Translate3DKernel(FunctionalKernel):
 
 
 class Rotate2DKernel(FunctionalKernel):
+    "2D rotation in degrees"
+
     input_names = ["dfk_in", "ifk_in"]
     param_names = ["theta"]
     output_names = ["dfk_out", "ifk_out"]
@@ -106,7 +108,7 @@ class Rotate2DKernel(FunctionalKernel):
     def forward(
         dfk: HomMatrix2D, ifk: HomMatrix2D, theta: Float[torch.Tensor, ""]
     ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        hom, hom_inv = hom_rotate_2d(theta)
+        hom, hom_inv = hom_rotate_2d(torch.deg2rad(theta))
         return kinematic_chain_append(dfk, ifk, hom, hom_inv)
 
     @staticmethod
@@ -159,6 +161,8 @@ class AbsolutePosition3DKernel(FunctionalKernel):
 
 
 class Rotate3DKernel(FunctionalKernel):
+    "3D rotation in degrees"
+
     input_names = ["dfk_in", "ifk_in"]
     param_names = ["y", "z"]
     output_names = ["dfk_out", "ifk_out"]
