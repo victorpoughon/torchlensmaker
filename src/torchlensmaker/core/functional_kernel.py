@@ -77,5 +77,6 @@ def export_onnx(
             dynamo=True,
             input_names=kernel.input_names + kernel.param_names,
             output_names=kernel.output_names,
+            opset_version=18
         ),
     )
