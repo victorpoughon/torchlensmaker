@@ -26,7 +26,8 @@ class FunctionalKernel:
     input_names: List[str]
     param_names: List[str]
     output_names: List[str]
-    export_legacy: bool = False
+    forward_dtype_device: bool = False # true if the kernel forward() function takes dtype and device arguments
+    export_legacy: bool = False # true if onnx export must use legacy torch script (instead of default dynamo)
 
     @staticmethod
     def forward(*args: Any) -> Any:
@@ -80,10 +81,19 @@ def export_onnx_dynamo(
         *kernel.example_params(dtype, device),
     )
 
+    def forward_with_bound_dtype_device(*args):
+        return kernel.forward(*args, dtype=dtype, device=device)
+
+    kernel_forward = (
+        forward_with_bound_dtype_device
+        if kernel.forward_dtype_device
+        else kernel.forward
+    )
+
     onnx_program = cast(
         ONNXProgram,
         torch.onnx.export(
-            FuncModule(kernel.forward),
+            FuncModule(kernel_forward),
             example_inputs,
             input_names=kernel.input_names + kernel.param_names,
             output_names=kernel.output_names,
@@ -107,8 +117,17 @@ def export_onnx_legacy(
         *kernel.example_params(dtype, device),
     )
 
+    def forward_with_bound_dtype_device(*args):
+        return kernel.forward(*args, dtype=dtype, device=device)
+
+    kernel_forward = (
+        forward_with_bound_dtype_device
+        if kernel.forward_dtype_device
+        else kernel.forward
+    )
+
     torch.onnx.export(
-        FuncModule(kernel.forward),
+        FuncModule(kernel_forward),
         example_inputs,
         input_names=kernel.input_names + kernel.param_names,
         output_names=kernel.output_names,
