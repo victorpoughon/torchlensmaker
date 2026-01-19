@@ -105,9 +105,7 @@ class LightSourceBase(SequentialElement):
             self.wavelength_lower, self.wavelength_upper, non_chromatic.dtype
         )
 
-        chromatic = cartesian_wavelength(non_chromatic, chromatic_space).replace(
-            var_wavelength=chromatic_space
-        )
+        chromatic = cartesian_wavelength(non_chromatic, chromatic_space)
 
         # index of refraction
         rays_index = self.material.refractive_index(chromatic.rays_wavelength)

@@ -68,7 +68,6 @@ class OpticalData:
     # number of rows is the size of each sampling dimension
     var_base: Optional[torch.Tensor]
     var_object: Optional[torch.Tensor]
-    var_wavelength: Optional[torch.Tensor]
 
     # Loss accumulator
     # Tensor of dim 0
@@ -79,16 +78,6 @@ class OpticalData:
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
-
-    def get_var_optional(self, name: str) -> Optional[torch.Tensor]:
-        if name == "base":
-            return self.var_base
-        elif name == "object":
-            return self.var_object
-        elif name == "wavelength":
-            return self.var_wavelength
-        else:
-            raise RuntimeError("Unknown ray variable '{color_dim}'")
 
     def get_rays(self, color_dim: str) -> torch.Tensor:
         if color_dim == "base" and self.rays_base is not None:
@@ -133,6 +122,5 @@ def default_input(
         rays_image=None,
         var_base=None,
         var_object=None,
-        var_wavelength=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
