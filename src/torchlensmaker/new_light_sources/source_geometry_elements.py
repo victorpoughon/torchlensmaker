@@ -1,0 +1,84 @@
+# This file is part of Torch Lens Maker
+# Copyright (C) 2024-present Victor Poughon
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import torch
+import torch.nn as nn
+
+from typing import Any
+from jaxtyping import Float
+
+from torchlensmaker.core.tensor_manip import to_tensor
+
+from .source_geometry_kernels import (
+    ObjectGeometry2DKernel,
+    ObjectAtInfinityGeometry2DKernel,
+)
+
+
+class ObjectGeometry2D(nn.Module):
+    def __init__(
+        self,
+        beam_angular_size: float,
+        object_diameter: float,
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__()
+        self.beam_angular_size = to_tensor(beam_angular_size)
+        self.object_diameter = to_tensor(object_diameter)
+
+        if isinstance(wavelength, (int, float)):
+            self.wavelength_lower = to_tensor(wavelength)
+            self.wavelength_upper = to_tensor(wavelength)
+        elif isinstance(wavelength, (tuple, list)):
+            self.wavelength_lower = to_tensor(wavelength[0])
+            self.wavelength_upper = to_tensor(wavelength[1])
+        else:
+            raise RuntimeError(
+                f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
+            )
+
+        self.kernel = ObjectGeometry2DKernel()
+
+    def domain(self) -> dict[str, list[float]]:
+        A = self.beam_angular_size.item() / 2
+        B = self.object_diameter.item() / 2
+        return {
+            "base": [-A, A],
+            "object": [-B, B],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
+
+    def forward(
+        self,
+        pupil_samples: Float[torch.Tensor, " Np"],
+        field_samples: Float[torch.Tensor, " Nf"],
+        wavelength_samples: Float[torch.Tensor, " Nw"],
+    ) -> tuple[
+        Float[torch.Tensor, "N 2"],
+        Float[torch.Tensor, "N 2"],
+        Float[torch.Tensor, " N"],
+        Float[torch.Tensor, " N"],
+        Float[torch.Tensor, " N"],
+    ]:
+        return self.kernel.forward(
+            pupil_samples,
+            field_samples,
+            wavelength_samples,
+            self.beam_angular_size,
+            self.object_diameter,
+            self.wavelength_lower,
+            self.wavelength_upper,
+        )
