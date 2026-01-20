@@ -17,6 +17,8 @@
 from pathlib import Path
 from itertools import chain
 
+import pytest
+
 import torch
 import onnxruntime
 
@@ -36,10 +38,13 @@ def check_kernels_example_inputs_and_params(
     example_inputs = kernel.example_inputs(dtype, device)
     assert isinstance(example_inputs, tuple)
     assert len(example_inputs) == len(kernel.input_names)
+    assert all(t.dtype == dtype for t in example_inputs)
 
     example_params = kernel.example_params(dtype, device)
     assert isinstance(example_params, tuple)
     assert len(example_params) == len(kernel.param_names)
+    # dont check dtype of params because it can be different than the main dtype
+    # in some cases, e.g. sampling
 
     expected_num_outputs = len(kernel.output_names)
     assert expected_num_outputs != 0, "Kernel with no output is not supported"
@@ -141,6 +146,6 @@ def check_kernels_export_onnx(
 
     # Compare values, dtype, shape
     for actual, expected in zip(ort_outputs, kernel_outputs):
-        assert actual.dtype == expected.dtype
+        assert actual.dtype == expected.dtype, (actual.dtype, expected.dtype)
         assert actual.shape == expected.shape
         torch.testing.assert_close(actual, expected)

@@ -35,8 +35,10 @@ from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 
 from torchlensmaker.testing.functional_kernels_testing import (
     check_kernels_example_inputs_and_params,
+    check_kernels_eval,
     check_kernels_export_onnx,
 )
+
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "Rotate2D": Rotate2DKernel(),
@@ -47,7 +49,16 @@ kernels_library: Dict[str, FunctionalKernel] = {
 }
 
 
-def test_kinematics_kernels_inputs_and_params() -> None:
+def test_kinematics_kernels_inputs_and_params_float32() -> None:
+    dtype = torch.float32
+    device = torch.device("cpu")
+
+    # Export, load, compare eval on example inputs
+    for name, kernel in kernels_library.items():
+        check_kernels_example_inputs_and_params(name, kernel, dtype, device)
+
+
+def test_kinematics_kernels_inputs_and_params_float64() -> None:
     dtype = torch.float64
     device = torch.device("cpu")
 
@@ -56,9 +67,27 @@ def test_kinematics_kernels_inputs_and_params() -> None:
         check_kernels_example_inputs_and_params(name, kernel, dtype, device)
 
 
-def test_kinematics_kernels_export_onnx(tmp_path: Path) -> None:
-    # Note this test only works in float32 as of Jan 2026
-    # because onnxruntime cpu doesn't seem to support cos() in float64..
+def test_kinematics_kernels_eval_float32() -> None:
+    dtype = torch.float32
+    device = torch.device("cpu")
+
+    # Export, load, compare eval on example inputs
+    for name, kernel in kernels_library.items():
+        check_kernels_eval(name, kernel, dtype, device)
+
+
+def test_kinematics_kernels_eval_float64() -> None:
+    dtype = torch.float64
+    device = torch.device("cpu")
+
+    # Export, load, compare eval on example inputs
+    for name, kernel in kernels_library.items():
+        check_kernels_eval(name, kernel, dtype, device)
+
+
+# Note this test only works in float32 as of Jan 2026
+# because onnxruntime cpu doesn't seem to support cos() in float64..
+def test_kinematics_kernels_export_onnx_float32(tmp_path: Path) -> None:
     dtype = torch.float32
     device = torch.device("cpu")
 
