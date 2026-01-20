@@ -41,6 +41,9 @@ def check_kernels_example_inputs_and_params(
     assert isinstance(example_params, tuple)
     assert len(example_params) == len(kernel.param_names)
 
+    expected_num_outputs = len(kernel.output_names)
+    assert expected_num_outputs != 0, "Kernel with no output is not supported"
+
     # Verify no duplicate names
     all_names = kernel.input_names + kernel.param_names + kernel.output_names
     assert len(all_names) == len(set(all_names))
@@ -59,9 +62,25 @@ def check_kernels_eval(
         *kernel.example_params(dtype, device),
         **kwargs,
     )
+
     assert isinstance(kernel_outputs_tensors, (tuple, torch.Tensor)), (
         "Kernel forward() must return a tensor or a tuple of tensors"
     )
+
+    # Check number of outputs
+    expected_num_outputs = len(kernel.output_names)
+    if expected_num_outputs == 1:
+        assert isinstance(kernel_outputs_tensors, torch.Tensor), (
+            "Kernel with a single output must return a tensor"
+        )
+    else:
+        assert isinstance(kernel_outputs_tensors, tuple), (
+            "Kernel with multiple outputs must return a tuple of tensors"
+        )
+        assert all(isinstance(t, torch.Tensor) for t in kernel_outputs_tensors), (
+            "Kernel with multiple outputs must return a tuple of tensors"
+        )
+        assert expected_num_outputs == len(kernel_outputs_tensors)
 
     # Check dtype and device
     for actual in astuple(kernel_outputs_tensors):
