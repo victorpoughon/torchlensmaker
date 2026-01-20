@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
-from typing import Optional
+from typing import Optional, Sequence
 
 Tensor = torch.Tensor
 
@@ -59,6 +59,15 @@ def filter_optional_mask(t: Tensor, valid: Optional[Tensor]) -> Tensor:
         return t
 
     return t[valid]
+
+
+def meshgrid_flat(
+    *tensors: Sequence[torch.Tensor],
+) -> tuple[torch.Tensor, ...]:
+    "Like torch.meshgrid but returns flattened tensors"
+
+    grids = torch.meshgrid(*tensors, indexing="ij")
+    return tuple(g.reshape(-1) for g in grids)
 
 
 def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
