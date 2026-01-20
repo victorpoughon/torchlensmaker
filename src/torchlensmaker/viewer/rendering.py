@@ -18,11 +18,9 @@ import torch
 import torch.nn as nn
 
 from itertools import chain
-from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, TypeAlias, Iterable
+from typing import Any, Dict, Optional, TypeAlias
 
-from torchlensmaker.kinematics.homogeneous_geometry import transform_points
 from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.optical_data import OpticalData
 
@@ -45,36 +43,6 @@ class Artist:
         raise NotImplementedError
 
 
-@dataclass
-class RayVariables:
-    "Available ray variables and their min/max domain"
-
-    variables: list[str]
-    domain: dict[str, list[float]]
-
-    @classmethod
-    def from_optical_data(cls, optical_data: Iterable[OpticalData]) -> "RayVariables":
-        variables: set[str] = set()
-        domain: defaultdict[str, list[float]] = defaultdict(
-            lambda: [float("+inf"), float("-inf")]
-        )
-
-        def update(var: Optional[Tensor], name: str) -> None:
-            if var is not None:
-                variables.add(name)
-                if var.numel() > 0 and var.min() < domain[name][0]:
-                    domain[name][0] = var.min().item()
-                if var.numel() > 0 and var.max() > domain[name][1]:
-                    domain[name][1] = var.max().item()
-
-        for inputs in optical_data:
-            update(inputs.rays_base, "base")
-            update(inputs.rays_object, "object")
-            update(inputs.rays_wavelength, "wavelength")
-
-        return cls(list(variables), dict(domain))
-
-
 def ray_variables_dict(
     data: OpticalData, variables: list[str], valid: Optional[Tensor] = None
 ) -> dict[str, Tensor]:
@@ -90,7 +58,13 @@ def ray_variables_dict(
     if data.dim == 2:
         update(data.rays_base, "base")
         update(data.rays_object, "object")
-    update(data.rays_wavelength, "wavelength")
+
+    # TODO this if check is temporary to avoid a divide by zero in tlmviewer
+    if (
+        data.rays_wavelength.numel() > 0
+        and (data.rays_wavelength.max() - data.rays_wavelength.min()) > 1e-3
+    ):
+        update(data.rays_wavelength, "wavelength")
 
     return d
 
@@ -100,7 +74,8 @@ class Collective:
     "Group of artists"
 
     artists: Dict[type, Artist]
-    ray_variables: RayVariables
+    ray_variables: list[str]
+    ray_variables_domains: dict[str, list[float]]
     input_tree: dict[nn.Module, Any]
     output_tree: dict[nn.Module, Any]
 

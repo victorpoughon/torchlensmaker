@@ -145,9 +145,9 @@ class CollisionSurfaceArtist(Artist):
                     inputs.P[valid],
                     collision_points[valid],
                     variables=ray_variables_dict(
-                        inputs, collective.ray_variables.variables, valid
+                        inputs, collective.ray_variables, valid
                     ),
-                    domain=collective.ray_variables.domain,
+                    domain=collective.ray_variables_domains,
                     default_color=color_valid,
                     layer=LAYER_VALID_RAYS,
                 )
@@ -163,9 +163,9 @@ class CollisionSurfaceArtist(Artist):
                 inputs.V[~valid],
                 inputs.target()[0],
                 variables=ray_variables_dict(
-                    inputs, collective.ray_variables.variables, ~valid
+                    inputs, collective.ray_variables, ~valid
                 ),
-                domain=collective.ray_variables.domain,
+                domain=collective.ray_variables_domains,
                 default_color=color_blocked,
                 layer=LAYER_BLOCKED_RAYS,
             )
@@ -208,9 +208,9 @@ class RefractiveSurfaceArtist(Artist):
                     inputs.P[tir_mask],
                     collision_points[tir_mask],
                     variables=ray_variables_dict(
-                        inputs, collective.ray_variables.variables, tir_mask
+                        inputs, collective.ray_variables, tir_mask
                     ),
-                    domain=collective.ray_variables.domain,
+                    domain=collective.ray_variables_domain,
                     default_color="pink",
                     layer=LAYER_VALID_RAYS,  # TODO remove layers
                 )
@@ -242,8 +242,8 @@ class FocalPointArtist(Artist):
             inputs.V,
             t,
             layer=LAYER_VALID_RAYS,
-            variables=ray_variables_dict(inputs, collective.ray_variables.variables),
-            domain=collective.ray_variables.domain,
+            variables=ray_variables_dict(inputs, collective.ray_variables),
+            domain=collective.ray_variables_domains,
             default_color=color_valid,
         )
 
@@ -270,9 +270,9 @@ class EndArtist(Artist):
             collective.output_tree[module].V,
             self.end,
             variables=ray_variables_dict(
-                collective.output_tree[module], collective.ray_variables.variables
+                collective.output_tree[module], collective.ray_variables
             ),
-            domain=collective.ray_variables.domain,
+            domain=collective.ray_variables_domains,
             default_color=color_valid,
             layer=LAYER_OUTPUT_RAYS,
         )

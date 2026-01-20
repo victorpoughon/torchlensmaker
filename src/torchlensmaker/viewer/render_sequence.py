@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Any, Optional, Dict
+from typing import Any, Optional, Dict, Type
 
 
 from torchlensmaker.optical_data import default_input
@@ -38,7 +38,7 @@ from torchlensmaker.core.full_forward import forward_tree
 from torchlensmaker.elements.light_sources import LightSourceBase
 
 
-from .rendering import Collective, RayVariables
+from .rendering import Collective
 from . import tlmviewer
 from .rendering import Artist
 from .artists import (
@@ -84,6 +84,34 @@ default_artists: Dict[type, list[Artist]] = {
 }
 
 
+def getElementsByType(module: nn.Module, typ: Type[nn.Module]) -> nn.ModuleList:
+    """
+    Returns a ModuleList containing all submodules (including the root module,
+    if it matches 'typ') that match the type via isinstance().
+    """
+
+    result = nn.ModuleList()
+    if isinstance(module, typ):
+        result.append(module)
+    for name, child in module.named_children():
+        if isinstance(child, typ):
+            result.append(child)
+        result.extend(getElementsByType(child, typ))
+    return result
+
+
+def get_domain(optics: nn.Module) -> dict[str, list[float]]:
+    light_sources = getElementsByType(optics, LightSourceBase)
+
+    if len(light_sources) == 0:
+        return {}
+
+    # TODO handle multiple light sources
+    ls = light_sources[0]
+
+    return ls.domain()
+
+
 # TODO rename
 def render_sequence(
     optics: nn.Module,
@@ -98,16 +126,16 @@ def render_sequence(
     input_tree, output_tree = forward_tree(optics, default_input(sampling, dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
-    light_sources_outputs = [
-        output
-        for mod, output in output_tree.items()
-        if isinstance(mod, (LightSourceBase))
-    ]
-    ray_variables = RayVariables.from_optical_data(light_sources_outputs)
+    ray_variables = ["base", "object", "wavelength"]
+    ray_variables_domains = get_domain(optics)
 
     # Initialize the artist collective
     collective = Collective(
-        {**default_artists, **extra_artists}, ray_variables, input_tree, output_tree
+        {**default_artists, **extra_artists},
+        ray_variables,
+        ray_variables_domains,
+        input_tree,
+        output_tree,
     )
 
     # Initialize the scene

@@ -60,6 +60,9 @@ class LightSourceBase(SequentialElement):
                 f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
             )
 
+    def domain(self) -> dict[str, list[float]]:
+        raise NotImplementedError
+
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
     ) -> tuple[
@@ -117,6 +120,13 @@ class RaySource(LightSourceBase):
     Light source that produces a single ray
     """
 
+    def domain(self) -> dict[str, list[float]]:
+        return {
+            "base": [0, 0],
+            "object": [0, 0],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
+
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
     ) -> tuple[
@@ -137,6 +147,14 @@ class PointSourceAtInfinity(LightSourceBase):
     def __init__(self, beam_diameter: float, **kwargs: Any):
         super().__init__(**kwargs)
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
+
+    def domain(self) -> dict[str, list[float]]:
+        r = self.beam_diameter.item() / 2
+        return {
+            "base": [-r, r],
+            "object": [0, 0],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
@@ -172,6 +190,14 @@ class PointSource(LightSourceBase):
 
         self.beam_angular_size = torch.deg2rad(to_tensor(beam_angular_size))
 
+    def domain(self) -> dict[str, list[float]]:
+        r = self.beam_angular_size.item() / 2
+        return {
+            "base": [-r, r],
+            "object": [0, 0],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
+
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
     ) -> tuple[
@@ -204,6 +230,15 @@ class ObjectAtInfinity(LightSourceBase):
         super().__init__(**kwargs)
         self.beam_diameter: Tensor = to_tensor(beam_diameter)
         self.angular_size: Tensor = torch.deg2rad(to_tensor(angular_size))
+
+    def domain(self) -> dict[str, list[float]]:
+        d = self.beam_diameter.item() / 2
+        a = self.angular_size.item() / 2
+        return {
+            "base": [-d, d],
+            "object": [-a, a],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
@@ -245,6 +280,15 @@ class Object(LightSourceBase):
         super().__init__(**kwargs)
         self.beam_angular_size: Tensor = torch.deg2rad(to_tensor(beam_angular_size))
         self.object_diameter: Tensor = to_tensor(object_diameter)
+
+    def domain(self) -> dict[str, list[float]]:
+        A = self.beam_angular_size.item() / 2
+        B = self.object_diameter.item() / 2
+        return {
+            "base": [-A, A],
+            "object": [-B, B],
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
 
     def sample_light_source(
         self, sampling: dict[str, Any], dim: int, dtype: torch.dtype
