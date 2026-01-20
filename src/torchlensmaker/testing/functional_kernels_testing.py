@@ -23,6 +23,13 @@ import onnxruntime
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 
 
+def astuple(t: tuple[torch.Tensor, ...] | torch.Tensor):
+    if isinstance(t, tuple):
+        return t
+    else:
+        return (t,)
+
+
 def check_kernels_example_inputs_and_params(
     name: str, kernel: FunctionalKernel, dtype: torch.dtype, device: torch.device
 ) -> None:
@@ -37,6 +44,33 @@ def check_kernels_example_inputs_and_params(
     # Verify no duplicate names
     all_names = kernel.input_names + kernel.param_names + kernel.output_names
     assert len(all_names) == len(set(all_names))
+
+
+def check_kernels_eval(
+    name: str,
+    kernel: FunctionalKernel,
+    dtype: torch.dtype,
+    device: torch.device,
+) -> None:
+    # Evaluate kernel with example inputs
+    kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
+    kernel_outputs_tensors = kernel.forward(
+        *kernel.example_inputs(dtype, device),
+        *kernel.example_params(dtype, device),
+        **kwargs,
+    )
+    assert isinstance(kernel_outputs_tensors, (tuple, torch.Tensor)), (
+        "Kernel forward() must return a tensor or a tuple of tensors"
+    )
+
+    # Check dtype and device
+    for actual in astuple(kernel_outputs_tensors):
+        assert actual.dtype == dtype, (
+            f"Expected kernel output dtype {dtype}, got {actual.dtype}"
+        )
+        assert actual.device == device, (
+            f"Expected kernel output dtype {device}, got {actual.device}"
+        )
 
 
 def check_kernels_export_onnx(
@@ -76,16 +110,14 @@ def check_kernels_export_onnx(
     kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
 
     ort_outputs = ort_session.run(None, ort_input)
-    kernel_outputs_tensors = kernel.forward(
-        *kernel.example_inputs(dtype, device),
-        *kernel.example_params(dtype, device),
-        **kwargs,
+    kernel_outputs_tensors = astuple(
+        kernel.forward(
+            *kernel.example_inputs(dtype, device),
+            *kernel.example_params(dtype, device),
+            **kwargs,
+        )
     )
-    assert isinstance(kernel_outputs_tensors, tuple), (
-        "Kernel forward() must return a tuple of tensors"
-    )
-    assert all(t.dtype == dtype for t in kernel_outputs_tensors)
-    assert all(t.device == device for t in kernel_outputs_tensors)
+
     kernel_outputs = [t.numpy(force=True) for t in kernel_outputs_tensors]
 
     # Compare values, dtype, shape
