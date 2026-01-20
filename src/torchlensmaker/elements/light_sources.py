@@ -70,8 +70,6 @@ class LightSourceBase(SequentialElement):
         Tensor,
         Optional[Tensor],
         Optional[Tensor],
-        Optional[Tensor],
-        Optional[Tensor],
     ]:
         raise NotImplementedError
 
@@ -79,7 +77,7 @@ class LightSourceBase(SequentialElement):
         dim, dtype = inputs.dim, inputs.dtype
 
         # Get samples from derived class in local frame
-        P, V, rays_base, rays_object, var_base, var_object = self.sample_light_source(
+        P, V, rays_base, rays_object = self.sample_light_source(
             inputs.sampling, dim, dtype
         )
 
@@ -93,8 +91,6 @@ class LightSourceBase(SequentialElement):
             V=torch.cat((inputs.V, V), dim=0),
             rays_base=cat_optional(inputs.rays_base, rays_base),
             rays_object=cat_optional(inputs.rays_object, rays_object),
-            var_base=var_base,
-            var_object=var_object,
         )
 
         # now sample wavelength
@@ -138,7 +134,7 @@ class RaySource(LightSourceBase):
         P = torch.zeros(1, dim, dtype=dtype)
         V = unit_vector(dim, dtype).unsqueeze(0)
 
-        return P, V, None, None, None, None
+        return P, V, None, None
 
 
 class PointSourceAtInfinity(LightSourceBase):
@@ -179,7 +175,7 @@ class PointSourceAtInfinity(LightSourceBase):
         # Cartesian product
         fullP, fullV = cartesian_prod2d(P, V)
 
-        return fullP, fullV, NX, None, NX, None
+        return fullP, fullV, NX, None
 
 
 class PointSource(LightSourceBase):
@@ -220,7 +216,7 @@ class PointSource(LightSourceBase):
         # Cartesian product
         fullP, fullV = cartesian_prod2d(P, V)
 
-        return fullP, fullV, angles, None, angles, None
+        return fullP, fullV, angles, None
 
 
 class ObjectAtInfinity(LightSourceBase):
@@ -270,7 +266,7 @@ class ObjectAtInfinity(LightSourceBase):
         fullP, fullV = cartesian_prod2d(P, V)
         rays_base, rays_object = cartesian_prod2d(NX, angles)
 
-        return fullP, fullV, rays_base, rays_object, NX, angles
+        return fullP, fullV, rays_base, rays_object
 
 
 class Object(LightSourceBase):
@@ -293,8 +289,6 @@ class Object(LightSourceBase):
     ) -> tuple[
         Tensor,
         Tensor,
-        Optional[Tensor],
-        Optional[Tensor],
         Optional[Tensor],
         Optional[Tensor],
     ]:
@@ -320,7 +314,7 @@ class Object(LightSourceBase):
         fullP, fullV = cartesian_prod2d(P, V)
         rays_object, rays_base = cartesian_prod2d(NX, angles)
 
-        return fullP, fullV, rays_base, rays_object, angles, NX
+        return fullP, fullV, rays_base, rays_object
 
 
 def cartesian_wavelength(inputs: OpticalData, ray_var: Tensor) -> OpticalData:

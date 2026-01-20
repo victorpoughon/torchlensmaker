@@ -101,8 +101,8 @@ def spot_diagram(
     output_full: tlm.OpticalData = optics(
         tlm.default_input(sampling, dim=3, dtype=dtype)
     )
-    var_row = output_full.get_var_optional(row) if row is not None else None
-    var_col = output_full.get_var_optional(col) if col is not None else None
+    var_row = output_full.get_rays(row) if row is not None else None
+    var_col = output_full.get_rays(col) if col is not None else None
 
     # Some error checking
     if row is not None and var_row is None:

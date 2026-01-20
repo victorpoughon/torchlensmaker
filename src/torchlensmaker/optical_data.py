@@ -63,12 +63,6 @@ class OpticalData:
     rays_object: Optional[torch.Tensor]
     rays_image: Optional[torch.Tensor]
 
-    # Basis of each sampling variable
-    # Tensors of shape (*, 2|3)
-    # number of rows is the size of each sampling dimension
-    var_base: Optional[torch.Tensor]
-    var_object: Optional[torch.Tensor]
-
     # Loss accumulator
     # Tensor of dim 0
     loss: torch.Tensor
@@ -120,7 +114,5 @@ def default_input(
         rays_base=None,
         rays_object=None,
         rays_image=None,
-        var_base=None,
-        var_object=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
