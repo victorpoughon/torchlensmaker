@@ -36,7 +36,6 @@ from torchlensmaker.sampling.samplers import Sampler, init_sampling
 @dataclass
 class OpticalData:
     # dim is 2 or 3
-    # dtype default is torch.float64
     dim: int
     dtype: torch.dtype
 
