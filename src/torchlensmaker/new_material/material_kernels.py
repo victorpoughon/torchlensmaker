@@ -21,6 +21,33 @@ import torch
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
+class NonDispersiveMaterialKernel(FunctionalKernel):
+    "Material model for a constant index of refraction"
+
+    input_names = ["wavelength"]
+    param_names = ["n"]
+    output_names = ["index"]
+
+    @staticmethod
+    def forward(
+        wavelength: Float[torch.Tensor, " N"],
+        n: Float[torch.Tensor, ""],
+    ) -> Float[torch.Tensor, " N"]:
+        return n.expand_as(wavelength)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return (torch.tensor(1.5, dtype=dtype),)
+
+
 class CauchyMaterialKernel(FunctionalKernel):
     "Material model using Cauchy's equation with four coefficents"
 
@@ -105,30 +132,3 @@ class SellmeirMaterialKernel(FunctionalKernel):
             torch.tensor(0.01351206307, dtype=dtype),
             torch.tensor(97.9340025379, dtype=dtype),
         )
-
-
-class NonDispersiveMaterialKernel(FunctionalKernel):
-    "Material model for a constant index of refraction"
-
-    input_names = ["wavelength"]
-    param_names = ["n"]
-    output_names = ["index"]
-
-    @staticmethod
-    def forward(
-        wavelength: Float[torch.Tensor, " N"],
-        n: Float[torch.Tensor, ""],
-    ) -> Float[torch.Tensor, " N"]:
-        return n.expand_as(wavelength)
-
-    @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
-
-    @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        return (torch.tensor(1.5, dtype=dtype),)

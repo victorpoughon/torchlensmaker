@@ -20,11 +20,22 @@ from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import to_tensor
 
-from .material_kernels import NonDispersiveMaterialKernel
+from .material_kernels import NonDispersiveMaterialKernel, CauchyMaterialKernel
 
 
-class NonDispersiveMaterial(nn.Module):
-    def __init__(self, n: Float[torch.Tensor, ""]):
+# TODO add:
+# LinearSegmentedMaterial
+
+
+class MaterialModel(nn.Module):
+    def forward(
+        self, wavelength: Float[torch.Tensor, " N"]
+    ) -> Float[torch.Tensor, " N"]:
+        raise NotImplementedError
+
+
+class NonDispersiveMaterial(MaterialModel):
+    def __init__(self, n: Float[torch.Tensor, ""] | float):
         super().__init__()
         self.n = to_tensor(n)
         self.kernel = NonDispersiveMaterialKernel()
@@ -33,3 +44,24 @@ class NonDispersiveMaterial(nn.Module):
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
         return self.kernel.forward(wavelength, self.n)
+
+
+class CauchyMaterial(MaterialModel):
+    def __init__(
+        self,
+        A: Float[torch.Tensor, ""] | float,
+        B: Float[torch.Tensor, ""] | float,
+        C: Float[torch.Tensor, ""] | float = 0.0,
+        D: Float[torch.Tensor, ""] | float = 0.0,
+    ):
+        super().__init__()
+        self.A = to_tensor(A)
+        self.B = to_tensor(B)
+        self.C = to_tensor(C)
+        self.D = to_tensor(D)
+        self.kernel = CauchyMaterialKernel()
+
+    def forward(
+        self, wavelength: Float[torch.Tensor, " N"]
+    ) -> Float[torch.Tensor, " N"]:
+        return self.kernel.forward(wavelength, self.A, self.B, self.C, self.D)
