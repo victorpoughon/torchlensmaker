@@ -20,10 +20,37 @@ from jaxtyping import Float, Int
 
 from torchlensmaker.core.tensor_manip import to_tensor
 
-from .sampling_kernels import LinspaceSampling1DKernel, LinspaceSampling2DKernel
+from .sampling_kernels import (
+    LinspaceSampling1DKernel,
+    LinspaceSampling2DKernel,
+    ZeroSampling1DKernel,
+    ZeroSampling2DKernel,
+)
 
 
-class LinspaceSampling1D(nn.Module):
+class ZeroSampler1D(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.kernel = ZeroSampling1DKernel()
+
+    def forward(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, " N"]:
+        return self.kernel.forward(dtype, device)
+
+
+class ZeroSampler2D(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.kernel = ZeroSampling2DKernel()
+
+    def forward(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, "N 2"]:
+        return self.kernel.forward(dtype, device)
+
+
+class LinspaceSampler1D(nn.Module):
     def __init__(self, N: Int[torch.Tensor, ""] | int):
         super().__init__()
         self.N = to_tensor(N, default_dtype=torch.int64)
@@ -35,7 +62,7 @@ class LinspaceSampling1D(nn.Module):
         return self.kernel.forward(self.N, dtype, device)
 
 
-class LinspaceSampling2D(nn.Module):
+class LinspaceSampler2D(nn.Module):
     def __init__(
         self, Nx: Int[torch.Tensor, ""] | int, Ny: Int[torch.Tensor, ""] | int
     ):

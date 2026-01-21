@@ -50,7 +50,11 @@ def ray_variables_dict(
     d = {}
 
     def update(tensor: Optional[Tensor], name: str) -> None:
-        if tensor is not None:
+        # TODO this if check is temporary to avoid a divide by zero in tlmviewer
+        # ideally we would export all three variables allways, and tlmviewer
+        # handles correctly degenerate cases like PointSource which has all
+        # field coord = 0, or a single wavelength, etc.
+        if tensor.numel() > 0 and (tensor.max() - tensor.min()) > 1e-3:
             d[name] = filter_optional_mask(tensor, valid)
 
     # TODO no support for 2D colormaps in tlmviewer yet
@@ -59,12 +63,7 @@ def ray_variables_dict(
         update(data.rays_base, "base")
         update(data.rays_object, "object")
 
-    # TODO this if check is temporary to avoid a divide by zero in tlmviewer
-    if (
-        data.rays_wavelength.numel() > 0
-        and (data.rays_wavelength.max() - data.rays_wavelength.min()) > 1e-3
-    ):
-        update(data.rays_wavelength, "wavelength")
+    update(data.rays_wavelength, "wavelength")
 
     return d
 

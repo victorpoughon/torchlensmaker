@@ -28,8 +28,10 @@ from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.elements.light_sources import LightSourceBase
 
 from torchlensmaker.new_sampling.sampling_elements import (
-    LinspaceSampling1D,
-    LinspaceSampling2D,
+    LinspaceSampler1D,
+    LinspaceSampler2D,
+    ZeroSampler1D,
+    ZeroSampler2D,
 )
 from torchlensmaker.new_light_sources.source_geometry_elements import (
     ObjectGeometry2D,
@@ -96,9 +98,9 @@ class Object2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampling1D(6),
-            sampler_field=LinspaceSampling1D(6),
-            sampler_wavelength=LinspaceSampling1D(6),
+            sampler_pupil=LinspaceSampler1D(6),
+            sampler_field=LinspaceSampler1D(6),
+            sampler_wavelength=LinspaceSampler1D(6),
             material=get_material_model(material),
             geometry=ObjectGeometry2D(beam_angular_size, object_diameter, wavelength),
         )
@@ -114,12 +116,74 @@ class ObjectAtInfinity2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampling1D(6),
-            sampler_field=LinspaceSampling1D(6),
-            sampler_wavelength=LinspaceSampling1D(6),
+            sampler_pupil=LinspaceSampler1D(6),
+            sampler_field=LinspaceSampler1D(6),
+            sampler_wavelength=LinspaceSampler1D(6),
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter, angular_size, wavelength
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
+class PointSource2D(GenericLightSource):
+    def __init__(
+        self,
+        beam_angular_size: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=LinspaceSampler1D(6),
+            sampler_field=ZeroSampler1D(),
+            sampler_wavelength=LinspaceSampler1D(6),
+            material=get_material_model(material),
+            geometry=ObjectGeometry2D(
+                beam_angular_size=beam_angular_size,
+                object_diameter=0,
+                wavelength=wavelength,
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
+class PointSourceAtInfinity2D(GenericLightSource):
+    def __init__(
+        self,
+        beam_diameter: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=LinspaceSampler1D(6),
+            sampler_field=ZeroSampler1D(),
+            sampler_wavelength=LinspaceSampler1D(6),
+            material=get_material_model(material),
+            geometry=ObjectAtInfinityGeometry2D(
+                beam_diameter=beam_diameter,
+                angular_size=0,
+                wavelength=wavelength,
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
+class RaySource2D(GenericLightSource):
+    def __init__(
+        self,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=ZeroSampler1D(),
+            sampler_field=ZeroSampler1D(),
+            sampler_wavelength=LinspaceSampler1D(6),
+            material=get_material_model(material),
+            geometry=ObjectAtInfinityGeometry2D(
+                beam_diameter=0,
+                angular_size=0,
+                wavelength=wavelength,
             ),
         )
         # TODO how to setup samplers params?

@@ -24,7 +24,7 @@ from torchlensmaker.core.tensor_manip import cartesian_prod2d, meshgrid_flat
 
 class ObjectGeometry2DKernel(FunctionalKernel):
     """
-    Object in the near field
+    An object (2D) in the near field
     """
 
     input_names = [
@@ -113,7 +113,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
 
 class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
     """
-    A 2D object at infinity
+    An object (2D) at infinity
     """
 
     input_names = [

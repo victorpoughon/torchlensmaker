@@ -22,6 +22,8 @@ import pytest
 import torch
 
 from torchlensmaker.new_sampling.sampling_kernels import (
+    ZeroSampling1DKernel,
+    ZeroSampling2DKernel,
     LinspaceSampling1DKernel,
     LinspaceSampling2DKernel,
     DiskSampling2DKernel,
@@ -36,6 +38,8 @@ from torchlensmaker.testing.functional_kernels_testing import (
 )
 
 kernels_library: Dict[str, FunctionalKernel] = {
+    "ZeroSampling1D": ZeroSampling1DKernel(),
+    "ZeroSampling2D": ZeroSampling2DKernel(),
     "LinspaceSampling1D": LinspaceSampling1DKernel(),
     "LinspaceSampling2D": LinspaceSampling2DKernel(),
     "DiskSampling2D": DiskSampling2DKernel(),

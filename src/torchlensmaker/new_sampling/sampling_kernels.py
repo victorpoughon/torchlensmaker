@@ -22,6 +22,52 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 from .sampling import disk_sampling
 
 
+class ZeroSampling1DKernel(FunctionalKernel):
+    input_names = []
+    param_names = []
+    output_names = ["samples"]
+    forward_dtype_device = True
+
+    @staticmethod
+    def forward(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, " 1"]:
+        return torch.zeros((1), dtype=dtype, device=device)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+
+class ZeroSampling2DKernel(FunctionalKernel):
+    input_names = []
+    param_names = []
+    output_names = ["samples"]
+    forward_dtype_device = True
+
+    @staticmethod
+    def forward(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, "1 2"]:
+        return torch.zeros((1, 2), dtype=dtype, device=device)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+
 class LinspaceSampling1DKernel(FunctionalKernel):
     input_names = []
     param_names = ["N"]
@@ -37,7 +83,9 @@ class LinspaceSampling1DKernel(FunctionalKernel):
         # note: extra .to(dtype=) seems required for onnx export dtype correctness
         # seems like there is some dependence on torch default dtype inside linspace even when dtype argument is provided
 
-        samples = torch.linspace(-one, one, N, dtype=dtype, device=device).to(dtype=dtype)
+        samples = torch.linspace(-one, one, N, dtype=dtype, device=device).to(
+            dtype=dtype
+        )
         return samples
 
     @staticmethod
