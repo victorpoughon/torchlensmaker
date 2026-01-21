@@ -40,6 +40,7 @@ from torchlensmaker.new_light_sources.source_geometry_elements import (
 from torchlensmaker.new_material.material_elements import MaterialModel
 from torchlensmaker.new_material.get_material_model import get_material_model
 
+from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 
 # TODO remove LightSourceBase
 class GenericLightSource(LightSourceBase):
@@ -78,6 +79,9 @@ class GenericLightSource(LightSourceBase):
 
         # Compute refraction index with material model
         R = self.material(W)
+
+        # Apply kinematic transform
+        P, V = transform_rays(data.dfk, P, V)
 
         return data.replace(
             P=P,
