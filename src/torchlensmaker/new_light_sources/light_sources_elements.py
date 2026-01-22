@@ -46,7 +46,9 @@ from torchlensmaker.new_material.get_material_model import get_material_model
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 
 
-def convert_sampler_old_to_new(current: nn.Module, dim: int, value: Any, dtype: torch.dtype, device: torch.device):
+def convert_sampler_old_to_new(
+    current: nn.Module, dim: int, value: Any, dtype: torch.dtype, device: torch.device
+):
     if isinstance(current, (ZeroSampler1D, ZeroSampler2D)):
         return current
 
@@ -87,7 +89,7 @@ class GenericLightSource(LightSourceBase):
         self.material = material
         self.geometry = geometry
 
-    def domain(self) -> dict[str, list[float]]:
+    def domain(self, dim: int) -> dict[str, list[float]]:
         return self.geometry.domain()
 
     def forward(self, data: OpticalData) -> OpticalData:
@@ -96,19 +98,17 @@ class GenericLightSource(LightSourceBase):
         # TODO improve sampling dict TLM-80
         # for now set the parameters here
         self.sampler_pupil = convert_sampler_old_to_new(
-            self.sampler_pupil,
-            data.dim,
-            data.sampling["base"], dtype, device
+            self.sampler_pupil, data.dim, data.sampling["base"], dtype, device
         )
         self.sampler_field = convert_sampler_old_to_new(
-            self.sampler_field,
-            data.dim,
-            data.sampling["object"], dtype, device
+            self.sampler_field, data.dim, data.sampling["object"], dtype, device
         )
         self.sampler_wavelength = convert_sampler_old_to_new(
             self.sampler_wavelength,
-            2, # TODO ugly hack here
-            data.sampling["wavelength"], dtype, device
+            2,  # TODO ugly hack here
+            data.sampling["wavelength"],
+            dtype,
+            device,
         )
 
         # Compute pupil, field and wavelength samples
@@ -160,7 +160,6 @@ class Object2D(GenericLightSource):
         # TODO how to setup samplers params?
 
 
-
 class Object3D(GenericLightSource):
     def __init__(
         self,
@@ -177,6 +176,7 @@ class Object3D(GenericLightSource):
             geometry=ObjectGeometry3D(beam_angular_size, object_diameter, wavelength),
         )
         # TODO how to setup samplers params?
+
 
 class ObjectAtInfinity2D(GenericLightSource):
     def __init__(
@@ -258,3 +258,27 @@ class RaySource2D(GenericLightSource):
             ),
         )
         # TODO how to setup samplers params?
+
+
+class MixedDimLightSource(LightSourceBase):
+    def __init__(self, module_2d: nn.Module, module_3d: nn.Module):
+        super().__init__()
+        self.module_2d = module_2d
+        self.module_3d = module_3d
+
+    def domain(self, dim: int) -> dict[str, list[float]]:
+        if dim == 2:
+            return self.module_2d.domain(dim)
+        else:
+            return self.module_3d.domain(dim)
+
+    def forward(self, data: OpticalData) -> OpticalData:
+        if data.dim == 2:
+            return self.module_2d(data)
+        else:
+            return self.module_3d(data)
+
+
+class Object(MixedDimLightSource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(Object2D(*args, **kwargs), Object3D(*args, **kwargs))

@@ -100,7 +100,7 @@ def getElementsByType(module: nn.Module, typ: Type[nn.Module]) -> nn.ModuleList:
     return result
 
 
-def get_domain(optics: nn.Module) -> dict[str, list[float]]:
+def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
     light_sources = getElementsByType(optics, LightSourceBase)
 
     if len(light_sources) == 0:
@@ -109,7 +109,7 @@ def get_domain(optics: nn.Module) -> dict[str, list[float]]:
     # TODO handle multiple light sources
     ls = light_sources[0]
 
-    return ls.domain()
+    return ls.domain(dim)
 
 
 # TODO rename
@@ -127,7 +127,7 @@ def render_sequence(
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables = ["base", "object", "wavelength"]
-    ray_variables_domains = get_domain(optics)
+    ray_variables_domains = get_domain(optics, dim)
 
     # Initialize the artist collective
     collective = Collective(
