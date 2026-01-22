@@ -27,7 +27,7 @@ from torchlensmaker.elements.sequential import SequentialElement
 
 from torchlensmaker.elements.light_sources import LightSourceBase
 
-from torchlensmaker.new_sampling.sampling_elements import (
+from torchlensmaker.new_sampling.sampler_elements import (
     LinspaceSampler1D,
     LinspaceSampler2D,
     ZeroSampler1D,
