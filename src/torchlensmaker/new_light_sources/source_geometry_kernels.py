@@ -29,18 +29,24 @@ from torchlensmaker.core.geometry import rotate_x_zy
 
 class ObjectGeometry2DKernel(FunctionalKernel):
     """
-    An object (2D) in the near field
+    An object in 2D represented by:
+        - an angular diameter
+        - a spatial diameter
+        - a wavelength bandwith
+
+    When using this kernel, the mapping between angular/spatial and pupil/field
+    will determine if the object is in the near field or at infinity.
     """
 
     input_names = [
-        "pupil_samples",  # (Np,) normalized [-1, 1] samples in the pupil dimension
-        "field_samples",  # (Nf,) normalized [-1, 1] samples in the field dimension
+        "angular_samples",  # (Na,) normalized [-1, 1] samples in the angular dimension
+        "spatial_samples",  # (Ns,) normalized [-1, 1] samples in the spatial dimension
         "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
     ]
 
     param_names = [
-        "beam_angular_size",  # angular size of the pupil beam in radians
-        "object_diameter",  # diameter of the object in length units
+        "angular_diameter",  # angular diameter in radians
+        "spatial_diameter",  # spatial diameter in length units
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
     ]
@@ -49,17 +55,17 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         "P",  # (N, 2) rays origins
         "V",  # (N, 2) rays direction
         "W",  # (N,) rays wavelength
-        "pupil_coordinates",  # (N,) rays pupil coordinates
-        "field_coordinates",  # (N,) rays field coordinates
+        "angular_coordinates",  # (N,) rays angular coordinates
+        "spatial_coordinates",  # (N,) rays spatial coordinates
     ]
 
     @staticmethod
     def forward(
-        pupil_samples: Float[torch.Tensor, " Np"],
-        field_samples: Float[torch.Tensor, " Nf"],
+        angular_samples: Float[torch.Tensor, " Na"],
+        spatial_samples: Float[torch.Tensor, " Ns"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
-        beam_angular_size: Float[torch.Tensor, ""],
-        object_diameter: Float[torch.Tensor, ""],
+        angular_diameter: Float[torch.Tensor, ""],
+        spatial_diameter: Float[torch.Tensor, ""],
         wavelength_lower: Float[torch.Tensor, ""],
         wavelength_upper: Float[torch.Tensor, ""],
     ) -> tuple[
@@ -70,129 +76,34 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         Float[torch.Tensor, " N"],
     ]:
         # pupil coordinates are the pupil samples over the beam angular size
-        pupil_coords = pupil_samples * beam_angular_size / 2
+        angular_coords = angular_samples * angular_diameter / 2
 
         # field coordinates are the field samples over the object diameter
-        field_coords = field_samples * object_diameter / 2
+        spatial_coords = spatial_samples * spatial_diameter / 2
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
-        field_coords_full, pupil_coords_full, wavel_coords_full = meshgrid_flat(
-            field_coords, pupil_coords, wavel_coords
+        spatial_coords_full, angular_coords_full, wavel_coords_full = meshgrid_flat(
+            spatial_coords, angular_coords, wavel_coords
         )
 
         # Convert pupil and field to physical space
         P = torch.stack(
-            (torch.zeros_like(field_coords_full), field_coords_full), dim=-1
+            (torch.zeros_like(spatial_coords_full), spatial_coords_full), dim=-1
         )
         V = torch.stack(
-            (torch.cos(pupil_coords_full), torch.sin(pupil_coords_full)), dim=-1
+            (torch.cos(angular_coords_full), torch.sin(angular_coords_full)), dim=-1
         )
 
         return (
             P,
             V,
             wavel_coords_full,
-            pupil_coords_full,
-            field_coords_full,
-        )
-
-    @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        pupil_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
-        field_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
-        wavelength_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
-
-        return (pupil_samples, field_samples, wavelength_samples)
-
-    @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        return (
-            torch.tensor(15, dtype=dtype),
-            torch.tensor(5, dtype=dtype),
-            torch.tensor(400, dtype=dtype),
-            torch.tensor(800, dtype=dtype),
-        )
-
-
-class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
-    """
-    An object (2D) at infinity
-    """
-
-    input_names = [
-        "pupil_samples",  # (Np,) normalized [-1, 1] samples in the pupil dimension
-        "field_samples",  # (Nf,) normalized [-1, 1] samples in the field dimension
-        "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
-    ]
-
-    param_names = [
-        "beam_diameter",  # diameter of the beam in length units
-        "angular_size",  # object apparent angular size in radians
-        "wavelength_lower",  # lower bound for the wavelength domain
-        "wavelength_upper",  # upper bound for the wavelength domain
-    ]
-
-    output_names = [
-        "P",  # (N, 2) rays origins
-        "V",  # (N, 2) rays direction
-        "W",  # (N,) rays wavelength
-        "pupil_coordinates",  # (N,) rays pupil coordinates
-        "field_coordinates",  # (N,) rays field coordinates
-    ]
-
-    @staticmethod
-    def forward(
-        pupil_samples: Float[torch.Tensor, " Np"],
-        field_samples: Float[torch.Tensor, " Nf"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
-        beam_diameter: Float[torch.Tensor, ""],
-        angular_size: Float[torch.Tensor, ""],
-        wavelength_lower: Float[torch.Tensor, ""],
-        wavelength_upper: Float[torch.Tensor, ""],
-    ) -> tuple[
-        Float[torch.Tensor, "N 2"],
-        Float[torch.Tensor, "N 2"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, " N"],
-    ]:
-        # pupil coordinates are the pupil samples over the beam diameter
-        pupil_coords = pupil_samples * beam_diameter / 2
-
-        # field coordinates are the field samples over the object angular size
-        field_coords = field_samples * angular_size / 2
-
-        # wavelength coordinates are scaled over the wavelength domain
-        bandwith = wavelength_upper - wavelength_lower
-        wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
-
-        # Generate all possible combinations of ray coordinates with a triple meshgrid
-        field_coords_full, pupil_coords_full, wavel_coords_full = meshgrid_flat(
-            field_coords, pupil_coords, wavel_coords
-        )
-
-        # Convert pupil and field to physical space
-        P = torch.stack(
-            (torch.zeros_like(pupil_coords_full), pupil_coords_full), dim=-1
-        )
-        V = torch.stack(
-            (torch.cos(field_coords_full), torch.sin(field_coords_full)), dim=-1
-        )
-
-        return (
-            P,
-            V,
-            wavel_coords_full,
-            pupil_coords_full,
-            field_coords_full,
+            angular_coords_full,
+            spatial_coords_full,
         )
 
     @staticmethod
@@ -219,19 +130,22 @@ class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
 
 class ObjectGeometry3DKernel(FunctionalKernel):
     """
-    A simple object (3D) in the near field
-    Represented by a disk perpendicular to the optical axis
+    An object in 3D represented by a disk in spatial and angular dimensions, and
+    a band in the spectral dimension.
+
+    When using this kernel, the mapping between angular/spatial and pupil/field
+    will determine if the object is in the near field or at infinity.
     """
 
     input_names = [
-        "pupil_samples",  # (Np, 2) normalized [-1, 1] samples in the pupil dimension
-        "field_samples",  # (Nf, 2) normalized [-1, 1] samples in the field dimension
+        "angular_samples",  # (Np, 2) normalized [-1, 1] samples in the angular dimension
+        "spatial_samples",  # (Nf, 2) normalized [-1, 1] samples in the spatial dimension
         "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
     ]
 
     param_names = [
-        "beam_angular_size",  # angular size of the pupil beam in radians
-        "object_diameter",  # diameter of the object in length units
+        "angular_diameter",  # angular diameter in radians
+        "spatial_diameter",  # spatial diameter in length units
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
     ]
@@ -240,17 +154,17 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         "P",  # (N, 3) rays origins
         "V",  # (N, 3) rays direction
         "W",  # (N,) rays wavelength
-        "pupil_coordinates",  # (N, 2) rays pupil coordinates
-        "field_coordinates",  # (N, 2) rays field coordinates
+        "angular_coordinates",  # (N, 2) rays angular coordinates
+        "spatial_coordinates",  # (N, 2) rays spatial coordinates
     ]
 
     @staticmethod
     def forward(
-        pupil_samples: Float[torch.Tensor, "Np 2"],
-        field_samples: Float[torch.Tensor, "Nf 2"],
+        angular_samples: Float[torch.Tensor, "Np 2"],
+        spatial_samples: Float[torch.Tensor, "Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
-        beam_angular_size: Float[torch.Tensor, ""],
-        object_diameter: Float[torch.Tensor, ""],
+        angular_diameter: Float[torch.Tensor, ""],
+        spatial_diameter: Float[torch.Tensor, ""],
         wavelength_lower: Float[torch.Tensor, ""],
         wavelength_upper: Float[torch.Tensor, ""],
     ) -> tuple[
@@ -261,165 +175,37 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         Float[torch.Tensor, "N 2"],
     ]:
         # pupil coordinates are the pupil samples over the beam angular size
-        pupil_coords = pupil_samples * beam_angular_size / 2
+        angular_coords = angular_samples * angular_diameter / 2
 
         # field coordinates are the field samples over the object diameter
-        field_coords = field_samples * object_diameter / 2
+        spatial_coords = spatial_samples * spatial_diameter / 2
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
-        field_coords_full, pupil_coords_full, wavel_coords_full = meshgrid2d_flat3(
-            field_coords, pupil_coords, wavel_coords
+        spatial_coords_full, angular_coords_full, wavel_coords_full = meshgrid2d_flat3(
+            spatial_coords, angular_coords, wavel_coords
         )
 
         # Convert field to physical space by adding X=0 to the YZ plane samples
         Px = torch.zeros(
-            (field_coords_full.shape[0], 1),
-            dtype=field_coords_full.dtype,
-            device=field_coords_full.device,
+            (spatial_coords_full.shape[0], 1),
+            dtype=spatial_coords_full.dtype,
+            device=spatial_coords_full.device,
         )
-        P = torch.cat((Px, field_coords_full), dim=-1)
+        P = torch.cat((Px, spatial_coords_full), dim=-1)
 
         # Convert pupil to physical space by rotating the unit X vector
-        V = rotate_x_zy(pupil_coords_full)
+        V = rotate_x_zy(angular_coords_full)
 
         return (
             P,
             V,
             wavel_coords_full,
-            pupil_coords_full,
-            field_coords_full,
-        )
-
-    @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        pupil_samples = torch.tensor(
-            [
-                [0, 0],
-                [-1, 0],
-                [0, -1],
-                [-1, -1],
-                [0, 1],
-                [1, 0],
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-            ],
-            dtype=dtype,
-            device=device,
-        )
-        field_samples = torch.tensor(
-            [
-                [0, 0],
-                [-1, 0],
-                [0, -1],
-                [-1, -1],
-                [0, 1],
-                [1, 0],
-                [1, 1],
-                [-1, 1],
-                [1, -1],
-            ],
-            dtype=dtype,
-            device=device,
-        )
-        wavelength_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
-
-        return (pupil_samples, field_samples, wavelength_samples)
-
-    @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
-        return (
-            torch.tensor(15, dtype=dtype),
-            torch.tensor(5, dtype=dtype),
-            torch.tensor(400, dtype=dtype),
-            torch.tensor(800, dtype=dtype),
-        )
-
-
-class ObjectAtInfinityGeometry3DKernel(FunctionalKernel):
-    """
-    A simple object (3D) at infinity
-    Represented by a disk perpendicular to the optical axis
-    modeling where the rays begin
-    """
-
-    input_names = [
-        "pupil_samples",  # (Np, 2) normalized [-1, 1] samples in the pupil dimension
-        "field_samples",  # (Nf, 2) normalized [-1, 1] samples in the field dimension
-        "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
-    ]
-
-    param_names = [
-        "beam_diameter",  # diameter of the beam in length units
-        "angular_size",  # object apparent angular size in radians
-        "wavelength_lower",  # lower bound for the wavelength domain
-        "wavelength_upper",  # upper bound for the wavelength domain
-    ]
-
-    output_names = [
-        "P",  # (N, 3) rays origins
-        "V",  # (N, 3) rays direction
-        "W",  # (N,) rays wavelength
-        "pupil_coordinates",  # (N, 2) rays pupil coordinates
-        "field_coordinates",  # (N, 2) rays field coordinates
-    ]
-
-    @staticmethod
-    def forward(
-        pupil_samples: Float[torch.Tensor, "Np 2"],
-        field_samples: Float[torch.Tensor, "Nf 2"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
-        beam_diameter: Float[torch.Tensor, ""],
-        angular_size: Float[torch.Tensor, ""],
-        wavelength_lower: Float[torch.Tensor, ""],
-        wavelength_upper: Float[torch.Tensor, ""],
-    ) -> tuple[
-        Float[torch.Tensor, "N 3"],
-        Float[torch.Tensor, "N 3"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, "N 2"],
-        Float[torch.Tensor, "N 2"],
-    ]:
-        # pupil coordinates are the pupil samples over the beam diameter
-        pupil_coords = pupil_samples * beam_diameter / 2
-
-        # field coordinates are the field samples over the object angular size
-        field_coords = field_samples * angular_size / 2
-
-        # wavelength coordinates are scaled over the wavelength domain
-        bandwith = wavelength_upper - wavelength_lower
-        wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
-
-        # Generate all possible combinations of ray coordinates with a triple meshgrid
-        field_coords_full, pupil_coords_full, wavel_coords_full = meshgrid2d_flat3(
-            field_coords, pupil_coords, wavel_coords
-        )
-
-        # Convert pupil to physical space by adding X=0 to the YZ plane samples
-        Px = torch.zeros(
-            (pupil_coords_full.shape[0], 1),
-            dtype=pupil_coords_full.dtype,
-            device=pupil_coords_full.device,
-        )
-        P = torch.cat((Px, pupil_coords_full), dim=-1)
-
-        # Convert field to physical space by rotating the X unit vector
-        V = rotate_x_zy(field_coords_full)
-
-        return (
-            P,
-            V,
-            wavel_coords_full,
-            pupil_coords_full,
-            field_coords_full,
+            angular_coords_full,
+            spatial_coords_full,
         )
 
     @staticmethod

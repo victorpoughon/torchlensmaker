@@ -23,9 +23,7 @@ from torchlensmaker.core.tensor_manip import to_tensor
 
 from .source_geometry_kernels import (
     ObjectGeometry2DKernel,
-    ObjectAtInfinityGeometry2DKernel,
     ObjectGeometry3DKernel,
-    ObjectAtInfinityGeometry3DKernel,
 )
 
 
@@ -75,13 +73,13 @@ class ObjectGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
     ]:
         P, V, W, psamples, fsamples = self.kernel.forward(
-            pupil_samples,
-            field_samples,
-            wavelength_samples,
-            torch.deg2rad(self.beam_angular_size),
-            self.object_diameter,
-            self.wavelength_lower,
-            self.wavelength_upper,
+            angular_samples=pupil_samples,
+            spatial_samples=field_samples,
+            wavelength_samples=wavelength_samples,
+            angular_diameter=torch.deg2rad(self.beam_angular_size),
+            spatial_diameter=self.object_diameter,
+            wavelength_lower=self.wavelength_lower,
+            wavelength_upper=self.wavelength_upper,
         )
 
         return P, V, W, torch.rad2deg(psamples), fsamples
@@ -109,7 +107,7 @@ class ObjectAtInfinityGeometry2D(nn.Module):
                 f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
             )
 
-        self.kernel = ObjectAtInfinityGeometry2DKernel()
+        self.kernel = ObjectGeometry2DKernel()
 
     def domain(self) -> dict[str, list[float]]:
         A = self.beam_diameter.item() / 2
@@ -132,17 +130,17 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
     ]:
-        P, V, W, psamples, fsamples = self.kernel.forward(
-            pupil_samples,
-            field_samples,
-            wavelength_samples,
-            self.beam_diameter,
-            torch.deg2rad(self.angular_size),
-            self.wavelength_lower,
-            self.wavelength_upper,
+        P, V, W, angular_samples, spatial_samples = self.kernel.forward(
+            angular_samples=field_samples,
+            spatial_samples=pupil_samples,
+            wavelength_samples=wavelength_samples,
+            angular_diameter=torch.deg2rad(self.angular_size),
+            spatial_diameter=self.beam_diameter,
+            wavelength_lower=self.wavelength_lower,
+            wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, psamples, torch.rad2deg(fsamples)
+        return P, V, W, spatial_samples, torch.rad2deg(angular_samples)
 
 
 class ObjectGeometry3D(nn.Module):
@@ -187,13 +185,13 @@ class ObjectGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
     ]:
         P, V, W, psamples, fsamples = self.kernel.forward(
-            pupil_samples,
-            field_samples,
-            wavelength_samples,
-            torch.deg2rad(self.beam_angular_size),
-            self.object_diameter,
-            self.wavelength_lower,
-            self.wavelength_upper,
+            angular_samples=pupil_samples,
+            spatial_samples=field_samples,
+            wavelength_samples=wavelength_samples,
+            angular_diameter=torch.deg2rad(self.beam_angular_size),
+            spatial_diameter=self.object_diameter,
+            wavelength_lower=self.wavelength_lower,
+            wavelength_upper=self.wavelength_upper,
         )
 
         return P, V, W, torch.rad2deg(psamples), fsamples
@@ -221,7 +219,7 @@ class ObjectAtInfinityGeometry3D(nn.Module):
                 f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
             )
 
-        self.kernel = ObjectAtInfinityGeometry3DKernel()
+        self.kernel = ObjectGeometry3DKernel()
 
     def domain(self) -> dict[str, list[float]]:
         return {
@@ -240,14 +238,14 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
     ]:
-        P, V, W, psamples, fsamples = self.kernel.forward(
-            pupil_samples,
-            field_samples,
-            wavelength_samples,
-            self.beam_diameter,
-            torch.deg2rad(self.angular_size),
-            self.wavelength_lower,
-            self.wavelength_upper,
+        P, V, W, angular_samples, spatial_samples = self.kernel.forward(
+            angular_samples=field_samples,
+            spatial_samples=pupil_samples,
+            wavelength_samples=wavelength_samples,
+            angular_diameter=torch.deg2rad(self.angular_size),
+            spatial_diameter=self.beam_diameter,
+            wavelength_lower=self.wavelength_lower,
+            wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, psamples, torch.rad2deg(fsamples)
+        return P, V, W, spatial_samples, torch.rad2deg(angular_samples)
