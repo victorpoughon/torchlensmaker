@@ -40,7 +40,7 @@ class OpticalData:
     dtype: torch.dtype
 
     # Sampling configuration for each variable
-    sampling: dict[str, Sampler]
+    sampling: dict[str, Any]
 
     # Forward kinematic chain
     dfk: HomMatrix  # direct
@@ -52,7 +52,7 @@ class OpticalData:
 
     # Light rays wavelength in nm
     rays_wavelength: Float[torch.Tensor, " N"]
-    
+
     # Light rays index of refraction
     rays_index: Float[torch.Tensor, " N"]
 
@@ -100,10 +100,19 @@ def default_input(
 
     dfk, ifk = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
 
+    if "wavelength" not in sampling:
+        sampling["wavelength"] = 1
+
+    if "object" not in sampling:
+        sampling["object"] = 1
+
+    if "base" not in sampling:
+        sampling["base"] = 1
+
     return OpticalData(
         dim=dim,
         dtype=dtype,
-        sampling=init_sampling(sampling),
+        sampling=sampling,
         dfk=dfk,
         ifk=ifk,
         P=torch.empty((0, dim), dtype=dtype),

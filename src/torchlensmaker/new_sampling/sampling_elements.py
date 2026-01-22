@@ -23,6 +23,7 @@ from torchlensmaker.core.tensor_manip import to_tensor
 from .sampling_kernels import (
     LinspaceSampling1DKernel,
     LinspaceSampling2DKernel,
+    ExactSampling1DKernel,
     ZeroSampling1DKernel,
     ZeroSampling2DKernel,
 )
@@ -47,6 +48,16 @@ class ZeroSampler2D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, "N 2"]:
+        return self.kernel.forward(dtype, device)
+
+
+class ExactSampler1D(nn.Module):
+    def __init__(self, samples: Float[torch.Tensor, " N"]):
+        super().__init__()
+        self.samples = samples
+        self.kernel = ExactSampling1DKernel()
+    
+    def forward(self, dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, " N"]:
         return self.kernel.forward(dtype, device)
 
 

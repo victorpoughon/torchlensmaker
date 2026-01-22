@@ -32,6 +32,7 @@ from torchlensmaker.new_sampling.sampling_elements import (
     LinspaceSampler2D,
     ZeroSampler1D,
     ZeroSampler2D,
+    ExactSampler1D,
 )
 from torchlensmaker.new_light_sources.source_geometry_elements import (
     ObjectGeometry2D,
@@ -41,6 +42,21 @@ from torchlensmaker.new_material.material_elements import MaterialModel
 from torchlensmaker.new_material.get_material_model import get_material_model
 
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
+
+
+def convert_sampler_old_to_new(current: nn.Module, value: Any, dtype: torch.dtype, device: torch.device):
+    if isinstance(current, ZeroSampler1D):
+        return current
+    
+    if isinstance(value, (float, int)):
+        return LinspaceSampler1D(value)
+    elif isinstance(value, (list, tuple)):
+        return ExactSampler1D(torch.tensor(value, dtype=dtype, device=device))
+    else:
+        raise RuntimeError(
+            f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
+        )
+
 
 # TODO remove LightSourceBase
 class GenericLightSource(LightSourceBase):
@@ -53,8 +69,8 @@ class GenericLightSource(LightSourceBase):
         geometry: nn.Module,
     ):
         super().__init__()
-        self.pupil_sampler = sampler_pupil
-        self.field_sampler = sampler_field
+        self.sampler_pupil = sampler_pupil
+        self.sampler_field = sampler_field
         self.sampler_wavelength = sampler_wavelength
         self.material = material
         self.geometry = geometry
@@ -65,9 +81,24 @@ class GenericLightSource(LightSourceBase):
     def forward(self, data: OpticalData) -> OpticalData:
         dtype, device = data.dtype, torch.device("cpu")  # TODO gpu support
 
+        # TODO improve sampling dict TLM-80
+        # for now set the parameters here
+        self.sampler_pupil = convert_sampler_old_to_new(
+            self.sampler_pupil,
+            data.sampling["base"], dtype, device
+        )
+        self.sampler_field = convert_sampler_old_to_new(
+            self.sampler_field,
+            data.sampling["object"], dtype, device
+        )
+        self.sampler_wavelength = convert_sampler_old_to_new(
+            self.sampler_wavelength,
+            data.sampling["wavelength"], dtype, device
+        )
+
         # Compute pupil, field and wavelength samples
-        pupil_samples = self.pupil_sampler(dtype, device)
-        field_samples = self.field_sampler(dtype, device)
+        pupil_samples = self.sampler_pupil(dtype, device)
+        field_samples = self.sampler_field(dtype, device)
         wavel_samples = self.sampler_wavelength(dtype, device)
 
         # Compute rays with the object geometry
@@ -102,9 +133,9 @@ class Object2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(6),
-            sampler_field=LinspaceSampler1D(6),
-            sampler_wavelength=LinspaceSampler1D(6),
+            sampler_pupil=LinspaceSampler1D(5),
+            sampler_field=LinspaceSampler1D(5),
+            sampler_wavelength=LinspaceSampler1D(5),
             material=get_material_model(material),
             geometry=ObjectGeometry2D(beam_angular_size, object_diameter, wavelength),
         )
@@ -120,9 +151,9 @@ class ObjectAtInfinity2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(6),
-            sampler_field=LinspaceSampler1D(6),
-            sampler_wavelength=LinspaceSampler1D(6),
+            sampler_pupil=LinspaceSampler1D(5),
+            sampler_field=LinspaceSampler1D(5),
+            sampler_wavelength=LinspaceSampler1D(5),
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter, angular_size, wavelength
@@ -139,9 +170,9 @@ class PointSource2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(6),
+            sampler_pupil=LinspaceSampler1D(5),
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(6),
+            sampler_wavelength=LinspaceSampler1D(5),
             material=get_material_model(material),
             geometry=ObjectGeometry2D(
                 beam_angular_size=beam_angular_size,
@@ -160,9 +191,9 @@ class PointSourceAtInfinity2D(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(6),
+            sampler_pupil=LinspaceSampler1D(5),
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(6),
+            sampler_wavelength=LinspaceSampler1D(5),
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter=beam_diameter,
@@ -182,7 +213,7 @@ class RaySource2D(GenericLightSource):
         super().__init__(
             sampler_pupil=ZeroSampler1D(),
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(6),
+            sampler_wavelength=LinspaceSampler1D(5),
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter=0,

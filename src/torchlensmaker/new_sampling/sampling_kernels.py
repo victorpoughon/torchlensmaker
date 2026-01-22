@@ -68,6 +68,31 @@ class ZeroSampling2DKernel(FunctionalKernel):
         return tuple()
 
 
+class ExactSampling1DKernel(FunctionalKernel):
+    input_names = []
+    param_names = ["samples"]
+    output_names = ["samples"]
+    forward_dtype_device = True
+
+    @staticmethod
+    def forward(
+        samples: Float[torch.Tensor, " N"], dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, "1 2"]:
+        return samples.to(dtype=dtype, device=device)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple(torch.tensor([-0.5, 0.0, 0.5]))
+
+
 class LinspaceSampling1DKernel(FunctionalKernel):
     input_names = []
     param_names = ["N"]
