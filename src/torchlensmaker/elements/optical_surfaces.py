@@ -362,7 +362,7 @@ class ImagePlane(SequentialElement):
     def forward(self, data: OpticalData) -> OpticalData:
         if data.V.shape[0] == 0:
             return data
-
+        
         # Collision detection
         t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
@@ -371,13 +371,16 @@ class ImagePlane(SequentialElement):
             raise RuntimeError(
                 "Missing object coordinates on rays (required to compute image magnification)"
             )
+        
+        # TODO 2D only for now
+        if data.dim == 3:
+            return data
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
-        # TODO 2D only for now
-        # assert data.dim == 2 # assert disabled so show3d works
+        
         rays_image = collision_points[:, 1]
         rays_object = data.rays_object
 
