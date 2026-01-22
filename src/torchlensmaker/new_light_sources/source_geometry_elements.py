@@ -74,15 +74,17 @@ class ObjectGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
     ]:
-        return self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.forward(
             pupil_samples,
             field_samples,
             wavelength_samples,
-            self.beam_angular_size,
+            torch.deg2rad(self.beam_angular_size),
             self.object_diameter,
             self.wavelength_lower,
             self.wavelength_upper,
         )
+
+        return P, V, W, torch.rad2deg(psamples), fsamples
 
 
 class ObjectAtInfinityGeometry2D(nn.Module):
@@ -130,15 +132,17 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
     ]:
-        return self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.forward(
             pupil_samples,
             field_samples,
             wavelength_samples,
             self.beam_diameter,
-            self.angular_size,
+            torch.deg2rad(self.angular_size),
             self.wavelength_lower,
             self.wavelength_upper,
         )
+
+        return P, V, W, psamples, torch.rad2deg(fsamples)
 
 
 class ObjectGeometry3D(nn.Module):
@@ -182,16 +186,18 @@ class ObjectGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
     ]:
-        return self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.forward(
             pupil_samples,
             field_samples,
             wavelength_samples,
-            self.beam_angular_size,
+            torch.deg2rad(self.beam_angular_size),
             self.object_diameter,
             self.wavelength_lower,
             self.wavelength_upper,
         )
-    
+
+        return P, V, W, torch.rad2deg(psamples), fsamples
+
 
 class ObjectAtInfinityGeometry3D(nn.Module):
     def __init__(
@@ -234,12 +240,14 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
     ]:
-        return self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.forward(
             pupil_samples,
             field_samples,
             wavelength_samples,
             self.beam_diameter,
-            self.angular_size,
+            torch.deg2rad(self.angular_size),
             self.wavelength_lower,
             self.wavelength_upper,
         )
+
+        return P, V, W, psamples, torch.rad2deg(fsamples)

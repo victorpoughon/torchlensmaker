@@ -39,7 +39,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     ]
 
     param_names = [
-        "beam_angular_size",  # angular size of the pupil beam in degrees
+        "beam_angular_size",  # angular size of the pupil beam in radians
         "object_diameter",  # diameter of the object in length units
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
@@ -70,7 +70,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         Float[torch.Tensor, " N"],
     ]:
         # pupil coordinates are the pupil samples over the beam angular size
-        pupil_coords = pupil_samples * torch.deg2rad(beam_angular_size / 2)
+        pupil_coords = pupil_samples * beam_angular_size / 2
 
         # field coordinates are the field samples over the object diameter
         field_coords = field_samples * object_diameter / 2
@@ -96,7 +96,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
             P,
             V,
             wavel_coords_full,
-            torch.rad2deg(pupil_coords_full),
+            pupil_coords_full,
             field_coords_full,
         )
 
@@ -135,7 +135,7 @@ class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
 
     param_names = [
         "beam_diameter",  # diameter of the beam in length units
-        "angular_size",  # object apparent angular size in degrees
+        "angular_size",  # object apparent angular size in radians
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
     ]
@@ -168,7 +168,7 @@ class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
         pupil_coords = pupil_samples * beam_diameter / 2
 
         # field coordinates are the field samples over the object angular size
-        field_coords = field_samples * torch.deg2rad(angular_size / 2)
+        field_coords = field_samples * angular_size / 2
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
@@ -192,7 +192,7 @@ class ObjectAtInfinityGeometry2DKernel(FunctionalKernel):
             V,
             wavel_coords_full,
             pupil_coords_full,
-            torch.rad2deg(field_coords_full),
+            field_coords_full,
         )
 
     @staticmethod
@@ -230,7 +230,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     ]
 
     param_names = [
-        "beam_angular_size",  # angular size of the pupil beam in degrees
+        "beam_angular_size",  # angular size of the pupil beam in radians
         "object_diameter",  # diameter of the object in length units
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
@@ -261,7 +261,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         Float[torch.Tensor, "N 2"],
     ]:
         # pupil coordinates are the pupil samples over the beam angular size
-        pupil_coords = pupil_samples * torch.deg2rad(beam_angular_size / 2)
+        pupil_coords = pupil_samples * beam_angular_size / 2
 
         # field coordinates are the field samples over the object diameter
         field_coords = field_samples * object_diameter / 2
@@ -290,7 +290,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
             P,
             V,
             wavel_coords_full,
-            torch.rad2deg(pupil_coords_full),
+            pupil_coords_full,
             field_coords_full,
         )
 
@@ -359,7 +359,7 @@ class ObjectAtInfinityGeometry3DKernel(FunctionalKernel):
 
     param_names = [
         "beam_diameter",  # diameter of the beam in length units
-        "angular_size",  # object apparent angular size in degrees
+        "angular_size",  # object apparent angular size in radians
         "wavelength_lower",  # lower bound for the wavelength domain
         "wavelength_upper",  # upper bound for the wavelength domain
     ]
@@ -392,7 +392,7 @@ class ObjectAtInfinityGeometry3DKernel(FunctionalKernel):
         pupil_coords = pupil_samples * beam_diameter / 2
 
         # field coordinates are the field samples over the object angular size
-        field_coords = field_samples * torch.deg2rad(angular_size / 2)
+        field_coords = field_samples * angular_size / 2
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
@@ -419,7 +419,7 @@ class ObjectAtInfinityGeometry3DKernel(FunctionalKernel):
             V,
             wavel_coords_full,
             pupil_coords_full,
-            torch.rad2deg(field_coords_full),
+            field_coords_full,
         )
 
     @staticmethod
