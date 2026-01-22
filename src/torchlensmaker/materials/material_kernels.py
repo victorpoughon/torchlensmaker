@@ -90,7 +90,7 @@ class CauchyMaterialKernel(FunctionalKernel):
         )
 
 
-class SellmeirMaterialKernel(FunctionalKernel):
+class SellmeierMaterialKernel(FunctionalKernel):
     "Material model using Sellmeier equation with six coefficents"
 
     input_names = ["wavelength"]

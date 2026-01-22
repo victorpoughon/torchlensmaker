@@ -70,15 +70,17 @@ class ZeroSampling2DKernel(FunctionalKernel):
 
 class ExactSampling1DKernel(FunctionalKernel):
     input_names = []
-    param_names = ["samples"]
+    param_names = ["ref_samples"]
     output_names = ["samples"]
+    # https://github.com/pytorch/pytorch/issues/173076
+    export_legacy = True
     forward_dtype_device = True
 
     @staticmethod
     def forward(
-        samples: Float[torch.Tensor, " N"], dtype: torch.dtype, device: torch.device
-    ) -> Float[torch.Tensor, "1 2"]:
-        return samples.to(dtype=dtype, device=device)
+        ref_samples: Float[torch.Tensor, " N"], dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, " N"]:
+        return ref_samples.to(dtype=dtype, device=device)
 
     @staticmethod
     def example_inputs(
@@ -90,7 +92,52 @@ class ExactSampling1DKernel(FunctionalKernel):
     def example_params(
         dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
-        return tuple(torch.tensor([-0.5, 0.0, 0.5]))
+        return (torch.tensor([-0.5, 0.0, 0.5], dtype=dtype, device=device),)
+
+
+class ExactSampling2DKernel(FunctionalKernel):
+    input_names = []
+    param_names = ["ref_samples"]
+    output_names = ["samples"]
+    # https://github.com/pytorch/pytorch/issues/173076
+    export_legacy = True
+    forward_dtype_device = True
+
+    @staticmethod
+    def forward(
+        ref_samples: Float[torch.Tensor, "N 2"],
+        dtype: torch.dtype,
+        device: torch.device,
+    ) -> Float[torch.Tensor, "N 2"]:
+        return ref_samples.to(dtype=dtype, device=device)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return (
+            torch.tensor(
+                [
+                    [0, 0],
+                    [-1, 0],
+                    [0, -1],
+                    [-1, -1],
+                    [0, 1],
+                    [1, 0],
+                    [1, 1],
+                    [-1, 1],
+                    [1, -1],
+                ],
+                dtype=dtype,
+                device=device,
+            ),
+        )
 
 
 class LinspaceSampling1DKernel(FunctionalKernel):

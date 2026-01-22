@@ -33,7 +33,7 @@ from torchlensmaker.kinematics.kinematics_kernels import (
 
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 
-from torchlensmaker.testing.functional_kernels_testing import (
+from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_example_inputs_and_params,
     check_kernels_eval,
     check_kernels_export_onnx,

@@ -20,7 +20,11 @@ from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import to_tensor
 
-from .material_kernels import NonDispersiveMaterialKernel, CauchyMaterialKernel
+from .material_kernels import (
+    NonDispersiveMaterialKernel,
+    CauchyMaterialKernel,
+    SellmeierMaterialKernel,
+)
 
 
 # TODO add:
@@ -65,3 +69,30 @@ class CauchyMaterial(MaterialModel):
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
         return self.kernel.forward(wavelength, self.A, self.B, self.C, self.D)
+
+
+class SellmeierMaterial(MaterialModel):
+    def __init__(
+        self,
+        B1: Float[torch.Tensor, ""] | float,
+        B2: Float[torch.Tensor, ""] | float,
+        B3: Float[torch.Tensor, ""] | float,
+        C1: Float[torch.Tensor, ""] | float,
+        C2: Float[torch.Tensor, ""] | float,
+        C3: Float[torch.Tensor, ""] | float,
+    ):
+        super().__init__()
+        self.B1 = to_tensor(B1)
+        self.B2 = to_tensor(B2)
+        self.B3 = to_tensor(B3)
+        self.C1 = to_tensor(C1)
+        self.C2 = to_tensor(C2)
+        self.C3 = to_tensor(C3)
+        self.kernel = SellmeierMaterialKernel()
+
+    def forward(
+        self, wavelength: Float[torch.Tensor, " N"]
+    ) -> Float[torch.Tensor, " N"]:
+        return self.kernel.forward(
+            wavelength, self.B1, self.B2, self.B3, self.C1, self.C2, self.C3
+        )

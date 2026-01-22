@@ -30,9 +30,8 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.plane import CircularPlane
-from torchlensmaker.materials import (
+from torchlensmaker.materials.get_material_model import (
     MaterialModel,
-    NonDispersiveMaterial,
     get_material_model,
 )
 from torchlensmaker.core.physics import (
@@ -243,7 +242,7 @@ class RefractiveSurface(SequentialElement):
 
         # Compute indices of refraction
         n1 = data.rays_index
-        n2 = self.material.refractive_index(data.rays_wavelength)
+        n2 = self.material(data.rays_wavelength)
         assert n1.shape == n2.shape == (data.P.shape[0],), (
             n1.shape,
             n2.shape,
@@ -379,12 +378,11 @@ class ImagePlane(SequentialElement):
         # For a plane it's easy though
         # TODO 2D only for now
         # assert data.dim == 2 # assert disabled so show3d works
-        rays_image = collision_points[:, 1:]
+        rays_image = collision_points[:, 1]
         rays_object = data.rays_object
 
         # Compute loss
-
-        assert rays_object.shape == rays_image.shape
+        assert rays_object.shape == rays_image.shape, (rays_object.shape, rays_image.shape)
         mag, res = linear_magnification(rays_object, rays_image)
 
         if self.magnification is not None:

@@ -24,6 +24,7 @@ from .sampling_kernels import (
     LinspaceSampling1DKernel,
     LinspaceSampling2DKernel,
     ExactSampling1DKernel,
+    ExactSampling2DKernel,
     ZeroSampling1DKernel,
     ZeroSampling2DKernel,
     DiskSampling2DKernel,
@@ -61,7 +62,19 @@ class ExactSampler1D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(dtype, device)
+        return self.kernel.forward(self.samples, dtype, device)
+
+
+class ExactSampler2D(nn.Module):
+    def __init__(self, samples: Float[torch.Tensor, "N 2"]):
+        super().__init__()
+        self.samples = samples
+        self.kernel = ExactSampling2DKernel()
+
+    def forward(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, "N 2"]:
+        return self.kernel.forward(self.samples, dtype, device)
 
 
 class LinspaceSampler1D(nn.Module):

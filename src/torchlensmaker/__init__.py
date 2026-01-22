@@ -97,8 +97,7 @@ from torchlensmaker.elements.optical_surfaces import (
     ImagePlane,
     linear_magnification,
 )
-from torchlensmaker.elements.light_sources import (
-    LightSourceBase,
+from torchlensmaker.light_sources.light_sources_elements import (
     RaySource,
     PointSourceAtInfinity,
     PointSource,
@@ -110,24 +109,11 @@ from torchlensmaker.elements.focal_point import FocalPoint
 # Top level stuff - to be reorganized
 from torchlensmaker.optical_data import OpticalData, default_input
 from torchlensmaker.lenses import LensBase, BiLens, Lens, PlanoLens
-from torchlensmaker.materials import (
+from torchlensmaker.materials.material_elements import (
     MaterialModel,
     NonDispersiveMaterial,
     CauchyMaterial,
     SellmeierMaterial,
-)
-
-##########
-# Sampling
-##########
-
-from torchlensmaker.sampling import (
-    dense,
-    random_uniform,
-    random_normal,
-    exact,
-    init_sampling,
-    Sampler,
 )
 
 ##############
@@ -145,7 +131,11 @@ from torchlensmaker.optimize import (
 # Viewer
 ########
 
-import torchlensmaker.viewer.tlmviewer as viewer
+from torchlensmaker.viewer.tlmviewer import (
+    render_rays,
+    render_points,
+    render_collisions,
+)
 from torchlensmaker.viewer.render_sequence import (
     show,
     show2d,

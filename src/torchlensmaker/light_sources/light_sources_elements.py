@@ -20,22 +20,18 @@ import torch.nn as nn
 from typing import Any
 from jaxtyping import Float
 
-from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.elements.sequential import SequentialElement
 
-from torchlensmaker.elements.light_sources import LightSourceBase
-
-from torchlensmaker.new_sampling.sampler_elements import (
+from torchlensmaker.sampling.sampler_elements import (
     LinspaceSampler1D,
-    LinspaceSampler2D,
     ZeroSampler1D,
     ZeroSampler2D,
     ExactSampler1D,
     DiskSampler2D,
 )
-from torchlensmaker.new_light_sources.source_geometry_elements import (
+from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectGeometry2D,
     ObjectAtInfinityGeometry2D,
     ObjectGeometry3D,
@@ -73,7 +69,15 @@ def convert_sampler_old_to_new(
             )
 
 
-# TODO remove LightSourceBase
+# TODO make forward() not sequential
+class LightSourceBase(SequentialElement):
+    def domain(self, dim: int) -> dict[str, list[float]]:
+        raise NotImplementedError
+
+    def forward(self, data: OpticalData) -> OpticalData:
+        raise NotImplementedError
+
+
 class GenericLightSource(LightSourceBase):
     def __init__(
         self,
@@ -261,6 +265,48 @@ class PointSourceAtInfinity2D(GenericLightSource):
         # TODO how to setup samplers params?
 
 
+class PointSource3D(GenericLightSource):
+    def __init__(
+        self,
+        beam_angular_size: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_field=ZeroSampler2D(),
+            sampler_wavelength=LinspaceSampler1D(5),
+            material=get_material_model(material),
+            geometry=ObjectGeometry3D(
+                beam_angular_size=beam_angular_size,
+                object_diameter=0,
+                wavelength=wavelength,
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
+class PointSourceAtInfinity3D(GenericLightSource):
+    def __init__(
+        self,
+        beam_diameter: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_field=ZeroSampler2D(),
+            sampler_wavelength=LinspaceSampler1D(5),
+            material=get_material_model(material),
+            geometry=ObjectAtInfinityGeometry3D(
+                beam_diameter=beam_diameter,
+                angular_size=0,
+                wavelength=wavelength,
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
 class RaySource2D(GenericLightSource):
     def __init__(
         self,
@@ -279,6 +325,25 @@ class RaySource2D(GenericLightSource):
             ),
         )
         # TODO how to setup samplers params?
+
+
+class RaySource3D(GenericLightSource):
+    def __init__(
+        self,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=ZeroSampler2D(),
+            sampler_field=ZeroSampler2D(),
+            sampler_wavelength=LinspaceSampler1D(5),
+            material=get_material_model(material),
+            geometry=ObjectAtInfinityGeometry3D(
+                beam_diameter=0,
+                angular_size=0,
+                wavelength=wavelength,
+            ),
+        )
 
 
 class MixedDimLightSource(LightSourceBase):
@@ -310,3 +375,21 @@ class ObjectAtInfinity(MixedDimLightSource):
         super().__init__(
             ObjectAtInfinity2D(*args, **kwargs), ObjectAtInfinity3D(*args, **kwargs)
         )
+
+
+class PointSource(MixedDimLightSource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(PointSource2D(*args, **kwargs), PointSource3D(*args, **kwargs))
+
+
+class PointSourceAtInfinity(MixedDimLightSource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            PointSourceAtInfinity2D(*args, **kwargs),
+            PointSourceAtInfinity3D(*args, **kwargs),
+        )
+
+
+class RaySource(MixedDimLightSource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(RaySource2D(*args, **kwargs), RaySource3D(*args, **kwargs))

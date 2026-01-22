@@ -19,7 +19,7 @@ import torch.nn as nn
 import torchlensmaker as tlm
 
 from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, transform_points, kinematic_chain_append
-from torchlensmaker.materials import MaterialModel, get_material_model
+from torchlensmaker.materials.get_material_model import MaterialModel, get_material_model
 from torchlensmaker.elements.sequential import SequentialElement
 
 from typing import Any, Optional, Literal

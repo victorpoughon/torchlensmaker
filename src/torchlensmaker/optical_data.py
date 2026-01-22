@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, TypeAlias
+from typing import Any, Optional
 from dataclasses import dataclass, replace
 
 import torch
@@ -26,11 +26,6 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
     transform_points,
 )
-from torchlensmaker.materials import (
-    MaterialModel,
-    get_material_model,
-)
-from torchlensmaker.sampling.samplers import Sampler, init_sampling
 
 
 @dataclass

@@ -42,7 +42,7 @@ def check_kernels_example_inputs_and_params(
 
     example_params = kernel.example_params(dtype, device)
     assert isinstance(example_params, tuple)
-    assert len(example_params) == len(kernel.param_names)
+    assert len(example_params) == len(kernel.param_names), (example_params, kernel.param_names)
     # dont check dtype of params because it can be different than the main dtype
     # in some cases, e.g. sampling
 
