@@ -38,7 +38,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Rotate3D,
     AbsolutePosition,
     AbsolutePositionVec3D,
-    MixedDim,
+    MixedDimKinematic,
     Gap,
     Rotate,
     Translate,
@@ -243,7 +243,7 @@ def test_elements_mixed() -> None:
 
     chain_model_mixed = nn.ModuleList(
         [
-            MixedDim(
+            MixedDimKinematic(
                 Rotate2D(0.1),
                 Rotate3D(y=0.1),
             ),

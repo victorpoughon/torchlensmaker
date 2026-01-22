@@ -176,8 +176,7 @@ class Rotate3D(KinematicElement):
         return self.func.forward(dfk, ifk, self.y, self.z)
 
 
-class MixedDim(KinematicElement):
-    # TODO true mixed dim that works with any element?
+class MixedDimKinematic(KinematicElement):
     def __init__(self, module_2d: nn.Module, module_3d: nn.Module):
         super().__init__()
         self.module_2d = module_2d
@@ -195,7 +194,7 @@ class Gap(KinematicElement):
         super().__init__()
         translate_2d = Translate2D(x=offset)
         translate_3d = Translate3D(x=offset)
-        self.mixed_dim = MixedDim(translate_2d, translate_3d)
+        self.mixed_dim = MixedDimKinematic(translate_2d, translate_3d)
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         return self.mixed_dim(dfk, ifk)
@@ -206,7 +205,7 @@ class Rotate(KinematicElement):
         self, angles: tuple[float | int, float | int] | Float[torch.Tensor, "2"]
     ):
         super().__init__()
-        self.mixed_dim = MixedDim(Rotate2D(angles[0]), Rotate3D(angles[1], angles[0]))
+        self.mixed_dim = MixedDimKinematic(Rotate2D(angles[0]), Rotate3D(angles[1], angles[0]))
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         return self.mixed_dim(dfk, ifk)
@@ -220,7 +219,7 @@ class Translate(KinematicElement):
         z: Float[torch.Tensor, ""] | float | int = 0.0,
     ):
         super().__init__()
-        self.mixed_dim = MixedDim(Translate2D(x, y), Translate3D(x, y, z))
+        self.mixed_dim = MixedDimKinematic(Translate2D(x, y), Translate3D(x, y, z))
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         return self.mixed_dim(dfk, ifk)
