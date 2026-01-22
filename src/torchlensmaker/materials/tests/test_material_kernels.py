@@ -21,7 +21,7 @@ import pytest
 
 import torch
 
-from torchlensmaker.new_material.material_kernels import (
+from torchlensmaker.materials.material_kernels import (
     NonDispersiveMaterialKernel,
     CauchyMaterialKernel,
     SellmeirMaterialKernel,

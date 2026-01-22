@@ -41,8 +41,8 @@ from torchlensmaker.new_light_sources.source_geometry_elements import (
     ObjectGeometry3D,
     ObjectAtInfinityGeometry3D,
 )
-from torchlensmaker.new_material.material_elements import MaterialModel
-from torchlensmaker.new_material.get_material_model import get_material_model
+from torchlensmaker.materials.material_elements import MaterialModel
+from torchlensmaker.materials.get_material_model import get_material_model
 
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 
