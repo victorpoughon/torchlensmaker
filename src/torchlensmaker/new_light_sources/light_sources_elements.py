@@ -33,10 +33,12 @@ from torchlensmaker.new_sampling.sampler_elements import (
     ZeroSampler1D,
     ZeroSampler2D,
     ExactSampler1D,
+    DiskSampler2D,
 )
 from torchlensmaker.new_light_sources.source_geometry_elements import (
     ObjectGeometry2D,
     ObjectAtInfinityGeometry2D,
+    ObjectGeometry3D,
 )
 from torchlensmaker.new_material.material_elements import MaterialModel
 from torchlensmaker.new_material.get_material_model import get_material_model
@@ -44,18 +46,28 @@ from torchlensmaker.new_material.get_material_model import get_material_model
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 
 
-def convert_sampler_old_to_new(current: nn.Module, value: Any, dtype: torch.dtype, device: torch.device):
-    if isinstance(current, ZeroSampler1D):
+def convert_sampler_old_to_new(current: nn.Module, dim: int, value: Any, dtype: torch.dtype, device: torch.device):
+    if isinstance(current, (ZeroSampler1D, ZeroSampler2D)):
         return current
-    
-    if isinstance(value, (float, int)):
-        return LinspaceSampler1D(value)
-    elif isinstance(value, (list, tuple)):
-        return ExactSampler1D(torch.tensor(value, dtype=dtype, device=device))
-    else:
-        raise RuntimeError(
-            f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
-        )
+
+    if dim == 2:
+        if isinstance(value, (float, int)):
+            return LinspaceSampler1D(value)
+        elif isinstance(value, (list, tuple)):
+            return ExactSampler1D(torch.tensor(value, dtype=dtype, device=device))
+        else:
+            raise RuntimeError(
+                f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
+            )
+    elif dim == 3:
+        if isinstance(value, (float, int)):
+            return DiskSampler2D(value, value)
+        elif isinstance(value, (list, tuple)):
+            raise NotImplementedError("todo")
+        else:
+            raise RuntimeError(
+                f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
+            )
 
 
 # TODO remove LightSourceBase
@@ -85,14 +97,17 @@ class GenericLightSource(LightSourceBase):
         # for now set the parameters here
         self.sampler_pupil = convert_sampler_old_to_new(
             self.sampler_pupil,
+            data.dim,
             data.sampling["base"], dtype, device
         )
         self.sampler_field = convert_sampler_old_to_new(
             self.sampler_field,
+            data.dim,
             data.sampling["object"], dtype, device
         )
         self.sampler_wavelength = convert_sampler_old_to_new(
             self.sampler_wavelength,
+            2, # TODO ugly hack here
             data.sampling["wavelength"], dtype, device
         )
 
@@ -107,6 +122,9 @@ class GenericLightSource(LightSourceBase):
             field_samples,
             wavel_samples,
         )
+
+        Nrays = P.shape[0]
+        assert W.shape == (Nrays,), W.shape
 
         # Compute refraction index with material model
         R = self.material(W)
@@ -141,6 +159,24 @@ class Object2D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+
+
+class Object3D(GenericLightSource):
+    def __init__(
+        self,
+        beam_angular_size: Float[torch.Tensor, ""] | float | int,
+        object_diameter: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_field=DiskSampler2D(5, 5),
+            sampler_wavelength=LinspaceSampler1D(5),
+            material=get_material_model(material),
+            geometry=ObjectGeometry3D(beam_angular_size, object_diameter, wavelength),
+        )
+        # TODO how to setup samplers params?
 
 class ObjectAtInfinity2D(GenericLightSource):
     def __init__(

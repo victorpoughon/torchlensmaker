@@ -24,6 +24,7 @@ from torchlensmaker.core.tensor_manip import to_tensor
 from .source_geometry_kernels import (
     ObjectGeometry2DKernel,
     ObjectAtInfinityGeometry2DKernel,
+    ObjectGeometry3DKernel,
 )
 
 
@@ -71,6 +72,58 @@ class ObjectGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
+    ]:
+        return self.kernel.forward(
+            pupil_samples,
+            field_samples,
+            wavelength_samples,
+            self.beam_angular_size,
+            self.object_diameter,
+            self.wavelength_lower,
+            self.wavelength_upper,
+        )
+
+
+class ObjectGeometry3D(nn.Module):
+    def __init__(
+        self,
+        beam_angular_size: Float[torch.Tensor, ""] | float | int,
+        object_diameter: Float[torch.Tensor, ""] | float | int,
+        wavelength: tuple[int | float, int | float] | int | float = 500,
+    ):
+        super().__init__()
+        self.beam_angular_size = to_tensor(beam_angular_size)
+        self.object_diameter = to_tensor(object_diameter)
+
+        if isinstance(wavelength, (int, float)):
+            self.wavelength_lower = to_tensor(wavelength)
+            self.wavelength_upper = to_tensor(wavelength)
+        elif isinstance(wavelength, (tuple, list)):
+            self.wavelength_lower = to_tensor(wavelength[0])
+            self.wavelength_upper = to_tensor(wavelength[1])
+        else:
+            raise RuntimeError(
+                f"wavelength arg should be a number or a pair of numbers, got {wavelength}"
+            )
+
+        self.kernel = ObjectGeometry3DKernel()
+
+    def domain(self) -> dict[str, list[float]]:
+        return {
+            "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
+        }
+
+    def forward(
+        self,
+        pupil_samples: Float[torch.Tensor, " Np 2"],
+        field_samples: Float[torch.Tensor, " Nf 2"],
+        wavelength_samples: Float[torch.Tensor, " Nw"],
+    ) -> tuple[
+        Float[torch.Tensor, "N 3"],
+        Float[torch.Tensor, "N 3"],
+        Float[torch.Tensor, " N"],
+        Float[torch.Tensor, " N 2"],
+        Float[torch.Tensor, " N 2"],
     ]:
         return self.kernel.forward(
             pupil_samples,

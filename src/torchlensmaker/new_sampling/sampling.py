@@ -27,7 +27,9 @@ def disk_sampling(
     "Samples 2D points on a disk"
 
     y = torch.linspace(0, 1, Nrho, dtype=dtype, device=device).to(dtype=dtype)
-    x = torch.linspace(0, 1, Ntheta, dtype=dtype, device=device).to(dtype=dtype)
+    x = (torch.arange(Ntheta) / torch.as_tensor(Ntheta, dtype=torch.float32)).to(
+        dtype=dtype
+    )
     xx, yy = torch.meshgrid((x, y), indexing="ij")
 
     rho = torch.sqrt(yy)
@@ -49,7 +51,9 @@ def spiral_disk_sampling(
     "Samples 2D points on a disk"
 
     y = torch.linspace(0, 1, Nrho, dtype=dtype, device=device)
-    x = torch.linspace(0, 1, Ntheta, dtype=dtype, device=device)
+    x = (torch.arange(Ntheta) / torch.as_tensor(Ntheta, dtype=torch.float32)).to(
+        dtype=dtype
+    )
     xx, yy = torch.meshgrid((x, y), indexing="ij")
 
     rho = torch.sqrt(yy)
