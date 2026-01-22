@@ -77,6 +77,9 @@ uv run jupyter nbconvert --execute --to notebook test_notebooks/demo_dispersion.
 uv run pytest --nbmake test_notebooks/*.ipynb
 uv run pytest --nbmake docs/src/examples/*.ipynb
 
+# Run test notebooks in src
+find src/ -type f -not -path '*/.*' -name "*.ipynb" | xargs uv run --no-sync pytest --nbmake
+
 # Run unit tests
 uv run pytest
 
