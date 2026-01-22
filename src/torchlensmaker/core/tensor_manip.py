@@ -70,6 +70,34 @@ def meshgrid_flat(
     return tuple(g.reshape(-1) for g in grids)
 
 
+def meshgrid2d_flat3(
+    t1: torch.Tensor,
+    t2: torch.Tensor,
+    t3: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Like meshgrid but specialized for 2D inputs tensors.
+    Each input tensor has shape (N_i, D_i).
+    Returns three flattened tensors of shapes (M, D_i),
+    where M = N1 * N2 * N3.
+    """
+
+    n1, n2, n3 = t1.shape[0], t2.shape[0], t3.shape[0]
+    grids = torch.meshgrid(
+        torch.arange(n1, device=t1.device),
+        torch.arange(n2, device=t2.device),
+        torch.arange(n3, device=t3.device),
+        indexing="ij"
+    )
+
+    g1, g2, g3 = (g.reshape(-1) for g in grids)
+    out1 = t1[g1]
+    out2 = t2[g2]
+    out3 = t3[g3]
+
+    return out1, out2, out3
+
+
 def cartesian_prod2d(A: Tensor, B: Tensor) -> tuple[Tensor, Tensor]:
     """
     Cartesian product of 2 batched coordinate tensors of shape (N, D) and (M, E)

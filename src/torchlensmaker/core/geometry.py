@@ -54,6 +54,36 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
         return torch.matmul(M, unit.view(3, 1)).squeeze(-1)
 
 
+def rotate_x_zy(angles: torch.Tensor) -> torch.Tensor:
+    """
+    Rotate a unit vector X in 3D: (1, 0, 0)
+    by provided angles Z, Y.
+
+    angles: (N, 2) tensor
+        angles[:, 0] = rotation around Z
+        angles[:, 1] = rotation around Y
+
+    Returns:
+        (N, 3) tensor, result of rotating (1, 0, 0) by Z then Y.
+    """
+    assert angles.dim() == 2 and angles.shape[1] == 2, "angles must have shape (N, 2)"
+
+    theta_z = angles[:, 0]  # (N,)
+    theta_y = angles[:, 1]  # (N,)
+
+    cz = torch.cos(theta_z)
+    sz = torch.sin(theta_z)
+    cy = torch.cos(theta_y)
+    sy = torch.sin(theta_y)
+
+    # After Z then Y:
+    x = cy * cz  # cos(y) * cos(z)
+    y = sz  # sin(z)
+    z = -sy * cz  # -sin(y) * cos(z)
+
+    return torch.stack([x, y, z], dim=-1)  # (N, 3)
+
+
 def unit2d_rot(theta: float, dtype: torch.dtype = torch.float64) -> Tensor:
     v = torch.tensor([1.0, 0.0], dtype=dtype)
     return rot2d(v, torch.deg2rad(torch.as_tensor(theta, dtype=dtype)))
