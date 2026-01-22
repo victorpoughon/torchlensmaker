@@ -39,6 +39,7 @@ from torchlensmaker.new_light_sources.source_geometry_elements import (
     ObjectGeometry2D,
     ObjectAtInfinityGeometry2D,
     ObjectGeometry3D,
+    ObjectAtInfinityGeometry3D,
 )
 from torchlensmaker.new_material.material_elements import MaterialModel
 from torchlensmaker.new_material.get_material_model import get_material_model
@@ -198,6 +199,26 @@ class ObjectAtInfinity2D(GenericLightSource):
         # TODO how to setup samplers params?
 
 
+class ObjectAtInfinity3D(GenericLightSource):
+    def __init__(
+        self,
+        beam_diameter: Float[torch.Tensor, ""] | float | int,
+        angular_size: Float[torch.Tensor, ""] | float | int,
+        material: str | MaterialModel = "air",
+        wavelength: int | float | tuple[int | float, int | float] = 500,
+    ):
+        super().__init__(
+            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_field=DiskSampler2D(5, 5),
+            sampler_wavelength=LinspaceSampler1D(5),
+            material=get_material_model(material),
+            geometry=ObjectAtInfinityGeometry3D(
+                beam_diameter, angular_size, wavelength
+            ),
+        )
+        # TODO how to setup samplers params?
+
+
 class PointSource2D(GenericLightSource):
     def __init__(
         self,
@@ -282,3 +303,10 @@ class MixedDimLightSource(LightSourceBase):
 class Object(MixedDimLightSource):
     def __init__(self, *args, **kwargs):
         super().__init__(Object2D(*args, **kwargs), Object3D(*args, **kwargs))
+
+
+class ObjectAtInfinity(MixedDimLightSource):
+    def __init__(self, *args, **kwargs):
+        super().__init__(
+            ObjectAtInfinity2D(*args, **kwargs), ObjectAtInfinity3D(*args, **kwargs)
+        )
