@@ -42,16 +42,14 @@ class OpticalData:
     P: Float[torch.Tensor, "N D"]
     V: Float[torch.Tensor, "N D"]
 
-    # Light rays wavelength in nm
-    rays_wavelength: Float[torch.Tensor, " N"]
+    # Ray variables
+    # Tensors of shape (N, 2|3)
+    rays_wavelength: Float[torch.Tensor, " N"] # wavelength in nm
+    rays_index: Float[torch.Tensor, " N"] # index of refraction
+    rays_base: Float[torch.Tensor, "N D"] # pupil coordinates
+    rays_object: Float[torch.Tensor, "N D"] # field coordinates
 
-    # Light rays index of refraction
-    rays_index: Float[torch.Tensor, " N"]
-
-    # Rays variables
-    # Tensors of shape (N, 2|3) or None
-    rays_base: Optional[torch.Tensor]
-    rays_object: Optional[torch.Tensor]
+    # TODO remove? image plane coordinates
     rays_image: Optional[torch.Tensor]
 
     # Loss accumulator

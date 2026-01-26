@@ -26,7 +26,3 @@ def test_query0():
     
     tlm.set_sampling2d(optics, pupil=10, field=5, wavelength=3)
     tlm.set_sampling3d(optics, pupil=100, field=10, wavelength=3)
-
-    # Query
-    print(tlm.get_light_source2d(optics))
-    print(tlm.get_light_source3d(optics))
