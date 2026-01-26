@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
 import torch
 import torch.nn as nn
 
@@ -60,7 +61,8 @@ def convert_sampler_old_to_new(
             )
     elif dim == 3:
         if isinstance(value, (float, int)):
-            return DiskSampler2D(value, value)
+            n = math.ceil(math.sqrt(value))
+            return DiskSampler2D(n, n)
         elif isinstance(value, (list, tuple)):
             raise NotImplementedError("todo")
         else:

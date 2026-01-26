@@ -94,9 +94,11 @@ class LensMaterialsMixin:
         exit_material: str | MaterialModel = "air",
         **kwargs: Any,
     ):
-        self.material = get_material_model(material)
-        self.exit_material = get_material_model(exit_material)
+        material = get_material_model(material)
+        exit_material = get_material_model(exit_material)
         super().__init__(**kwargs)
+        self.material = material
+        self.exit_material = exit_material
 
 
 class LensBase(LensMaterialsMixin, SequentialElement):
