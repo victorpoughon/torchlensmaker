@@ -14,9 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from enum import Enum
 import torch.nn as nn
-
 from torchlensmaker.optical_data import OpticalData
+
+
+class Dim(Enum):
+    """
+    Enum to represent the physical dimensionality of a model
+    can be:
+        * TWO: the model represents two physical dimensions
+        * THREE: the model represents three physical dimensions
+        * MIXED: the model represents two or three physical dimensions
+    """
+
+    ONE = 1
+    TWO = 2
+    THREE = 3
+    MIXED = 4
 
 
 class SequentialElement(nn.Module):

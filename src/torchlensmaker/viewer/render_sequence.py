@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Any, Optional, Dict, Type
+from typing import Any, Optional, Dict
 
 
 from torchlensmaker.optical_data import default_input
@@ -36,7 +36,7 @@ from torchlensmaker.lenses import LensBase
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
-
+from torchlensmaker.elements.utils import get_elements_by_type
 
 from .rendering import Collective
 from . import tlmviewer
@@ -84,24 +84,8 @@ default_artists: Dict[type, list[Artist]] = {
 }
 
 
-def getElementsByType(module: nn.Module, typ: Type[nn.Module]) -> nn.ModuleList:
-    """
-    Returns a ModuleList containing all submodules (including the root module,
-    if it matches 'typ') that match the type via isinstance().
-    """
-
-    result = nn.ModuleList()
-    if isinstance(module, typ):
-        result.append(module)
-    for name, child in module.named_children():
-        if isinstance(child, typ):
-            result.append(child)
-        result.extend(getElementsByType(child, typ))
-    return result
-
-
 def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
-    light_sources = getElementsByType(optics, LightSourceBase)
+    light_sources = get_elements_by_type(optics, LightSourceBase)
 
     if len(light_sources) == 0:
         return {}

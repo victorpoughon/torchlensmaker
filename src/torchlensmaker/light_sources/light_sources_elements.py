@@ -23,7 +23,7 @@ from jaxtyping import Float
 
 from torchlensmaker.optical_data import OpticalData
 
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.elements.sequential import SequentialElement, Dim
 
 from torchlensmaker.sampling.sampler_elements import (
     LinspaceSampler1D,
@@ -74,6 +74,9 @@ def convert_sampler_old_to_new(
 # TODO make forward() not sequential
 class LightSourceBase(SequentialElement):
     def domain(self, dim: int) -> dict[str, list[float]]:
+        raise NotImplementedError
+
+    def dim(self) -> Dim:
         raise NotImplementedError
 
     def forward(self, data: OpticalData) -> OpticalData:
@@ -166,6 +169,9 @@ class Object2D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.TWO
+
 
 class Object3D(GenericLightSource):
     def __init__(
@@ -183,6 +189,9 @@ class Object3D(GenericLightSource):
             geometry=ObjectGeometry3D(beam_angular_size, object_diameter, wavelength),
         )
         # TODO how to setup samplers params?
+
+    def dim(self) -> Dim:
+        return Dim.THREE
 
 
 class ObjectAtInfinity2D(GenericLightSource):
@@ -204,6 +213,9 @@ class ObjectAtInfinity2D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.TWO
+
 
 class ObjectAtInfinity3D(GenericLightSource):
     def __init__(
@@ -223,6 +235,9 @@ class ObjectAtInfinity3D(GenericLightSource):
             ),
         )
         # TODO how to setup samplers params?
+
+    def dim(self) -> Dim:
+        return Dim.THREE
 
 
 class PointSource2D(GenericLightSource):
@@ -245,6 +260,9 @@ class PointSource2D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.TWO
+
 
 class PointSourceAtInfinity2D(GenericLightSource):
     def __init__(
@@ -265,6 +283,9 @@ class PointSourceAtInfinity2D(GenericLightSource):
             ),
         )
         # TODO how to setup samplers params?
+
+    def dim(self) -> Dim:
+        return Dim.TWO
 
 
 class PointSource3D(GenericLightSource):
@@ -287,6 +308,9 @@ class PointSource3D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.THREE
+
 
 class PointSourceAtInfinity3D(GenericLightSource):
     def __init__(
@@ -308,6 +332,9 @@ class PointSourceAtInfinity3D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.THREE
+
 
 class RaySource2D(GenericLightSource):
     def __init__(
@@ -328,6 +355,9 @@ class RaySource2D(GenericLightSource):
         )
         # TODO how to setup samplers params?
 
+    def dim(self) -> Dim:
+        return Dim.TWO
+
 
 class RaySource3D(GenericLightSource):
     def __init__(
@@ -347,6 +377,9 @@ class RaySource3D(GenericLightSource):
             ),
         )
 
+    def dim(self) -> Dim:
+        return Dim.THREE
+
 
 class MixedDimLightSource(LightSourceBase):
     def __init__(self, module_2d: nn.Module, module_3d: nn.Module):
@@ -359,6 +392,9 @@ class MixedDimLightSource(LightSourceBase):
             return self.module_2d.domain(dim)
         else:
             return self.module_3d.domain(dim)
+
+    def dim(self) -> Dim:
+        return Dim.MIXED
 
     def forward(self, data: OpticalData) -> OpticalData:
         if data.dim == 2:

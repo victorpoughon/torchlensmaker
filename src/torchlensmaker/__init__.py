@@ -88,7 +88,12 @@ from torchlensmaker.surfaces.sag_surface import SagSurface
 # Optical elements
 ##################
 
-from torchlensmaker.elements.sequential import Sequential, SubChain, SequentialElement
+from torchlensmaker.elements.sequential import (
+    Sequential,
+    SubChain,
+    SequentialElement,
+    Dim,
+)
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,
     ReflectiveSurface,
@@ -103,6 +108,7 @@ from torchlensmaker.light_sources.light_sources_elements import (
     PointSource,
     ObjectAtInfinity,
     Object,
+    LightSourceBase,
 )
 from torchlensmaker.elements.focal_point import FocalPoint
 
@@ -114,6 +120,13 @@ from torchlensmaker.materials.material_elements import (
     NonDispersiveMaterial,
     CauchyMaterial,
     SellmeierMaterial,
+)
+
+from torchlensmaker.elements.utils import (
+    Debug,
+    get_elements_by_type,
+    get_light_source2d,
+    get_light_source3d,
 )
 
 ##############
