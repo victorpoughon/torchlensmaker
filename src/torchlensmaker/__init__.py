@@ -90,6 +90,7 @@ from torchlensmaker.sampling.sampler_elements import (
     ExactSampler1D,
     ExactSampler2D,
 )
+from torchlensmaker.sampling.sampling import disk_sampling
 
 ##########
 # Surfaces

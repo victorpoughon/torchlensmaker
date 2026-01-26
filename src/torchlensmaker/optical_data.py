@@ -98,8 +98,8 @@ def default_input(
         V=torch.empty((0, dim), dtype=dtype),
         rays_wavelength=torch.empty((0,), dtype=dtype),
         rays_index=torch.empty((0,), dtype=dtype),
-        rays_pupil=None,
-        rays_field=None,
+        rays_pupil=torch.empty((0, dim), dtype=dtype),
+        rays_field=torch.empty((0, dim), dtype=dtype),
         rays_image=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )
