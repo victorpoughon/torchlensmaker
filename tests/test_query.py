@@ -17,11 +17,13 @@ def test_query0():
         tlm.ImagePlane(50),
     )
 
-    sampling = {"base": 10, "object": 5, "wavelength": 10}
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=10, field=5, wavelength=3)
+    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
 
-
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+    
+    tlm.show2d(optics)
+    
     tlm.set_sampling2d(optics, pupil=10, field=5, wavelength=3)
     tlm.set_sampling3d(optics, pupil=100, field=10, wavelength=3)
 

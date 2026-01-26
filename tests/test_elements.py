@@ -11,9 +11,9 @@ def test_elements0():
         tlm.Gap(15),
     )
 
-    sampling = {"base": 10, "object": 5, "wavelength": 10}
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=10, field=5, wavelength=1)
+    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
 
 def test_elements1():
@@ -30,9 +30,9 @@ def test_elements1():
         tlm.ImagePlane(50),
     )
 
-    sampling = {"base": 10, "object": 5, "wavelength": 10}
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
 
 def test_elements2():
@@ -61,9 +61,9 @@ def test_elements2():
 
     optics.to(dtype=torch.float64)
 
-    sampling = {"wavelength": 10}
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(wavelength=10)
+    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
 
 def test_rainbow():
@@ -102,9 +102,9 @@ def test_rainbow():
 
     optics.to(dtype=torch.float64)
 
-    sampling = {"base": 3, "object": 2, "wavelength": 3}
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=3, field=2, wavelength=3)
+    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
 
 def test_elements3():
@@ -118,9 +118,9 @@ def test_elements3():
 
     optics.to(dtype=torch.float64)
 
-    sampling = {"base": 10, "object": 5, "wavelength": 10}
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
 
 def test_elements3d():
@@ -139,9 +139,9 @@ def test_elements3d():
 
     optics.to(dtype=torch.float64)
 
-    sampling = {"base": 10, "object": 5, "wavelength": 10}
-    output = optics(tlm.default_input(dim=3, dtype=torch.float64, sampling=sampling))
-    scene = tlm.render_sequence(optics, dim=3, dtype=torch.float64, sampling=sampling)
+    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    output = optics(tlm.default_input(dim=3, dtype=torch.float64))
+    scene = tlm.render_sequence(optics, dim=3, dtype=torch.float64)
 
 
 def test_cooke():
@@ -163,11 +163,6 @@ def test_cooke():
 
     focal = tlm.parameter(85)
 
-    def debug(data):
-        print(data.dim)
-        print(data.P.shape)
-        print()
-
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(15, 25),
         L1,
@@ -181,8 +176,8 @@ def test_cooke():
         tlm.ImagePlane(65),
     )
 
-    tlm.show2d(optics)
+    tlm.show2d(optics, wavelength=3)
 
-    sampling = {"base": 1000, "object": 4}
-    tlm.show3d(optics, sampling)
-    f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
+    optics.set_sampling3d(pupil=100, wavelength=4)
+    tlm.show3d(optics)
+    # f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))

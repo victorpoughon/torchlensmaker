@@ -14,37 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Type
-import torch
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
 
-class Marker(nn.Module):
-    "WIP"
-
-    def __init__(self, text: str):
-        super().__init__()
-        self.text = text
-
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        return inputs
-
-
-class Debug(nn.Module):
-    def __init__(self, func):
-        super().__init__()
-        self.func = func
-
-    def sequential(self, data):
-        self.func(data)
-        return data
-
-
-def get_elements_by_type(module: nn.Module, typ: Type[nn.Module]) -> nn.ModuleList:
+class SequentialElement(nn.Module):
     """
-    Returns a ModuleList containing all submodules (including the root module,
-    if it matches 'typ') that match the type via isinstance().
+    Base class for sequential elements
+
+    A sequential element is an element that can be used in a Sequential model,
+    because it provides a sequential() forward method.
     """
 
-    return nn.ModuleList(mod for mod in module.modules() if isinstance(mod, typ))
+    def sequential(self, data: OpticalData) -> OpticalData:
+        # default implementation just calls forward, can be overwritten
+        return self(data)
+
+    def reverse(self) -> "SequentialElement":
+        raise NotImplementedError(
+            f"reverse() method not implemented for type {type(self).__name__}"
+        )

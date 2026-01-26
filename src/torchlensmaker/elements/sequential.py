@@ -14,42 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from enum import Enum
+from typing import Type, Sequence, TYPE_CHECKING
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
+from torchlensmaker.elements.utils import (
+    get_elements_by_type,
+)
 
-class Dim(Enum):
-    """
-    Enum to represent the physical dimensionality of a model
-    can be:
-        * TWO: the model represents two physical dimensions
-        * THREE: the model represents three physical dimensions
-        * MIXED: the model represents two or three physical dimensions
-    """
+from torchlensmaker.light_sources.light_sources_query import (
+    set_sampling2d,
+    set_sampling3d,
+)
 
-    ONE = 1
-    TWO = 2
-    THREE = 3
-    MIXED = 4
-
-
-class SequentialElement(nn.Module):
-    """
-    Base class for sequential elements
-
-    A sequential element is an element that can be used in a Sequential model,
-    because it provides a sequential() forward method.
-    """
-
-    def sequential(self, data: OpticalData) -> OpticalData:
-        # default implementation just calls forward, can be overwritten
-        return self(data)
-
-    def reverse(self) -> "SequentialElement":
-        raise NotImplementedError(
-            f"reverse() method not implemented for type {type(self).__name__}"
-        )
+from .sequential_element import SequentialElement
 
 
 class SubChain(SequentialElement):
@@ -67,3 +45,22 @@ class Sequential(nn.Sequential, SequentialElement):
         for module in self:
             data = module.sequential(data)
         return data
+
+    def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
+        return get_elements_by_type(self, typ)
+
+    def set_sampling2d(
+        self,
+        pupil: int | Sequence[float] | None = None,
+        field: int | Sequence[float] | None = None,
+        wavelength: int | Sequence[float] | None = None,
+    ) -> None:
+        return set_sampling2d(self, pupil, field, wavelength)
+
+    def set_sampling3d(
+        self,
+        pupil: int | Sequence[float] | None = None,
+        field: int | Sequence[float] | None = None,
+        wavelength: int | Sequence[float] | None = None,
+    ) -> None:
+        return set_sampling3d(self, pupil, field, wavelength)

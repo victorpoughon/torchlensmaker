@@ -64,7 +64,6 @@ class OptimizationRecord:
 def optimize(
     optics: nn.Module,
     optimizer: optim.Optimizer,
-    sampling: dict[str, Any],
     num_iter: int,
     dtype: torch.dtype = torch.float64,
     regularization: Optional[RegularizationFunction] = None,
@@ -77,7 +76,7 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
-    default_input = tlm.default_input(sampling, dim, dtype)
+    default_input = tlm.default_input(dim, dtype)
 
     show_every = math.ceil(num_iter / nshow)
 

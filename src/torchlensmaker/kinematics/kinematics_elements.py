@@ -36,7 +36,7 @@ from .kinematics_kernels import (
     Translate3DKernel,
 )
 
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.elements.sequential_element import SequentialElement
 
 
 class KinematicElement(SequentialElement):

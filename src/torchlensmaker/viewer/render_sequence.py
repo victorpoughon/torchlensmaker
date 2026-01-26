@@ -36,6 +36,7 @@ from torchlensmaker.lenses import LensBase
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
+from torchlensmaker.light_sources.light_sources_query import set_sampling2d, set_sampling3d
 from torchlensmaker.elements.utils import get_elements_by_type
 
 from .rendering import Collective
@@ -101,13 +102,12 @@ def render_sequence(
     optics: nn.Module,
     dim: int,
     dtype: torch.dtype,
-    sampling: dict[str, Any],
     end: Optional[float] = None,
     title: str = "",
     extra_artists: Dict[type, Artist] = {},
 ) -> Any:
     # Evaluate the model with forward_tree to keep all intermediate outputs
-    input_tree, output_tree = forward_tree(optics, default_input(sampling, dim, dtype))
+    input_tree, output_tree = forward_tree(optics, default_input(dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables = ["base", "object", "wavelength"]
@@ -144,20 +144,8 @@ def render_sequence(
     return scene
 
 
-def default_sampling(
-    optics: nn.Module,
-    dim: int,
-    dtype: torch.dtype = torch.float64,
-) -> dict[str, Any]:
-    "Default sampling values"
-
-    # TODO could be improved by looking at stack content, etc.
-    return {"base": 10, "object": 5, "wavelength": 3}
-
-
 def show(
     optics: nn.Module,
-    sampling: Optional[Dict[str, Any]] = None,
     dim: int = 2,
     dtype: torch.dtype = torch.float64,
     end: Optional[float] = None,
@@ -166,13 +154,18 @@ def show(
     controls: object | None = None,
     return_scene: bool = False,
     extra_artists: Dict[type, Artist] = {},
+    pupil: Any | None = None,
+    field: Any | None = None,
+    wavelength: Any | None = None,
 ) -> None | Any:
     "Render an optical stack and show it with ipython display"
 
-    if sampling is None:
-        sampling = default_sampling(optics, dim, dtype)
+    if dim == 2:
+        set_sampling2d(optics, pupil, field, wavelength)
+    elif dim == 3:
+        set_sampling3d(optics, pupil, field, wavelength)
 
-    scene = render_sequence(optics, dim, dtype, sampling, end, title, extra_artists)
+    scene = render_sequence(optics, dim, dtype, end, title, extra_artists)
 
     if controls is not None:
         scene["controls"] = controls

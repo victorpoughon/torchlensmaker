@@ -22,6 +22,7 @@ import torch
 # Core
 ######
 
+from torchlensmaker.core.dim import Dim
 from torchlensmaker.core.physics import reflection, refraction
 from torchlensmaker.core.intersect import intersect
 from torchlensmaker.core.full_forward import forward_tree, full_forward
@@ -105,7 +106,6 @@ from torchlensmaker.elements.sequential import (
     Sequential,
     SubChain,
     SequentialElement,
-    Dim,
 )
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,
@@ -123,6 +123,10 @@ from torchlensmaker.light_sources.light_sources_elements import (
     Object,
     LightSourceBase,
 )
+from torchlensmaker.light_sources.light_sources_query import (
+    set_sampling2d,
+    set_sampling3d,
+)
 from torchlensmaker.elements.focal_point import FocalPoint
 
 # Top level stuff - to be reorganized
@@ -138,10 +142,6 @@ from torchlensmaker.materials.material_elements import (
 from torchlensmaker.elements.utils import (
     Debug,
     get_elements_by_type,
-    get_light_source2d,
-    get_light_source3d,
-    set_sampling2d,
-    set_sampling3d,
 )
 
 ##############

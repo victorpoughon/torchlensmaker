@@ -14,22 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import math
 import torch
 import torch.nn as nn
 
-from typing import Any, Sequence
 from jaxtyping import Float
 
 from torchlensmaker.optical_data import OpticalData
 
-from torchlensmaker.elements.sequential import SequentialElement, Dim
+from torchlensmaker.core.dim import Dim
+from torchlensmaker.elements.sequential_element import SequentialElement
 
 from torchlensmaker.sampling.sampler_elements import (
     LinspaceSampler1D,
     ZeroSampler1D,
     ZeroSampler2D,
-    ExactSampler1D,
     DiskSampler2D,
 )
 from torchlensmaker.light_sources.source_geometry_elements import (
@@ -43,32 +41,6 @@ from torchlensmaker.materials.get_material_model import get_material_model
 
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
 
-def convert_sampler_old_to_new(
-    current: nn.Module, dim: int, value: Any, dtype: torch.dtype, device: torch.device
-):
-    if isinstance(current, (ZeroSampler1D, ZeroSampler2D)):
-        return current
-
-    if dim == 2:
-        if isinstance(value, (float, int)):
-            return LinspaceSampler1D(value)
-        elif isinstance(value, (list, tuple)):
-            return ExactSampler1D(torch.tensor(value, dtype=dtype, device=device))
-        else:
-            raise RuntimeError(
-                f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
-            )
-    elif dim == 3:
-        if isinstance(value, (float, int)):
-            n = math.ceil(math.sqrt(value))
-            return DiskSampler2D(n, n)
-        elif isinstance(value, (list, tuple)):
-            raise NotImplementedError("todo")
-        else:
-            raise RuntimeError(
-                f"Sampling: expected number or list of numbers, got {type(value)}: {value}"
-            )
-
 
 # TODO make forward() not sequential
 class LightSourceBase(SequentialElement):
@@ -77,7 +49,7 @@ class LightSourceBase(SequentialElement):
 
     def dim(self) -> Dim:
         raise NotImplementedError
-    
+
     def forward(self, data: OpticalData) -> OpticalData:
         raise NotImplementedError
 
@@ -103,22 +75,6 @@ class GenericLightSource(LightSourceBase):
 
     def forward(self, data: OpticalData) -> OpticalData:
         dtype, device = data.dtype, torch.device("cpu")  # TODO gpu support
-
-        # TODO improve sampling dict TLM-80
-        # for now set the parameters here
-        self.sampler_pupil = convert_sampler_old_to_new(
-            self.sampler_pupil, data.dim, data.sampling["base"], dtype, device
-        )
-        self.sampler_field = convert_sampler_old_to_new(
-            self.sampler_field, data.dim, data.sampling["object"], dtype, device
-        )
-        self.sampler_wavelength = convert_sampler_old_to_new(
-            self.sampler_wavelength,
-            2,  # TODO ugly hack here
-            data.sampling["wavelength"],
-            dtype,
-            device,
-        )
 
         # Compute pupil, field and wavelength samples
         pupil_samples = self.sampler_pupil(dtype, device)
@@ -187,7 +143,6 @@ class Object3D(GenericLightSource):
             material=get_material_model(material),
             geometry=ObjectGeometry3D(beam_angular_size, object_diameter, wavelength),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.THREE
@@ -210,7 +165,6 @@ class ObjectAtInfinity2D(GenericLightSource):
                 beam_diameter, angular_size, wavelength
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.TWO
@@ -233,7 +187,6 @@ class ObjectAtInfinity3D(GenericLightSource):
                 beam_diameter, angular_size, wavelength
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.THREE
@@ -257,7 +210,6 @@ class PointSource2D(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.TWO
@@ -281,7 +233,6 @@ class PointSourceAtInfinity2D(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.TWO
@@ -305,7 +256,6 @@ class PointSource3D(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.THREE
@@ -329,7 +279,6 @@ class PointSourceAtInfinity3D(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.THREE
@@ -352,7 +301,6 @@ class RaySource2D(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.TWO
