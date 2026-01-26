@@ -168,6 +168,10 @@ from torchlensmaker.viewer.tlmviewer import (
     render_rays,
     render_points,
     render_collisions,
+    render_surface,
+    render_surface_local,
+    new_scene,
+    display_scene
 )
 from torchlensmaker.viewer.render_sequence import (
     show,
