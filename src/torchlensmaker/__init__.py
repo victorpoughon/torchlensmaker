@@ -73,6 +73,19 @@ from torchlensmaker.kinematics.kinematics_elements import (
 )
 
 ##########
+# Samplers
+##########
+from torchlensmaker.sampling.sampler_elements import (
+    ZeroSampler1D,
+    ZeroSampler2D,
+    LinspaceSampler1D,
+    LinspaceSampler2D,
+    DiskSampler2D,
+    ExactSampler1D,
+    ExactSampler2D,
+)
+
+##########
 # Surfaces
 ##########
 
@@ -127,6 +140,8 @@ from torchlensmaker.elements.utils import (
     get_elements_by_type,
     get_light_source2d,
     get_light_source3d,
+    set_sampling2d,
+    set_sampling3d,
 )
 
 ##############

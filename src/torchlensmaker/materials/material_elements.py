@@ -43,6 +43,9 @@ class NonDispersiveMaterial(MaterialModel):
         super().__init__()
         self.n = to_tensor(n)
         self.kernel = NonDispersiveMaterialKernel()
+    
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(n={self.n})"
 
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]

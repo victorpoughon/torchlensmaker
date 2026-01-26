@@ -18,7 +18,7 @@ import math
 import torch
 import torch.nn as nn
 
-from typing import Any
+from typing import Any, Sequence
 from jaxtyping import Float
 
 from torchlensmaker.optical_data import OpticalData
@@ -42,7 +42,6 @@ from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.materials.get_material_model import get_material_model
 
 from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
-
 
 def convert_sampler_old_to_new(
     current: nn.Module, dim: int, value: Any, dtype: torch.dtype, device: torch.device
@@ -78,7 +77,7 @@ class LightSourceBase(SequentialElement):
 
     def dim(self) -> Dim:
         raise NotImplementedError
-
+    
     def forward(self, data: OpticalData) -> OpticalData:
         raise NotImplementedError
 

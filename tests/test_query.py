@@ -21,11 +21,10 @@ def test_query0():
     outputs = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
 
+
+    tlm.set_sampling2d(optics, pupil=10, field=5, wavelength=3)
+    tlm.set_sampling3d(optics, pupil=100, field=10, wavelength=3)
+
     # Query
-    # print(optics)
-
-    source2d = tlm.get_light_source2d(optics)
-    source3d = tlm.get_light_source3d(optics)
-
-    print(source2d)
-    print(source3d)
+    print(tlm.get_light_source2d(optics))
+    print(tlm.get_light_source3d(optics))
