@@ -59,9 +59,10 @@ def ray_variables_dict(
 
     # TODO no support for 2D colormaps in tlmviewer yet
     # but base and object are 2D variables in 3D
+    # TODO tlmviewer: rename base/object to pupil/field
     if data.dim == 2:
-        update(data.rays_base, "base")
-        update(data.rays_object, "object")
+        update(data.rays_pupil, "base")
+        update(data.rays_field, "object")
 
     update(data.rays_wavelength, "wavelength")
 

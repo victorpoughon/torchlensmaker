@@ -102,8 +102,8 @@ class GenericLightSource(LightSourceBase):
             V=V,
             rays_wavelength=W,
             rays_index=R,
-            rays_base=pupil_coords,
-            rays_object=field_coords,
+            rays_pupil=pupil_coords,
+            rays_field=field_coords,
         )
 
 

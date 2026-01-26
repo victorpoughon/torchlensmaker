@@ -44,10 +44,10 @@ class OpticalData:
 
     # Ray variables
     # Tensors of shape (N, 2|3)
-    rays_wavelength: Float[torch.Tensor, " N"] # wavelength in nm
-    rays_index: Float[torch.Tensor, " N"] # index of refraction
-    rays_base: Float[torch.Tensor, "N D"] # pupil coordinates
-    rays_object: Float[torch.Tensor, "N D"] # field coordinates
+    rays_wavelength: Float[torch.Tensor, " N"]  # wavelength in nm
+    rays_index: Float[torch.Tensor, " N"]  # index of refraction
+    rays_pupil: Float[torch.Tensor, "N D"]  # pupil coordinates
+    rays_field: Float[torch.Tensor, "N D"]  # field coordinates
 
     # TODO remove? image plane coordinates
     rays_image: Optional[torch.Tensor]
@@ -63,10 +63,10 @@ class OpticalData:
         return replace(self, **changes)
 
     def get_rays(self, color_dim: str) -> torch.Tensor:
-        if color_dim == "base" and self.rays_base is not None:
-            return self.rays_base
-        elif color_dim == "object" and self.rays_object is not None:
-            return self.rays_object
+        if color_dim == "base" and self.rays_pupil is not None:
+            return self.rays_pupil
+        elif color_dim == "object" and self.rays_field is not None:
+            return self.rays_field
         elif color_dim == "wavelength" and self.rays_wavelength is not None:
             return self.rays_wavelength
         else:
@@ -74,8 +74,8 @@ class OpticalData:
 
     def filter_variables(self, valid: torch.Tensor) -> "OpticalData":
         return self.replace(
-            rays_base=filter_optional_tensor(self.rays_base, valid),
-            rays_object=filter_optional_tensor(self.rays_object, valid),
+            rays_pupil=filter_optional_tensor(self.rays_pupil, valid),
+            rays_field=filter_optional_tensor(self.rays_field, valid),
             rays_wavelength=filter_optional_tensor(self.rays_wavelength, valid),
         )
 
@@ -98,8 +98,8 @@ def default_input(
         V=torch.empty((0, dim), dtype=dtype),
         rays_wavelength=torch.empty((0,), dtype=dtype),
         rays_index=torch.empty((0,), dtype=dtype),
-        rays_base=None,
-        rays_object=None,
+        rays_pupil=None,
+        rays_field=None,
         rays_image=None,
         loss=torch.tensor(0.0, dtype=dtype),
     )

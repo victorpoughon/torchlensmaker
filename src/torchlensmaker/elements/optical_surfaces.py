@@ -264,8 +264,8 @@ class RefractiveSurface(SequentialElement):
             # filter TIR rays
             new_P = collision_points[both_valid]
             new_V = refracted[both_valid]
-            new_rays_base = filter_optional_tensor(data.rays_base, both_valid)
-            new_rays_object = filter_optional_tensor(data.rays_object, both_valid)
+            new_rays_pupil = filter_optional_tensor(data.rays_pupil, both_valid)
+            new_rays_field = filter_optional_tensor(data.rays_field, both_valid)
             new_rays_wavelength = filter_optional_tensor(
                 data.rays_wavelength, both_valid
             )
@@ -274,8 +274,8 @@ class RefractiveSurface(SequentialElement):
             # keep tir rays
             new_P = collision_points[valid_collision]
             new_V = refracted[valid_collision]
-            new_rays_base = filter_optional_tensor(data.rays_base, valid_collision)
-            new_rays_object = filter_optional_tensor(data.rays_object, valid_collision)
+            new_rays_pupil = filter_optional_tensor(data.rays_pupil, valid_collision)
+            new_rays_field = filter_optional_tensor(data.rays_field, valid_collision)
             new_rays_wavelength = filter_optional_tensor(
                 data.rays_wavelength, valid_collision
             )
@@ -284,8 +284,8 @@ class RefractiveSurface(SequentialElement):
         return data.replace(
             P=new_P,
             V=new_V,
-            rays_base=new_rays_base,
-            rays_object=new_rays_object,
+            rays_pupil=new_rays_pupil,
+            rays_field=new_rays_field,
             rays_wavelength=new_rays_wavelength,
             rays_index=new_rays_index,
             dfk=new_dfk,
@@ -312,8 +312,8 @@ class Aperture(SequentialElement):
         return data.replace(
             P=collision_points[valid_collision],
             V=data.V[valid_collision],
-            rays_base=filter_optional_tensor(data.rays_base, valid_collision),
-            rays_object=filter_optional_tensor(data.rays_object, valid_collision),
+            rays_pupil=filter_optional_tensor(data.rays_pupil, valid_collision),
+            rays_field=filter_optional_tensor(data.rays_field, valid_collision),
             rays_wavelength=filter_optional_tensor(
                 data.rays_wavelength, valid_collision
             ),
@@ -367,7 +367,7 @@ class ImagePlane(SequentialElement):
         t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
-        if data.rays_object is None:
+        if data.rays_field is None:
             raise RuntimeError(
                 "Missing object coordinates on rays (required to compute image magnification)"
             )
@@ -382,7 +382,7 @@ class ImagePlane(SequentialElement):
         # For a plane it's easy though
         
         rays_image = collision_points[:, 1]
-        rays_object = data.rays_object
+        rays_object = data.rays_field
 
         # Compute loss
         assert rays_object.shape == rays_image.shape, (rays_object.shape, rays_image.shape)
