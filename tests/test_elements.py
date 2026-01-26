@@ -123,7 +123,6 @@ def test_elements3():
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64, sampling=sampling)
 
 
-
 def test_elements3d():
     torch.set_default_dtype(torch.float64)
     torch.set_default_device(torch.device("cpu"))
@@ -143,3 +142,47 @@ def test_elements3d():
     sampling = {"base": 10, "object": 5, "wavelength": 10}
     output = optics(tlm.default_input(dim=3, dtype=torch.float64, sampling=sampling))
     scene = tlm.render_sequence(optics, dim=3, dtype=torch.float64, sampling=sampling)
+
+
+def test_cooke():
+    d1, d2 = 30, 25
+
+    r1 = tlm.Sphere(d1, 26.4)
+    r2 = tlm.Sphere(d1, -150.7)
+    r3 = tlm.Sphere(d2, -29.8)
+    r4 = tlm.Sphere(d2, 24.2)
+    r5 = tlm.Sphere(d1, 150.7)
+    r6 = tlm.Sphere(d1, -26.4)
+
+    material1 = tlm.NonDispersiveMaterial(1.5108)
+    material2 = tlm.NonDispersiveMaterial(1.6042)
+
+    L1 = tlm.Lens(r1, r2, material=material1, inner_thickness=5.9)
+    L2 = tlm.Lens(r3, r4, material=material2, inner_thickness=0.2)
+    L3 = tlm.Lens(r5, r6, material=material1, inner_thickness=5.9)
+
+    focal = tlm.parameter(85)
+
+    def debug(data):
+        print(data.dim)
+        print(data.P.shape)
+        print()
+
+    optics = tlm.Sequential(
+        tlm.ObjectAtInfinity(15, 25),
+        L1,
+        tlm.Gap(10.9),
+        L2,
+        tlm.Gap(3.1),
+        tlm.Aperture(18),
+        tlm.Gap(9.4),
+        L3,
+        tlm.Gap(focal),
+        tlm.ImagePlane(65),
+    )
+
+    tlm.show2d(optics)
+
+    sampling = {"base": 1000, "object": 4}
+    tlm.show3d(optics, sampling)
+    f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))

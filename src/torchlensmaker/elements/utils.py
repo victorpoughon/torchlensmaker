@@ -27,3 +27,13 @@ class Marker(nn.Module):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         return inputs
+
+
+class Debug(nn.Module):
+    def __init__(self, func):
+        super().__init__()
+        self.func = func
+
+    def sequential(self, data):
+        self.func(data)
+        return data
