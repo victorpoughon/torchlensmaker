@@ -18,8 +18,16 @@ import torch
 import torch.nn as nn
 import torchlensmaker as tlm
 
-from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, transform_points, kinematic_chain_append
-from torchlensmaker.materials.get_material_model import MaterialModel, get_material_model
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    HomMatrix,
+    transform_points,
+    kinematic_chain_append,
+)
+from torchlensmaker.kinematics.kinematics_elements import KinematicSequential
+from torchlensmaker.materials.get_material_model import (
+    MaterialModel,
+    get_material_model,
+)
 from torchlensmaker.elements.sequential import SequentialElement
 
 from typing import Any, Optional, Literal
@@ -48,45 +56,6 @@ def lens_thickness_parametrization(
     return thickness, anchors
 
 
-def anchor_abs(
-    surface: tlm.LocalSurface, dfk: HomMatrix, anchor: Anchor
-) -> Tensor:
-    "Get absolute position of a surface anchor"
-
-    dim = dfk.shape[0] - 1
-    assert surface.dtype == dfk.dtype
-
-    # Get surface local point corresponding to anchor
-    if anchor == "origin":
-        point = surface.zero(dim)
-    elif anchor == "extent":
-        point = surface.extent(dim)
-
-    # Transform it to absolute space
-    return transform_points(dfk, point)
-
-
-def anchor_thickness(
-    lens: nn.Module, anchor: Anchor, dim: int, dtype: torch.dtype
-) -> Tensor:
-    "Thickness of a lens at an anchor"
-
-    # Evaluate the lens stack with zero rays, just to compute the transforms
-    input_tree, output_tree = tlm.forward_tree(
-        lens, tlm.default_input(sampling={}, dim=dim, dtype=dtype)
-    )
-
-    s1_homs, s1_homs_inv = lens.surface1.collision_surface.surface_transform(dim, dtype)
-    s1_dfk, s1_ifk = kinematic_chain_append(input_tree[lens.surface1].dfk, input_tree[lens.surface1].ifk, s1_homs, s1_homs_inv)
-    a1 = anchor_abs(lens.surface1.surface, s1_dfk, anchor)
-
-    s2_homs, s2_homs_inv = lens.surface2.collision_surface.surface_transform(dim, dtype)
-    s2_dfk, s2_ifk = kinematic_chain_append(input_tree[lens.surface2].dfk, input_tree[lens.surface2].ifk, s2_homs, s2_homs_inv)
-    a2 = anchor_abs(lens.surface2.surface, s2_dfk, anchor)
-
-    return torch.linalg.vector_norm(a1 - a2)  # type: ignore
-
-
 class LensMaterialsMixin:
     def __init__(
         self,
@@ -107,16 +76,84 @@ class LensBase(LensMaterialsMixin, SequentialElement):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-    def inner_thickness(self) -> Tensor:
+    def inner_thickness(
+        self,
+        dtype: torch.dtype = torch.float64,
+        device: torch.device = torch.device("cpu"),
+    ) -> Tensor:
         "Thickness at the center of the lens"
-        return anchor_thickness(self, "origin", 3, torch.float64)
+        root = tlm.hom_identity_2d(dtype, device)
 
-    def outer_thickness(self) -> Tensor:
+        A1 = KinematicSequential(
+            [
+                tlm.ExactKinematicElement2D(
+                    *self.surface1.collision_surface.surface_transform(2, dtype)
+                )
+            ]
+        )
+
+        A2 = KinematicSequential(
+            [
+                tlm.ExactKinematicElement2D(
+                    *self.surface1.collision_surface.kinematic_transform(2, dtype)
+                ),
+                self.gap,
+                tlm.ExactKinematicElement2D(
+                    *self.surface2.collision_surface.surface_transform(2, dtype)
+                ),
+            ]
+        )
+
+        a1, _ = A1(*root)
+        a2, _ = A2(*root)
+
+        root_point = torch.zeros((2,), dtype=dtype)
+        p1 = tlm.transform_points(a1, root_point)
+        p2 = tlm.transform_points(a2, root_point)
+
+        return (p2 - p1)[0]
+
+    def outer_thickness(
+        self,
+        dtype: torch.dtype = torch.float64,
+        device: torch.device = torch.device("cpu"),
+    ) -> Tensor:
         "Thickness at the outer radius of the lens"
-        return anchor_thickness(self, "extent", 3, torch.float64)
+        root = tlm.hom_identity_2d(dtype, device)
+
+        A1 = KinematicSequential(
+            [
+                tlm.ExactKinematicElement2D(
+                    *self.surface1.collision_surface.surface_transform(2, dtype)
+                ),
+                tlm.Translate2D(x=self.surface1.collision_surface.surface.extent_x()),
+            ]
+        )
+
+        A2 = KinematicSequential(
+            [
+                tlm.ExactKinematicElement2D(
+                    *self.surface1.collision_surface.kinematic_transform(2, dtype)
+                ),
+                self.gap,
+                tlm.ExactKinematicElement2D(
+                    *self.surface2.collision_surface.surface_transform(2, dtype)
+                ),
+                tlm.Translate2D(x=self.surface2.collision_surface.surface.extent_x()),
+            ]
+        )
+
+        a1, _ = A1(*root)
+        a2, _ = A2(*root)
+
+        root_point = torch.zeros((2,), dtype=dtype)
+        p1 = tlm.transform_points(a1, root_point)
+        p2 = tlm.transform_points(a2, root_point)
+
+        return (p2 - p1)[0]
 
     def forward(self, inputs: tlm.OpticalData) -> tlm.OpticalData:
-        return tlm.Sequential(self.surface1, self.gap, self.surface2)(inputs)  
+        return tlm.Sequential(self.surface1, self.gap, self.surface2)(inputs)
 
 
 class Lens(LensBase):
@@ -155,7 +192,7 @@ class Lens(LensBase):
             self.exit_material,
             scale=scale2,
             anchors=(anchors[1], anchors[0]),
-        ) 
+        )
 
 
 class BiLens(LensBase):

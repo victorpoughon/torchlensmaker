@@ -58,6 +58,10 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
     hom_identity_2d,
     hom_identity_3d,
+    hom_translate_2d,
+    hom_translate_3d,
+    kinematic_chain_append,
+    kinematic_chain_extend,
 )
 
 from torchlensmaker.kinematics.kinematics_elements import (
@@ -71,6 +75,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Translate3D,
     Rotate,
     Translate,
+    ExactKinematicElement2D,
 )
 
 ##########

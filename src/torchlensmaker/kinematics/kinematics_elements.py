@@ -36,6 +36,9 @@ from .kinematics_kernels import (
     Translate3DKernel,
 )
 
+# TODO this is used for lens only
+from .homogeneous_geometry import kinematic_chain_append
+
 from torchlensmaker.elements.sequential_element import SequentialElement
 
 
@@ -43,6 +46,31 @@ class KinematicElement(SequentialElement):
     def sequential(self, data: OpticalData) -> OpticalData:
         dfk, ifk = self(data.dfk, data.ifk)
         return data.replace(dfk=dfk, ifk=ifk)
+
+
+class KinematicSequential(nn.Module):
+    def __init__(self, sequence: list[nn.Module]):
+        super().__init__()
+        self.sequence = nn.ModuleList(sequence)
+
+    def forward(self, dfk: HomMatrix, ifk: HomMatrix):
+        for mod in self.sequence:
+            dfk, ifk = mod(dfk, ifk)
+        return dfk, ifk
+
+
+# TODO this is used for lens only to make a "kinematic only" sequential model
+# no kernel needed for now
+class ExactKinematicElement2D(KinematicElement):
+    def __init__(self, hom: HomMatrix2D, hom_inv: HomMatrix2D):
+        super().__init__()
+        self.hom = hom
+        self.hom_inv = hom_inv
+
+    def forward(
+        self, dfk: HomMatrix2D, ifk: HomMatrix2D
+    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+        return kinematic_chain_append(dfk, ifk, self.hom, self.hom_inv)
 
 
 class Translate2D(KinematicElement):
@@ -113,6 +141,7 @@ class TranslateVec3D(KinematicElement):
 
 class Rotate2D(KinematicElement):
     "2D rotation (in degrees)"
+
     def __init__(self, theta: Float[torch.Tensor, ""] | float | int = 0.0):
         super().__init__()
         self.func = Rotate2DKernel()
@@ -205,7 +234,9 @@ class Rotate(KinematicElement):
         self, angles: tuple[float | int, float | int] | Float[torch.Tensor, "2"]
     ):
         super().__init__()
-        self.mixed_dim = MixedDimKinematic(Rotate2D(angles[0]), Rotate3D(angles[1], angles[0]))
+        self.mixed_dim = MixedDimKinematic(
+            Rotate2D(angles[0]), Rotate3D(angles[1], angles[0])
+        )
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         return self.mixed_dim(dfk, ifk)
