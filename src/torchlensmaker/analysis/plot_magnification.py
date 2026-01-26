@@ -36,7 +36,6 @@ Tensor = torch.Tensor
 
 def plot_magnification(
     optics: nn.Module,
-    sampling: Dict[str, Any],
     color_dim: Optional[str] = None,
     colormap: LinearSegmentedColormap = default_colormap,
 ) -> None:
@@ -46,10 +45,10 @@ def plot_magnification(
     """
 
     # Evaluate the optical stack
-    output = optics(tlm.default_input(sampling=sampling, dim=2, dtype=torch.float64))
+    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
 
     # Extract object and image coordinate (called T and V)
-    T = output.rays_object
+    T = output.rays_field
     V = output.rays_image
 
     mag, residuals = tlm.linear_magnification(T, V)

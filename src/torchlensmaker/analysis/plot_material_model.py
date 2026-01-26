@@ -43,7 +43,7 @@ def plot_material_models(
         labels = [type(m) for m in models]
 
     for label, model in zip(labels, models):
-        N = model.refractive_index(W)
+        N = model(W)
         ax.plot(W, N, label=label)
 
     ax.legend()
