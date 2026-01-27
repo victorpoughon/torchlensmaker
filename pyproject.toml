@@ -1,38 +1,49 @@
 [project]
 name = "torchlensmaker"
 version = "0.0.11"
-authors = [
-  { name="Victor Poughon", email="victor.poughon@gmail.com" }
-]
+authors = [{ name = "Victor Poughon", email = "victor.poughon@gmail.com" }]
 description = "Differentiable geometric optics in PyTorch. Design optical systems with optimization."
 readme = "README.md"
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 requires-python = ">=3.10"
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
+classifiers = ["Programming Language :: Python :: 3"]
 
 dependencies = [
   "matplotlib>=3.9.2,<3.11.0",
   "colorcet >= 3",
-  "notebook >= 7",
-  "onnx>=1.20.0",
-  "onnxscript>=0.5.7",
   "jaxtyping>=0.3.5",
 ]
 
 [project.optional-dependencies]
 test = [
-    "nbstripout-fast",
-    "nbmake~=1.5.4",
-    "pytest>=8.3.3,<8.5.0",
-    "nbstripout",
-    "onnxruntime>=1.23.2",
+  "pytest>=8.3.3,<8.5.0",
+  "notebook >= 7",
+  "nbmake~=1.5.4",
+  "nbstripout-fast",
+  "onnxruntime>=1.23.2",
 ]
-dev = [
-    "ruff>=0.11.2",
+dev = ["ruff>=0.11.2"]
+cpu = ["torch>=2.9.1", "onnx>=1.20.0", "onnxscript>=0.5.7"]
+cu128 = ["torch>=2.9.1", "onnx>=1.20.0", "onnxscript>=0.5.7"]
+
+[tool.uv]
+conflicts = [[{ extra = "cpu" }, { extra = "cu128" }]]
+
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu", extra = "cpu" },
+  { index = "pytorch-cu128", extra = "cu128" },
 ]
 
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true
 
 [project.urls]
 Homepage = "https://github.com/victorpoughon/torchlensmaker"
@@ -43,17 +54,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
-exclude = [
-  "docs/src/",
-  "test_notebooks/",
-  "drafts",
-]
+exclude = ["docs/src/", "test_notebooks/", "drafts"]
 
 [tool.setuptools]
-package-dir = {"" = "src"}
+package-dir = { "" = "src" }
 packages = ["torchlensmaker"]
 
 [tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-]
+addopts = ["--import-mode=importlib"]
