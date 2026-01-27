@@ -24,8 +24,10 @@ from typing import TypeAlias
 Tensor: TypeAlias = torch.Tensor
 
 
-def unit_vector(dim: int, dtype: torch.dtype = torch.float64) -> Tensor:
+def unit_vector(dim: int, dtype: torch.dtype | None = None) -> Tensor:
     "Unit vector along the X axis"
+    if dtype is None:
+        dtype = torch.get_default_dtype()
     return torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype)))
 
 
@@ -84,14 +86,18 @@ def rotate_x_zy(angles: torch.Tensor) -> torch.Tensor:
     return torch.stack([x, y, z], dim=-1)  # (N, 3)
 
 
-def unit2d_rot(theta: float, dtype: torch.dtype = torch.float64) -> Tensor:
+def unit2d_rot(theta: float, dtype: torch.dtype | None = None) -> Tensor:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
     v = torch.tensor([1.0, 0.0], dtype=dtype)
     return rot2d(v, torch.deg2rad(torch.as_tensor(theta, dtype=dtype)))
 
 
 def unit3d_rot(
-    theta1: float, theta2: float, dtype: torch.dtype = torch.float64
+    theta1: float, theta2: float, dtype: torch.dtype | None = None
 ) -> Tensor:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
     return rotated_unit_vector(
         torch.deg2rad(torch.as_tensor([[theta1, theta2]], dtype=dtype)), dim=3
     ).squeeze(0)
@@ -142,12 +148,19 @@ def sample_cylinder(
 
     Y = R * torch.cos(Theta)
     Z = R * torch.sin(Theta)
-    
+
     grid = torch.stack((X, Y, Z), dim=-1).reshape(-1, 3)
     return grid
 
 
-def sample_bcyl(N: int, xmin: torch.Tensor, xmax: torch.Tensor, tau: torch.Tensor, dim: int, dtype: torch.dtype) -> torch.Tensor:
+def sample_bcyl(
+    N: int,
+    xmin: torch.Tensor,
+    xmax: torch.Tensor,
+    tau: torch.Tensor,
+    dim: int,
+    dtype: torch.dtype,
+) -> torch.Tensor:
     if dim == 2:
         return sample_grid2d(N, xmin, xmax, -tau, tau, dtype)
     else:

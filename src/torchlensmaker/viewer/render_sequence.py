@@ -147,7 +147,7 @@ def render_sequence(
 def show(
     optics: nn.Module,
     dim: int = 2,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype | None = None,
     end: Optional[float] = None,
     title: str = "",
     ndigits: int | None = 8,
@@ -159,6 +159,9 @@ def show(
     wavelength: Any | None = None,
 ) -> None | Any:
     "Render an optical stack and show it with ipython display"
+
+    if dtype is None:
+        dtype = torch.get_default_dtype()
 
     if dim == 2:
         set_sampling2d(optics, pupil, field, wavelength)
@@ -189,7 +192,7 @@ def export_json(
     optics: nn.Module,
     filename: str,
     dim: int = 2,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype | None = None,
     sampling: Optional[Dict[str, Any]] = None,
     end: Optional[float] = None,
     title: str = "",
@@ -197,6 +200,9 @@ def export_json(
     controls: object | None = None,
 ) -> None:
     "Render and export an optical stack to a tlmviewer json file"
+
+    if dtype is None:
+        dtype = torch.get_default_dtype()
 
     if sampling is None:
         # TODO figure out a better default based on stack content?

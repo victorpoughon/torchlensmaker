@@ -66,7 +66,7 @@ class Sphere(SagSurface):
     ):
         if dtype is None:
             dtype = torch.get_default_dtype()
-        
+
         if (R is not None and C is not None) or (R is None and C is None):
             raise RuntimeError(
                 "Sphere must be initialized with exactly one of R (radius) or C (curvature)."
@@ -102,9 +102,7 @@ class Sphere(SagSurface):
 
     def radius(self) -> float:
         "Utility function to get radius from internal curvature"
-        return torch.div(
-            torch.tensor(1.0, dtype=self.dtype), self._sag.C
-        ).item()
+        return torch.div(torch.tensor(1.0, dtype=self.dtype), self._sag.C).item()
 
 
 class Parabola(SagSurface):
@@ -115,8 +113,10 @@ class Parabola(SagSurface):
         diameter: float,
         A: int | float | nn.Parameter,
         normalize: bool = False,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
         if isinstance(A, torch.Tensor):
             assert A.dtype == dtype
         A_tensor = to_tensor(A, default_dtype=dtype)
@@ -148,8 +148,10 @@ class Asphere(SagSurface):
         normalize_conical: bool = False,
         normalize_aspheric: bool = False,
         collision_method: CollisionMethod = default_collision_method,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
         if isinstance(R, torch.Tensor):
             assert R.dtype == dtype
             assert R.dim() == 0

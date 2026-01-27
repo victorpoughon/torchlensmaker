@@ -49,8 +49,11 @@ class SphereR(LocalSurface):
         diameter: float,
         R: int | float | nn.Parameter | None = None,
         C: int | float | nn.Parameter | None = None,
-        dtype: torch.dtype = torch.float64,
+        dtype: torch.dtype | None = None,
     ):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
+
         super().__init__(dtype=dtype)
         self.diameter = diameter
 

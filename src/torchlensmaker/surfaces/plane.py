@@ -94,7 +94,9 @@ class Plane(LocalSurface):
 
 
 class SquarePlane(Plane):
-    def __init__(self, side_length: float, dtype: torch.dtype = torch.float64):
+    def __init__(self, side_length: float, dtype: torch.dtype | None = None):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
         self.side_length = side_length
         super().__init__(SquareOutline(side_length), dtype)
 
@@ -102,6 +104,8 @@ class SquarePlane(Plane):
 class CircularPlane(Plane):
     "aka disk"
 
-    def __init__(self, diameter: float, dtype: torch.dtype = torch.float64):
+    def __init__(self, diameter: float, dtype: torch.dtype | None = None):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
         self.diameter = diameter
         super().__init__(CircularOutline(diameter), dtype)

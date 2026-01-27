@@ -65,11 +65,14 @@ def optimize(
     optics: nn.Module,
     optimizer: optim.Optimizer,
     num_iter: int,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype | None = None,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
     dim: int = 2,
 ) -> OptimizationRecord:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
     # Record values for analysis
     parameters_record: dict[str, list[Tensor]] = {
         n: [] for n, _ in optics.named_parameters()

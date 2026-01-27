@@ -38,14 +38,18 @@ def plot_magnification(
     optics: nn.Module,
     color_dim: Optional[str] = None,
     colormap: LinearSegmentedColormap = default_colormap,
+    dtype: torch.dtype | None = None
 ) -> None:
     """
     Compute and plot magnification data for the given optical system
     The system must compute object and image coordinates
     """
 
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
     # Evaluate the optical stack
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    output = optics(tlm.default_input(dim=2, dtype=dtype))
 
     # Extract object and image coordinate (called T and V)
     T = output.rays_field

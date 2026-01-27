@@ -19,6 +19,9 @@ import torch.nn as nn
 
 
 def parameter(
-    data: float | int | torch.Tensor, dtype: torch.dtype = torch.float64
+    data: float | int | torch.Tensor, dtype: torch.dtype | None = None
 ) -> nn.Parameter:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
     return nn.Parameter(torch.as_tensor(data, dtype=dtype))

@@ -76,12 +76,12 @@ class LensBase(LensMaterialsMixin, SequentialElement):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
 
-    def inner_thickness(
-        self,
-        dtype: torch.dtype = torch.float64,
-        device: torch.device = torch.device("cpu"),
-    ) -> Tensor:
+    def inner_thickness(self) -> Tensor:
         "Thickness at the center of the lens"
+
+        # Infer dtype, device from surface1
+        dtype, device = self.surface1.collision_surface.surface.dtype, torch.device("cpu")
+
         root = tlm.hom_identity_2d(dtype, device)
 
         A1 = KinematicSequential(
@@ -113,12 +113,12 @@ class LensBase(LensMaterialsMixin, SequentialElement):
 
         return (p2 - p1)[0]
 
-    def outer_thickness(
-        self,
-        dtype: torch.dtype = torch.float64,
-        device: torch.device = torch.device("cpu"),
-    ) -> Tensor:
+    def outer_thickness(self) -> Tensor:
         "Thickness at the outer radius of the lens"
+
+        # Infer dtype, device from surface1
+        dtype, device = self.surface1.collision_surface.surface.dtype, torch.device("cpu")
+
         root = tlm.hom_identity_2d(dtype, device)
 
         A1 = KinematicSequential(

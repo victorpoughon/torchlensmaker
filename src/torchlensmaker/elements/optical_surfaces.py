@@ -298,9 +298,11 @@ class RefractiveSurface(SequentialElement):
 
 
 class Aperture(SequentialElement):
-    def __init__(self, diameter: float):
+    def __init__(self, diameter: float, dtype : torch.dtype | None = None):
+        if dtype is None:
+            dtype = torch.get_default_dtype()
         super().__init__()
-        surface = CircularPlane(diameter, dtype=torch.float64)  ## TODO dtype
+        surface = CircularPlane(diameter, dtype=dtype)
         self.collision_surface = CollisionSurface(surface)
 
     def forward(self, data: OpticalData) -> OpticalData:
