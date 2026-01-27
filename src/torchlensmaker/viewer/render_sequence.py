@@ -101,11 +101,14 @@ def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
 def render_sequence(
     optics: nn.Module,
     dim: int,
-    dtype: torch.dtype,
+    dtype: torch.dtype | None = None,
     end: Optional[float] = None,
     title: str = "",
     extra_artists: Dict[type, Artist] = {},
 ) -> Any:
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+    
     # Evaluate the model with forward_tree to keep all intermediate outputs
     input_tree, output_tree = forward_tree(optics, default_input(dim, dtype))
 
