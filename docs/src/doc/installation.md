@@ -1,12 +1,19 @@
 # Installation
 
-## With pip
+## Installation with pip
 
 Torch Lens Maker is a standard Python package distributed on PyPi:
 
 ```sh
+pip install torch # add your torch install options here
 pip install torchlensmaker
 ```
+
+> [!IMPORTANT]
+> PyTorch installation is typically platform dependent. Therefore torchlensmaker
+> does not explicitely declare `torch` as a dependency, and you must [install it
+> explicitly](https://pytorch.org/get-started/locally/).
+
 
 Because it's currently in early development and changing fast, you might want to
 try out the main branch directly:
@@ -18,7 +25,7 @@ pip install git+https://github.com/victorpoughon/torchlensmaker.git@main
 You can test your installation by running this command:
 
 ```sh
-python -c "import torchlensmaker"
+python -c "import torch; import torchlensmaker"
 ```
 
 ## tlmviewer
