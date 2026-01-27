@@ -10,7 +10,6 @@ classifiers = ["Programming Language :: Python :: 3"]
 
 dependencies = [
   "matplotlib>=3.9.2,<3.11.0",
-  "colorcet >= 3",
   "jaxtyping>=0.3.5",
 ]
 

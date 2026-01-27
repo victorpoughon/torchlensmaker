@@ -15,13 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
-import colorcet as cc
 import matplotlib as mpl
 
 from typing import TypeAlias
 
 from torchlensmaker.optical_data import OpticalData
 
+from .CET_I2 import isoluminant_cgo_80_c38
 
 # Color theme
 color_valid = "#ffa724"
@@ -31,7 +31,7 @@ color_spot_diagram = "coral"
 
 # Default colormap*
 LinearSegmentedColormap: TypeAlias = mpl.colors.LinearSegmentedColormap
-default_colormap = cc.cm.CET_I2
+default_colormap = mpl.colors.LinearSegmentedColormap.from_list("CET_I2", isoluminant_cgo_80_c38)
 
 
 Tensor: TypeAlias = torch.Tensor

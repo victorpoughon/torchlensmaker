@@ -296,15 +296,6 @@ wheels = [
 ]
 
 [[package]]
-name = "colorcet"
-version = "3.1.0"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/5f/c3/ae78e10b7139d6b7ce080d2e81d822715763336aa4229720f49cb3b3e15b/colorcet-3.1.0.tar.gz", hash = "sha256:2921b3cd81a2288aaf2d63dbc0ce3c26dcd882e8c389cc505d6886bf7aa9a4eb", size = 2183107, upload-time = "2024-02-29T19:15:42.976Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/c6/c6/9963d588cc3d75d766c819e0377a168ef83cf3316a92769971527a1ad1de/colorcet-3.1.0-py3-none-any.whl", hash = "sha256:2a7d59cc8d0f7938eeedd08aad3152b5319b4ba3bcb7a612398cc17a384cb296", size = 260286, upload-time = "2024-02-29T19:15:40.494Z" },
-]
-
-[[package]]
 name = "coloredlogs"
 version = "15.0.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2592,7 +2583,6 @@ name = "torchlensmaker"
 version = "0.0.11"
 source = { editable = "." }
 dependencies = [
-    { name = "colorcet" },
     { name = "jaxtyping" },
     { name = "matplotlib" },
 ]
@@ -2622,7 +2612,6 @@ test = [
 
 [package.metadata]
 requires-dist = [
-    { name = "colorcet", specifier = ">=3" },
     { name = "jaxtyping", specifier = ">=0.3.5" },
     { name = "matplotlib", specifier = ">=3.9.2,<3.11.0" },
     { name = "nbmake", marker = "extra == 'test'", specifier = "~=1.5.4" },
