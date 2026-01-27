@@ -157,9 +157,9 @@ def test_cooke():
     material1 = tlm.NonDispersiveMaterial(1.5108)
     material2 = tlm.NonDispersiveMaterial(1.6042)
 
-    L1 = tlm.Lens(r1, r2, material=material1, inner_thickness=5.9)
-    L2 = tlm.Lens(r3, r4, material=material2, inner_thickness=0.2)
-    L3 = tlm.Lens(r5, r6, material=material1, inner_thickness=5.9)
+    L1 = tlm.lenses.singlet(r1, tlm.InnerGap(5.9), r2, material=material1)
+    L2 = tlm.lenses.singlet(r3, tlm.InnerGap(0.2), r4, material=material2)
+    L3 = tlm.lenses.singlet(r5, tlm.InnerGap(5.9), r6, material=material1)
 
     focal = tlm.parameter(85)
 

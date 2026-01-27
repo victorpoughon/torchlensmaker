@@ -137,7 +137,6 @@ from torchlensmaker.elements.focal_point import FocalPoint
 
 # Top level stuff - to be reorganized
 from torchlensmaker.optical_data import OpticalData, default_input
-from torchlensmaker.lenses import LensBase, BiLens, Lens, PlanoLens
 from torchlensmaker.materials.material_elements import (
     MaterialModel,
     NonDispersiveMaterial,
@@ -149,6 +148,14 @@ from torchlensmaker.elements.utils import (
     Debug,
     get_elements_by_type,
 )
+
+########
+# Lenses
+########
+
+from torchlensmaker.lens.position_gap import position_gap_to_anchors, PositionGap, InnerGap, OuterGap
+from torchlensmaker.lens.lens import Lens
+from . import lenses
 
 ##############
 # Optimization
@@ -172,7 +179,7 @@ from torchlensmaker.viewer.tlmviewer import (
     render_surface,
     render_surface_local,
     new_scene,
-    display_scene
+    display_scene,
 )
 from torchlensmaker.viewer.render_sequence import (
     show,

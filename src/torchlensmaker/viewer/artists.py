@@ -298,23 +298,6 @@ class SequentialArtist(Artist):
         return nodes
 
 
-class LensArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        nodes = []
-        nodes.extend(collective.render_module(module.surface1))
-        nodes.extend(collective.render_module(module.surface2))
-        return nodes
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        nodes = []
-        nodes.extend(collective.render_rays(module.surface1))
-        nodes.extend(collective.render_rays(module.surface2))
-        return nodes
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return []
-
-
 class KinematicArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         return []

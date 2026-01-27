@@ -1,0 +1,29 @@
+# This file is part of Torch Lens Maker
+# Copyright (C) 2024-present Victor Poughon
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+import torch.nn as nn
+
+from torchlensmaker.elements.sequential import SequentialElement, Sequential
+from torchlensmaker.optical_data import OpticalData
+
+
+class Lens(SequentialElement):
+    def __init__(self, *sequence: nn.Module):
+        super().__init__()
+        self.sequence = Sequential(*sequence)
+
+    def forward(self, data: OpticalData) -> OpticalData:
+        return self.sequence(data)

@@ -31,7 +31,7 @@ from torchlensmaker.elements.optical_surfaces import (
     ImagePlane,
 )
 from torchlensmaker.elements.focal_point import FocalPoint
-from torchlensmaker.lenses import LensBase
+from torchlensmaker.lens.lens import Lens
 
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
@@ -74,7 +74,7 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 default_artists: Dict[type, list[Artist]] = {
     Sequential: [SequentialArtist()],
     FocalPoint: [FocalPointArtist()],
-    LensBase: [LensArtist()],
+    Lens: [ForwardArtist(lambda mod: mod.sequence)],
     SubChain: [ForwardArtist(lambda mod: mod._sequential)],
     CollisionSurface: [CollisionSurfaceArtist()],
     ReflectiveSurface: [ForwardArtist(lambda mod: mod.collision_surface)],
