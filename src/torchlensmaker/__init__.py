@@ -190,13 +190,3 @@ from torchlensmaker.viewer.render_sequence import (
 from torchlensmaker.analysis.plot_magnification import plot_magnification
 from torchlensmaker.analysis.plot_material_model import plot_material_models
 from torchlensmaker.analysis.spot_diagram import spot_diagram
-
-##################
-# Export build123d
-##################
-
-import torchlensmaker.export_build123d as export
-from torchlensmaker.export_build123d import show_part
-
-# Double precision is the better choice for most optical applications
-torch.set_default_dtype(torch.float64)
