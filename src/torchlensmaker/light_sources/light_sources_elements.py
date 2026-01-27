@@ -114,15 +114,17 @@ class Object2D(GenericLightSource):
         object_diameter: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = LinspaceSampler1D(5),
+        sampler_field: nn.Module = LinspaceSampler1D(5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(5),
-            sampler_field=LinspaceSampler1D(5),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
+            sampler_field=sampler_field,
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectGeometry2D(beam_angular_size, object_diameter, wavelength),
         )
-        # TODO how to setup samplers params?
 
     def dim(self) -> Dim:
         return Dim.TWO
@@ -135,11 +137,14 @@ class Object3D(GenericLightSource):
         object_diameter: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = DiskSampler2D(5, 5),
+        sampler_field: nn.Module = DiskSampler2D(5, 5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=DiskSampler2D(5, 5),
-            sampler_field=DiskSampler2D(5, 5),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
+            sampler_field=sampler_field,
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectGeometry3D(beam_angular_size, object_diameter, wavelength),
         )
@@ -155,11 +160,14 @@ class ObjectAtInfinity2D(GenericLightSource):
         angular_size: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = LinspaceSampler1D(5),
+        sampler_field: nn.Module = LinspaceSampler1D(5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(5),
-            sampler_field=LinspaceSampler1D(5),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
+            sampler_field=sampler_field,
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter, angular_size, wavelength
@@ -177,11 +185,14 @@ class ObjectAtInfinity3D(GenericLightSource):
         angular_size: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = DiskSampler2D(5, 5),
+        sampler_field: nn.Module = DiskSampler2D(5, 5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=DiskSampler2D(5, 5),
-            sampler_field=DiskSampler2D(5, 5),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
+            sampler_field=sampler_field,
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry3D(
                 beam_diameter, angular_size, wavelength
@@ -198,11 +209,13 @@ class PointSource2D(GenericLightSource):
         beam_angular_size: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = LinspaceSampler1D(5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectGeometry2D(
                 beam_angular_size=beam_angular_size,
@@ -221,11 +234,13 @@ class PointSourceAtInfinity2D(GenericLightSource):
         beam_diameter: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = LinspaceSampler1D(5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=LinspaceSampler1D(5),
+            sampler_pupil=sampler_pupil,
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter=beam_diameter,
@@ -244,11 +259,13 @@ class PointSource3D(GenericLightSource):
         beam_angular_size: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = DiskSampler2D(5, 5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_pupil=sampler_pupil,
             sampler_field=ZeroSampler2D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectGeometry3D(
                 beam_angular_size=beam_angular_size,
@@ -267,11 +284,13 @@ class PointSourceAtInfinity3D(GenericLightSource):
         beam_diameter: Float[torch.Tensor, ""] | float | int,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_pupil: nn.Module = DiskSampler2D(5, 5),
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
-            sampler_pupil=DiskSampler2D(5, 5),
+            sampler_pupil=sampler_pupil,
             sampler_field=ZeroSampler2D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry3D(
                 beam_diameter=beam_diameter,
@@ -289,11 +308,12 @@ class RaySource2D(GenericLightSource):
         self,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
             sampler_pupil=ZeroSampler1D(),
             sampler_field=ZeroSampler1D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry2D(
                 beam_diameter=0,
@@ -311,11 +331,12 @@ class RaySource3D(GenericLightSource):
         self,
         material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
+        sampler_wavelength: nn.Module = LinspaceSampler1D(5),
     ):
         super().__init__(
             sampler_pupil=ZeroSampler2D(),
             sampler_field=ZeroSampler2D(),
-            sampler_wavelength=LinspaceSampler1D(5),
+            sampler_wavelength=sampler_wavelength,
             material=get_material_model(material),
             geometry=ObjectAtInfinityGeometry3D(
                 beam_diameter=0,
