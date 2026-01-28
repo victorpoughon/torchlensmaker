@@ -47,7 +47,6 @@ from .artists import (
     FocalPointArtist,
     CollisionSurfaceArtist,
     RefractiveSurfaceArtist,
-    LensArtist,
     ForwardArtist,
     EndArtist,
     KinematicArtist,
