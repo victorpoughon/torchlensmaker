@@ -49,7 +49,7 @@ class KinematicElement(SequentialElement):
 
 
 class KinematicSequential(nn.Module):
-    def __init__(self, sequence: list[nn.Module]):
+    def __init__(self, *sequence: nn.Module):
         super().__init__()
         self.sequence = nn.ModuleList(sequence)
 

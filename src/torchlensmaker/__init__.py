@@ -149,12 +149,17 @@ from torchlensmaker.elements.utils import (
     get_elements_by_type,
 )
 
-########
-# Lenses
-########
+######
+# Lens
+######
 
 from torchlensmaker.lens.position_gap import position_gap_to_anchors, PositionGap, InnerGap, OuterGap
 from torchlensmaker.lens.lens import Lens
+from torchlensmaker.lens.lens_thickness import lens_inner_thickness, lens_outer_thickness
+
+########
+# Lenses
+########
 from . import lenses
 
 ##############
