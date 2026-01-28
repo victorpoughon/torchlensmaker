@@ -16,7 +16,14 @@
 
 # ruff: noqa: F401
 
-from .lens_constructors import cemented, singlet, doublet, symmetric_singlet
+from .lens_constructors import (
+    cemented,
+    singlet,
+    doublet,
+    symmetric_singlet,
+    semiplanar_front,
+    semiplanar_rear,
+)
 from .spherical_lenses import spherical_biconvex
 
 __all__ = [
@@ -24,6 +31,8 @@ __all__ = [
     "singlet",
     "doublet",
     "symmetric_singlets",
+    "semiplanar_front",
+    "semiplanar_rear",
     "spherical_biconvex",
     "spherical_biconcave",
     "spherical_planoconvex",

@@ -135,9 +135,71 @@ def symmetric_singlet(
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
             surface,
-            anchors=("origin", gap_anchors[0]),
+            anchors=(gap_anchors[1], "origin"),
             scale=-1,
             material=exit_material,
+        ),
+    )
+
+
+def semiplanar_rear(
+    surface: tlm.LocalSurface,
+    gap: tlm.PositionGap,
+    material: tlm.MaterialModel | str,
+    exit_material: tlm.MaterialModel | str = "air",
+) -> tlm.Lens:
+    """
+    Utility constructor for a semiplanar singlet lens with a surface at the
+    front and a plane at the rear.
+
+    Args:
+        surface: front lens surface
+        gap: position gap between the surfaces
+        material: material of the lens
+        exit_material (optional): the material after the lens (default "air")
+
+    Returns:
+        A lens element
+    """
+    gap_anchors = tlm.position_gap_to_anchors(gap)
+
+    return tlm.Lens(
+        tlm.RefractiveSurface(
+            surface, anchors=("origin", gap_anchors[0]), material=material
+        ),
+        tlm.Gap(gap.gap),
+        tlm.RefractiveSurface(
+            tlm.CircularPlane(surface.diameter), material=exit_material
+        ),
+    )
+
+
+def semiplanar_front(
+    surface: tlm.LocalSurface,
+    gap: tlm.PositionGap,
+    material: tlm.MaterialModel | str,
+    exit_material: tlm.MaterialModel | str = "air",
+) -> tlm.Lens:
+    """
+    Utility constructor for a semiplanar singlet lens with a plane at the front
+    and a surface at the rear.
+
+    Args:
+        surface: front lens surface
+        gap: position gap between the surfaces
+        material: material of the lens
+        exit_material (optional): the material after the lens (default "air")
+
+    Returns:
+        A lens element
+    """
+    gap_anchors = tlm.position_gap_to_anchors(gap)
+
+    return tlm.Lens(
+        tlm.RefractiveSurface(tlm.CircularPlane(surface.diameter), material=material),
+        tlm.Gap(gap.gap),
+        tlm.RefractiveSurface(
+            surface, anchors=(gap_anchors[1], "origin"), material=exit_material
         ),
     )
 
