@@ -210,7 +210,7 @@ class RefractiveSurfaceArtist(Artist):
                     variables=ray_variables_dict(
                         inputs, collective.ray_variables, tir_mask
                     ),
-                    domain=collective.ray_variables_domain,
+                    domain=collective.ray_variables_domains,
                     default_color="pink",
                     layer=LAYER_VALID_RAYS,  # TODO remove layers
                 )

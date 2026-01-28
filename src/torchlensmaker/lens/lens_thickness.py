@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import TYPE_CHECKING
 from itertools import islice
 from jaxtyping import Float
 import torch
 import torch.nn as nn
 
-from .lens import Lens
+
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     transform_points,
@@ -32,6 +33,9 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Translate2D,
 )
 from torchlensmaker.elements.optical_surfaces import RefractiveSurface
+
+if TYPE_CHECKING:
+    from .lens import Lens
 
 
 def tokinematic(mod: nn.Module) -> KinematicElement:
@@ -46,7 +50,7 @@ def tokinematic(mod: nn.Module) -> KinematicElement:
         raise RuntimeError("inner_thickness() got invalid lens")
 
 
-def lens_inner_thickness(lens: Lens) -> Float[torch.Tensor, ""]:
+def lens_inner_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the center"
 
     first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
@@ -83,7 +87,7 @@ def lens_inner_thickness(lens: Lens) -> Float[torch.Tensor, ""]:
     return (p2 - p1)[0]
 
 
-def lens_outer_thickness(lens: Lens) -> Float[torch.Tensor, ""]:
+def lens_outer_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the edge"
 
     front_surface, rear_surface = lens.sequence[0], lens.sequence[-1]

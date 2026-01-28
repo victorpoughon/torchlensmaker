@@ -147,6 +147,7 @@ def semiplanar_rear(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
+    scale: float = 1.0,
 ) -> tlm.Lens:
     """
     Utility constructor for a semiplanar singlet lens with a surface at the
@@ -165,11 +166,15 @@ def semiplanar_rear(
 
     return tlm.Lens(
         tlm.RefractiveSurface(
-            surface, anchors=("origin", gap_anchors[0]), material=material
+            surface,
+            anchors=("origin", gap_anchors[0]),
+            scale=scale,
+            material=material,
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            tlm.CircularPlane(surface.diameter), material=exit_material
+            tlm.CircularPlane(surface.diameter),
+            material=exit_material,
         ),
     )
 
@@ -179,6 +184,7 @@ def semiplanar_front(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
+    scale: float = 1.0,
 ) -> tlm.Lens:
     """
     Utility constructor for a semiplanar singlet lens with a plane at the front
@@ -199,7 +205,10 @@ def semiplanar_front(
         tlm.RefractiveSurface(tlm.CircularPlane(surface.diameter), material=material),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            surface, anchors=(gap_anchors[1], "origin"), material=exit_material
+            surface,
+            anchors=(gap_anchors[1], "origin"),
+            scale=scale,
+            material=exit_material,
         ),
     )
 
