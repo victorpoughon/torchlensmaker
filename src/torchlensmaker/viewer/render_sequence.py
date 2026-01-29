@@ -210,7 +210,7 @@ def export_json(
         # TODO figure out a better default based on stack content?
         sampling = {"base": 10, "object": 5, "wavelength": 8}
 
-    scene = render_sequence(optics, dim, dtype, sampling, end, title)
+    scene = render_sequence(optics, dim, dtype, end, title)
 
     if controls is not None:
         scene["controls"] = controls
