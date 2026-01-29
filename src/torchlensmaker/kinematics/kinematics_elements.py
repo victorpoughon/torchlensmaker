@@ -74,12 +74,15 @@ class ExactKinematicElement2D(KinematicElement):
     ) -> tuple[HomMatrix2D, HomMatrix2D]:
         return kinematic_chain_append(dfk, ifk, self.hom, self.hom_inv)
 
+    def reverse(self) -> Self:
+        return type(self)(self.hom_inv, self.hom)
+
 
 class Translate2D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
     ):
         super().__init__()
         self.func = Translate2DKernel()
@@ -90,6 +93,9 @@ class Translate2D(KinematicElement):
         self, dfk: HomMatrix2D, ifk: HomMatrix2D
     ) -> tuple[HomMatrix2D, HomMatrix2D]:
         return self.func.forward(dfk, ifk, self.x, self.y)
+
+    def reverse(self) -> Self:
+        return type(self)(-self.x, -self.y)
 
 
 class TranslateVec2D(KinematicElement):
