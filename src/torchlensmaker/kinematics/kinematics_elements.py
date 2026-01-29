@@ -17,10 +17,10 @@
 import torch
 import torch.nn as nn
 
-from typing import Any
+from typing import Any, Self
 from jaxtyping import Float
 
-from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.core.tensor_manip import to_tensor, init_param
 from torchlensmaker.optical_data import OpticalData
 
 from .homogeneous_geometry import (
@@ -34,6 +34,8 @@ from .kinematics_kernels import (
     Rotate3DKernel,
     Translate2DKernel,
     Translate3DKernel,
+    Gap2DKernel,
+    Gap3DKernel,
 )
 
 # TODO this is used for lens only
@@ -219,14 +221,28 @@ class MixedDimKinematic(KinematicElement):
 
 
 class Gap(KinematicElement):
-    def __init__(self, offset: Float[torch.Tensor, ""] | float | int):
+    """
+    Translation along the X axis
+    """
+
+    def __init__(
+        self,
+        X: Float[torch.Tensor, ""] | float,
+        trainable: bool = False,
+    ):
         super().__init__()
-        translate_2d = Translate2D(x=offset)
-        translate_3d = Translate3D(x=offset)
-        self.mixed_dim = MixedDimKinematic(translate_2d, translate_3d)
+        self.X = init_param(self, "X", X, trainable)
+        self.func2d = Gap2DKernel()
+        self.func3d = Gap3DKernel()
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        return self.mixed_dim(dfk, ifk)
+        if dfk[0].shape[0] == 3:
+            return self.func2d.forward(dfk, ifk, self.X)
+        else:
+            return self.func3d.forward(dfk, ifk, self.X)
+
+    def reverse(self) -> Self:
+        return type(self)(-self.X, self.trainable)
 
 
 class Rotate(KinematicElement):

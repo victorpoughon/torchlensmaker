@@ -31,6 +31,62 @@ from .homogeneous_geometry import (
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
+class Gap2DKernel(FunctionalKernel):
+    input_names = ["dfk_in", "ifk_in"]
+    param_names = ["X"]
+    output_names = ["dfk_out", "ifk_out"]
+
+    @staticmethod
+    def forward(
+        dfk: HomMatrix2D,
+        ifk: HomMatrix2D,
+        X: Float[torch.Tensor, ""],
+    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+        hom, hom_inv = hom_translate_2d(torch.stack((X, torch.zeros_like(X))))
+        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+        return hom_identity_2d(dtype=dtype, device=device)
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[Float[torch.Tensor, ""]]:
+        return (torch.tensor(5.0, dtype=dtype, device=device),)
+
+
+class Gap3DKernel(FunctionalKernel):
+    input_names = ["dfk_in", "ifk_in"]
+    param_names = ["X"]
+    output_names = ["dfk_out", "ifk_out"]
+
+    @staticmethod
+    def forward(
+        dfk: HomMatrix3D,
+        ifk: HomMatrix3D,
+        X: Float[torch.Tensor, ""],
+    ) -> tuple[HomMatrix3D, HomMatrix3D]:
+        hom, hom_inv = hom_translate_3d(
+            torch.stack((X, torch.zeros_like(X), torch.zeros_like(X)))
+        )
+        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[HomMatrix3D, HomMatrix3D]:
+        return hom_identity_3d(dtype=dtype, device=device)
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[Float[torch.Tensor, ""]]:
+        return (torch.tensor(1.0, dtype=dtype, device=device),)
+
+
 class Translate2DKernel(FunctionalKernel):
     input_names = ["dfk_in", "ifk_in"]
     param_names = ["X", "Y"]
