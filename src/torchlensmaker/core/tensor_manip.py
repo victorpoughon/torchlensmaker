@@ -15,22 +15,57 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
-from typing import Optional, Sequence
+import torch.nn as nn
+from typing import Optional, Sequence, Any
 
 Tensor = torch.Tensor
 
 
 def to_tensor(
-    val: int | float | torch.Tensor | list[float | int],
+    val: float | torch.Tensor | list[float],
     default_dtype: torch.dtype | None = None,
-) -> Tensor:
+    default_device: torch.device | None = None,
+) -> torch.Tensor:
     if isinstance(val, torch.Tensor):
         return val
-
+    
+    # Ensure default dtype is always floating point
     if default_dtype is None:
         default_dtype = torch.get_default_dtype()
 
-    return torch.as_tensor(val, dtype=default_dtype)
+    return torch.tensor(val, dtype=default_dtype, device=default_device)
+
+
+def to_tensor_detached(
+    val: float | torch.Tensor | list[float],
+    default_dtype: torch.dtype | None = None,
+    default_device: torch.device | None = None,
+) -> torch.Tensor:
+    if isinstance(val, torch.Tensor):
+        return val.detach()
+
+    # Ensure default dtype is always floating point
+    if default_dtype is None:
+        default_dtype = torch.get_default_dtype()
+
+    return torch.tensor(val, dtype=default_dtype, device=default_device)
+
+
+def init_param(
+    parent: nn.Module,
+    name: str,
+    val: float | torch.Tensor | list[float],
+    trainable: bool = False,
+    default_dtype: torch.dtype | None = None,
+    default_device: torch.device | None = None,
+) -> torch.Tensor:
+    """Register parameter or buffer with proper device/dtype handling."""
+    t = to_tensor_detached(val, default_dtype, default_device)
+    if trainable:
+        parent.register_parameter(name, nn.Parameter(t))
+    else:
+        parent.register_buffer(name, t)
+    return t
 
 
 def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:
