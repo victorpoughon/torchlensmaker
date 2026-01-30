@@ -181,7 +181,7 @@ class AbsolutePosition(KinematicElement):
         return self.func.forward(dfk, ifk, self.x, self.y, self.z)
 
 
-class AbsolutePositionVec3D(KinematicElement):
+class AbsolutePosition3D(KinematicElement):
     def __init__(
         self,
         T: Float[torch.Tensor, "3"] | list[float | int],

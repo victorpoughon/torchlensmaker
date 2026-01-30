@@ -21,6 +21,24 @@ from typing import Optional, Sequence, Any
 Tensor = torch.Tensor
 
 
+def expand_bool_tuple(n: int, t: bool | tuple[bool, ...]) -> tuple[bool, ...]:
+    """
+    Given a single bool or a tuple of n bools,
+    returns a tuple of n bools
+    """
+
+    if isinstance(t, bool):
+        return (t,) * n
+    elif isinstance(t, tuple):
+        if not len(t) == n:
+            raise RuntimeError(
+                f"Expected boolean tuple with {n} elements, got {len(t)}"
+            )
+        return t
+    else:
+        raise RuntimeError(f"Expected bool or tuple of bools, got {type(t)}")
+
+
 def to_tensor(
     val: float | torch.Tensor | list[float],
     default_dtype: torch.dtype | None = None,
@@ -28,7 +46,7 @@ def to_tensor(
 ) -> torch.Tensor:
     if isinstance(val, torch.Tensor):
         return val
-    
+
     # Ensure default dtype is always floating point
     if default_dtype is None:
         default_dtype = torch.get_default_dtype()
@@ -122,7 +140,7 @@ def meshgrid2d_flat3(
         torch.arange(n1, device=t1.device),
         torch.arange(n2, device=t2.device),
         torch.arange(n3, device=t3.device),
-        indexing="ij"
+        indexing="ij",
     )
 
     g1, g2, g3 = (g.reshape(-1) for g in grids)

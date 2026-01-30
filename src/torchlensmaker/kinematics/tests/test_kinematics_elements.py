@@ -36,7 +36,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     TranslateVec3D,
     Rotate2D,
     Rotate3D,
-    AbsolutePosition,
+    AbsolutePosition3D,
     AbsolutePositionVec3D,
     MixedDimKinematic,
     Gap,
@@ -182,18 +182,18 @@ def test_elements_3d() -> None:
 
     chain_model_3d = nn.ModuleList(
         [
-            AbsolutePosition(
+            AbsolutePosition3D(
                 torch.tensor(1.1),
                 torch.tensor(1.2),
                 torch.tensor(1.3),
             ),
-            AbsolutePosition(
+            AbsolutePosition3D(
                 x=torch.tensor(1.1),
             ),
-            AbsolutePosition(
+            AbsolutePosition3D(
                 y=torch.tensor(1.1),
             ),
-            AbsolutePosition(
+            AbsolutePosition3D(
                 z=torch.tensor(1.1),
             ),
             AbsolutePositionVec3D(

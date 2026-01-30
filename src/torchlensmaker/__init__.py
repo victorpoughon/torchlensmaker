@@ -67,7 +67,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.kinematics.kinematics_elements import (
     KinematicElement,
     MixedDimKinematic,
-    AbsolutePosition,
+    AbsolutePosition3D,
     Gap,
     Rotate3D,
     Rotate2D,
