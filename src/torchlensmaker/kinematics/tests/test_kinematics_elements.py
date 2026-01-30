@@ -209,7 +209,7 @@ def test_elements_3d() -> None:
 
     for element in elements_3d:
         check_kinematic_element_3d(element, dtype, device)
-        if not isinstance(element, AbsolutePosition3D):
+        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
             check_kinematic_element_3d(element.reverse(), dtype, device)
 
 

@@ -278,6 +278,8 @@ class Rotate3D(KinematicElement):
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
         return self.func.forward(dfk, ifk, self.y, self.z)
+    
+    # TODO support reverse for 3D rotations
 
 
 class MixedDimKinematic(KinematicElement):
