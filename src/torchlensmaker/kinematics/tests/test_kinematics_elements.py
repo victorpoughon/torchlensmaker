@@ -140,6 +140,8 @@ def test_elements_2d() -> None:
             Rotate2D(torch.tensor(0.5)),
             AbsolutePosition2D(x=0.5),
             AbsolutePosition2D(y=-0.5),
+            Gap(x=5.0),
+            Gap(5.0),
         ]
     )
 
@@ -204,6 +206,8 @@ def test_elements_3d() -> None:
                 y=torch.tensor(0.1),
                 z=torch.tensor(0.2),
             ),
+            Gap(x=5.0),
+            Gap(5.0),
         ]
     )
 
@@ -226,7 +230,8 @@ def test_elements_mixed() -> None:
             ),
             Gap(5.0),
             Gap(torch.tensor(5.0)),
-            # Rotate(),
+            Gap(x=5.0),
+            Gap(x=torch.tensor(5.0)),
             Rotate((0.1, 0.2)),
             Translate(),
             Translate(x=0.1),
