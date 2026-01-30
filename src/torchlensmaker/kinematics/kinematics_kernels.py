@@ -180,6 +180,39 @@ class Rotate2DKernel(FunctionalKernel):
         return (torch.tensor(0.1, dtype=dtype, device=device),)
 
 
+class AbsolutePosition2DKernel(FunctionalKernel):
+    input_names = ["dfk_in", "ifk_in"]
+    param_names = ["X", "Y"]
+    output_names = ["dfk_out", "ifk_out"]
+
+    @staticmethod
+    def forward(
+        dfk: HomMatrix2D,
+        ifk: HomMatrix2D,
+        X: Float[torch.Tensor, ""],
+        Y: Float[torch.Tensor, ""],
+    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+        return hom_translate_2d(torch.stack([X, Y]))
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+        return hom_identity_2d(dtype=dtype, device=device)
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[
+        Float[torch.Tensor, ""],
+        Float[torch.Tensor, ""],
+    ]:
+        return (
+            torch.tensor(5.0, dtype=dtype, device=device),
+            torch.tensor(10.0, dtype=dtype, device=device),
+        )
+
+
 class AbsolutePosition3DKernel(FunctionalKernel):
     input_names = ["dfk_in", "ifk_in"]
     param_names = ["X", "Y", "Z"]

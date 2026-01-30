@@ -28,6 +28,7 @@ from torchlensmaker.kinematics.kinematics_kernels import (
     Translate3DKernel,
     Rotate2DKernel,
     Rotate3DKernel,
+    AbsolutePosition2DKernel,
     AbsolutePosition3DKernel,
 )
 
@@ -45,6 +46,7 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "Rotate3D": Rotate3DKernel(),
     "Translate2D": Translate2DKernel(),
     "Translate3D": Translate3DKernel(),
+    "AbsolutePosition2D": AbsolutePosition2DKernel(),
     "AbsolutePosition3D": AbsolutePosition3DKernel(),
 }
 
