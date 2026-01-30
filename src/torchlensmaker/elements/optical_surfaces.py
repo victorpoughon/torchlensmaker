@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal
+from typing import Sequence, Optional, TypeAlias, Literal, Self
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -167,6 +167,10 @@ class ReflectiveSurface(SequentialElement):
     def surface(self) -> LocalSurface:
         return self.collision_surface.surface
 
+    def reverse(self) -> Self:
+        # TODO make a copy, surface should be a module
+        return self
+
     def forward(self, data: OpticalData) -> OpticalData:
         t, normals, valid, new_dfk, new_ifk = self.collision_surface(data)
 
@@ -227,6 +231,10 @@ class RefractiveSurface(SequentialElement):
     @property
     def surface(self) -> LocalSurface:
         return self.collision_surface.surface
+
+    def reverse(self) -> Self:
+        # TODO make a copy, surface should be a module
+        return self
 
     def forward(self, data: OpticalData) -> tuple[OpticalData, Tensor]:
         # Collision detection
@@ -325,6 +333,10 @@ class Aperture(SequentialElement):
             dfk=new_dfk,
             ifk=new_ifk,  # correct but useless cause Aperture is only circular plane currently
         )
+
+    def reverse(self) -> Self:
+        # TODO make a copy, surface should be a module
+        return self
 
 
 def linear_magnification(

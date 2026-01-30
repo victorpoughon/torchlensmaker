@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Type, Sequence, TYPE_CHECKING
+from typing import Type, Sequence, Self
+from collections import OrderedDict
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
@@ -48,6 +49,15 @@ class Sequential(nn.Sequential, SequentialElement):
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
+
+    def reverse(self) -> Self:
+        return type(self)(
+            OrderedDict(
+                reversed(
+                    list((name, mod.reverse()) for (name, mod) in self.named_children())
+                )
+            )
+        )
 
     def set_sampling2d(
         self,
