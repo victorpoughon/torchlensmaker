@@ -22,8 +22,8 @@ import torch
 import torch.nn as nn
 
 
-def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
-    "Evaluate a model forwards and backwards and run sanity checks"
+def check_model_eval(model: nn.Module, inputs: tuple[Any]) -> Any:
+    "Evaluate a model forwards and run sanity checks"
 
     # Check the forward pass
     outputs: tuple[torch.Tensor, ...] | torch.Tensor = model(*inputs)
@@ -35,17 +35,37 @@ def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
         "Model outputs contain NaN or Inf"
     )
 
-    # Check the backward pass, if the model has any parameters
+    return outputs
+
+
+def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
+    """
+    Evaluate a model forwards and backwards and run sanity checks
+    Expects at least one trainable parameter
+    """
+
+    # Check the forward pass
+    outputs: tuple[torch.Tensor, ...] | torch.Tensor = model(*inputs)
+    if not isinstance(outputs, tuple):
+        outputs = tuple(
+            outputs,
+        )
+    assert [torch.isfinite(t).all() for t in outputs], (
+        "Model outputs contain NaN or Inf"
+    )
+
+    # Check the backward pass
     parameters = list(model.named_parameters())
-    if len(parameters) > 0:
-        loss = torch.stack([t.sum() for t in outputs]).sum()
-        model.zero_grad()
-        loss.backward()  # type: ignore[no-untyped-call]
-        for name, param in parameters:
-            print(f"grad({name}) = {param.grad}")
-            assert param.grad is not None
-            assert torch.isfinite(param.grad).all(), (
-                f"Gradient of {name} contains NaN or Inf: {param.grad}"
-            )
+    assert len(parameters) > 0
+
+    loss = torch.stack([t.sum() for t in outputs]).sum()
+    model.zero_grad()
+    loss.backward()  # type: ignore[no-untyped-call]
+    for name, param in parameters:
+        print(f"grad({name}) = {param.grad}")
+        assert param.grad is not None
+        assert torch.isfinite(param.grad).all(), (
+            f"Gradient of {name} contains NaN or Inf: {param.grad}"
+        )
 
     return outputs

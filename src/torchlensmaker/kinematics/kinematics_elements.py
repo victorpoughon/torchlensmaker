@@ -124,7 +124,7 @@ class Translate2D(KinematicElement):
         return self.func.forward(dfk, ifk, self.x, self.y)
 
     def reverse(self) -> Self:
-        return type(self)(-self.x, -self.y)
+        return type(self)(-self.x, -self.y, (self.x.requires_grad, self.y.requires_grad))
 
 
 class TranslateVec2D(KinematicElement):

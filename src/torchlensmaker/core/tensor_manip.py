@@ -80,10 +80,12 @@ def init_param(
     """Register parameter or buffer with proper device/dtype handling."""
     t = to_tensor_detached(val, default_dtype, default_device)
     if trainable:
-        parent.register_parameter(name, nn.Parameter(t))
+        p = nn.Parameter(t)
+        parent.register_parameter(name, p)
+        return p
     else:
         parent.register_buffer(name, t)
-    return t
+        return t
 
 
 def cat_optional(a: Optional[Tensor], b: Optional[Tensor]) -> Optional[Tensor]:

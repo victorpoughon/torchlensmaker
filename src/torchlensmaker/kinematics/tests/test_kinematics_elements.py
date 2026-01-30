@@ -44,7 +44,10 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Translate,
 )
 
-from torchlensmaker.testing.test_utils import check_model_eval_and_grad
+from torchlensmaker.testing.test_utils import (
+    check_model_eval,
+    check_model_eval_and_grad,
+)
 
 
 def check_valid_kinematic_chain_2d(
@@ -96,24 +99,30 @@ def check_valid_kinematic_chain_3d(
 
 
 def check_kinematic_element_2d(
-    element: nn.ModuleList, dtype: torch.dtype, device: torch.device
+    element: nn.ModuleList, trainable: bool, dtype: torch.dtype, device: torch.device
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
     dfk, ifk = hom_identity_2d(dtype, device)
 
-    dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+    if trainable:
+        dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+    else:
+        dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_2d(dfk_out, ifk_out, dtype, device)
 
 
 def check_kinematic_element_3d(
-    element: nn.ModuleList, dtype: torch.dtype, device: torch.device
+    element: nn.ModuleList, trainable: bool, dtype: torch.dtype, device: torch.device
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
     dfk, ifk = hom_identity_3d(dtype, device)
 
-    dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+    if trainable:
+        dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+    else:
+        dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_3d(dfk_out, ifk_out, dtype, device)
@@ -146,9 +155,38 @@ def test_elements_2d() -> None:
     )
 
     for element in elements_2d:
-        check_kinematic_element_2d(element, dtype, device)
+        check_kinematic_element_2d(element, False, dtype, device)
         if not isinstance(element, AbsolutePosition2D):
-            check_kinematic_element_2d(element.reverse(), dtype, device)
+            check_kinematic_element_2d(element.reverse(), False, dtype, device)
+
+
+def test_trainable_elements_2d() -> None:
+    dtype, device = torch.float64, torch.device("cpu")
+    torch.set_default_dtype(dtype)
+    torch.set_default_device(device)
+
+    T = nn.Parameter(torch.tensor([5.0, 2.0]))
+
+    elements_2d = nn.ModuleList(
+        [
+            Translate2D(x=torch.tensor(0.1), trainable=True),
+            Translate2D(y=torch.tensor(0.2), trainable=True),
+            Translate2D(x=torch.tensor(0.1), y=torch.tensor(0.2), trainable=True),
+            TranslateVec2D(T, trainable=True),
+            Rotate2D(0.5, trainable=True),
+            Rotate2D(torch.tensor(0.5), trainable=True),
+            AbsolutePosition2D(x=0.5, trainable=True),
+            AbsolutePosition2D(y=-0.5, trainable=True),
+            Gap(x=5.0, trainable=True),
+            Gap(5.0, trainable=True),
+        ]
+    )
+
+    for element in elements_2d:
+        print(list(element.named_parameters()))
+        check_kinematic_element_2d(element, True, dtype, device)
+        if not isinstance(element, AbsolutePosition2D):
+            check_kinematic_element_2d(element.reverse(), True, dtype, device)
 
 
 def test_elements_3d() -> None:
@@ -208,6 +246,81 @@ def test_elements_3d() -> None:
             ),
             Gap(x=5.0),
             Gap(5.0),
+        ]
+    )
+
+    for element in elements_3d:
+        check_kinematic_element_3d(element, False, dtype, device)
+        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
+            check_kinematic_element_3d(element.reverse(), False, dtype, device)
+
+
+def test_trainable_elements_3d() -> None:
+    dtype, device = torch.float64, torch.device("cpu")
+    torch.set_default_dtype(dtype)
+    torch.set_default_device(device)
+
+    T3d = nn.Parameter(torch.tensor([5.0, 2.0, -15.0]))
+
+    elements_3d = nn.ModuleList(
+        [
+            AbsolutePosition3D(
+                torch.tensor(1.1),
+                torch.tensor(1.2),
+                torch.tensor(1.3),
+                trainable=True,
+            ),
+            AbsolutePosition3D(
+                x=torch.tensor(1.1),
+                trainable=(True, False, False),
+            ),
+            AbsolutePosition3D(
+                y=torch.tensor(1.1),
+                trainable=(False, True, False),
+            ),
+            AbsolutePosition3D(
+                z=torch.tensor(1.1),
+                trainable=(False, False, True),
+            ),
+            Translate3D(
+                x=torch.tensor(0.1),
+                trainable=(True, False, False),
+            ),
+            Translate3D(
+                y=torch.tensor(0.2),
+                trainable=(False, True, False),
+            ),
+            Translate3D(
+                z=torch.tensor(0.2),
+                trainable=(False, False, True),
+            ),
+            Translate3D(
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
+            ),
+            Translate3D(
+                x=torch.tensor(0.1), z=torch.tensor(0.2), trainable=(True, False, True)
+            ),
+            Translate3D(
+                y=torch.tensor(0.2),
+                z=torch.tensor(0.2),
+                trainable=(False, True, True),
+            ),
+            Translate3D(
+                x=torch.tensor(0.1),
+                y=torch.tensor(0.2),
+                z=torch.tensor(0.2),
+                trainable=True,
+            ),
+            TranslateVec3D(T3d, trainable=True),
+            Rotate3D(y=0.1, trainable=True),
+            Rotate3D(z=0.2, trainable=True),
+            Rotate3D(y=0.1, z=0.2, trainable=True),
+            Rotate3D(y=torch.tensor(0.1), trainable=True),
+            Rotate3D(z=torch.tensor(0.2), trainable=True),
+            Rotate3D(y=torch.tensor(0.1), z=torch.tensor(0.2), trainable=True),
+            Gap(x=5.0, trainable=True),
+            Gap(5.0, trainable=True),
         ]
     )
 
