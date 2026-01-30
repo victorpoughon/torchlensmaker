@@ -124,7 +124,9 @@ class Translate2D(KinematicElement):
         return self.func.forward(dfk, ifk, self.x, self.y)
 
     def reverse(self) -> Self:
-        return type(self)(-self.x, -self.y, (self.x.requires_grad, self.y.requires_grad))
+        return type(self)(
+            -self.x, -self.y, (self.x.requires_grad, self.y.requires_grad)
+        )
 
 
 class TranslateVec2D(KinematicElement):
@@ -189,7 +191,7 @@ class TranslateVec3D(KinematicElement):
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
         return self.func.forward(dfk, ifk, *torch.unbind(self.t))
-    
+
     def reverse(self) -> Self:
         return type(self)(-self.t, self.t.requires_grad)
 
@@ -278,46 +280,57 @@ class Rotate3D(KinematicElement):
         self, dfk: HomMatrix3D, ifk: HomMatrix3D
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
         return self.func.forward(dfk, ifk, self.y, self.z)
-    
+
     # TODO support reverse for 3D rotations
 
 
-class MixedDimKinematic(KinematicElement):
-    def __init__(self, module_2d: nn.Module, module_3d: nn.Module):
+class Rotate(KinematicElement):
+    """
+    Mixed dimension rotation
+    """
+
+    def __init__(
+        self,
+        angles: tuple[float] | Float[torch.Tensor, "2"],
+        trainable: bool | tuple[bool, ...] = False,
+    ):
         super().__init__()
-        self.module_2d = module_2d
-        self.module_3d = module_3d
+        zt, yt = expand_bool_tuple(2, trainable)
+        z, y = torch.as_tensor(angles).unbind()
+        self.z = init_param(self, "z", z, zt)
+        self.y = init_param(self, "y", y, yt)
+        self.func2d = Rotate2DKernel()
+        self.func3d = Rotate3DKernel()
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
         if dfk[0].shape[0] == 3:
-            return self.module_2d(dfk, ifk)
+            return self.func2d.forward(dfk, ifk, self.z)
         else:
-            return self.module_3d(dfk, ifk)
-
-
-class Rotate(KinematicElement):
-    def __init__(
-        self,
-        angles: tuple[float | int, float | int] | Float[torch.Tensor, "2"],
-    ):
-        super().__init__()
-        self.mixed_dim = MixedDimKinematic(
-            Rotate2D(angles[0]), Rotate3D(angles[1], angles[0])
-        )
-
-    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        return self.mixed_dim(dfk, ifk)
+            return self.func3d.forward(dfk, ifk, self.z, self.y)
 
 
 class Translate(KinematicElement):
+    """
+    Mixed dimension translation
+    """
+
     def __init__(
         self,
         x: Float[torch.Tensor, ""] | float | int = 0.0,
         y: Float[torch.Tensor, ""] | float | int = 0.0,
         z: Float[torch.Tensor, ""] | float | int = 0.0,
+        trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.mixed_dim = MixedDimKinematic(Translate2D(x, y), Translate3D(x, y, z))
+        xt, yt, zt = expand_bool_tuple(3, trainable)
+        self.x = init_param(self, "x", x, xt)
+        self.y = init_param(self, "y", y, yt)
+        self.z = init_param(self, "z", z, zt)
+        self.func2d = Translate2DKernel()
+        self.func3d = Translate3DKernel()
 
     def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        return self.mixed_dim(dfk, ifk)
+        if dfk[0].shape[0] == 3:
+            return self.func2d.forward(dfk, ifk, self.x, self.y)
+        else:
+            return self.func3d.forward(dfk, ifk, self.x, self.y, self.z)

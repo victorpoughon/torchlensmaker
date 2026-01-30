@@ -38,7 +38,6 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Rotate3D,
     AbsolutePosition3D,
     AbsolutePosition2D,
-    MixedDimKinematic,
     Gap,
     Rotate,
     Translate,
@@ -99,13 +98,19 @@ def check_valid_kinematic_chain_3d(
 
 
 def check_kinematic_element_2d(
-    element: nn.ModuleList, trainable: bool, dtype: torch.dtype, device: torch.device
+    element: nn.ModuleList,
+    trainable: bool,
+    dtype: torch.dtype,
+    device: torch.device,
+    allow_none_grad: bool = False,
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
     dfk, ifk = hom_identity_2d(dtype, device)
 
     if trainable:
-        dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+        dfk_out, ifk_out = check_model_eval_and_grad(
+            element, (dfk, ifk), allow_none_grad
+        )
     else:
         dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
 
@@ -114,13 +119,19 @@ def check_kinematic_element_2d(
 
 
 def check_kinematic_element_3d(
-    element: nn.ModuleList, trainable: bool, dtype: torch.dtype, device: torch.device
+    element: nn.ModuleList,
+    trainable: bool,
+    dtype: torch.dtype,
+    device: torch.device,
+    allow_none_grad: bool = False,
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
     dfk, ifk = hom_identity_3d(dtype, device)
 
     if trainable:
-        dfk_out, ifk_out = check_model_eval_and_grad(element, (dfk, ifk))
+        dfk_out, ifk_out = check_model_eval_and_grad(
+            element, (dfk, ifk), allow_none_grad
+        )
     else:
         dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
 
@@ -297,6 +308,7 @@ def test_trainable_elements_3d() -> None:
             Translate3D(
                 x=torch.tensor(0.1),
                 y=torch.tensor(0.2),
+                trainable=True,
             ),
             Translate3D(
                 x=torch.tensor(0.1), z=torch.tensor(0.2), trainable=(True, False, True)
@@ -325,9 +337,9 @@ def test_trainable_elements_3d() -> None:
     )
 
     for element in elements_3d:
-        check_kinematic_element_3d(element, dtype, device)
+        check_kinematic_element_3d(element, True, dtype, device)
         if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
-            check_kinematic_element_3d(element.reverse(), dtype, device)
+            check_kinematic_element_3d(element.reverse(), True, dtype, device)
 
 
 def test_elements_mixed() -> None:
@@ -337,10 +349,6 @@ def test_elements_mixed() -> None:
 
     elements_mixed = nn.ModuleList(
         [
-            MixedDimKinematic(
-                Rotate2D(0.1),
-                Rotate3D(y=0.1),
-            ),
             Gap(5.0),
             Gap(torch.tensor(5.0)),
             Gap(x=5.0),
@@ -354,5 +362,32 @@ def test_elements_mixed() -> None:
     )
 
     for element in elements_mixed:
-        check_kinematic_element_2d(element, dtype, device)
-        check_kinematic_element_3d(element, dtype, device)
+        check_kinematic_element_2d(element, False, dtype, device)
+        check_kinematic_element_3d(element, False, dtype, device)
+
+        # TODO reverse mixed
+
+
+def test_trainable_elements_mixed() -> None:
+    dtype, device = torch.float64, torch.device("cpu")
+    torch.set_default_dtype(dtype)
+    torch.set_default_device(device)
+
+    elements_mixed = nn.ModuleList(
+        [
+            Gap(5.0, trainable=True),
+            Gap(torch.tensor(5.0), trainable=True),
+            Gap(x=5.0, trainable=True),
+            Gap(x=torch.tensor(5.0), trainable=True),
+            Rotate((0.1, 0.2), trainable=True),
+            Translate(x=0.1, trainable=True),
+            Translate(y=0.2, trainable=True),
+            Translate(z=0.3, trainable=True),
+        ]
+    )
+
+    for element in elements_mixed:
+        check_kinematic_element_2d(element, True, dtype, device, allow_none_grad=True)
+        check_kinematic_element_3d(element, True, dtype, device, allow_none_grad=True)
+
+        # TODO reverse mixed

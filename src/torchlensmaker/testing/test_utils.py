@@ -38,7 +38,9 @@ def check_model_eval(model: nn.Module, inputs: tuple[Any]) -> Any:
     return outputs
 
 
-def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
+def check_model_eval_and_grad(
+    model: nn.Module, inputs: tuple[Any], allow_none_grad: bool = False
+) -> Any:
     """
     Evaluate a model forwards and backwards and run sanity checks
     Expects at least one trainable parameter
@@ -63,9 +65,10 @@ def check_model_eval_and_grad(model: nn.Module, inputs: tuple[Any]) -> Any:
     loss.backward()  # type: ignore[no-untyped-call]
     for name, param in parameters:
         print(f"grad({name}) = {param.grad}")
-        assert param.grad is not None
-        assert torch.isfinite(param.grad).all(), (
-            f"Gradient of {name} contains NaN or Inf: {param.grad}"
-        )
+        assert allow_none_grad or param.grad is not None
+        if param.grad is not None:
+            assert torch.isfinite(param.grad).all(), (
+                f"Gradient of {name} contains NaN or Inf: {param.grad}"
+            )
 
     return outputs
