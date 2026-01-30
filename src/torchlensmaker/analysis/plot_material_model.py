@@ -24,8 +24,8 @@ from typing import Optional
 
 def plot_material_models(
     models: list[tlm.MaterialModel],
-    wmin: float | int = 400,
-    wmax: float | int = 700,
+    wmin: float = 400,
+    wmax: float = 700,
     labels: Optional[list[str]] = None,
 ) -> None:
     """

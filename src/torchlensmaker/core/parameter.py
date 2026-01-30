@@ -19,7 +19,7 @@ import torch.nn as nn
 
 
 def parameter(
-    data: float | int | torch.Tensor, dtype: torch.dtype | None = None
+    data: float | torch.Tensor, dtype: torch.dtype | None = None
 ) -> nn.Parameter:
     if dtype is None:
         dtype = torch.get_default_dtype()

@@ -132,7 +132,7 @@ class Translate2D(KinematicElement):
 class TranslateVec2D(KinematicElement):
     def __init__(
         self,
-        t: Float[torch.Tensor, "2"] | list[float | int],
+        t: Float[torch.Tensor, "2"] | list[float],
         trainable: bool = False,
     ):
         super().__init__()
@@ -151,9 +151,9 @@ class TranslateVec2D(KinematicElement):
 class Translate3D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
-        z: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
+        z: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -180,7 +180,7 @@ class Translate3D(KinematicElement):
 class TranslateVec3D(KinematicElement):
     def __init__(
         self,
-        t: Float[torch.Tensor, "3"] | list[float | int],
+        t: Float[torch.Tensor, "3"] | list[float],
         trainable: bool = False,
     ):
         super().__init__()
@@ -201,7 +201,7 @@ class Rotate2D(KinematicElement):
 
     def __init__(
         self,
-        theta: Float[torch.Tensor, ""] | float | int = 0.0,
+        theta: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool = False,
     ):
         super().__init__()
@@ -220,8 +220,8 @@ class Rotate2D(KinematicElement):
 class AbsolutePosition2D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -242,9 +242,9 @@ class AbsolutePosition2D(KinematicElement):
 class AbsolutePosition3D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
-        z: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
+        z: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -266,8 +266,8 @@ class AbsolutePosition3D(KinematicElement):
 class Rotate3D(KinematicElement):
     def __init__(
         self,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
-        z: Float[torch.Tensor, ""] | float | int = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
+        z: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -316,9 +316,9 @@ class Translate(KinematicElement):
 
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float | int = 0.0,
-        y: Float[torch.Tensor, ""] | float | int = 0.0,
-        z: Float[torch.Tensor, ""] | float | int = 0.0,
+        x: Float[torch.Tensor, ""] | float = 0.0,
+        y: Float[torch.Tensor, ""] | float = 0.0,
+        z: Float[torch.Tensor, ""] | float = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()

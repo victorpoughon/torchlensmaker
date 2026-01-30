@@ -30,8 +30,8 @@ from .source_geometry_kernels import (
 class ObjectGeometry2D(nn.Module):
     def __init__(
         self,
-        beam_angular_size: Float[torch.Tensor, ""] | float | int,
-        object_diameter: Float[torch.Tensor, ""] | float | int,
+        beam_angular_size: Float[torch.Tensor, ""] | float,
+        object_diameter: Float[torch.Tensor, ""] | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -88,8 +88,8 @@ class ObjectGeometry2D(nn.Module):
 class ObjectAtInfinityGeometry2D(nn.Module):
     def __init__(
         self,
-        beam_diameter: Float[torch.Tensor, ""] | float | int,
-        angular_size: Float[torch.Tensor, ""] | float | int,
+        beam_diameter: Float[torch.Tensor, ""] | float,
+        angular_size: Float[torch.Tensor, ""] | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -146,8 +146,8 @@ class ObjectAtInfinityGeometry2D(nn.Module):
 class ObjectGeometry3D(nn.Module):
     def __init__(
         self,
-        beam_angular_size: Float[torch.Tensor, ""] | float | int,
-        object_diameter: Float[torch.Tensor, ""] | float | int,
+        beam_angular_size: Float[torch.Tensor, ""] | float,
+        object_diameter: Float[torch.Tensor, ""] | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -200,8 +200,8 @@ class ObjectGeometry3D(nn.Module):
 class ObjectAtInfinityGeometry3D(nn.Module):
     def __init__(
         self,
-        beam_diameter: Float[torch.Tensor, ""] | float | int,
-        angular_size: Float[torch.Tensor, ""] | float | int,
+        beam_diameter: Float[torch.Tensor, ""] | float,
+        angular_size: Float[torch.Tensor, ""] | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
