@@ -20,7 +20,7 @@ import torch.nn as nn
 from typing import Any, Self
 from jaxtyping import Float
 
-from torchlensmaker.core.tensor_manip import init_param, expand_bool_tuple
+from torchlensmaker.core.tensor_manip import to_tensor, init_param, expand_bool_tuple
 from torchlensmaker.optical_data import OpticalData
 
 from .homogeneous_geometry import (
@@ -296,7 +296,7 @@ class Rotate(KinematicElement):
     ):
         super().__init__()
         zt, yt = expand_bool_tuple(2, trainable)
-        z, y = torch.as_tensor(angles).unbind()
+        z, y = to_tensor(angles).unbind()
         self.z = init_param(self, "z", z, zt)
         self.y = init_param(self, "y", y, yt)
         self.func2d = Rotate2DKernel()
@@ -306,7 +306,7 @@ class Rotate(KinematicElement):
         if dfk[0].shape[0] == 3:
             return self.func2d.forward(dfk, ifk, self.z)
         else:
-            return self.func3d.forward(dfk, ifk, self.z, self.y)
+            return self.func3d.forward(dfk, ifk, self.y, self.z)
 
 
 class Translate(KinematicElement):
