@@ -50,7 +50,7 @@ def tokinematic(mod: nn.Module) -> KinematicElement:
         raise RuntimeError("inner_thickness() got invalid lens")
 
 
-def lens_inner_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
+def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the center"
 
     first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
@@ -87,7 +87,7 @@ def lens_inner_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
     return (p2 - p1)[0]
 
 
-def lens_outer_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
+def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the edge"
 
     front_surface, rear_surface = lens.sequence[0], lens.sequence[-1]
@@ -124,3 +124,21 @@ def lens_outer_thickness(lens: 'Lens') -> Float[torch.Tensor, ""]:
     p2 = transform_points(a2, root_point)
 
     return (p2 - p1)[0]
+
+
+def lens_minimal_diameter(lens: "Lens") -> Float[torch.Tensor, ""]:
+    """
+    Minimal diameter of a lens
+
+    The minimal diameter of a lens is the smallest surface diameter,
+    out of all the surfaces in the lens
+    """
+
+    mini = lens.sequence[0].collision_surface.surface.diameter
+    for mod in lens.sequence:
+        if isinstance(mod, RefractiveSurface):
+            diam = mod.collision_surface.surface.diameter
+            if diam < mini:
+                mini = diam
+
+    return mini

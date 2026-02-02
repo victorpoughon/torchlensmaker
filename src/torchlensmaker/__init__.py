@@ -44,6 +44,7 @@ from torchlensmaker.core.sag_functions import (
     SagSum,
     SagFunction,
 )
+from torchlensmaker.core.tensor_manip import to_tensor
 
 ############
 # Kinematics
@@ -123,6 +124,7 @@ from torchlensmaker.elements.optical_surfaces import (
 from torchlensmaker.light_sources.light_sources_elements import (
     RaySource,
     PointSourceAtInfinity,
+    PointSourceAtInfinity2D,
     PointSource,
     ObjectAtInfinity,
     Object,
@@ -160,6 +162,12 @@ from torchlensmaker.lens.lens_thickness import lens_inner_thickness, lens_outer_
 # Lenses
 ########
 from . import lenses
+
+##########
+# Cardinal
+##########
+
+from . import cardinal
 
 ##############
 # Optimization

@@ -20,7 +20,11 @@ import torch.nn as nn
 
 from torchlensmaker.elements.sequential import SequentialElement, Sequential
 from torchlensmaker.optical_data import OpticalData
-from .lens_thickness import lens_inner_thickness, lens_outer_thickness
+from .lens_thickness import (
+    lens_inner_thickness,
+    lens_outer_thickness,
+    lens_minimal_diameter,
+)
 
 
 class Lens(SequentialElement):
@@ -36,3 +40,6 @@ class Lens(SequentialElement):
 
     def outer_thickness(self) -> Float[torch.Tensor, ""]:
         return lens_outer_thickness(self)
+
+    def minimal_diameter(self) -> Float[torch.Tensor, ""]:
+        return lens_minimal_diameter(self)
