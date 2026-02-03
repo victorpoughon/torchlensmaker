@@ -77,11 +77,6 @@ def fit_parabola_vertex_2d(
     return num / denom
 
 
-# TODO filter y = 0 rays or close to y=0 rays on the light source to avoid div by zero
-# in intersection code
-# use reverse aperture
-
-
 def rear_principal_point(
     lens: tlm.Lens,
     wavelength: float,
