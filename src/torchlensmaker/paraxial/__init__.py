@@ -16,7 +16,7 @@
 
 # ruff: noqa: F401
 
-from .cardinal import (
+from .paraxial import (
     rear_principal_point,
     rear_focal_point,
     equivalent_locus_2d,

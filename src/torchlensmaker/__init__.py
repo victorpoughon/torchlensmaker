@@ -181,10 +181,10 @@ from torchlensmaker.lens.lens_thickness import (
 from . import lenses
 
 ##########
-# Cardinal
+# Paraxial
 ##########
 
-from . import cardinal
+from . import paraxial
 
 ##############
 # Optimization
