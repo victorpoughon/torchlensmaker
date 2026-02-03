@@ -2345,7 +2345,7 @@ requires-dist = [
     { name = "onnxruntime", marker = "extra == 'test'", specifier = ">=1.23.2" },
     { name = "onnxscript", marker = "extra == 'cpu'", specifier = ">=0.5.7" },
     { name = "onnxscript", marker = "extra == 'cu128'", specifier = ">=0.5.7" },
-    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.3,<8.5.0" },
+    { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.3,<9.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.2" },
     { name = "torch", marker = "extra == 'cpu'", specifier = ">=2.9.1", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "torchlensmaker", extra = "cpu" } },
     { name = "torch", marker = "extra == 'cu128'", specifier = ">=2.9.1", index = "https://download.pytorch.org/whl/cu128", conflict = { package = "torchlensmaker", extra = "cu128" } },
