@@ -79,9 +79,10 @@ def fit_parabola_vertex_2d(
 
 # TODO filter y = 0 rays or close to y=0 rays on the light source to avoid div by zero
 # in intersection code
+# use reverse aperture
 
 
-def rear_principal_plane(
+def rear_principal_point(
     lens: tlm.Lens,
     wavelength: float,
     alpha: float = 0.05,
@@ -89,7 +90,7 @@ def rear_principal_plane(
     pupil_samples=30,
 ) -> Float[torch.Tensor, ""]:
     """
-    Rear Principal Plane of a lens
+    Compute rear principal point of a lens using a parabolic model
 
     Args:
         lens: the tlm.Lens model
@@ -127,18 +128,38 @@ def rear_principal_plane(
     return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
 
 
-def front_principal_plane(lens):
-    # same as rear pp except:
-    # - reverse the light source (not necessarily needed, t will just be negative on rays)
-    # - reverse the lens
-    # - returned coordinate is in the reverse coordinate system, convert it
-    pass
+def rear_focal_point(
+    lens: tlm.Lens,
+    wavelength: float,
+    h: float,
+) -> Float[torch.Tensor, ""]:
+    """
+    Compute rear focal length of a lens using a paraxial ray
 
+    Args:
+        lens: the tlm.Lens model
+        wavelength: the wavelength to use
+        h: height of the paraxial ray, normalized to the lens diameter
 
-def rear_focal_length(lens):
-    # get the minimal lens diameter
-    # create light source of appropriate diameter
-    # evaluate the light source and the model to get output rays
-    # compute intersection locus of inputs and optical axis
-    # fit some model
-    pass
+    Returns:
+        a scalar tensor that contains the X coordinate of the rear focal length
+    """
+
+    # Get the lens minimal diameter and setup the light source
+    mdiam = lens.minimal_diameter()
+
+    source = tlm.SubChain(
+        tlm.Translate2D(y=h * mdiam),
+        tlm.RaySource2D(material="air", sampler_wavelength=tlm.ZeroSampler1D()),
+    )
+
+    # Evaluate the light source and the model to get output ray
+    inputs = source(tlm.default_input(dim=2))
+    outputs = lens(inputs)
+
+    assert inputs.P.shape == outputs.P.shape == (1, 2)
+
+    # Compute output ray intersection with the optical axis
+    t = -outputs.P[:, 1] / outputs.V[:, 1]
+
+    return outputs.P[:, 0] + t * outputs.V[:, 0]

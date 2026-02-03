@@ -17,11 +17,13 @@
 # ruff: noqa: F401
 
 from .cardinal import (
-    rear_principal_plane,
+    rear_principal_point,
+    rear_focal_point,
     equivalent_locus_2d,
 )
 
 __all__ = [
-    "rear_principal_plane",
+    "rear_principal_point",
+    "rear_focal_point",
     "equivalent_locus_2d",
 ]
