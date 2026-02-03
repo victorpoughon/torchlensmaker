@@ -15,7 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
-  "pytest>=8.3.3,<8.5.0",
+  "pytest>=8.3.3,<9.1.0",
   "notebook >= 7",
   "nbmake~=1.5.4",
   "nbstripout-fast",
