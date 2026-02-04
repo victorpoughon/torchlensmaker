@@ -2303,9 +2303,10 @@ wheels = [
 
 [[package]]
 name = "torchlensmaker"
-version = "0.0.12"
+version = "0.0.13"
 source = { editable = "." }
 dependencies = [
+    { name = "ipython" },
     { name = "jaxtyping" },
     { name = "matplotlib" },
 ]
@@ -2335,6 +2336,7 @@ test = [
 
 [package.metadata]
 requires-dist = [
+    { name = "ipython", specifier = ">=8.31.0" },
     { name = "jaxtyping", specifier = ">=0.3.5" },
     { name = "matplotlib", specifier = ">=3.9.2,<3.11.0" },
     { name = "nbmake", marker = "extra == 'test'", specifier = "~=1.5.4" },
