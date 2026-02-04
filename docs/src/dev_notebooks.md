@@ -16,6 +16,7 @@ documentation. But you're welcome to look around 😊
 * [dev_notebooks/double_gauss.md](dev_notebooks/double_gauss.md)
 * [dev_notebooks/index_example.md](dev_notebooks/index_example.md)
 * [dev_notebooks/interval_arithmetic.md](dev_notebooks/interval_arithmetic.md)
+* [dev_notebooks/inverse_kinematics.md](dev_notebooks/inverse_kinematics.md)
 * [dev_notebooks/magnifying_glass.md](dev_notebooks/magnifying_glass.md)
 * [dev_notebooks/material_models.md](dev_notebooks/material_models.md)
 * [dev_notebooks/new_lenses.md](dev_notebooks/new_lenses.md)
@@ -28,5 +29,6 @@ documentation. But you're welcome to look around 😊
 * [dev_notebooks/test_anchors.md](dev_notebooks/test_anchors.md)
 * [dev_notebooks/test_cylinder_collision.md](dev_notebooks/test_cylinder_collision.md)
 * [dev_notebooks/test_reverse.md](dev_notebooks/test_reverse.md)
+
 
 
