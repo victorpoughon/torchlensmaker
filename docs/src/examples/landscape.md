@@ -5,8 +5,7 @@
 import torchlensmaker as tlm
 
 optics = tlm.Sequential(
-    tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20),
-    tlm.Wavelength(400, 800),
+    tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
     tlm.Gap(15),
     tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
     tlm.Gap(3.419),
@@ -33,22 +32,12 @@ tlm.show3d(optics, title="Landscape Lens")
 
 
 ```python
-f, _ = tlm.spot_diagram(optics, {"base":1000, "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
+# TODO fix spot diagram
+# f, _ = tlm.spot_diagram(optics, {"base":1000, "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
 ```
-
-
-    
-![png](landscape_files/landscape_3_0.png)
-    
-
 
 
 ```python
-f, _ = tlm.spot_diagram(optics, {"base": tlm.sampling.random_uniform(1000), "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
+# TODO fix spot diagram
+# f, _ = tlm.spot_diagram(optics, {"base": tlm.sampling.random_uniform(1000), "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
 ```
-
-
-    
-![png](landscape_files/landscape_4_0.png)
-    
-

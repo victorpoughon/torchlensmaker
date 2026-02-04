@@ -20,7 +20,7 @@ We start with the optical model definition. Since optics is reversible, we'll sw
 import torchlensmaker as tlm
 
 optics = tlm.Sequential(
-    tlm.PointSource(beam_angular_size=105, material="water-nd"),
+    tlm.PointSource(beam_angular_size=105, material="water"),
     tlm.Gap(2),
     tlm.RefractiveSurface(tlm.CircularPlane(15), tir="reflect", material="air"),
 )
@@ -36,8 +36,8 @@ As always, models don't have a dimension. Their definition is abtract, it's only
 
 
 ```python
-tlm.show(optics, dim=2, end=2, sampling={"base": 100})
-tlm.show(optics, dim=3, end=2, sampling={"base": 2000})
+tlm.show(optics, dim=2, end=2, pupil=100)
+tlm.show(optics, dim=3, end=2, pupil=2000)
 ```
 
 

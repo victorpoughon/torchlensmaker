@@ -31,9 +31,8 @@ model = tlm.Sequential(
     # Position the light source just above the optical axis
     tlm.SubChain(
         tlm.Translate(y=5.001),
-        tlm.ObjectAtInfinity(10, 0.5),
+        tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
     ),
-    tlm.Wavelength(400, 660),
     
     # Move the droplet of water some distance away from the source
     tlm.Gap(50),
@@ -50,7 +49,7 @@ model = tlm.Sequential(
     # Third interface: half sphere (pointing down), refractive water to air
     tlm.SubChain(
         tlm.Rotate((60, 0)),
-       tlm.RefractiveSurface(halfsphere, material="air", anchors=("extent", "origin")),
+        tlm.RefractiveSurface(halfsphere, material="air", anchors=("extent", "origin")),
     ),
 )
 
@@ -58,12 +57,12 @@ model = tlm.Sequential(
 controls = {"opacity": 0.05, "thickness": 2.1, "valid_rays": "wavelength (true color)", "output_rays": "wavelength (true color)"}
 
 tlm.show2d(model,
-           sampling={"base": 50, "object": 5, "wavelength": 10},
+           pupil=50, field=5, wavelength=10,
            end=50,
            controls=controls)
 
 tlm.show3d(model,
-           sampling={"base": 200, "object": 15, "wavelength": 10},
+           pupil=200, field=15, wavelength=10,
            end=30,
            controls=controls)
 ```

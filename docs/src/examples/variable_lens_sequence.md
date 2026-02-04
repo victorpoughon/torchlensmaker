@@ -46,24 +46,23 @@ surface_plano = tlm.Parabola(lens_diameter, tlm.parameter(-0.002))
 surface_biconvex = tlm.Parabola(lens_diameter, tlm.parameter(0.002))
 
 # Lenses
-lenses_plano = [tlm.PlanoLens(
+lenses_plano = [tlm.lenses.semiplanar_front(
     surface_plano,
-    material="BK7-nd",
-    outer_thickness = lens_min_thickness,
-    reverse=False,
+    tlm.OuterGap(lens_min_thickness),
+    material="BK7",
 ) for i in range(nplano)]
 
-lenses_biconvex = [tlm.BiLens(
+lenses_biconvex = [tlm.lenses.symmetric_singlet(
     surface_biconvex,
-    material="BK7-nd",
-    outer_thickness = lens_min_thickness,
+    tlm.OuterGap(lens_min_thickness),
+    material="BK7",
 ) for i in range(nbiconvex)]
 
-lenses_rplano = [tlm.PlanoLens(
+lenses_rplano = [tlm.lenses.semiplanar_rear(
     surface_plano,
-    material="BK7-nd",
-    outer_thickness = lens_min_thickness,
-    reverse=True,
+    tlm.OuterGap(lens_min_thickness),
+    material="BK7",
+    scale=-1,
 ) for i in range(nrplano)]
 
 optics = tlm.Sequential(
@@ -121,10 +120,11 @@ def regu_equalthickness(_):
     t1 = lenses_biconvex[0].inner_thickness()
     return 100*torch.pow(t0 - t1, 2)
 
+optics.set_sampling2d(pupil=10)
+
 tlm.optimize(
     optics,
     optimizer = optim.Adam(optics.parameters(), lr=1e-4),
-    sampling = {"base": 10},
     dim = 2,
     num_iter = 100,
     regularization = regu_equalthickness
@@ -137,8 +137,8 @@ def print_lens(lens_name, lens):
     outer = lens.outer_thickness().item()
     print(f"    inner: {inner:.3f} outer: {outer:.3f}")
     
-    a1 = lens.surface1.surface.parameters()
-    a2 = lens.surface2.surface.parameters()
+    a1 = lens.sequence[0].surface.parameters()
+    a2 = lens.sequence[-1].surface.parameters()
     print("    surface1", [p.tolist() for p in a1.values()])
     print("    surface2", [p.tolist() for p in a2.values()])
 
@@ -148,27 +148,27 @@ print_lens("Reverse plano-convex", lenses_rplano[0])
 
 ```
 
-    [  1/100] L= 84.72069 | grad norm= 180027.30862278357
-    [  6/100] L= 10.01247 | grad norm= 48586.85755590343
-    [ 11/100] L= 8.91487 | grad norm= 45467.74239605879
-    [ 16/100] L= 13.30247 | grad norm= 62370.50386953764
-    [ 21/100] L= 5.41850 | grad norm= 25824.077977854635
-    [ 26/100] L= 4.48008 | grad norm= 15842.663128900638
-    [ 31/100] L= 5.78234 | grad norm= 28089.62404966173
-    [ 36/100] L= 4.02969 | grad norm= 11638.055971416858
-    [ 41/100] L= 3.77202 | grad norm= 9785.112707664568
-    [ 46/100] L= 3.94697 | grad norm= 14470.964187204283
-    [ 51/100] L= 3.42942 | grad norm= 4729.656536109289
-    [ 56/100] L= 3.39896 | grad norm= 5939.238320172063
-    [ 61/100] L= 3.27782 | grad norm= 5355.62028333003
-    [ 66/100] L= 3.09550 | grad norm= 2785.6950266503795
-    [ 71/100] L= 3.01818 | grad norm= 5088.090741496315
-    [ 76/100] L= 2.87060 | grad norm= 2992.8819671020133
-    [ 81/100] L= 2.75578 | grad norm= 2519.293863233731
-    [ 86/100] L= 2.62924 | grad norm= 2378.915392082205
-    [ 91/100] L= 2.49802 | grad norm= 2648.057012700259
-    [ 96/100] L= 2.36887 | grad norm= 2893.292291950819
-    [100/100] L= 2.25898 | grad norm= 2461.6446989914994
+    [  1/100] L= 84.72070 | grad norm= 180027.359375
+    [  6/100] L= 10.01246 | grad norm= 48586.85546875
+    [ 11/100] L= 8.91487 | grad norm= 45467.7421875
+    [ 16/100] L= 13.30246 | grad norm= 62370.51171875
+    [ 21/100] L= 5.41850 | grad norm= 25824.064453125
+    [ 26/100] L= 4.48008 | grad norm= 15842.63671875
+    [ 31/100] L= 5.78235 | grad norm= 28089.6640625
+    [ 36/100] L= 4.02969 | grad norm= 11638.0986328125
+    [ 41/100] L= 3.77202 | grad norm= 9785.1015625
+    [ 46/100] L= 3.94697 | grad norm= 14470.953125
+    [ 51/100] L= 3.42942 | grad norm= 4729.6884765625
+    [ 56/100] L= 3.39896 | grad norm= 5939.23779296875
+    [ 61/100] L= 3.27782 | grad norm= 5355.69921875
+    [ 66/100] L= 3.09550 | grad norm= 2785.680419921875
+    [ 71/100] L= 3.01818 | grad norm= 5088.08642578125
+    [ 76/100] L= 2.87060 | grad norm= 2992.88916015625
+    [ 81/100] L= 2.75577 | grad norm= 2519.313720703125
+    [ 86/100] L= 2.62924 | grad norm= 2378.92431640625
+    [ 91/100] L= 2.49802 | grad norm= 2648.050537109375
+    [ 96/100] L= 2.36886 | grad norm= 2893.29736328125
+    [100/100] L= 2.25898 | grad norm= 2461.6533203125
 
 
 
@@ -180,14 +180,14 @@ print_lens("Reverse plano-convex", lenses_rplano[0])
     Plano-convex
         inner: 2.714 outer: 1.200
         surface1 []
-        surface2 [-0.003365161886999925]
+        surface2 [-0.0033651620615273714]
     Bi-convex
         inner: 2.716 outer: 1.200
-        surface1 [0.0016848444819891435]
-        surface2 [0.0016848444819891435]
+        surface1 [0.001684844377450645]
+        surface2 [0.001684844377450645]
     Reverse plano-convex
         inner: 2.714 outer: 1.200
-        surface1 [-0.003365161886999925]
+        surface1 [-0.0033651620615273714]
         surface2 []
 
 
@@ -203,20 +203,4 @@ tlm.show3d(optics)
 
 
 <TLMViewer src="./variable_lens_sequence_files/variable_lens_sequence_3.json?url" />
-
-
-
-```python
-from IPython.display import display
-
-tlm.show_part(tlm.export.lens_to_part(lenses_plano[0]))
-tlm.show_part(tlm.export.lens_to_part(lenses_biconvex[0]))
-```
-
-
-<em>part display not supported in vitepress</em>
-
-
-
-<em>part display not supported in vitepress</em>
 

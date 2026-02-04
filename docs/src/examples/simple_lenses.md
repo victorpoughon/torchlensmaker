@@ -8,8 +8,11 @@ An overview of simple lenses - also called "singlet" lenses. A simple lens is ma
 ```python
 import torchlensmaker as tlm
 
-lens = tlm.BiLens(
-    tlm.Sphere(diameter=10, R=20), material="BK7-nd", outer_thickness=0.5
+
+lens = tlm.lenses.symmetric_singlet(
+    tlm.Sphere(diameter=10, R=20),
+    tlm.OuterGap(0.5),
+    material="BK7",
 )
 
 optics = tlm.Sequential(
@@ -31,8 +34,10 @@ tlm.show2d(optics, end=20)
 ```python
 import torchlensmaker as tlm
 
-lens = tlm.BiLens(
-    tlm.Parabola(diameter=10, A=0.03), material="BK7-nd", outer_thickness=0.5
+lens = tlm.lenses.symmetric_singlet(
+    tlm.Parabola(diameter=10, A=0.03),
+    tlm.OuterGap(0.5),
+    material="BK7",
 )
 
 optics = tlm.Sequential(
@@ -54,13 +59,10 @@ tlm.show2d(optics, end=20)
 ```python
 import torchlensmaker as tlm
 
-# The shape given to BiLens is the first surface.
-# The second surface is mirrored by its Y axis.
-# Hence to make a diverging lens, r is negative here
-# Note we also use inner_thickness to specify the lens thickness
-# because the inner thickness is smallest in a diverging lens.
-lens = tlm.BiLens(
-    tlm.Sphere(diameter=10, R=-18), material="BK7-nd", inner_thickness=0.5
+lens = tlm.lenses.symmetric_singlet(
+     tlm.Sphere(diameter=10, R=-18),
+    tlm.InnerGap(0.5),
+    material="BK7",
 )
 
 optics = tlm.Sequential(
@@ -82,11 +84,11 @@ tlm.show2d(optics, end=20)
 ```python
 import torchlensmaker as tlm
 
-lens = tlm.Lens(
+lens = tlm.lenses.singlet(
     tlm.Parabola(diameter=10, A=0.03),
+    tlm.OuterGap(0.5),
     tlm.Sphere(diameter=10, R=30),
-    material="BK7-nd",
-    outer_thickness=0.5,
+    material="BK7",
 )
 
 optics = tlm.Sequential(
@@ -98,29 +100,29 @@ optics = tlm.Sequential(
 tlm.show2d(optics, end=20)
 ```
 
+    [('origin', 'extent'), ('extent', 'origin')]
+
+
 
 <TLMViewer src="./simple_lenses_files/simple_lenses_3.json?url" />
 
 
 ## Plano Lens
 
-To make a plano-concave or plano-convex lens, use the `tlm.PlanoLens` class.
-
 
 ```python
 import torchlensmaker as tlm
 
-lens1 = tlm.PlanoLens(
+lens1 = tlm.lenses.semiplanar_front(
     tlm.Sphere(diameter=10, R=-15),
-    material="BK7-nd",
-    outer_thickness=0.8,
+    tlm.OuterGap(0.8),
+    material="BK7",
 )
 
-lens2 = tlm.PlanoLens(
-    tlm.Sphere(diameter=10, R=15),
-    material="BK7-nd",
-    inner_thickness=0.6,
-    reverse=True,
+lens2 = tlm.lenses.semiplanar_rear(
+    tlm.Sphere(diameter=10, R=-15),
+    tlm.InnerGap(0.6),
+    material="BK7",
 )
 
 optics = tlm.Sequential(

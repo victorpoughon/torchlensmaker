@@ -12,8 +12,7 @@ A = 30
 
 optics = tlm.Sequential(
     tlm.Rotate2D(20),
-    tlm.RaySource(material="air"),
-    tlm.Wavelength(400, 700),
+    tlm.RaySource(material="air", wavelength=(400, 700)),
     tlm.Gap(10),
     tlm.Rotate2D(-20),
     tlm.SubChain(
@@ -27,11 +26,11 @@ optics = tlm.Sequential(
     )
 )
 
-sampling = {"wavelength": 10}
+optics.set_sampling2d(wavelength=10)
 
-output = optics(tlm.default_input(dim=2, dtype=torch.float64, sampling=sampling))
+output = optics(tlm.default_input(dim=2))
 
-tlm.show(optics, dim=2, end=10, sampling=sampling, controls={"color_rays": "wavelength"})
+tlm.show(optics, dim=2, end=10, controls={"color_rays": "wavelength"})
 ```
 
 

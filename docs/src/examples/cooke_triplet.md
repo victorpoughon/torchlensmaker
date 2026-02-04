@@ -29,16 +29,21 @@ Next, we can define the material models for the lenses. In a Cooke Triplet, two 
 material1 = tlm.NonDispersiveMaterial(1.5108)
 material2 = tlm.NonDispersiveMaterial(1.6042)
 
-L1 = tlm.Lens(r1, r2, material=material1, inner_thickness=5.9)
-L2 = tlm.Lens(r3, r4, material=material2, inner_thickness=0.2)
-L3 = tlm.Lens(r5, r6, material=material1, inner_thickness=5.9)
+L1 = tlm.lenses.singlet(r1, tlm.InnerGap(5.9), r2, material=material1)
+L2 = tlm.lenses.singlet(r3, tlm.InnerGap(0.2), r4, material=material2)
+L3 = tlm.lenses.singlet(r5, tlm.InnerGap(5.9), r6, material=material1)
 ```
 
-The distance between the last lens and the image plane is unclear from the document. Let's guess an inital value of 85, but wrap it in `tlm.parameter()`, so we can optimize it later.
+    [('origin', 'origin'), ('origin', 'origin')]
+    [('origin', 'origin'), ('origin', 'origin')]
+    [('origin', 'origin'), ('origin', 'origin')]
+
+
+The distance between the last lens and the image plane is unclear from the document. Let's guess an inital value of 85, and make it trainable in the model.
 
 
 ```python
-focal = tlm.parameter(85)
+focal_gap = tlm.Gap(85, trainable=True)
 ```
 
 Finally, we can define our optical sequence model, by stacking everying together in a `tlm.Sequential` object.
@@ -54,7 +59,7 @@ optics = tlm.Sequential(
     tlm.Aperture(18),
     tlm.Gap(9.4),
     L3,
-    tlm.Gap(focal),
+    focal_gap,
     tlm.ImagePlane(65),
 )
 ```
@@ -72,19 +77,13 @@ tlm.show2d(optics)
 
 
 ```python
-sampling = {"base":1000, "object": 4}
-tlm.show3d(optics, sampling)
-f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
+tlm.show3d(optics, pupil=100, wavelength=4)
+# TODO fix spot diagram
+# f, _ = tlm.spot_diagram(optics, row="object", figsize=(12, 12))
 ```
 
 
 <TLMViewer src="./cooke_triplet_files/cooke_triplet_1.json?url" />
-
-
-
-    
-![png](cooke_triplet_files/cooke_triplet_12_1.png)
-    
 
 
 Looking at the spot diagram, we can see that rays are not focused at all. We can now optimize the parameter we created before, to try to find the best value for the image plane distance.
@@ -93,34 +92,35 @@ Looking at the spot diagram, we can see that rays are not focused at all. We can
 ```python
 import torch.optim as optim
 
+optics.set_sampling2d(pupil=5, field=10, wavelength=3)
 tlm.optimize(optics,
              dim=2,
              optimizer = optim.Adam(optics.parameters(), lr=1e-1),
-             sampling = {"base": 5, "object": 10, "wavelength": 3},
+             
              num_iter=50,
 ).plot()
 
-print("Final parameter value:", focal.item())
+print("Final parameter value:", focal_gap.x.item())
 ```
 
-    [  1/50] L= 2.87443 | grad norm= 1.0778049718619838
-    [  4/50] L= 2.56239 | grad norm= 1.004178459519593
-    [  7/50] L= 2.27377 | grad norm= 0.9309103644628934
-    [ 10/50] L= 2.00944 | grad norm= 0.8583357404101004
-    [ 13/50] L= 1.76991 | grad norm= 0.7868110141016678
-    [ 16/50] L= 1.55535 | grad norm= 0.7167072724997153
-    [ 19/50] L= 1.36554 | grad norm= 0.6484026465160047
-    [ 22/50] L= 1.19987 | grad norm= 0.5822740167518357
-    [ 25/50] L= 1.05737 | grad norm= 0.5186882666748047
-    [ 28/50] L= 0.93670 | grad norm= 0.4579933117715781
-    [ 31/50] L= 0.83624 | grad norm= 0.40050915053625563
-    [ 34/50] L= 0.75414 | grad norm= 0.34651921838567634
-    [ 37/50] L= 0.68838 | grad norm= 0.296262372926638
-    [ 40/50] L= 0.63686 | grad norm= 0.249925883915648
-    [ 43/50] L= 0.59747 | grad norm= 0.2076398242788447
-    [ 46/50] L= 0.56817 | grad norm= 0.169473241107077
-    [ 49/50] L= 0.54704 | grad norm= 0.13543241613960105
-    [ 50/50] L= 0.54151 | grad norm= 0.12499439001795619
+    [  1/50] L= 8.62332 | grad norm= 3.2334253787994385
+    [  4/50] L= 7.68722 | grad norm= 3.0125513076782227
+    [  7/50] L= 6.82136 | grad norm= 2.7927443981170654
+    [ 10/50] L= 6.02833 | grad norm= 2.5750133991241455
+    [ 13/50] L= 5.30975 | grad norm= 2.3604464530944824
+    [ 16/50] L= 4.66607 | grad norm= 2.1501357555389404
+    [ 19/50] L= 4.09666 | grad norm= 1.9452259540557861
+    [ 22/50] L= 3.59965 | grad norm= 1.746840000152588
+    [ 25/50] L= 3.17212 | grad norm= 1.5560805797576904
+    [ 28/50] L= 2.81011 | grad norm= 1.3739957809448242
+    [ 31/50] L= 2.50872 | grad norm= 1.201544165611267
+    [ 34/50] L= 2.26241 | grad norm= 1.0395724773406982
+    [ 37/50] L= 2.06514 | grad norm= 0.8888047337532043
+    [ 40/50] L= 1.91057 | grad norm= 0.7497930526733398
+    [ 43/50] L= 1.79242 | grad norm= 0.6229360103607178
+    [ 46/50] L= 1.70452 | grad norm= 0.5084332227706909
+    [ 49/50] L= 1.64112 | grad norm= 0.40630587935447693
+    [ 50/50] L= 1.62452 | grad norm= 0.37499135732650757
 
 
 
@@ -129,16 +129,17 @@ print("Final parameter value:", focal.item())
     
 
 
-    Final parameter value: 81.08018483236877
+    Final parameter value: 81.08018493652344
 
 
 
 ```python
-f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
+tlm.show2d(optics)
+
+# TODO fix spot diagram
+# f, _ = tlm.spot_diagram(optics, row="object", figsize=(12, 12))
 ```
 
 
-    
-![png](cooke_triplet_files/cooke_triplet_15_0.png)
-    
+<TLMViewer src="./cooke_triplet_files/cooke_triplet_2.json?url" />
 
