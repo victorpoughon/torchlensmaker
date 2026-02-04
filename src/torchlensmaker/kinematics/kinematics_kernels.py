@@ -264,7 +264,6 @@ class Rotate3DKernel(FunctionalKernel):
         z: Float[torch.Tensor, ""],
     ) -> tuple[HomMatrix3D, HomMatrix3D]:
         hom, hom_inv = hom_rotate_3d(y, z)
-        print(hom.dtype, hom_inv.dtype, y.dtype, z.dtype)
         return kinematic_chain_append(dfk, ifk, hom, hom_inv)
 
     @staticmethod
