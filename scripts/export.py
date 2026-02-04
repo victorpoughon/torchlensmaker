@@ -50,29 +50,40 @@ def main():
         default=None,
         metavar="DIR"
     )
+    parser.add_argument(
+        "--allow-fail",
+        action="store_true",
+        help="Skip and continue if an export fails",
+    )
 
     args = parser.parse_args()
 
     for filepath in args.filepaths:
 
-        # dir_path = Path(__file__).resolve().parent.parts
-        fullpath = Path(filepath).resolve()
+        try:
+            # dir_path = Path(__file__).resolve().parent.parts
+            fullpath = Path(filepath).resolve()
 
-        if Path(filepath).is_file():
-            output_folder: Path = fullpath.parent if args.output_dir is None else Path(args.output_dir)
-            print(f"Exporting notebook {filepath} to {output_folder}")
-            export_notebook(Path(filepath), output_folder, args.skip)
-        elif Path(filepath).is_dir():
-            output_folder: Path = fullpath if args.output_dir is None else Path(args.output_dir)
-            print(f"Exporting all notebooks in {filepath} to {output_folder}")
-            export_all(Path(filepath), output_folder, args.skip)
-        else:
-            raise RuntimeError(f"{filepath} not found")
+            if Path(filepath).is_file():
+                output_folder: Path = fullpath.parent if args.output_dir is None else Path(args.output_dir)
+                print(f"Exporting notebook {filepath} to {output_folder}")
+                export_notebook(Path(filepath), output_folder, args.skip)
+            elif Path(filepath).is_dir():
+                output_folder: Path = fullpath if args.output_dir is None else Path(args.output_dir)
+                print(f"Exporting all notebooks in {filepath} to {output_folder}")
+                export_all(Path(filepath), output_folder, args.skip)
+            else:
+                raise RuntimeError(f"{filepath} not found")
+        except Exception as err:
+            print(f"ERROR exporting {filepath}")
+            if not args.allow_fail:
+                raise
+
         
-        # Print markdown list if requested
-        if args.print_md_list:
-            print("Markdown format list:")
-            print_md_list(output_folder)
+    # Print markdown list if requested
+    if args.print_md_list:
+        print(f"Markdown format list for {output_folder}:")
+        print_md_list(output_folder)
 
 
 def export_all(filename: Path, output_folder: Path, skip: bool) -> None:
