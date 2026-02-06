@@ -28,6 +28,9 @@ from torchlensmaker.implicit_surfaces.sag import (
     parabolic_sag_3d,
     spherical_sag_2d,
     spherical_sag_3d,
+    xypolynomial_sag_3d,
+    sag_sum_2d,
+    sag_sum_3d,
 )
 
 
@@ -133,6 +136,25 @@ def test_sag_functions_2d() -> None:
             conical_sag_2d,
             C=torch.tensor(0.0, dtype=dtype, device=device),
             K=torch.tensor(0.44, dtype=dtype, device=device),
+        ),
+        partial(
+            aspheric_sag_2d,
+            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
+        ),
+        partial(
+            sag_sum_2d,
+            sags=[
+                partial(
+                    spherical_sag_2d,
+                    C=torch.tensor(1 / 2.0, dtype=dtype, device=device),
+                ),
+                partial(
+                    aspheric_sag_2d,
+                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample(
+                        (3,)
+                    ),
+                ),
+            ],
         ),
     ]
 
@@ -257,6 +279,25 @@ def test_sag_functions_3d() -> None:
             conical_sag_3d,
             C=torch.tensor(0.0, dtype=dtype, device=device),
             K=torch.tensor(0.44, dtype=dtype, device=device),
+        ),
+        partial(
+            xypolynomial_sag_3d,
+            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3, 3)),
+        ),
+        partial(
+            sag_sum_3d,
+            sags=[
+                partial(
+                    spherical_sag_3d,
+                    C=torch.tensor(1 / 2.0, dtype=dtype, device=device),
+                ),
+                partial(
+                    xypolynomial_sag_3d,
+                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample(
+                        (3, 3)
+                    ),
+                ),
+            ],
         ),
     ]
 
