@@ -74,14 +74,6 @@ class LocalSurface:
         """
         raise NotImplementedError
 
-    def samples2D_half(self, N: int, epsilon: float) -> torch.Tensor:
-        "Generate 2D samples on the half positive domain"
-        raise NotImplementedError
-
-    def samples2D_full(self, N: int, epsilon: float) -> torch.Tensor:
-        "Generate 2D samples on the full domain"
-        raise NotImplementedError
-
     def bounding_radius(self) -> float:
         """
         Any point on the surface has a distance to the center that is less
