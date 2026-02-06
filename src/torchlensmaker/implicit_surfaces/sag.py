@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import TypeAlias, Any, Sequence
+from typing import TypeAlias, Any, Sequence, Callable
 from jaxtyping import Float
 import torch
 
@@ -62,9 +62,10 @@ def spherical_sag_2d_domain(C: ScalarTensor) -> Float[torch.Tensor, " 2"]:
     sign = torch.sign(C)
     return torch.stack((-sign / C, sign / C), dim=-1)
 
+
 def spherical_sag_3d(
     y: BatchTensor, z: BatchTensor, C: ScalarTensor
-) -> tuple[Batch2DTensor, Batch2DTensor]:
+) -> tuple[BatchTensor, Batch2DTensor]:
     "Spherical sag in 3D, parameterized by curvature"
 
     r2 = torch.pow(y, 2) + torch.pow(z, 2)
@@ -87,7 +88,7 @@ def parabolic_sag_2d(
 
 def parabolic_sag_3d(
     y: BatchTensor, z: BatchTensor, A: ScalarTensor
-) -> tuple[Batch2DTensor, Batch2DTensor]:
+) -> tuple[BatchTensor, Batch2DTensor]:
     "Parabolic sag in 3D"
 
     G = torch.mul(A, (y**2 + z**2))
@@ -110,7 +111,7 @@ def conical_sag_2d(
 
 def conical_sag_3d(
     y: BatchTensor, z: BatchTensor, C: ScalarTensor, K: ScalarTensor
-) -> tuple[Batch2DTensor, Batch2DTensor]:
+) -> tuple[BatchTensor, Batch2DTensor]:
     "Conical sag in 3D"
 
     C2 = torch.pow(C, 2)
@@ -139,7 +140,7 @@ def aspheric_sag_2d(
 
 def aspheric_sag_3d(
     y: BatchTensor, z: BatchTensor, coefficients: Float[torch.Tensor, " C"]
-) -> tuple[Batch2DTensor, Batch2DTensor]:
+) -> tuple[BatchTensor, Batch2DTensor]:
     r2 = y**2 + z**2
     C = coefficients.shape[-1]  # number of coefficents
     alphas = bbroad(coefficients, r2.dim())
@@ -151,3 +152,89 @@ def aspheric_sag_3d(
     G_grad = torch.stack((y * coeffs_term, z * coeffs_term), dim=-1)
 
     return G, G_grad
+
+
+def xypolynomial_sag_3d(
+    y: BatchTensor, z: BatchTensor, coefficients: Float[torch.Tensor, "P Q"]
+) -> tuple[BatchTensor, Batch2DTensor]:
+    r"""
+    Sag function for the XY Polynomial model in 3D
+
+    $$
+    G(y,z) = \sum C_{p,q} y^p z^p
+    $$
+    """
+
+    assert coefficients.dim() == 2
+    assert y.shape == z.shape
+    P, Q = coefficients.shape
+    C = bbroad(coefficients, y.dim())
+
+    # We need four different indexing tensors:
+    # 0 to p, 1 to p, 0 to q, 1 to q
+    # and each need to be broadcastable with y and z
+    pindex = torch.arange(P, dtype=y.dtype, device=z.device)
+    qindex = torch.arange(Q, dtype=y.dtype, device=z.device)
+    pdindex = torch.arange(1, P, dtype=y.dtype, device=z.device)
+    qdindex = torch.arange(1, Q, dtype=y.dtype, device=z.device)
+
+    p, q = bbroad(pindex, y.dim()), bbroad(qindex, y.dim())
+    pd, qd = bbroad(pdindex, y.dim()), bbroad(qdindex, y.dim())
+
+    yp = torch.pow(y, p).unsqueeze(1)
+    zq = torch.pow(z, q).unsqueeze(0)
+    xy = yp * zq
+
+    G = torch.sum(torch.sum(C * xy, dim=0), dim=0)
+
+    # Slices of C that don't contain
+    # the first index droped by differentiation
+    Cpd = C[1:, :]
+    Cqd = C[:, 1:]
+
+    ypd = torch.pow(y, pd - 1).unsqueeze(1)
+    innery = pd.unsqueeze(1) * Cpd * ypd * zq
+
+    zqd = torch.pow(z, qd - 1).unsqueeze(0)
+    innerz = qd.unsqueeze(0) * Cqd * yp * zqd
+
+    G_grad = torch.stack(
+        (
+            innery.sum(dim=0).sum(dim=0),
+            innerz.sum(dim=0).sum(dim=0),
+        ),
+        dim=-1,
+    )
+
+    return G, G_grad
+
+
+def sag_sum_2d(
+    r: BatchTensor,
+    sags: Sequence[Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]],
+) -> tuple[BatchTensor, BatchTensor]:
+    # Call the sag function of each term
+    results = [sag(r) for sag in sags]
+
+    # Sum the results
+    g_sum = torch.sum(torch.stack([g for (g, _) in results], dim=0), dim=0)
+    g_grad_sum = torch.sum(
+        torch.stack([g_grad for (_, g_grad) in results], dim=0), dim=0
+    )
+    return g_sum, g_grad_sum
+
+
+def sag_sum_3d(
+    y: BatchTensor,
+    z: BatchTensor,
+    sags: Sequence[Callable[[BatchTensor], tuple[BatchTensor, Batch2DTensor]]],
+) -> tuple[BatchTensor, BatchTensor]:
+    # Call the sag function of each term
+    results = [sag(y, z) for sag in sags]
+
+    # Sum the results
+    g_sum = torch.sum(torch.stack([g for (g, _) in results], dim=0), dim=0)
+    g_grad_sum = torch.sum(
+        torch.stack([g_grad for (_, g_grad) in results], dim=0), dim=0
+    )
+    return g_sum, g_grad_sum
