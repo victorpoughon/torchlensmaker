@@ -26,6 +26,13 @@ BatchTensor: TypeAlias = Float[torch.Tensor, "..."]
 Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
 ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
 
+# r -> g(r), g_grad(r)
+SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]
+
+# y, z -> g(y, z), g_grad(y, z)
+SagFunction3D = Callable[[BatchTensor], tuple[BatchTensor, Batch2DTensor]]
+
+
 
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:
     """
