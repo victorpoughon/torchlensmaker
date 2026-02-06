@@ -227,7 +227,7 @@ def sag_sum_2d(
 def sag_sum_3d(
     y: BatchTensor,
     z: BatchTensor,
-    sags: Sequence[Callable[[BatchTensor], tuple[BatchTensor, Batch2DTensor]]],
+    sags: Sequence[Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]],
 ) -> tuple[BatchTensor, BatchTensor]:
     # Call the sag function of each term
     results = [sag(y, z) for sag in sags]
