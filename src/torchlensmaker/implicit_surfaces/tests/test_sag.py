@@ -285,6 +285,12 @@ def test_sag_functions_3d() -> None:
             coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3, 3)),
         ),
         partial(
+            aspheric_sag_3d,
+            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample(
+                (3,),
+            ),
+        ),
+        partial(
             sag_sum_3d,
             sags=[
                 partial(
