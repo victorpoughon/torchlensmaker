@@ -193,7 +193,7 @@ def cartesian_prod2d_optional(
 
 def bbroad(vector: Tensor, nbatch: int) -> Tensor:
     """
-    Expoands a tensor to be compatible with the dimensions of a batched tensor
+    Expands a tensor to be compatible with the dimensions of a batched tensor
     by appending batch dimensions as needed.
 
     Args:
