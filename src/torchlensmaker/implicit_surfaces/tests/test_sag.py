@@ -165,6 +165,7 @@ def test_sag_functions_2d() -> None:
         torch.linspace(-5.0, 5.0, 100),
         torch.linspace(-5.0, 5.0, 100).reshape((10, 10)),
         torch.linspace(-5.0, 5.0, 100).reshape((10, 2, 5)),
+        torch.linspace(-20.0, 20.0, 100),
     ]
 
     for sag in sags:
@@ -315,6 +316,7 @@ def test_sag_functions_3d() -> None:
         torch.distributions.uniform.Uniform(-5.0, 5.0).sample((10, 2)),
         torch.distributions.uniform.Uniform(-5.0, 5.0).sample((5, 5, 2)),
         torch.distributions.uniform.Uniform(-5.0, 5.0).sample((2, 4, 3, 2)),
+        torch.distributions.uniform.Uniform(-20.0, 20.0).sample((2, 4, 3, 2)),
     ]
 
     for sag in sags:

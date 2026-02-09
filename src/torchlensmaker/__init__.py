@@ -104,6 +104,26 @@ from torchlensmaker.sampling.sampler_elements import (
 )
 from torchlensmaker.sampling.sampling import disk_sampling
 
+###################
+# Implicit surfaces
+###################
+
+from torchlensmaker.implicit_surfaces.implicit_function import (
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
+)
+from torchlensmaker.implicit_surfaces.sag import (
+    spherical_sag_2d,
+    spherical_sag_3d,
+    parabolic_sag_2d,
+    parabolic_sag_3d,
+    conical_sag_2d,
+    conical_sag_3d,
+    aspheric_sag_2d,
+    aspheric_sag_3d,
+    xypolynomial_sag_3d,
+)
+
 ##########
 # Surfaces
 ##########

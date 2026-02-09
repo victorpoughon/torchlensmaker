@@ -33,7 +33,6 @@ SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTenso
 SagFunction3D = Callable[[BatchTensor], tuple[BatchTensor, Batch2DTensor]]
 
 
-
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:
     """
     Gradient safe version of torch.sqrt() that returns 0 where radicand <= 0
@@ -48,7 +47,7 @@ def safe_div(dividend: torch.Tensor, divisor: torch.Tensor) -> torch.Tensor:
     Gradient safe version of torch.div() that returns dividend where divisor == 0
     """
 
-    ok = divisor != torch.zeros((), dtype=divisor.dtype)
+    ok = divisor != torch.zeros((), dtype=divisor.dtype, device=divisor.device)
     safe = torch.ones_like(divisor)
     return torch.div(dividend, torch.where(ok, divisor, safe))
 
@@ -59,8 +58,9 @@ def spherical_sag_2d(
     "Spherical sag in 2D, parameterized by curvature"
 
     r2 = torch.pow(r, 2)
-    g = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
-    g_grad = safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * torch.pow(C, 2)))
+    C2 = torch.pow(C, 2)
+    g = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
+    g_grad = safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * C2))
 
     return g, g_grad
 
@@ -76,8 +76,9 @@ def spherical_sag_3d(
     "Spherical sag in 3D, parameterized by curvature"
 
     r2 = torch.pow(y, 2) + torch.pow(z, 2)
-    G = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * torch.pow(C, 2)))
-    denom = safe_sqrt(1 - r2 * torch.pow(C, 2))
+    C2 = torch.pow(C, 2)
+    G = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
+    denom = safe_sqrt(1 - r2 * C2)
     G_grad = torch.stack((safe_div(y * C, denom), safe_div(z * C, denom)), dim=-1)
 
     return G, G_grad
@@ -110,8 +111,8 @@ def conical_sag_2d(
 
     r2 = torch.pow(r, 2)
     C2 = torch.pow(C, 2)
-    g = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
-    g_grad = torch.div(C * r, torch.sqrt(1 - (1 + K) * r2 * C2))
+    g = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
+    g_grad = safe_div(C * r, safe_sqrt(1 - (1 + K) * r2 * C2))
 
     return g, g_grad
 
@@ -121,12 +122,12 @@ def conical_sag_3d(
 ) -> tuple[BatchTensor, Batch2DTensor]:
     "Conical sag in 3D"
 
-    C2 = torch.pow(C, 2)
     r2 = y**2 + z**2
-    G = torch.div(C * r2, 1 + torch.sqrt(1 - (1 + K) * r2 * C2))
+    C2 = torch.pow(C, 2)
+    G = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
 
-    denom = torch.sqrt(1 - (1 + K) * r2 * C2)
-    G_grad = torch.stack(((C * y) / denom, (C * z) / denom), dim=-1)
+    denom = safe_sqrt(1 - (1 + K) * r2 * C2)
+    G_grad = torch.stack((safe_div(C * y, denom), safe_div(C * z, denom)), dim=-1)
 
     return G, G_grad
 
@@ -234,7 +235,9 @@ def sag_sum_2d(
 def sag_sum_3d(
     y: BatchTensor,
     z: BatchTensor,
-    sags: Sequence[Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]],
+    sags: Sequence[
+        Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
+    ],
 ) -> tuple[BatchTensor, BatchTensor]:
     # Call the sag function of each term
     results = [sag(y, z) for sag in sags]
