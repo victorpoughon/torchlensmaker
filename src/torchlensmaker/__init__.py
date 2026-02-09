@@ -122,7 +122,10 @@ from torchlensmaker.implicit_surfaces.sag import (
     aspheric_sag_2d,
     aspheric_sag_3d,
     xypolynomial_sag_3d,
+    sag_sum_2d,
+    sag_sum_3d,
 )
+from torchlensmaker.implicit_surfaces.implicit_solver import implicit_solver_newton
 
 ##########
 # Surfaces
