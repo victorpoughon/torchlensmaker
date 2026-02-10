@@ -23,7 +23,7 @@ from jaxtyping import Float
 from torchlensmaker.core.tensor_manip import to_tensor, init_param, expand_bool_tuple
 from torchlensmaker.optical_data import OpticalData
 
-from .homogeneous_geometry import (
+from torchlensmaker.types import (
     HomMatrix2D,
     HomMatrix3D,
     HomMatrix,

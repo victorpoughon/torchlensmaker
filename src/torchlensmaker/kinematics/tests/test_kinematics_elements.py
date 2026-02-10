@@ -21,12 +21,11 @@ from typing import Any
 import torch
 import torch.nn as nn
 
+from torchlensmaker.types import HomMatrix2D, HomMatrix3D
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
-    HomMatrix2D,
-    HomMatrix3D,
 )
 
 from torchlensmaker.kinematics.kinematics_elements import (

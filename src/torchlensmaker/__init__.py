@@ -18,6 +18,21 @@
 
 import torch
 
+#######
+# Types
+#######
+
+from torchlensmaker.types import (
+    ScalarTensor,
+    BatchTensor,
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+    HomMatrix2D,
+    HomMatrix3D,
+    HomMatrix,
+)
+
 ######
 # Core
 ######
@@ -51,9 +66,6 @@ from torchlensmaker.core.tensor_manip import to_tensor
 ############
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    HomMatrix2D,
-    HomMatrix3D,
-    HomMatrix,
     transform_points,
     transform_vectors,
     hom_identity,

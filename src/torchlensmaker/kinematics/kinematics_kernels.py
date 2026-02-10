@@ -17,9 +17,12 @@
 import torch
 from jaxtyping import Float
 
-from .homogeneous_geometry import (
+from torchlensmaker.types import (
     HomMatrix2D,
     HomMatrix3D,
+)
+
+from .homogeneous_geometry import (
     hom_rotate_2d,
     hom_rotate_3d,
     hom_translate_2d,

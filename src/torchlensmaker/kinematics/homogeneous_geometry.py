@@ -22,9 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
-HomMatrix2D: TypeAlias = Float[torch.Tensor, "3 3"]
-HomMatrix3D: TypeAlias = Float[torch.Tensor, "4 4"]
-HomMatrix: TypeAlias = HomMatrix2D | HomMatrix3D
+from torchlensmaker.types import HomMatrix2D, HomMatrix3D, HomMatrix
 
 
 def hom_matrix_2d(M: Float[torch.Tensor, "2 2"]) -> HomMatrix2D:
