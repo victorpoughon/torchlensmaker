@@ -30,7 +30,7 @@ ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
 SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]
 
 # y, z -> g(y, z), g_grad(y, z)
-SagFunction3D = Callable[[BatchTensor], tuple[BatchTensor, Batch2DTensor]]
+SagFunction3D = Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
 
 
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:

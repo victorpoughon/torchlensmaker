@@ -91,9 +91,9 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
         dfk: HomMatrix,
         ifk: HomMatrix,
         C: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, tuple[HomMatrix, HomMatrix]]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
         # TODO static kernel parameter?
-        num_iter = 3
+        num_iter: int = 3
 
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
