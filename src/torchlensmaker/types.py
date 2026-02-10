@@ -16,7 +16,7 @@
 
 
 from typing import TypeAlias
-from jaxtyping import Float
+from jaxtyping import Float, Bool
 import torch
 
 ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
@@ -28,3 +28,5 @@ BatchNDTensor: TypeAlias = Float[torch.Tensor, "... D"]
 HomMatrix2D: TypeAlias = Float[torch.Tensor, "3 3"]
 HomMatrix3D: TypeAlias = Float[torch.Tensor, "4 4"]
 HomMatrix: TypeAlias = HomMatrix2D | HomMatrix3D
+
+MaskTensor: TypeAlias = Bool[torch.Tensor, "..."]

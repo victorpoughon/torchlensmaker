@@ -27,6 +27,7 @@ from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
+    MaskTensor,
     HomMatrix,
 )
 
@@ -90,7 +91,7 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
         dfk: HomMatrix,
         ifk: HomMatrix,
         C: ScalarTensor,
-    ):
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, tuple[HomMatrix, HomMatrix]]:
         # TODO static kernel parameter?
         num_iter = 3
 

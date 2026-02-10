@@ -122,6 +122,7 @@ def raytrace(
     # Convert rays to surface local frame
     P_local, V_local = transform_rays(hom_inv, P, V)
 
+    # Call the local solver
     t, local_normals = local_solver(P_local, V_local)
 
     # TODO domain constraint?
