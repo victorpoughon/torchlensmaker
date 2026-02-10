@@ -170,7 +170,7 @@ class LinspaceSampling1DKernel(FunctionalKernel):
     def example_params(
         dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
-        return (torch.tensor(10, dtype=torch.int64),)
+        return (torch.tensor(10, dtype=torch.int64, device=device),)
 
 
 class LinspaceSampling2DKernel(FunctionalKernel):
@@ -206,8 +206,8 @@ class LinspaceSampling2DKernel(FunctionalKernel):
         dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
-            torch.tensor(10, dtype=torch.int64),
-            torch.tensor(11, dtype=torch.int64),
+            torch.tensor(10, dtype=torch.int64, device=device),
+            torch.tensor(11, dtype=torch.int64, device=device),
         )
 
 
@@ -240,6 +240,6 @@ class DiskSampling2DKernel(FunctionalKernel):
         dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
-            torch.tensor(10, dtype=torch.int64),
-            torch.tensor(11, dtype=torch.int64),
+            torch.tensor(10, dtype=torch.int64, device=device),
+            torch.tensor(11, dtype=torch.int64, device=device),
         )
