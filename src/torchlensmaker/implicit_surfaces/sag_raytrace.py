@@ -18,14 +18,18 @@ from typing import Callable, TypeAlias
 from jaxtyping import Float, Int
 import torch
 
+from torchlensmaker.types import (
+    BatchTensor,
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+)
+
 from .sag_functions import SagFunction2D, SagFunction3D
 from .implicit_solver import (
     implicit_solver_newton,
     ImplicitFunction2D,
     ImplicitFunction3D,
-    BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -96,12 +100,12 @@ LocalSolver: TypeAlias = Callable[
 
 
 def raytrace(
-    P: Float[torch.Tensor, "N D"],
-    V: Float[torch.Tensor, "N D"],
+    P: BatchNDTensor,
+    V: BatchNDTensor,
     hom: HomMatrix,
     hom_inv: HomMatrix,
     local_solver: LocalSolver,
-):
+) -> tuple[BatchTensor, BatchNDTensor]:
     """
     Surface raytracing
 

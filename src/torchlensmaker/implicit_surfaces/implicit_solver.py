@@ -15,14 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TypeAlias, Callable
-from jaxtyping import Float
+from jaxtyping import Float, Int
 import torch
 
-BatchTensor: TypeAlias = Float[torch.Tensor, "..."]
-Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
-Batch3DTensor: TypeAlias = Float[torch.Tensor, "... 3"]
-ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
+from torchlensmaker.types import (
+    BatchTensor,
+    Batch2DTensor,
+    Batch3DTensor,
+)
 
+from torch._higher_order_ops import while_loop
 
 # x, r -> F(x, r), F_grad(x, r)
 ImplicitFunction2D: TypeAlias = Callable[
@@ -43,6 +45,7 @@ def implicit_solver_newton(
 ) -> Float[torch.Tensor, " N"]:
     """
     Newton's method, diffentiable over the last iteration
+    This version exports with static loop unrolling
     """
 
     # Initialize t at zero
@@ -65,5 +68,46 @@ def implicit_solver_newton(
     F, F_grad = implicit_function(points)
     delta = F / torch.sum(F_grad * V, dim=-1)
     t = t - delta
+
+    return t
+
+
+def implicit_solver_newton_while_loop(
+    P: Float[torch.Tensor, "N D"],
+    V: Float[torch.Tensor, "N D"],
+    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
+    num_iter: Int[torch.Tensor, ""],
+) -> Float[torch.Tensor, " N"]:
+    """
+    Newton's method, diffentiable over the last iteration
+
+    This version should export with ONNX Loop operator,
+    when PyTorch support is ready:
+    https://github.com/pytorch/pytorch/pull/162645
+    https://github.com/pytorch/pytorch/issues/172568
+    """
+
+    def cond_fn(t, i, n):
+        return i < (n - 1)
+
+    def body_fn(t, i, n):
+        points = P + t.unsqueeze(-1) * V
+        F, F_grad = implicit_function(points)
+
+        delta = F / torch.sum(F_grad * V, dim=-1)
+        t = t - delta
+        i = i + 1
+        return t, i, n.clone()
+
+    # Initialize t at zero
+    t = torch.zeros_like(P[..., -1])
+    i = torch.zeros((), dtype=torch.int64, device=num_iter.device)
+
+    # Do N - 1 non differentiable steps
+    with torch.no_grad():
+        t, i, _ = while_loop(cond_fn, body_fn, (t, i, num_iter))
+
+    # One differentiable step
+    t, i, _ = body_fn(t, i, num_iter)
 
     return t
