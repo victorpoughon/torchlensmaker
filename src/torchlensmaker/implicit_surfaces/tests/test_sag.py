@@ -19,7 +19,7 @@ from functools import partial
 
 import torch
 
-from torchlensmaker.implicit_surfaces.sag import (
+from torchlensmaker.implicit_surfaces.sag_functions import (
     aspheric_sag_2d,
     aspheric_sag_3d,
     conical_sag_2d,
