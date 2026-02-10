@@ -23,6 +23,7 @@ from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
+    HomMatrix,
 )
 
 from .sag_functions import SagFunction2D, SagFunction3D
@@ -33,7 +34,6 @@ from .implicit_solver import (
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    HomMatrix,
     transform_rays,
     transform_vectors,
 )
@@ -72,8 +72,8 @@ def sag_surface_local_raytrace_2d(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
     sag_function: SagFunction2D,
-    num_iter: Int[torch.Tensor, ""],
-):
+    num_iter: int,
+) -> tuple[BatchTensor, Batch2DTensor]:
     """
     Sag surface 2D raytracing in local frame of reference
     """
