@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Callable, TypeAlias
 from jaxtyping import Float, Int
 import torch
 
@@ -25,6 +26,12 @@ from .implicit_solver import (
     BatchTensor,
     Batch2DTensor,
     Batch3DTensor,
+)
+
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    HomMatrix,
+    transform_rays,
+    transform_vectors,
 )
 
 
@@ -58,9 +65,9 @@ def sag_to_implicit_3d(sag: SagFunction3D) -> ImplicitFunction3D:
 
 
 def sag_surface_local_raytrace_2d(
-    sag_function: SagFunction2D,
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
+    sag_function: SagFunction2D,
     num_iter: Int[torch.Tensor, ""],
 ):
     """
@@ -78,12 +85,52 @@ def sag_surface_local_raytrace_2d(
     points = P + t.unsqueeze(-1) * V
     _, normals = implicit_function(points)
 
+    return t, normals
+
+
+# (P, V) -> t, normals
+LocalSolver: TypeAlias = Callable[
+    [Float[torch.Tensor, "N D"], Float[torch.Tensor, "N D"]],
+    tuple[Float[torch.Tensor, "  N"], Float[torch.Tensor, "N D"]],
+]
+
+
+def raytrace(
+    P: Float[torch.Tensor, "N D"],
+    V: Float[torch.Tensor, "N D"],
+    hom: HomMatrix,
+    hom_inv: HomMatrix,
+    local_solver: LocalSolver,
+):
+    """
+    Surface raytracing
+
+    Args:
+        P, V: rays
+        hom, hom_inv: kinematic transform applied to the surface
+        implicit_solver
+
+    Returns:
+        * t: parameter such that P + tV is the surface ray intersection point
+        * normals: normal unit vectors at the intersection, such that dot(normal, V) < 0
+    """
+
+    # Convert rays to surface local frame
+    P_local, V_local = transform_rays(hom_inv, P, V)
+
+    t, local_normals = local_solver(P_local, V_local)
+
+    # TODO domain constraint?
+
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection
     # i.e. the normal such that dot(normal, ray) < 0
-    dot = torch.sum(normals * V, dim=-1)
+    dot = torch.sum(local_normals * V, dim=-1)
     opposite_normals = torch.where(
-        (dot > 0).unsqueeze(-1).expand_as(normals), -normals, normals
+        (dot > 0).unsqueeze(-1).expand_as(local_normals), -local_normals, local_normals
     )
 
-    return t, opposite_normals
+    # Convert normals to global frame
+    global_normals = transform_vectors(hom, opposite_normals)
+
+    return t, global_normals
