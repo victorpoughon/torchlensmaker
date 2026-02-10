@@ -14,30 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-from typing import TypeAlias, Any, Sequence, Callable
-from jaxtyping import Float
+from jaxtyping import Float, Int
 import torch
 
-from torchlensmaker.core.tensor_manip import bbroad
-
-from .sag import SagFunction2D, SagFunction3D
-
-BatchTensor: TypeAlias = Float[torch.Tensor, "..."]
-Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
-Batch3DTensor: TypeAlias = Float[torch.Tensor, "... 3"]
-ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
-
-
-# x, r -> F(x, r), F_grad(x, r)
-ImplicitFunction2D: TypeAlias = Callable[
-    [Batch2DTensor], tuple[BatchTensor, BatchTensor]
-]
-
-# x, y, z -> F(x, y, z), F_grad(x, y, z)
-ImplicitFunction3D: TypeAlias = Callable[
-    [Batch3DTensor], tuple[BatchTensor, Batch3DTensor]
-]
+from .sag_functions import SagFunction2D, SagFunction3D
+from .implicit_solver import (
+    implicit_solver_newton,
+    ImplicitFunction2D,
+    ImplicitFunction3D,
+    BatchTensor,
+    Batch2DTensor,
+    Batch3DTensor,
+)
 
 
 def sag_to_implicit_2d(sag: SagFunction2D) -> ImplicitFunction2D:
@@ -67,3 +55,35 @@ def sag_to_implicit_3d(sag: SagFunction3D) -> ImplicitFunction3D:
         return f, f_grad
 
     return implicit
+
+
+def sag_surface_local_raytrace_2d(
+    sag_function: SagFunction2D,
+    P: Float[torch.Tensor, "N D"],
+    V: Float[torch.Tensor, "N D"],
+    num_iter: Int[torch.Tensor, ""],
+):
+    """
+    Sag surface 2D raytracing in local frame of reference
+    """
+
+    implicit_function = sag_to_implicit_2d(sag_function)
+    t = implicit_solver_newton(P, V, implicit_function, num_iter)
+
+    # Note that here the raytracing is not constrained to the domain of the sag
+    # function defined by the lens diameter. The sag function typically extends
+    # beyond that domain and some solution here might be outside of it.
+
+    # Compute normals
+    points = P + t.unsqueeze(-1) * V
+    _, normals = implicit_function(points)
+
+    # A surface always has two opposite normals, so keep the one pointing
+    # against the ray, because that's what we need for refraction / reflection
+    # i.e. the normal such that dot(normal, ray) < 0
+    dot = torch.sum(normals * V, dim=-1)
+    opposite_normals = torch.where(
+        (dot > 0).unsqueeze(-1).expand_as(normals), -normals, normals
+    )
+
+    return t, opposite_normals

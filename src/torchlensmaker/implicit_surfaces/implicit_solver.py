@@ -14,11 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import TypeAlias, Callable
 from jaxtyping import Float
 import torch
 
+BatchTensor: TypeAlias = Float[torch.Tensor, "..."]
+Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
+Batch3DTensor: TypeAlias = Float[torch.Tensor, "... 3"]
+ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
 
-from .implicit_function import ImplicitFunction2D, ImplicitFunction3D
+
+# x, r -> F(x, r), F_grad(x, r)
+ImplicitFunction2D: TypeAlias = Callable[
+    [Batch2DTensor], tuple[BatchTensor, BatchTensor]
+]
+
+# x, y, z -> F(x, y, z), F_grad(x, y, z)
+ImplicitFunction3D: TypeAlias = Callable[
+    [Batch3DTensor], tuple[BatchTensor, Batch3DTensor]
+]
 
 
 def implicit_solver_newton(
