@@ -40,10 +40,7 @@ from .sag_functions import spherical_sag_2d
 from .sag_raytrace import sag_surface_local_raytrace_2d, raytrace
 
 # PHASE 1
-# implement basic sphere2D kernel
-# implement basic sphere2D element
 # test sphere2D element in notebook with rays and tlmviewer export
-# test onnx export of basic sphere2D kernel
 
 # PHASE 2
 # add misssing features:
@@ -73,7 +70,14 @@ def example_rays_2d(
     return P, V
 
 
-class Sphere2DSurfaceKernel(FunctionalKernel):
+def lens_diameter_domain_2d(
+    P: Batch2DTensor, V: Batch2DTensor, t: BatchTensor, diameter: ScalarTensor
+) -> MaskTensor:
+    points = P + t.unsqueeze(-1) * V
+    return torch.abs(points[..., 1]) <= diameter
+
+
+class SphereC2DSurfaceKernel(FunctionalKernel):
     """
     Functional kernel for a 2D spherical arc parameterized by:
         - signed surface curvature
@@ -81,7 +85,7 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
     """
 
     input_names = ["P", "V", "dfk_in", "ifk_in"]
-    param_names = ["C"]
+    param_names = ["diameter", "C"]
     output_names = ["t", "normals", "valid", "dfk_out", "ifk_out"]
 
     @staticmethod
@@ -90,6 +94,7 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
         V: Batch2DTensor,
         dfk: HomMatrix,
         ifk: HomMatrix,
+        diameter: ScalarTensor,
         C: ScalarTensor,
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
         # TODO static kernel parameter?
@@ -106,8 +111,8 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
         # Perform raytrace
         t, normals = raytrace(P, V, dfk, ifk, local_solver)
 
-        # for now, all valid
-        valid = torch.full_like(t, True)
+        # Apply domain defined by the diameter
+        valid = lens_diameter_domain_2d(P, V, t, diameter)
 
         return t, normals, valid, dfk + 0, ifk + 0
 
@@ -123,4 +128,7 @@ class Sphere2DSurfaceKernel(FunctionalKernel):
     def example_params(
         dtype: torch.dtype, device: torch.device
     ) -> tuple[Float[torch.Tensor, ""]]:
-        return (torch.tensor(0.5, dtype=dtype, device=device),)
+        return (
+            torch.tensor(10.0, dtype=dtype, device=device),
+            torch.tensor(0.5, dtype=dtype, device=device),
+        )
