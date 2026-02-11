@@ -126,6 +126,7 @@ from torchlensmaker.implicit_surfaces.sag_functions import (
     sag_sum_3d,
 )
 from torchlensmaker.implicit_surfaces.implicit_solver import implicit_solver_newton
+from torchlensmaker.implicit_surfaces.surface_elements import SphereC
 
 ##########
 # Surfaces
@@ -240,6 +241,7 @@ from torchlensmaker.viewer.tlmviewer import (
     render_rays,
     render_points,
     render_collisions,
+    render_arrows,
     render_surface,
     render_surface_local,
     new_scene,
