@@ -31,26 +31,29 @@ from torchlensmaker.types import (
     HomMatrix,
 )
 
-from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    hom_scale,
+    hom_identity_2d,
+    hom_translate_2d,
+    kinematic_chain_append,
+    kinematic_chain_extend,
+)
 
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from .sag_functions import spherical_sag_2d
+from .sag_functions import spherical_sag_2d, SagFunction2D
 
 from .sag_raytrace import sag_surface_local_raytrace_2d, raytrace
 
-# PHASE 1
-# test sphere2D element in notebook with rays and tlmviewer export
 
 # PHASE 2
-# add misssing features:
-# TODO scale and anchor
-# TODO add domain to raytrace, compute collision mask
+# add visu of valid mask in notebook
+# split surface kernel into 2: kinematic part and raytracing part
 
 # PHASE 3
 # add other sag kernels / elements
 # add other implicit surfaces (non sag)
-# add explicit surfaces (plane, sphereR)
+# add explicit surfaces (plane, sphereR, parabola)
 
 
 def example_rays_2d(
@@ -70,22 +73,67 @@ def example_rays_2d(
 
 
 def lens_diameter_domain_2d(
-    P: Batch2DTensor, V: Batch2DTensor, t: BatchTensor, diameter: ScalarTensor
+    points: Batch2DTensor, diameter: ScalarTensor
 ) -> MaskTensor:
-    points = P + t.unsqueeze(-1) * V
     return torch.abs(points[..., 1]) <= diameter / 2
 
+
+def sag_anchor_transforms_2d(
+    sag: SagFunction2D,
+    diameter: ScalarTensor,
+    anchors: Float[torch.Tensor, " 2"],
+    scale: ScalarTensor,
+    dfk: HomMatrix,
+    ifk: HomMatrix,
+) -> tuple[HomMatrix, HomMatrix, HomMatrix, HomMatrix]:
+    # First anchor transform
+    extent0, _ = sag(anchors[0] * diameter / 2)
+    t0_x = -scale * extent0
+    t0_y = torch.zeros_like(t0_x)
+    hom0, hom0_inv = hom_translate_2d(torch.stack((t0_x, t0_y), dim=-1))
+
+    # Second anchor transform
+    extent1, _ = sag(anchors[1] * diameter / 2)
+    t1_x = scale * extent1
+    t1_y = torch.zeros_like(t0_y)
+    hom1, hom1_inv = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
+
+    # Compose with the existing kinematic chain
+    scale_hom, scale_hom_inv = hom_scale(2, scale)
+    surface_dfk, surface_ifk = kinematic_chain_extend(
+        dfk, ifk, [hom0, scale_hom], [hom0_inv, scale_hom_inv]
+    )
+    next_dfk, next_ifk = kinematic_chain_extend(
+        dfk, ifk, [hom0, hom1], [hom0_inv, hom1_inv]
+    )
+
+    return surface_dfk, surface_ifk, next_dfk, next_ifk
+
+
+# TODO split into
+# SurfaceKinematicKernel  // positions a surface on the kinematic chain
+# Sphere                  // raytracing
 
 class SphereC2DSurfaceKernel(FunctionalKernel):
     """
     Functional kernel for a 2D spherical arc parameterized by:
         - signed surface curvature
         - lens diameter
+
+    with support for anchors and scale.
     """
 
     input_names = ["P", "V", "dfk_in", "ifk_in"]
-    param_names = ["diameter", "C"]
-    output_names = ["t", "normals", "valid", "dfk_out", "ifk_out"]
+    param_names = ["diameter", "C", "anchors", "scale"]
+    output_names = [
+        "t",
+        "normals",
+        "valid",
+        "surface_dfk",
+        "surface_ifk",
+        "dfk_out",
+        "ifk_out",
+    ]
 
     @staticmethod
     def forward(
@@ -95,7 +143,17 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         ifk: HomMatrix,
         diameter: ScalarTensor,
         C: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
+        anchors: Float[torch.Tensor, " 2"],
+        scale: ScalarTensor,
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        HomMatrix,
+        HomMatrix,
+        HomMatrix,
+        HomMatrix,
+    ]:
         # TODO static kernel parameter?
         num_iter: int = 3
 
@@ -107,13 +165,20 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
             num_iter=num_iter,
         )
 
+        # Compute anchor transforms from anchors and scale
+        surface_dfk, surface_ifk, next_dfk, next_ifk = sag_anchor_transforms_2d(
+            sag, diameter, anchors, scale, dfk, ifk
+        )
+
+        # Domain function defined by the lens diamter
+        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
+
         # Perform raytrace
-        t, normals = raytrace(P, V, dfk, ifk, local_solver)
+        t, normals, valid = raytrace(
+            P, V, surface_dfk, surface_ifk, local_solver, domain_function
+        )
 
-        # Apply domain defined by the diameter
-        valid = lens_diameter_domain_2d(P, V, t, diameter)
-
-        return t, normals, valid, dfk + 0, ifk + 0
+        return t, normals, valid, surface_dfk, surface_ifk, next_dfk, next_ifk
 
     @staticmethod
     def example_inputs(

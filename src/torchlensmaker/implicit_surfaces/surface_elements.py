@@ -18,6 +18,7 @@ import torch
 import torch.nn as nn
 
 
+from jaxtyping import Float
 from typing import Self
 
 from torchlensmaker.types import (
@@ -45,14 +46,21 @@ class SphereC(nn.Module):
         self,
         diameter: float | ScalarTensor,
         C: float | ScalarTensor | nn.Parameter,
+        *,
+        anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
+        scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
+        self.anchors = init_param(self, "anchors", anchors, False)
+        self.scale = init_param(self, "scale", scale, False)
         self.func2d = SphereC2DSurfaceKernel()
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, dfk: BatchTensor, ifk: BatchTensor
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
-        return self.func2d.forward(P, V, dfk, ifk, self.diameter, self.C)
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix, HomMatrix, HomMatrix]:
+        return self.func2d.forward(
+            P, V, dfk, ifk, self.diameter, self.C, self.anchors, self.scale
+        )
