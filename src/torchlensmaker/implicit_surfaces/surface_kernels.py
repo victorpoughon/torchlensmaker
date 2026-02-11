@@ -46,16 +46,6 @@ from .sag_functions import spherical_sag_2d, SagFunction2D
 from .sag_raytrace import sag_surface_local_raytrace_2d, raytrace
 
 
-# PHASE 2
-# add visu of valid mask in notebook
-# split surface kernel into 2: kinematic part and raytracing part
-
-# PHASE 3
-# add other sag kernels / elements
-# add other implicit surfaces (non sag)
-# add explicit surfaces (plane, sphereR, parabola)
-
-
 def example_rays_2d(
     N: int, dtype: torch.dtype, device: torch.device
 ) -> tuple[BatchNDTensor, BatchNDTensor]:
@@ -109,10 +99,6 @@ def sag_anchor_transforms_2d(
 
     return surface_dfk, surface_ifk, next_dfk, next_ifk
 
-
-# TODO split into
-# SurfaceKinematicKernel  // positions a surface on the kinematic chain
-# Sphere                  // raytracing
 
 class SphereC2DSurfaceKernel(FunctionalKernel):
     """
