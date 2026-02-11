@@ -39,12 +39,18 @@ class Sphere(nn.Module):
     scale
     """
 
-    def __init__(self, C: ScalarTensor | float, trainable: bool = True):
+    def __init__(
+        self,
+        C: float | ScalarTensor | nn.Parameter,
+        trainable: bool = True,
+        scale: float = 1.0,
+    ):
         super().__init__()
         self.C = init_param(self, "C", C, trainable)
+        self.scale = scale
         self.func2d = Sphere2DSurfaceKernel()
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, dfk: BatchTensor, ifk: BatchTensor
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
-        return self.func2d.forward(P, V, dfk, ifk, self.C)
+        return self.func2d.forward(P, V, dfk, ifk, self.scale * self.C)
