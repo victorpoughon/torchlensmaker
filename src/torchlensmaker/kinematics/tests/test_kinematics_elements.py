@@ -40,6 +40,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Gap,
     Rotate,
     Translate,
+    KinematicSequential,
 )
 
 from torchlensmaker.testing.test_utils import (
@@ -204,7 +205,7 @@ def test_elements_3d() -> None:
     torch.set_default_dtype(dtype)
     torch.set_default_device(device)
 
-    T3d = nn.Parameter(torch.tensor([5.0, 2.0, -15.0]))
+    T3d = torch.tensor([5.0, 2.0, -15.0])
 
     elements_3d = nn.ModuleList(
         [
@@ -270,7 +271,7 @@ def test_trainable_elements_3d() -> None:
     torch.set_default_dtype(dtype)
     torch.set_default_device(device)
 
-    T3d = nn.Parameter(torch.tensor([5.0, 2.0, -15.0]))
+    T3d = torch.tensor([5.0, 2.0, -15.0])
 
     elements_3d = nn.ModuleList(
         [
@@ -390,3 +391,17 @@ def test_trainable_elements_mixed() -> None:
         check_kinematic_element_3d(element, True, dtype, device, allow_none_grad=True)
 
         # TODO reverse mixed
+
+
+def test_elements_shared_parameter() -> None:
+    """
+    Test sharing parameters between elements
+    """
+
+    a = Gap(5.0, trainable=True)
+    b = Gap(x=a.x)
+
+    seq = KinematicSequential(a, b)
+
+    assert len(list(seq.named_parameters())) == 1
+    assert a.x is b.x

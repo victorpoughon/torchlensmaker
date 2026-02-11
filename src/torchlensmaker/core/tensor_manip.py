@@ -72,12 +72,18 @@ def to_tensor_detached(
 def init_param(
     parent: nn.Module,
     name: str,
-    val: float | torch.Tensor | list[float],
+    val: float | list[float] | torch.Tensor | nn.Parameter,
     trainable: bool = False,
     default_dtype: torch.dtype | None = None,
     default_device: torch.device | None = None,
 ) -> torch.Tensor:
     """Register parameter or buffer with proper device/dtype handling."""
+
+    # If val is already a parameter, it is to be shared
+    if isinstance(val, torch.Tensor) and val.requires_grad:
+        return val
+
+    # Else, create a new buffer / parameter depending on trainable argument
     t = to_tensor_detached(val, default_dtype, default_device)
     if trainable:
         p = nn.Parameter(t)

@@ -27,6 +27,7 @@ from torchlensmaker.types import (
     HomMatrix2D,
     HomMatrix3D,
     HomMatrix,
+    ScalarTensor,
 )
 from .kinematics_kernels import (
     AbsolutePosition2DKernel,
@@ -87,7 +88,7 @@ class Gap(KinematicElement):
 
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float,
+        x: float | ScalarTensor | nn.Parameter,
         trainable: bool = False,
     ):
         super().__init__()
@@ -102,14 +103,14 @@ class Gap(KinematicElement):
             return self.func3d.forward(dfk, ifk, self.x)
 
     def reverse(self) -> Self:
-        return type(self)(-self.x, self.x.requires_grad)
+        return type(self)(-self.x.detach(), self.x.requires_grad)
 
 
 class Translate2D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float = 0.0,
-        y: Float[torch.Tensor, ""] | float = 0.0,
+        x: float | ScalarTensor | nn.Parameter = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -125,14 +126,14 @@ class Translate2D(KinematicElement):
 
     def reverse(self) -> Self:
         return type(self)(
-            -self.x, -self.y, (self.x.requires_grad, self.y.requires_grad)
+            -self.x.detach(), -self.y.detach(), (self.x.requires_grad, self.y.requires_grad)
         )
 
 
 class TranslateVec2D(KinematicElement):
     def __init__(
         self,
-        t: Float[torch.Tensor, "2"] | list[float],
+        t: list[float] | Float[torch.Tensor, "2"] | nn.Parameter,
         trainable: bool = False,
     ):
         super().__init__()
@@ -145,15 +146,15 @@ class TranslateVec2D(KinematicElement):
         return self.func.forward(dfk, ifk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
-        return type(self)(-self.t, self.t.requires_grad)
+        return type(self)(-self.t.detach(), self.t.requires_grad)
 
 
 class Translate3D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float = 0.0,
-        y: Float[torch.Tensor, ""] | float = 0.0,
-        z: Float[torch.Tensor, ""] | float = 0.0,
+        x: float | ScalarTensor | nn.Parameter = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
+        z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -170,9 +171,9 @@ class Translate3D(KinematicElement):
 
     def reverse(self) -> Self:
         return type(self)(
-            -self.x,
-            -self.y,
-            -self.z,
+            -self.x.detach(),
+            -self.y.detach(),
+            -self.z.detach(),
             (self.x.requires_grad, self.y.requires_grad, self.z.requires_grad),
         )
 
@@ -180,7 +181,7 @@ class Translate3D(KinematicElement):
 class TranslateVec3D(KinematicElement):
     def __init__(
         self,
-        t: Float[torch.Tensor, "3"] | list[float],
+        t: list[float] | Float[torch.Tensor, "3"] | nn.Parameter,
         trainable: bool = False,
     ):
         super().__init__()
@@ -193,7 +194,7 @@ class TranslateVec3D(KinematicElement):
         return self.func.forward(dfk, ifk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
-        return type(self)(-self.t, self.t.requires_grad)
+        return type(self)(-self.t.detach(), self.t.requires_grad)
 
 
 class Rotate2D(KinematicElement):
@@ -201,7 +202,7 @@ class Rotate2D(KinematicElement):
 
     def __init__(
         self,
-        theta: Float[torch.Tensor, ""] | float = 0.0,
+        theta: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool = False,
     ):
         super().__init__()
@@ -214,14 +215,14 @@ class Rotate2D(KinematicElement):
         return self.func.forward(dfk, ifk, self.theta)
 
     def reverse(self) -> Self:
-        return type(self)(-self.theta, self.theta.requires_grad)
+        return type(self)(-self.theta.detach(), self.theta.requires_grad)
 
 
 class AbsolutePosition2D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float = 0.0,
-        y: Float[torch.Tensor, ""] | float = 0.0,
+        x: float | ScalarTensor | nn.Parameter = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -242,9 +243,9 @@ class AbsolutePosition2D(KinematicElement):
 class AbsolutePosition3D(KinematicElement):
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float = 0.0,
-        y: Float[torch.Tensor, ""] | float = 0.0,
-        z: Float[torch.Tensor, ""] | float = 0.0,
+        x: float | ScalarTensor | nn.Parameter = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
+        z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -266,8 +267,8 @@ class AbsolutePosition3D(KinematicElement):
 class Rotate3D(KinematicElement):
     def __init__(
         self,
-        y: Float[torch.Tensor, ""] | float = 0.0,
-        z: Float[torch.Tensor, ""] | float = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
+        z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -291,7 +292,7 @@ class Rotate(KinematicElement):
 
     def __init__(
         self,
-        angles: tuple[float] | Float[torch.Tensor, "2"],
+        angles: tuple[float] | Float[torch.Tensor, "2"] | nn.Parameter,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
@@ -316,9 +317,9 @@ class Translate(KinematicElement):
 
     def __init__(
         self,
-        x: Float[torch.Tensor, ""] | float = 0.0,
-        y: Float[torch.Tensor, ""] | float = 0.0,
-        z: Float[torch.Tensor, ""] | float = 0.0,
+        x: float | ScalarTensor | nn.Parameter = 0.0,
+        y: float | ScalarTensor | nn.Parameter = 0.0,
+        z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
