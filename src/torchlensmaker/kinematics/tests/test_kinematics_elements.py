@@ -98,7 +98,7 @@ def check_valid_kinematic_chain_3d(
 
 
 def check_kinematic_element_2d(
-    element: nn.ModuleList,
+    element: nn.Module,
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
@@ -119,7 +119,7 @@ def check_kinematic_element_2d(
 
 
 def check_kinematic_element_3d(
-    element: nn.ModuleList,
+    element: nn.Module,
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
