@@ -253,6 +253,13 @@ def render_points(
     }
 
 
+def render_arrows(points: Tensor, normals: Tensor) -> Any:
+    return {
+        "type": "arrows",
+        "data": [n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)],
+    }
+
+
 def render_collisions(points: Tensor, normals: Tensor) -> Any:
     g1 = {
         "type": "points",

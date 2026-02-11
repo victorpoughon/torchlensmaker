@@ -44,7 +44,6 @@ from .sag_raytrace import sag_surface_local_raytrace_2d, raytrace
 
 # PHASE 2
 # add misssing features:
-# TODO lens diameter parameter
 # TODO scale and anchor
 # TODO add domain to raytrace, compute collision mask
 
@@ -74,7 +73,7 @@ def lens_diameter_domain_2d(
     P: Batch2DTensor, V: Batch2DTensor, t: BatchTensor, diameter: ScalarTensor
 ) -> MaskTensor:
     points = P + t.unsqueeze(-1) * V
-    return torch.abs(points[..., 1]) <= diameter
+    return torch.abs(points[..., 1]) <= diameter / 2
 
 
 class SphereC2DSurfaceKernel(FunctionalKernel):
