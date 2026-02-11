@@ -18,6 +18,8 @@ import torch
 import torch.nn as nn
 
 
+from typing import Self
+
 from torchlensmaker.types import (
     ScalarTensor,
     BatchTensor,
@@ -28,29 +30,29 @@ from torchlensmaker.types import (
 
 from torchlensmaker.core.tensor_manip import init_param
 
-from .surface_kernels import Sphere2DSurfaceKernel
+from .surface_kernels import SphereC2DSurfaceKernel
 
 
-class Sphere(nn.Module):
+class SphereC(nn.Module):
     """
-    Sphere (2D or 3D) parameterized by curvature
+    Spherical surface (2D or 3D) parameterized by lens diameter and curvature.
+
     Represented by a sag function and raytraced by implicit solver
-    anchors
-    scale
+    Support for anchors and scale.
     """
 
     def __init__(
         self,
+        diameter: float | ScalarTensor,
         C: float | ScalarTensor | nn.Parameter,
         trainable: bool = True,
-        scale: float = 1.0,
     ):
         super().__init__()
+        self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
-        self.scale = scale
-        self.func2d = Sphere2DSurfaceKernel()
+        self.func2d = SphereC2DSurfaceKernel()
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, dfk: BatchTensor, ifk: BatchTensor
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix]:
-        return self.func2d.forward(P, V, dfk, ifk, self.scale * self.C)
+        return self.func2d.forward(P, V, dfk, ifk, self.diameter, self.C)
