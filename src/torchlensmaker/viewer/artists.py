@@ -82,22 +82,8 @@ class CollisionSurfaceArtist(Artist):
         )
 
     def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        dim, dtype = (
-            collective.input_tree[module].dfk.shape[0] - 1,
-            collective.input_tree[module].dfk.dtype,
-        )
-
         inputs = collective.input_tree[module]
-        origin = torch.zeros((dim,), dtype=dtype)
-        joint = transform_points(inputs.dfk, origin)
-
-        return [
-            {
-                "type": "points",
-                "data": [joint.tolist()],
-                "layers": [tlmviewer.LAYER_JOINTS],
-            }
-        ]
+        return tlmviewer.render_joint(inputs.dfk)
 
 
 class RefractiveSurfaceArtist(Artist):
@@ -160,22 +146,8 @@ class FocalPointArtist(Artist):
         )
 
     def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        dim, dtype = (
-            collective.input_tree[module].dfk.shape[0] - 1,
-            collective.input_tree[module].dfk.dtype,
-        )
-
         inputs = collective.input_tree[module]
-        origin = torch.zeros((dim,), dtype=dtype)
-        joint = transform_points(inputs.dfk, origin)
-
-        return [
-            {
-                "type": "points",
-                "data": [joint.tolist()],
-                "layers": [tlmviewer.LAYER_JOINTS],
-            }
-        ]
+        return tlmviewer.render_joint(inputs.dfk)
 
 
 class EndArtist(Artist):
@@ -225,18 +197,4 @@ class KinematicArtist(Artist):
 
     def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
         dfk, ifk = collective.input_tree[module]
-        dim, dtype = (
-            dfk.shape[0] - 1,
-            dfk.dtype,
-        )
-
-        origin = torch.zeros((dim,), dtype=dtype)
-        joint = transform_points(dfk, origin)
-
-        return [
-            {
-                "type": "points",
-                "data": [joint.tolist()],
-                "layers": [tlmviewer.LAYER_JOINTS],
-            }
-        ]
+        return tlmviewer.render_joint(dfk)

@@ -31,7 +31,7 @@ from typing import Any, Optional
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
-from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, hom_identity
+from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, hom_identity, transform_points
 
 from torchlensmaker.analysis.colors import (
     color_valid,
@@ -366,3 +366,21 @@ def render_hit_miss_rays(
     )
 
     return rays_hit + rays_miss
+
+
+def render_joint(dfk: HomMatrix) -> Any:
+    dim, dtype = (
+        dfk.shape[0] - 1,
+        dfk.dtype,
+    )
+
+    origin = torch.zeros((dim,), dtype=dtype)
+    joint = transform_points(dfk, origin)
+
+    return [
+        {
+            "type": "points",
+            "data": [joint.tolist()],
+            "layers": [LAYER_JOINTS],
+        }
+    ]
