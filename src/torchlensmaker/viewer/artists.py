@@ -39,67 +39,6 @@ from .rendering import Artist
 Tensor = torch.Tensor
 
 
-LAYER_VALID_RAYS = 1
-LAYER_BLOCKED_RAYS = 2
-LAYER_OUTPUT_RAYS = 3
-LAYER_JOINTS = 4
-
-
-def render_rays_until(
-    P: Tensor,
-    V: Tensor,
-    end: Tensor,
-    variables: dict[str, Tensor],
-    domain: dict[str, list[float]],
-    default_color: str,
-    layer: int,
-) -> list[Any]:
-    "Render rays until an absolute X coordinate"
-    assert end.dim() == 0
-    # div by zero here for vertical rays
-    t = (end - P[:, 0]) / V[:, 0]
-    ends = P + t.unsqueeze(1).expand_as(V) * V
-    return [
-        tlmviewer.render_rays(
-            P,
-            ends,
-            variables=variables,
-            domain=domain,
-            default_color=default_color,
-            layer=layer,
-        )
-    ]
-
-
-def render_rays_length(
-    P: Tensor,
-    V: Tensor,
-    length: float | Tensor,
-    variables: dict[str, Tensor],
-    domain: dict[str, list[float]],
-    layer: int,
-    default_color: str = color_valid,
-) -> list[Any]:
-    "Render rays with fixed length"
-
-    if isinstance(length, Tensor):
-        assert length.dim() in {0, 1}
-
-    if isinstance(length, Tensor) and length.dim() == 1:
-        length = length.unsqueeze(1).expand_as(V)
-
-    return [
-        tlmviewer.render_rays(
-            P,
-            P + length * V,
-            variables=variables,
-            domain=domain,
-            default_color=default_color,
-            layer=layer,
-        )
-    ]
-
-
 class ForwardArtist(Artist):
     "Forward rendering to a subobject"
 
@@ -129,51 +68,18 @@ class CollisionSurfaceArtist(Artist):
 
     def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
         inputs = collective.input_tree[module]
-        t: Tensor
-        normals: Tensor
-        valid: Tensor
         t, normals, valid, _, _ = collective.output_tree[module]
 
-        collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
-        hits = valid.sum()
-        misses = (~valid).sum()
-
-        # Render hit rays
-        rays_hit = (
-            [
-                tlmviewer.render_rays(
-                    inputs.P[valid],
-                    collision_points[valid],
-                    variables=ray_variables_dict(
-                        inputs, collective.ray_variables, valid
-                    ),
-                    domain=collective.ray_variables_domains,
-                    default_color=color_valid,
-                    layer=LAYER_VALID_RAYS,
-                )
-            ]
-            if hits > 0
-            else []
+        return tlmviewer.render_hit_miss_rays(
+            inputs.P,
+            inputs.V,
+            t,
+            inputs.target()[0],
+            valid,
+            variables_hit=ray_variables_dict(inputs, collective.ray_variables, valid),
+            variables_miss=ray_variables_dict(inputs, collective.ray_variables, ~valid),
+            domain=collective.ray_variables_domains,
         )
-
-        # Render miss rays - rays absorbed because not colliding
-        rays_miss = (
-            render_rays_until(
-                inputs.P[~valid],
-                inputs.V[~valid],
-                inputs.target()[0],
-                variables=ray_variables_dict(
-                    inputs, collective.ray_variables, ~valid
-                ),
-                domain=collective.ray_variables_domains,
-                default_color=color_blocked,
-                layer=LAYER_BLOCKED_RAYS,
-            )
-            if misses > 0
-            else []
-        )
-
-        return rays_hit + rays_miss
 
     def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
         dim, dtype = (
@@ -185,7 +91,13 @@ class CollisionSurfaceArtist(Artist):
         origin = torch.zeros((dim,), dtype=dtype)
         joint = transform_points(inputs.dfk, origin)
 
-        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]
+        return [
+            {
+                "type": "points",
+                "data": [joint.tolist()],
+                "layers": [tlmviewer.LAYER_JOINTS],
+            }
+        ]
 
 
 class RefractiveSurfaceArtist(Artist):
@@ -212,7 +124,7 @@ class RefractiveSurfaceArtist(Artist):
                     ),
                     domain=collective.ray_variables_domains,
                     default_color="pink",
-                    layer=LAYER_VALID_RAYS,  # TODO remove layers
+                    layer=tlmviewer.LAYER_VALID_RAYS,  # TODO remove layers
                 )
             ]
         else:
@@ -237,11 +149,11 @@ class FocalPointArtist(Artist):
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
-        return render_rays_length(
+        return tlmviewer.render_rays_length(
             inputs.P,
             inputs.V,
             t,
-            layer=LAYER_VALID_RAYS,
+            layer=tlmviewer.LAYER_VALID_RAYS,
             variables=ray_variables_dict(inputs, collective.ray_variables),
             domain=collective.ray_variables_domains,
             default_color=color_valid,
@@ -257,7 +169,13 @@ class FocalPointArtist(Artist):
         origin = torch.zeros((dim,), dtype=dtype)
         joint = transform_points(inputs.dfk, origin)
 
-        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]
+        return [
+            {
+                "type": "points",
+                "data": [joint.tolist()],
+                "layers": [tlmviewer.LAYER_JOINTS],
+            }
+        ]
 
 
 class EndArtist(Artist):
@@ -265,7 +183,7 @@ class EndArtist(Artist):
         self.end = end
 
     def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        return render_rays_length(
+        return tlmviewer.render_rays_length(
             collective.output_tree[module].P,
             collective.output_tree[module].V,
             self.end,
@@ -274,7 +192,7 @@ class EndArtist(Artist):
             ),
             domain=collective.ray_variables_domains,
             default_color=color_valid,
-            layer=LAYER_OUTPUT_RAYS,
+            layer=tlmviewer.LAYER_OUTPUT_RAYS,
         )
 
 
@@ -315,4 +233,10 @@ class KinematicArtist(Artist):
         origin = torch.zeros((dim,), dtype=dtype)
         joint = transform_points(dfk, origin)
 
-        return [{"type": "points", "data": [joint.tolist()], "layers": [LAYER_JOINTS]}]
+        return [
+            {
+                "type": "points",
+                "data": [joint.tolist()],
+                "layers": [tlmviewer.LAYER_JOINTS],
+            }
+        ]

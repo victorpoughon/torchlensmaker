@@ -33,7 +33,19 @@ from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
 from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, hom_identity
 
+from torchlensmaker.analysis.colors import (
+    color_valid,
+    color_focal_point,
+    color_blocked,
+)
+
 Tensor = torch.Tensor
+
+
+LAYER_VALID_RAYS = 1
+LAYER_BLOCKED_RAYS = 2
+LAYER_OUTPUT_RAYS = 3
+LAYER_JOINTS = 4
 
 
 def get_script_template() -> str:
@@ -185,7 +197,9 @@ def render_surface_local(
     surface: LocalSurface,
     dim: int,
 ) -> Any:
-    hom, _ = hom_identity(dim, dtype=surface.dtype, device=torch.device("cpu"))   # TODO gpu support
+    hom, _ = hom_identity(
+        dim, dtype=surface.dtype, device=torch.device("cpu")
+    )  # TODO gpu support
     return render_surface(
         surface,
         hom,
@@ -249,3 +263,106 @@ def render_collisions(points: Tensor, normals: Tensor) -> Any:
     }
 
     return [g1, g2]
+
+
+def render_rays_until(
+    P: Tensor,
+    V: Tensor,
+    end: Tensor,
+    variables: dict[str, Tensor],
+    domain: dict[str, list[float]],
+    default_color: str,
+    layer: int,
+) -> list[Any]:
+    "Render rays until an absolute X coordinate"
+    assert end.dim() == 0
+    # div by zero here for vertical rays
+    t = (end - P[:, 0]) / V[:, 0]
+    ends = P + t.unsqueeze(1).expand_as(V) * V
+    return [
+        render_rays(
+            P,
+            ends,
+            variables=variables,
+            domain=domain,
+            default_color=default_color,
+            layer=layer,
+        )
+    ]
+
+
+def render_rays_length(
+    P: Tensor,
+    V: Tensor,
+    length: float | Tensor,
+    variables: dict[str, Tensor],
+    domain: dict[str, list[float]],
+    layer: int,
+    default_color: str = color_valid,
+) -> list[Any]:
+    "Render rays with fixed length"
+
+    if isinstance(length, Tensor):
+        assert length.dim() in {0, 1}
+
+    if isinstance(length, Tensor) and length.dim() == 1:
+        length = length.unsqueeze(1).expand_as(V)
+
+    return [
+        render_rays(
+            P,
+            P + length * V,
+            variables=variables,
+            domain=domain,
+            default_color=default_color,
+            layer=layer,
+        )
+    ]
+
+
+def render_hit_miss_rays(
+    P: torch.Tensor,
+    V: torch.Tensor,
+    t: torch.Tensor,
+    target: torch.Tensor,
+    valid: torch.Tensor,
+    variables_hit: dict[str, Tensor] = {},
+    variables_miss: dict[str, Tensor] = {},
+    domain: dict[str, list[float]] = {},
+) -> Any:
+    collision_points = P + t.unsqueeze(1).expand_as(V) * V
+    hits = valid.sum()
+    misses = (~valid).sum()
+
+    # Render hit rays
+    rays_hit = (
+        [
+            render_rays(
+                P[valid],
+                collision_points[valid],
+                variables=variables_hit,
+                domain=domain,
+                default_color=color_valid,
+                layer=LAYER_VALID_RAYS,
+            )
+        ]
+        if hits > 0
+        else []
+    )
+
+    # Render miss rays - rays absorbed because not colliding
+    rays_miss = (
+        render_rays_until(
+            P[~valid],
+            V[~valid],
+            target,
+            variables=variables_miss,
+            domain=domain,
+            default_color=color_blocked,
+            layer=LAYER_BLOCKED_RAYS,
+        )
+        if misses > 0
+        else []
+    )
+
+    return rays_hit + rays_miss
