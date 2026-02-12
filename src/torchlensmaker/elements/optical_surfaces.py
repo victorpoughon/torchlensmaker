@@ -38,113 +38,11 @@ from torchlensmaker.core.physics import (
     refraction,
     reflection,
 )
-from torchlensmaker.core.intersect import intersect
-
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.elements.collision_surface import CollisionSurface
 
 Tensor = torch.Tensor
-
-
-class CollisionSurface(nn.Module):
-    """
-    Surface rays collision detection
-
-    CollisionSurface implements collision detection between a bundle of rays
-    (represented by an OpticalData object) and a surface. It also positions the
-    surface according to anchors and scale options.
-
-    Returns:
-        t: full frame collision distances
-        normals: full frame normals at the collision points
-        valid: mask indicating which input rays collide with the surface
-        chain: kinematic chain for the next element
-    """
-
-    def __init__(
-        self,
-        surface: LocalSurface,
-        scale: float = 1.0,
-        anchors: tuple[str, str] = ("origin", "origin"),
-    ):
-        super().__init__()
-        self.surface = surface
-        self.scale = scale
-        self.anchors = anchors
-
-        # If surface has parameters, register them
-        for name, p in surface.parameters().items():
-            self.register_parameter(name, p)
-
-    def kinematic_transform(
-        self, dim: int, dtype: torch.dtype
-    ) -> tuple[HomMatrix, HomMatrix]:
-        "Additional transform that applies to the next element"
-
-        assert dtype == self.surface.dtype
-        device = torch.device("cpu")  # TODO gpu support
-
-        # Subtract first anchor, add second anchor
-
-        # TODO surface.extent() is undefined for some surfaces (XYPolynomial)
-        # so avoid computing it if we don't need it
-
-        if self.anchors == ("extent", "extent"):
-            t0 = hom_translate(-self.scale * self.surface.extent(dim))
-            t1 = hom_translate(self.scale * self.surface.extent(dim))
-            return kinematic_chain_append(*t0, *t1)
-        elif self.anchors == ("extent", "origin"):
-            t0 = hom_translate(-self.scale * self.surface.extent(dim))
-            return t0
-        elif self.anchors == ("origin", "extent"):
-            t1 = hom_translate(self.scale * self.surface.extent(dim))
-            return t1
-        else:
-            return hom_identity(dim, dtype, device)
-
-    def surface_transform(
-        self, dim: int, dtype: torch.dtype
-    ) -> tuple[HomMatrix, HomMatrix]:
-        "Additional transform that applies to the surface"
-
-        assert dtype == self.surface.dtype
-        device = torch.device("cpu")  # TODO gpu support
-
-        tf_scale = hom_scale(
-            dim, torch.as_tensor(self.scale, dtype=dtype, device=device)
-        )
-
-        if self.anchors[0] == "extent":
-            tf_anchor = hom_translate(-self.scale * self.surface.extent(dim))
-            return kinematic_chain_append(*tf_anchor, *tf_scale)
-        else:
-            return tf_scale
-
-    def forward(
-        self, inputs: OpticalData
-    ) -> tuple[Tensor, Tensor, Tensor, tuple[HomMatrix, HomMatrix]]:
-        dim, dtype = inputs.dim, inputs.dtype
-
-        # Collision detection with the surface
-        homs, homs_inv = self.surface_transform(dim, dtype)
-        surface_dfk, surface_ifk = kinematic_chain_append(
-            inputs.dfk, inputs.ifk, homs, homs_inv
-        )
-
-        t, collision_normals, collision_valid = intersect(
-            self.surface,
-            inputs.P,
-            inputs.V,
-            surface_dfk,
-            surface_ifk,
-        )
-
-        new_homs, new_homs_inv = self.kinematic_transform(dim, dtype)
-        new_dfk, new_ifk = kinematic_chain_append(
-            inputs.dfk, inputs.ifk, new_homs, new_homs_inv
-        )
-
-        return t, collision_normals, collision_valid, new_dfk, new_ifk
 
 
 AnchorType: TypeAlias = Literal["origin", "extent"]
@@ -306,7 +204,7 @@ class RefractiveSurface(SequentialElement):
 
 
 class Aperture(SequentialElement):
-    def __init__(self, diameter: float, dtype : torch.dtype | None = None):
+    def __init__(self, diameter: float, dtype: torch.dtype | None = None):
         if dtype is None:
             dtype = torch.get_default_dtype()
         super().__init__()
@@ -327,9 +225,7 @@ class Aperture(SequentialElement):
             rays_wavelength=filter_optional_tensor(
                 data.rays_wavelength, valid_collision
             ),
-            rays_index=filter_optional_tensor(
-                data.rays_index, valid_collision
-            ),
+            rays_index=filter_optional_tensor(data.rays_index, valid_collision),
             dfk=new_dfk,
             ifk=new_ifk,  # correct but useless cause Aperture is only circular plane currently
         )
@@ -376,7 +272,7 @@ class ImagePlane(SequentialElement):
     def forward(self, data: OpticalData) -> OpticalData:
         if data.V.shape[0] == 0:
             return data
-        
+
         # Collision detection
         t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
@@ -385,7 +281,7 @@ class ImagePlane(SequentialElement):
             raise RuntimeError(
                 "Missing object coordinates on rays (required to compute image magnification)"
             )
-        
+
         # TODO 2D only for now
         if data.dim == 3:
             return data
@@ -394,12 +290,15 @@ class ImagePlane(SequentialElement):
         # To make this work with any surface, we would need a way to compute
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
-        
+
         rays_image = collision_points[:, 1]
         rays_object = data.rays_field
 
         # Compute loss
-        assert rays_object.shape == rays_image.shape, (rays_object.shape, rays_image.shape)
+        assert rays_object.shape == rays_image.shape, (
+            rays_object.shape,
+            rays_image.shape,
+        )
         mag, res = linear_magnification(rays_object, rays_image)
 
         if self.magnification is not None:
