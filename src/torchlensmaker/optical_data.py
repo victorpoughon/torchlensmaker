@@ -20,7 +20,8 @@ from dataclasses import dataclass, replace
 import torch
 from jaxtyping import Float
 
-from torchlensmaker.core.tensor_manip import filter_optional_tensor
+
+from torchlensmaker.core.tensor_manip import filter_optional_tensor, filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_identity,
@@ -78,6 +79,31 @@ class OpticalData:
             rays_field=filter_optional_tensor(self.rays_field, valid),
             rays_wavelength=filter_optional_tensor(self.rays_wavelength, valid),
         )
+
+    def ray_variables_dict(
+        self, valid: Optional[torch.Tensor] = None
+    ) -> dict[str, torch.Tensor]:
+        "Convert ray variables from to a dict of Tensors"
+        d = {}
+
+        def update(tensor: Optional[torch.Tensor], name: str) -> None:
+            # TODO this if check is temporary to avoid a divide by zero in tlmviewer
+            # ideally we would export all three variables allways, and tlmviewer
+            # handles correctly degenerate cases like PointSource which has all
+            # field coord = 0, or a single wavelength, etc.
+            if tensor.numel() > 0 and (tensor.max() - tensor.min()) > 1e-3:
+                d[name] = filter_optional_mask(tensor, valid)
+
+        # TODO no support for 2D colormaps in tlmviewer yet
+        # but base and object are 2D variables in 3D
+        # TODO tlmviewer: rename base/object to pupil/field
+        if self.dim == 2:
+            update(self.rays_pupil, "base")
+            update(self.rays_field, "object")
+
+        update(self.rays_wavelength, "wavelength")
+
+        return d
 
 
 def default_input(

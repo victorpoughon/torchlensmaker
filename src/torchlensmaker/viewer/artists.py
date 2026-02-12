@@ -33,7 +33,7 @@ from torchlensmaker.analysis.colors import (
 
 from . import tlmviewer
 
-from .rendering import Collective, ray_variables_dict
+from .rendering import Collective
 from .rendering import Artist
 
 Tensor = torch.Tensor
@@ -70,8 +70,8 @@ class CollisionSurfaceArtist(Artist):
             t,
             inputs.target()[0],
             valid,
-            variables_hit=ray_variables_dict(inputs, valid),
-            variables_miss=ray_variables_dict(inputs, ~valid),
+            variables_hit=inputs.ray_variables_dict(valid),
+            variables_miss=inputs.ray_variables_dict(~valid),
             domain=collective.ray_variables_domains,
         )
 
@@ -101,9 +101,7 @@ class RefractiveSurfaceArtist(Artist):
                 tlmviewer.render_rays(
                     inputs.P[tir_mask],
                     collision_points[tir_mask],
-                    variables=ray_variables_dict(
-                        inputs, tir_mask
-                    ),
+                    variables=inputs.ray_variables_dict(tir_mask),
                     domain=collective.ray_variables_domains,
                     default_color="pink",
                     layer=tlmviewer.LAYER_VALID_RAYS,  # TODO remove layers
@@ -134,7 +132,7 @@ class FocalPointArtist(Artist):
             inputs.V,
             t,
             layer=tlmviewer.LAYER_VALID_RAYS,
-            variables=ray_variables_dict(inputs),
+            variables=inputs.ray_variables_dict(),
             domain=collective.ray_variables_domains,
             default_color=color_valid,
         )

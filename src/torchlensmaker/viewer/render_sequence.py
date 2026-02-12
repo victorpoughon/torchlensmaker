@@ -42,7 +42,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 )
 from torchlensmaker.elements.utils import get_elements_by_type
 
-from .rendering import Collective, ray_variables_dict
+from .rendering import Collective
 from . import tlmviewer
 from .rendering import Artist
 from .artists import (
@@ -143,9 +143,7 @@ def render_sequence(
                 outputs.P,
                 outputs.V,
                 end,
-                variables=ray_variables_dict(
-                    outputs
-                ),
+                variables=outputs.ray_variables_dict(),
                 domain=collective.ray_variables_domains,
                 default_color=color_valid,
                 layer=tlmviewer.LAYER_OUTPUT_RAYS,
