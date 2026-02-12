@@ -46,31 +46,25 @@ class ForwardArtist(Artist):
         super().__init__()
         self.getter = getter
 
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return collective.render_module(self.getter(module))
-
-    def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return collective.render_rays(self.getter(module))
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return collective.render_joints(self.getter(module))
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        return collective.render(self.getter(module))
 
 
 class CollisionSurfaceArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        # Render module
         inputs = collective.input_tree[module]
         dim, dtype = inputs.dim, inputs.dtype
 
         homs, homs_inv = module.surface_transform(dim, dtype)
         dfk, ifk = kinematic_chain_append(inputs.dfk, inputs.ifk, homs, homs_inv)
 
-        return [tlmviewer.render_surface(module.surface, dfk, dim)]
+        rendered_module = [tlmviewer.render_surface(module.surface, dfk, dim)]
 
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        inputs = collective.input_tree[module]
+        # Render rays
         t, normals, valid, _, _ = collective.output_tree[module]
 
-        return tlmviewer.render_hit_miss_rays(
+        rendered_rays = tlmviewer.render_hit_miss_rays(
             inputs.P,
             inputs.V,
             t,
@@ -81,16 +75,18 @@ class CollisionSurfaceArtist(Artist):
             domain=collective.ray_variables_domains,
         )
 
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        inputs = collective.input_tree[module]
-        return tlmviewer.render_joint(inputs.dfk)
+        # Render joints
+        rendered_joints = tlmviewer.render_joint(inputs.dfk)
+
+        return rendered_module + rendered_rays + rendered_joints
 
 
 class RefractiveSurfaceArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return collective.render_module(module.collision_surface)
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        # Render the surface normally
+        rendered_surface = collective.render(module.collision_surface)
 
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+        # Also render rays
         inputs = collective.input_tree[module]
         output, valid_refraction = collective.output_tree[module]
 
@@ -116,26 +112,24 @@ class RefractiveSurfaceArtist(Artist):
         else:
             rays_tir = []
 
-        return collective.render_rays(module.collision_surface) + rays_tir
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return collective.render_joints(module.collision_surface)
+        return rendered_surface + rays_tir
 
 
 class FocalPointArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        target = collective.input_tree[module].target().unsqueeze(0)
-        return [tlmviewer.render_points(target, color_focal_point)]
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         inputs = collective.input_tree[module]
 
+        # Render module
+        target = inputs.target().unsqueeze(0)
+        rendered_module = [tlmviewer.render_points(target, color_focal_point)]
+
+        # Render rays
         # Distance from ray origin P to target
         dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
-        return tlmviewer.render_rays_length(
+        rendered_rays = tlmviewer.render_rays_length(
             inputs.P,
             inputs.V,
             t,
@@ -145,38 +139,19 @@ class FocalPointArtist(Artist):
             default_color=color_valid,
         )
 
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        inputs = collective.input_tree[module]
-        return tlmviewer.render_joint(inputs.dfk)
+        rendered_joints = tlmviewer.render_joint(inputs.dfk)
+        return rendered_module + rendered_rays + rendered_joints
 
 
 class SequentialArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []
         for child in module.children():
-            nodes.extend(collective.render_module(child))
-        return nodes
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        nodes = []
-        for child in module.children():
-            nodes.extend(collective.render_rays(child))
-        return nodes
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        nodes = []
-        for child in module.children():
-            nodes.extend(collective.render_joints(child))
+            nodes.extend(collective.render(child))
         return nodes
 
 
 class KinematicArtist(Artist):
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        return []
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        return []
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         dfk, ifk = collective.input_tree[module]
         return tlmviewer.render_joint(dfk)

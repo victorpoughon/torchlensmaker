@@ -33,13 +33,7 @@ LAYER_JOINTS = 4
 
 
 class Artist:
-    def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        raise NotImplementedError
-
-    def render_rays(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        raise NotImplementedError
-
-    def render_joints(self, collective: "Collective", module: nn.Module) -> list[Any]:
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         raise NotImplementedError
 
 
@@ -88,32 +82,12 @@ class Collective:
 
         return [] if len(artists) == 0 else artists[0]
 
-    def render_module(self, module: nn.Module) -> list[Any]:
+    def render(self, module: nn.Module) -> list[Any]:
         artists = self.match_artists(module)
 
         if len(artists) == 0:
             return []
 
         # Let the artists render and flatten their returned lists
-        renders = [a.render_module(self, module) for a in artists]
-        return list(chain(*renders))
-
-    def render_rays(self, module: nn.Module) -> list[Any]:
-        artists = self.match_artists(module)
-
-        if len(artists) == 0:
-            return []
-
-        # Let the artists render and flatten their returned lists
-        renders = [a.render_rays(self, module) for a in artists]
-        return list(chain(*renders))
-
-    def render_joints(self, module: nn.Module) -> list[Any]:
-        artists = self.match_artists(module)
-
-        if len(artists) == 0:
-            return []
-
-        # Let the artists render and flatten their returned lists
-        renders = [a.render_joints(self, module) for a in artists]
+        renders = [a.render(self, module) for a in artists]
         return list(chain(*renders))

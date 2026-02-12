@@ -135,13 +135,7 @@ def render_sequence(
     scene = tlmviewer.new_scene("2D" if dim == 2 else "3D")
 
     # Render the top level module
-    scene["data"].extend(collective.render_module(optics))
-
-    # Render rays
-    scene["data"].extend(collective.render_rays(optics))
-
-    # Render kinematic chain joints
-    scene["data"].extend(collective.render_joints(optics))
+    scene["data"].extend(collective.render(optics))
 
     # Render output rays with end argument
     if end is not None:
