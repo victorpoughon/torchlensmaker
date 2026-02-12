@@ -150,24 +150,6 @@ class FocalPointArtist(Artist):
         return tlmviewer.render_joint(inputs.dfk)
 
 
-class EndArtist(Artist):
-    def __init__(self, end: float):
-        self.end = end
-
-    def render_rays(self, collective: Collective, module: nn.Module) -> list[Any]:
-        return tlmviewer.render_rays_length(
-            collective.output_tree[module].P,
-            collective.output_tree[module].V,
-            self.end,
-            variables=ray_variables_dict(
-                collective.output_tree[module], collective.ray_variables
-            ),
-            domain=collective.ray_variables_domains,
-            default_color=color_valid,
-            layer=tlmviewer.LAYER_OUTPUT_RAYS,
-        )
-
-
 class SequentialArtist(Artist):
     def render_module(self, collective: "Collective", module: nn.Module) -> list[Any]:
         nodes = []

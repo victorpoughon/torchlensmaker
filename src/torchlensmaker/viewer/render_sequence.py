@@ -36,10 +36,13 @@ from torchlensmaker.lens.lens import Lens
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.full_forward import forward_tree
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
-from torchlensmaker.light_sources.light_sources_query import set_sampling2d, set_sampling3d
+from torchlensmaker.light_sources.light_sources_query import (
+    set_sampling2d,
+    set_sampling3d,
+)
 from torchlensmaker.elements.utils import get_elements_by_type
 
-from .rendering import Collective
+from .rendering import Collective, ray_variables_dict
 from . import tlmviewer
 from .rendering import Artist
 from .artists import (
@@ -48,8 +51,12 @@ from .artists import (
     CollisionSurfaceArtist,
     RefractiveSurfaceArtist,
     ForwardArtist,
-    EndArtist,
     KinematicArtist,
+)
+from torchlensmaker.analysis.colors import (
+    color_valid,
+    color_focal_point,
+    color_blocked,
 )
 
 import json
@@ -107,7 +114,7 @@ def render_sequence(
 ) -> Any:
     if dtype is None:
         dtype = torch.get_default_dtype()
-    
+
     # Evaluate the model with forward_tree to keep all intermediate outputs
     input_tree, output_tree = forward_tree(optics, default_input(dim, dtype))
 
@@ -138,7 +145,20 @@ def render_sequence(
 
     # Render output rays with end argument
     if end is not None:
-        scene["data"].extend(EndArtist(end).render_rays(collective, optics))
+        outputs = collective.output_tree[optics]
+        scene["data"].extend(
+            tlmviewer.render_rays_length(
+                outputs.P,
+                outputs.V,
+                end,
+                variables=ray_variables_dict(
+                    outputs, collective.ray_variables
+                ),
+                domain=collective.ray_variables_domains,
+                default_color=color_valid,
+                layer=tlmviewer.LAYER_OUTPUT_RAYS,
+            )
+        )
 
     if title != "":
         scene["title"] = title

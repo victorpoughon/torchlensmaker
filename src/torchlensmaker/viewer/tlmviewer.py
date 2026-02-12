@@ -31,7 +31,11 @@ from typing import Any, Optional
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 
-from torchlensmaker.kinematics.homogeneous_geometry import HomMatrix, hom_identity, transform_points
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    HomMatrix,
+    hom_identity,
+    transform_points,
+)
 
 from torchlensmaker.analysis.colors import (
     color_valid,
@@ -384,3 +388,4 @@ def render_joint(dfk: HomMatrix) -> Any:
             "layers": [LAYER_JOINTS],
         }
     ]
+
