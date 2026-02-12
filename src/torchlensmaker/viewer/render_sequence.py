@@ -119,13 +119,11 @@ def render_sequence(
     input_tree, output_tree = forward_tree(optics, default_input(dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
-    ray_variables = ["base", "object", "wavelength"]
     ray_variables_domains = get_domain(optics, dim)
 
     # Initialize the artist collective
     collective = Collective(
         {**default_artists, **extra_artists},
-        ray_variables,
         ray_variables_domains,
         input_tree,
         output_tree,
@@ -146,7 +144,7 @@ def render_sequence(
                 outputs.V,
                 end,
                 variables=ray_variables_dict(
-                    outputs, collective.ray_variables
+                    outputs
                 ),
                 domain=collective.ray_variables_domains,
                 default_color=color_valid,

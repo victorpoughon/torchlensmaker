@@ -38,7 +38,7 @@ class Artist:
 
 
 def ray_variables_dict(
-    data: OpticalData, variables: list[str], valid: Optional[Tensor] = None
+    data: OpticalData, valid: Optional[Tensor] = None
 ) -> dict[str, Tensor]:
     "Convert ray variables from an OpticalData object to a dict of Tensors"
     d = {}
@@ -68,7 +68,6 @@ class Collective:
     "Group of artists"
 
     artists: Dict[type, Artist]
-    ray_variables: list[str]
     ray_variables_domains: dict[str, list[float]]
     input_tree: dict[nn.Module, Any]
     output_tree: dict[nn.Module, Any]

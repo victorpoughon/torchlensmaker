@@ -70,8 +70,8 @@ class CollisionSurfaceArtist(Artist):
             t,
             inputs.target()[0],
             valid,
-            variables_hit=ray_variables_dict(inputs, collective.ray_variables, valid),
-            variables_miss=ray_variables_dict(inputs, collective.ray_variables, ~valid),
+            variables_hit=ray_variables_dict(inputs, valid),
+            variables_miss=ray_variables_dict(inputs, ~valid),
             domain=collective.ray_variables_domains,
         )
 
@@ -102,7 +102,7 @@ class RefractiveSurfaceArtist(Artist):
                     inputs.P[tir_mask],
                     collision_points[tir_mask],
                     variables=ray_variables_dict(
-                        inputs, collective.ray_variables, tir_mask
+                        inputs, tir_mask
                     ),
                     domain=collective.ray_variables_domains,
                     default_color="pink",
@@ -134,7 +134,7 @@ class FocalPointArtist(Artist):
             inputs.V,
             t,
             layer=tlmviewer.LAYER_VALID_RAYS,
-            variables=ray_variables_dict(inputs, collective.ray_variables),
+            variables=ray_variables_dict(inputs),
             domain=collective.ray_variables_domains,
             default_color=color_valid,
         )
