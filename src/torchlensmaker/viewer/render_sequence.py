@@ -53,11 +53,6 @@ from .artists import (
     ForwardArtist,
     KinematicArtist,
 )
-from torchlensmaker.analysis.colors import (
-    color_valid,
-    color_focal_point,
-    color_blocked,
-)
 
 import json
 
@@ -145,7 +140,7 @@ def render_sequence(
                 end,
                 variables=outputs.ray_variables_dict(),
                 domain=collective.ray_variables_domains,
-                default_color=color_valid,
+                default_color=tlmviewer.color_valid,
                 layer=tlmviewer.LAYER_OUTPUT_RAYS,
             )
         )

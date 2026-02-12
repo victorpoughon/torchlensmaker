@@ -24,13 +24,13 @@ from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
     default_colormap,
     color_rays,
-    color_spot_diagram,
 )
 
 from typing import Optional, Any
 
 Tensor = torch.Tensor
 
+color_spot_diagram = "coral"
 
 def make_var_label(name: str, value: float | list[float], precision: int):
     if isinstance(value, float):

@@ -23,12 +23,6 @@ from torchlensmaker.optical_data import OpticalData
 
 from .CET_I2 import isoluminant_cgo_80_c38
 
-# Color theme
-color_valid = "#ffa724"
-color_blocked = "red"
-color_focal_point = "red"
-color_spot_diagram = "coral"
-
 # Default colormap*
 LinearSegmentedColormap: TypeAlias = mpl.colors.LinearSegmentedColormap
 default_colormap = mpl.colors.LinearSegmentedColormap.from_list("CET_I2", isoluminant_cgo_80_c38)

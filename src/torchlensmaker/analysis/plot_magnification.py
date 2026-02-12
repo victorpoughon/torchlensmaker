@@ -26,9 +26,11 @@ from typing import Dict, Any, Optional
 from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
     default_colormap,
-    color_valid,
     color_rays,
 )
+
+color_valid = "#ffa724"
+color_blocked = "red"
 
 
 Tensor = torch.Tensor

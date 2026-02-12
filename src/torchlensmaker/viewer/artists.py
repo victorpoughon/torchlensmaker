@@ -24,13 +24,6 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_points,
 )
 
-
-from torchlensmaker.analysis.colors import (
-    color_valid,
-    color_focal_point,
-    color_blocked,
-)
-
 from . import tlmviewer
 
 from .rendering import Collective
@@ -119,7 +112,7 @@ class FocalPointArtist(Artist):
 
         # Render module
         target = inputs.target().unsqueeze(0)
-        rendered_module = [tlmviewer.render_points(target, color_focal_point)]
+        rendered_module = [tlmviewer.render_points(target, "red")]
 
         # Render rays
         # Distance from ray origin P to target
@@ -134,7 +127,7 @@ class FocalPointArtist(Artist):
             layer=tlmviewer.LAYER_VALID_RAYS,
             variables=inputs.ray_variables_dict(),
             domain=collective.ray_variables_domains,
-            default_color=color_valid,
+            default_color=tlmviewer.color_valid,
         )
 
         rendered_joints = tlmviewer.render_joint(inputs.dfk)

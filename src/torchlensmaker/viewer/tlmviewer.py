@@ -37,11 +37,10 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_points,
 )
 
-from torchlensmaker.analysis.colors import (
-    color_valid,
-    color_focal_point,
-    color_blocked,
-)
+# Color theme
+color_valid = "#ffa724"
+color_blocked = "red"
+color_spot_diagram = "coral"
 
 Tensor = torch.Tensor
 
