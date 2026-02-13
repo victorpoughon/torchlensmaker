@@ -19,17 +19,14 @@ from typing import Callable
 
 import torch
 
+from torchlensmaker.types import Tf
 from torchlensmaker.surfaces.sphere_r import LocalSurface
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    HomMatrix,
     hom_matrix_3d,
     hom_matrix,
-    hom_identity_2d,
-    hom_identity_3d,
     hom_translate_2d,
     hom_translate_3d,
     hom_rotate_2d,
-    hom_rotate_3d,
     hom_compose,
 )
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
@@ -41,7 +38,7 @@ def basic_transform(
     thetas: float | list[float],
     translate: list[float],
     dtype: torch.dtype = torch.float64,
-) -> Callable[[LocalSurface], tuple[HomMatrix, HomMatrix]]:
+) -> Callable[[LocalSurface], Tf]:
     """
     Compound transform used for testing
 
@@ -57,9 +54,9 @@ def basic_transform(
     else:
         raise RuntimeError("invalid arguments to basic_transform")
 
-    def makeit2d(surface: LocalSurface) -> tuple[HomMatrix, HomMatrix]:
+    def makeit2d(surface: LocalSurface) -> Tf:
         dtype = surface.dtype
-        transforms: list[tuple[HomMatrix, HomMatrix]] = []
+        transforms: list[Tf] = []
 
         # anchor
         anchor_translate = surface.extent(dim)

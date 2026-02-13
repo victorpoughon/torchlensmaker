@@ -21,8 +21,11 @@ from typing import Any
 import torch
 import torch.nn as nn
 
+from torchlensmaker.types import Tf2D, Tf3D, Tf
+
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_compose,
+    hom_compose_2d,
+    hom_compose_3d,
     hom_identity_2d,
     hom_identity_3d,
     hom_identity,
@@ -30,14 +33,19 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_matrix_3d,
     hom_matrix,
     hom_scale,
+    hom_scale_2d,
+    hom_scale_3d,
     hom_rotate_2d,
     hom_rotate_3d,
     hom_translate_2d,
     hom_translate_3d,
     hom_translate,
-    HomMatrix,
     kinematic_chain_append,
+    kinematic_chain_append_2d,
+    kinematic_chain_append_3d,
     kinematic_chain_extend,
+    kinematic_chain_extend_2d,
+    kinematic_chain_extend_3d,
     transform_points,
     transform_rays,
     transform_vectors,
@@ -61,23 +69,23 @@ def test_hom_matrix() -> None:
     assert torch.allclose(hom_id3, torch.eye(4, dtype=id2.dtype, device=id2.device))
 
 
-def transforms_2d() -> list[tuple[HomMatrix, HomMatrix]]:
+def transforms_2d() -> list[Tf2D]:
     base = hom_identity_2d(
         dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
     t1 = hom_translate_2d(torch.tensor([1.0, 2.0]))
     t2 = hom_rotate_2d(torch.tensor(0.5))
-    t3 = kinematic_chain_append(*base, *t1)
-    t4 = kinematic_chain_append(*t3, *t2)
-    t5 = kinematic_chain_append(*t4, *t4)
-    t6 = kinematic_chain_extend(*base, [t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
-    t7 = hom_identity(
-        2, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    t3 = kinematic_chain_append_2d(base, t1)
+    t4 = kinematic_chain_append_2d(t3, t2)
+    t5 = kinematic_chain_append_2d(t4, t4)
+    t6 = kinematic_chain_extend_2d(base, [t1, t2, t3])
+    t7 = hom_identity_2d(
+        dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
-    t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
-    t9 = hom_translate(torch.tensor([0.5, 1.2]))
-    t10 = hom_scale(2, torch.tensor(1.0))
-    t11 = hom_scale(2, torch.tensor(-1.0))
+    t8 = hom_compose_2d([t1, t2, t3])
+    t9 = hom_translate_2d(torch.tensor([0.5, 1.2]))
+    t10 = hom_scale_2d(torch.tensor(1.0))
+    t11 = hom_scale_2d(torch.tensor(-1.0))
 
     return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
@@ -97,57 +105,59 @@ def test_transform_functions_2d() -> None:
     ]
 
     for points, vectors in zip(test_points, test_vectors):
-        for hom, hom_inv in transforms_2d():
-            assert hom.dtype == points.dtype
-            assert hom.dtype == vectors.dtype
-            assert hom.device == points.device
-            assert hom.device == vectors.device
-            assert hom.shape == (3, 3)
+        for tf in transforms_2d():
+            assert tf.dtype == points.dtype
+            assert tf.dtype == vectors.dtype
+            assert tf.device == points.device
+            assert tf.device == vectors.device
+            assert tf.shape == (3, 3)
 
-            out_points = transform_points(hom, points)
+            out_points = transform_points(tf.direct, points)
             assert out_points.dtype == points.dtype
             assert out_points.shape == points.shape
             assert out_points.device == points.device
 
-            out_points_inv = transform_points(hom_inv, points)
+            out_points_inv = transform_points(tf.inverse, points)
             assert out_points_inv.dtype == points.dtype
             assert out_points_inv.shape == points.shape
             assert out_points_inv.device == points.device
 
-            out_vectors = transform_vectors(hom, vectors)
+            out_vectors = transform_vectors(tf.direct, vectors)
             assert out_vectors.dtype == vectors.dtype
             assert out_vectors.shape == vectors.shape
             assert out_vectors.device == vectors.device
 
-            out_vectors_inv = transform_vectors(hom_inv, vectors)
+            out_vectors_inv = transform_vectors(tf.inverse, vectors)
             assert out_vectors_inv.dtype == vectors.dtype
             assert out_vectors_inv.shape == vectors.shape
             assert out_vectors_inv.device == vectors.device
 
             # Roundtrip
-            assert torch.allclose(points, transform_points(hom, out_points_inv))
-            assert torch.allclose(points, transform_points(hom_inv, out_points))
-            assert torch.allclose(vectors, transform_vectors(hom, out_vectors_inv))
-            assert torch.allclose(vectors, transform_vectors(hom_inv, out_vectors))
+            assert torch.allclose(points, transform_points(tf.direct, out_points_inv))
+            assert torch.allclose(points, transform_points(tf.inverse, out_points))
+            assert torch.allclose(
+                vectors, transform_vectors(tf.direct, out_vectors_inv)
+            )
+            assert torch.allclose(vectors, transform_vectors(tf.inverse, out_vectors))
 
 
-def transforms_3d() -> list[tuple[HomMatrix, HomMatrix]]:
+def transforms_3d() -> list[Tf3D]:
     base = hom_identity_3d(
         dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
     t1 = hom_translate_3d(torch.tensor([1.0, 2.0, 3.0]))
     t2 = hom_rotate_3d(torch.tensor(0.5), torch.tensor(0.6))
-    t3 = kinematic_chain_append(*base, *t1)
-    t4 = kinematic_chain_append(*t3, *t2)
-    t5 = kinematic_chain_append(*t4, *t4)
-    t6 = kinematic_chain_extend(*base, [t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
-    t7 = hom_identity(
-        3, dtype=torch.get_default_dtype(), device=torch.get_default_device()
+    t3 = kinematic_chain_append_3d(base, t1)
+    t4 = kinematic_chain_append_3d(t3, t2)
+    t5 = kinematic_chain_append_3d(t4, t4)
+    t6 = kinematic_chain_extend_3d(base, [t1, t2, t3])
+    t7 = hom_identity_3d(
+        dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
-    t8 = hom_compose([t1[0], t2[0], t3[0]], [t1[1], t2[1], t3[1]])
-    t9 = hom_translate(torch.tensor([1.0, 2.0, -3.0]))
-    t10 = hom_scale(3, torch.tensor(1.0))
-    t11 = hom_scale(3, torch.tensor(-1.0))
+    t8 = hom_compose_3d([t1, t2, t3])
+    t9 = hom_translate_3d(torch.tensor([1.0, 2.0, -3.0]))
+    t10 = hom_scale_3d(torch.tensor(1.0))
+    t11 = hom_scale_3d(torch.tensor(-1.0))
 
     return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
@@ -167,39 +177,43 @@ def test_transform_functions_3d() -> None:
     ]
 
     for points, vectors in zip(test_points, test_vectors):
-        for hom, hom_inv in transforms_3d():
-            assert hom.dtype == points.dtype
-            assert hom.dtype == vectors.dtype
-            assert hom.device == points.device
-            assert hom.device == vectors.device
-            assert hom.shape == (4, 4)
+        for tf in transforms_3d():
+            assert tf.dtype == points.dtype
+            assert tf.dtype == vectors.dtype
+            assert tf.device == points.device
+            assert tf.device == vectors.device
+            assert tf.shape == (4, 4)
 
-            out_points = transform_points(hom, points)
+            out_points = transform_points(tf.direct, points)
             assert out_points.dtype == points.dtype
             assert out_points.shape == points.shape
             assert out_points.device == points.device
 
-            out_points_inv = transform_points(hom_inv, points)
+            out_points_inv = transform_points(tf.inverse, points)
             assert out_points_inv.dtype == points.dtype
             assert out_points_inv.shape == points.shape
             assert out_points_inv.device == points.device
 
-            out_vectors = transform_vectors(hom, vectors)
+            out_vectors = transform_vectors(tf.direct, vectors)
             assert out_vectors.dtype == vectors.dtype
             assert out_vectors.shape == vectors.shape
             assert out_vectors.device == vectors.device
 
-            out_vectors_inv = transform_vectors(hom_inv, vectors)
+            out_vectors_inv = transform_vectors(tf.inverse, vectors)
             assert out_vectors_inv.dtype == vectors.dtype
             assert out_vectors_inv.shape == vectors.shape
             assert out_vectors_inv.device == vectors.device
 
-            out_rays_points, out_rays_vectors = transform_rays(hom, points, vectors)
+            out_rays_points, out_rays_vectors = transform_rays(
+                tf.direct, points, vectors
+            )
             assert torch.allclose(out_rays_points, out_points)
             assert torch.allclose(out_rays_vectors, out_vectors)
 
             # Roundtrip
-            assert torch.allclose(points, transform_points(hom, out_points_inv))
-            assert torch.allclose(points, transform_points(hom_inv, out_points))
-            assert torch.allclose(vectors, transform_vectors(hom, out_vectors_inv))
-            assert torch.allclose(vectors, transform_vectors(hom_inv, out_vectors))
+            assert torch.allclose(points, transform_points(tf.direct, out_points_inv))
+            assert torch.allclose(points, transform_points(tf.inverse, out_points))
+            assert torch.allclose(
+                vectors, transform_vectors(tf.direct, out_vectors_inv)
+            )
+            assert torch.allclose(vectors, transform_vectors(tf.inverse, out_vectors))

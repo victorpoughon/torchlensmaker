@@ -21,9 +21,9 @@ import torch
 from jaxtyping import Float
 
 
+from torchlensmaker.types import Tf
 from torchlensmaker.core.tensor_manip import filter_optional_tensor, filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    HomMatrix,
     hom_identity,
     transform_points,
 )
@@ -36,8 +36,7 @@ class OpticalData:
     dtype: torch.dtype
 
     # Forward kinematic chain
-    dfk: HomMatrix  # direct
-    ifk: HomMatrix  # inverse
+    fk: Tf
 
     # Light rays in parametric form: P + tV
     P: Float[torch.Tensor, "N D"]

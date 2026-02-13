@@ -21,7 +21,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import HomMatrix2D, HomMatrix3D
+from torchlensmaker.types import HomMatrix2D, HomMatrix3D, Tf2D, Tf3D
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
@@ -50,11 +50,11 @@ from torchlensmaker.testing.test_utils import (
 
 
 def check_valid_kinematic_chain_2d(
-    dfk: HomMatrix2D,
-    ifk: HomMatrix2D,
+    tf: Tf2D,
     expected_dtype: torch.dtype,
     expected_device: torch.device,
 ) -> None:
+    dfk, ifk = tf.direct, tf.inverse
     assert torch.all(torch.isfinite(dfk))
     assert torch.all(torch.isfinite(ifk))
     assert dfk.shape == (3, 3)
@@ -74,11 +74,11 @@ def check_valid_kinematic_chain_2d(
 
 
 def check_valid_kinematic_chain_3d(
-    dfk: HomMatrix3D,
-    ifk: HomMatrix3D,
+    tf: Tf3D,
     expected_dtype: torch.dtype,
     expected_device: torch.device,
 ) -> None:
+    dfk, ifk = tf.direct, tf.inverse
     assert torch.all(torch.isfinite(dfk))
     assert torch.all(torch.isfinite(ifk))
     assert dfk.shape == (4, 4)
@@ -105,17 +105,15 @@ def check_kinematic_element_2d(
     allow_none_grad: bool = False,
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
-    dfk, ifk = hom_identity_2d(dtype, device)
+    tf = hom_identity_2d(dtype, device)
 
     if trainable:
-        dfk_out, ifk_out = check_model_eval_and_grad(
-            element, (dfk, ifk), allow_none_grad
-        )
+        tf_out = check_model_eval_and_grad(element, (tf,), allow_none_grad)
     else:
-        dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
+        tf_out = check_model_eval(element, (tf,))
 
     # Check that output is a valid kinematic chain
-    check_valid_kinematic_chain_2d(dfk_out, ifk_out, dtype, device)
+    check_valid_kinematic_chain_2d(tf_out, dtype, device)
 
 
 def check_kinematic_element_3d(
@@ -126,17 +124,15 @@ def check_kinematic_element_3d(
     allow_none_grad: bool = False,
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
-    dfk, ifk = hom_identity_3d(dtype, device)
+    tf = hom_identity_3d(dtype, device)
 
     if trainable:
-        dfk_out, ifk_out = check_model_eval_and_grad(
-            element, (dfk, ifk), allow_none_grad
-        )
+        tf_out = check_model_eval_and_grad(element, (tf,), allow_none_grad)
     else:
-        dfk_out, ifk_out = check_model_eval(element, (dfk, ifk))
+        tf_out = check_model_eval(element, (tf,))
 
     # Check that output is a valid kinematic chain
-    check_valid_kinematic_chain_3d(dfk_out, ifk_out, dtype, device)
+    check_valid_kinematic_chain_3d(tf_out, dtype, device)
 
 
 def test_elements_2d() -> None:

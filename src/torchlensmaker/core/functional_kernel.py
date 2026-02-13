@@ -19,24 +19,64 @@ import torch
 import torch.nn as nn
 from torch.onnx import ONNXProgram
 
-from typing import List, Any, cast
+from typing import Type
+from itertools import chain
+from dataclasses import dataclass, is_dataclass, fields, astuple
+from torchlensmaker.types import Tf2D, Tf3D
+from typing import List, Any, cast, TypeAlias
+
+KernelIOType: TypeAlias = torch.Tensor | Tf2D | Tf3D
+
+
+torch.export.register_dataclass(Tf2D)
+torch.export.register_dataclass(Tf3D)
+
+def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
+    return [name for name, typ in args]
+
+def kernel_flat_io(
+    t: KernelIOType | tuple[KernelIOType, ...],
+) -> tuple[torch.Tensor, ...]:
+    "Transform a tree of kernel inputs or outputs into a flat tupl of tensors"
+
+    if isinstance(t, torch.Tensor):
+        return (t,)
+    if is_dataclass(t):
+        return astuple(t)
+    if isinstance(t, tuple):
+        return tuple(e for elem in t for e in kernel_flat_io(elem))
+    else:
+        raise RuntimeError("flatten_kernel_outputs(): Invalid kernel output type")
+
+
+def kernel_flat_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
+    flat_names: list[str] = []
+    for name, typ in args:
+        if is_dataclass(typ):
+            flat_names.extend([name + "." + f.name for f in fields(typ)])
+        else:
+            flat_names.append(name)
+
+    return flat_names
 
 
 class FunctionalKernel:
-    input_names: List[str]
-    param_names: List[str]
-    output_names: List[str]
-    forward_dtype_device: bool = False # true if the kernel forward() function takes dtype and device arguments
-    export_legacy: bool = False # true if onnx export must use legacy torch script (instead of default dynamo)
+    inputs: list[tuple[str, Type[KernelIOType]]]
+    params: list[tuple[str, Type[KernelIOType]]]
+    outputs: list[tuple[str, Type[KernelIOType]]]
+    forward_dtype_device: bool = (
+        False  # true if the kernel forward() function takes dtype and device arguments
+    )
+    export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
 
     @staticmethod
-    def forward(*args: Any) -> Any:
+    def forward(*args: Any) -> KernelIOType:
         raise NotImplementedError
 
     @staticmethod
     def example_inputs(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[torch.Tensor, ...]:
+    ) -> tuple[KernelIOType, ...]:
         raise NotImplementedError
 
     @staticmethod
@@ -90,13 +130,17 @@ def export_onnx_dynamo(
         else kernel.forward
     )
 
+    flat_input_names = kernel_flat_names(kernel.inputs)
+    flat_param_names = kernel_flat_names(kernel.params)
+    flat_output_names = kernel_flat_names(kernel.outputs)
+
     onnx_program = cast(
         ONNXProgram,
         torch.onnx.export(
             FuncModule(kernel_forward),
             example_inputs,
-            input_names=kernel.input_names + kernel.param_names,
-            output_names=kernel.output_names,
+            input_names=flat_input_names + flat_param_names,
+            output_names=flat_output_names,
             opset_version=18,
             dynamo=True,
         ),
@@ -126,11 +170,15 @@ def export_onnx_legacy(
         else kernel.forward
     )
 
+    flat_input_names = kernel_flat_names(kernel.inputs)
+    flat_param_names = kernel_flat_names(kernel.params)
+    flat_output_names = kernel_flat_names(kernel.outputs)
+
     torch.onnx.export(
         FuncModule(kernel_forward),
         example_inputs,
-        input_names=kernel.input_names + kernel.param_names,
-        output_names=kernel.output_names,
+        input_names=flat_input_names + flat_param_names,
+        output_names=flat_output_names,
         f=model_path,
         opset_version=18,
         dynamo=False,

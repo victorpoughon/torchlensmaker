@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
-from jaxtyping import Float
 
 from torchlensmaker.types import (
-    HomMatrix2D,
-    HomMatrix3D,
+    ScalarTensor,
+    Tf2D,
+    Tf3D,
 )
 
 from .homogeneous_geometry import (
@@ -29,92 +29,70 @@ from .homogeneous_geometry import (
     hom_translate_3d,
     hom_identity_2d,
     hom_identity_3d,
-    kinematic_chain_append,
+    kinematic_chain_append_2d,
+    kinematic_chain_append_3d,
 )
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
 class Gap2DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf2D)]
+    params = [("X", ScalarTensor)]
+    outputs = [("tf_out", Tf2D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix2D,
-        ifk: HomMatrix2D,
-        X: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        hom, hom_inv = hom_translate_2d(torch.stack((X, torch.zeros_like(X))))
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+    def forward(fk: Tf2D, X: ScalarTensor) -> Tf2D:
+        joint = hom_translate_2d(torch.stack((X, torch.zeros_like(X))))
+        return kinematic_chain_append_2d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return hom_identity_2d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf2D]:
+        return (hom_identity_2d(dtype=dtype, device=device),)
 
     @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[Float[torch.Tensor, ""]]:
+    def example_params(dtype: torch.dtype, device: torch.device) -> tuple[ScalarTensor]:
         return (torch.tensor(5.0, dtype=dtype, device=device),)
 
 
 class Gap3DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf3D)]
+    params = [("X", ScalarTensor)]
+    outputs = [("tf_out", Tf3D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix3D,
-        ifk: HomMatrix3D,
-        X: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        hom, hom_inv = hom_translate_3d(
+    def forward(fk: Tf3D, X: ScalarTensor) -> Tf3D:
+        joint = hom_translate_3d(
             torch.stack((X, torch.zeros_like(X), torch.zeros_like(X)))
         )
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+        return kinematic_chain_append_3d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return hom_identity_3d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf3D]:
+        return (hom_identity_3d(dtype=dtype, device=device),)
 
     @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[Float[torch.Tensor, ""]]:
+    def example_params(dtype: torch.dtype, device: torch.device) -> tuple[ScalarTensor]:
         return (torch.tensor(1.0, dtype=dtype, device=device),)
 
 
 class Translate2DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X", "Y"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf2D)]
+    params = [("X", ScalarTensor), ("Y", ScalarTensor)]
+    outputs = [("tf_out", Tf2D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix2D,
-        ifk: HomMatrix2D,
-        X: Float[torch.Tensor, ""],
-        Y: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        hom, hom_inv = hom_translate_2d(torch.stack((X, Y)))
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+    def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
+        joint = hom_translate_2d(torch.stack((X, Y)))
+        return kinematic_chain_append_2d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return hom_identity_2d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf2D]:
+        return (hom_identity_2d(dtype=dtype, device=device),)
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[Float[torch.Tensor, ""], Float[torch.Tensor, ""]]:
+    ) -> tuple[ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(5.0, dtype=dtype, device=device),
             torch.tensor(2.0, dtype=dtype, device=device),
@@ -122,33 +100,23 @@ class Translate2DKernel(FunctionalKernel):
 
 
 class Translate3DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X", "Y", "Z"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf3D)]
+    params = [("X", ScalarTensor), ("Y", ScalarTensor), ("Z", ScalarTensor)]
+    outputs = [("tf_out", Tf3D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix2D,
-        ifk: HomMatrix2D,
-        X: Float[torch.Tensor, ""],
-        Y: Float[torch.Tensor, ""],
-        Z: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        hom, hom_inv = hom_translate_3d(torch.stack((X, Y, Z)))
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+    def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
+        joint = hom_translate_3d(torch.stack((X, Y, Z)))
+        return kinematic_chain_append_3d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return hom_identity_3d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf3D]:
+        return (hom_identity_3d(dtype=dtype, device=device),)
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        Float[torch.Tensor, ""], Float[torch.Tensor, ""], Float[torch.Tensor, ""]
-    ]:
+    ) -> tuple[ScalarTensor, ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(1.0, dtype=dtype, device=device),
             torch.tensor(2.0, dtype=dtype, device=device),
@@ -159,57 +127,41 @@ class Translate3DKernel(FunctionalKernel):
 class Rotate2DKernel(FunctionalKernel):
     "2D rotation in degrees"
 
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["theta"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf2D)]
+    params = [("theta", ScalarTensor)]
+    outputs = [("tf_out", Tf2D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix2D, ifk: HomMatrix2D, theta: Float[torch.Tensor, ""]
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        hom, hom_inv = hom_rotate_2d(torch.deg2rad(theta))
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+    def forward(fk: Tf2D, theta: ScalarTensor) -> Tf2D:
+        joint = hom_rotate_2d(torch.deg2rad(theta))
+        return kinematic_chain_append_2d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return hom_identity_2d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf2D]:
+        return (hom_identity_2d(dtype=dtype, device=device),)
 
     @staticmethod
-    def example_params(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[Float[torch.Tensor, ""]]:
+    def example_params(dtype: torch.dtype, device: torch.device) -> tuple[ScalarTensor]:
         return (torch.tensor(0.1, dtype=dtype, device=device),)
 
 
 class AbsolutePosition2DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X", "Y"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf2D)]
+    params = [("X", ScalarTensor), ("Y", ScalarTensor)]
+    outputs = [("tf_out", Tf2D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix2D,
-        ifk: HomMatrix2D,
-        X: Float[torch.Tensor, ""],
-        Y: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
+    def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
         return hom_translate_2d(torch.stack([X, Y]))
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return hom_identity_2d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf2D]:
+        return (hom_identity_2d(dtype=dtype, device=device),)
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        Float[torch.Tensor, ""],
-        Float[torch.Tensor, ""],
-    ]:
+    ) -> tuple[ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(5.0, dtype=dtype, device=device),
             torch.tensor(10.0, dtype=dtype, device=device),
@@ -217,34 +169,22 @@ class AbsolutePosition2DKernel(FunctionalKernel):
 
 
 class AbsolutePosition3DKernel(FunctionalKernel):
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["X", "Y", "Z"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf3D)]
+    params = [("X", ScalarTensor), ("Y", ScalarTensor), ("Z", ScalarTensor)]
+    outputs = [("tf_out", Tf3D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix3D,
-        ifk: HomMatrix3D,
-        X: Float[torch.Tensor, ""],
-        Y: Float[torch.Tensor, ""],
-        Z: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
+    def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
         return hom_translate_3d(torch.stack([X, Y, Z]))
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return hom_identity_3d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf3D]:
+        return (hom_identity_3d(dtype=dtype, device=device),)
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        Float[torch.Tensor, ""],
-        Float[torch.Tensor, ""],
-        Float[torch.Tensor, ""],
-    ]:
+    ) -> tuple[ScalarTensor, ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(5.0, dtype=dtype, device=device),
             torch.tensor(10.0, dtype=dtype, device=device),
@@ -255,33 +195,23 @@ class AbsolutePosition3DKernel(FunctionalKernel):
 class Rotate3DKernel(FunctionalKernel):
     "3D rotation in degrees"
 
-    input_names = ["dfk_in", "ifk_in"]
-    param_names = ["y", "z"]
-    output_names = ["dfk_out", "ifk_out"]
+    inputs = [("tf_in", Tf3D)]
+    params = [("y", ScalarTensor), ("z", ScalarTensor)]
+    outputs = [("tf_out", Tf3D)]
 
     @staticmethod
-    def forward(
-        dfk: HomMatrix3D,
-        ifk: HomMatrix3D,
-        y: Float[torch.Tensor, ""],
-        z: Float[torch.Tensor, ""],
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        hom, hom_inv = hom_rotate_3d(y, z)
-        return kinematic_chain_append(dfk, ifk, hom, hom_inv)
+    def forward(fk: Tf3D, y: ScalarTensor, z: ScalarTensor) -> Tf3D:
+        joint = hom_rotate_3d(y, z)
+        return kinematic_chain_append_3d(fk, joint)
 
     @staticmethod
-    def example_inputs(
-        dtype: torch.dtype, device: torch.device
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return hom_identity_3d(dtype=dtype, device=device)
+    def example_inputs(dtype: torch.dtype, device: torch.device) -> tuple[Tf3D]:
+        return (hom_identity_3d(dtype=dtype, device=device),)
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        Float[torch.Tensor, ""],
-        Float[torch.Tensor, ""],
-    ]:
+    ) -> tuple[ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(0.1, dtype=dtype, device=device),
             torch.tensor(0.2, dtype=dtype, device=device),

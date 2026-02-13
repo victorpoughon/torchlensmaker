@@ -28,6 +28,9 @@ from torchlensmaker.types import (
     HomMatrix3D,
     HomMatrix,
     ScalarTensor,
+    Tf2D,
+    Tf3D,
+    Tf,
 )
 from .kinematics_kernels import (
     AbsolutePosition2DKernel,
@@ -48,8 +51,8 @@ from torchlensmaker.elements.sequential_element import SequentialElement
 
 class KinematicElement(SequentialElement):
     def sequential(self, data: OpticalData) -> OpticalData:
-        dfk, ifk = self(data.dfk, data.ifk)
-        return data.replace(dfk=dfk, ifk=ifk)
+        fk = self(data.fk)
+        return data.replace(fk=fk)
 
 
 class KinematicSequential(nn.Module):
@@ -57,27 +60,24 @@ class KinematicSequential(nn.Module):
         super().__init__()
         self.sequence = nn.ModuleList(sequence)
 
-    def forward(self, dfk: HomMatrix, ifk: HomMatrix):
+    def forward(self, fk: Tf):
         for mod in self.sequence:
-            dfk, ifk = mod(dfk, ifk)
-        return dfk, ifk
+            fk = mod(fk)
+        return fk
 
 
 # TODO this is used for lens only to make a "kinematic only" sequential model
 # no kernel needed for now
 class ExactKinematicElement2D(KinematicElement):
-    def __init__(self, hom: HomMatrix2D, hom_inv: HomMatrix2D):
+    def __init__(self, joint: Tf2D):
         super().__init__()
-        self.hom = hom
-        self.hom_inv = hom_inv
+        self.joint = joint
 
-    def forward(
-        self, dfk: HomMatrix2D, ifk: HomMatrix2D
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return kinematic_chain_append(dfk, ifk, self.hom, self.hom_inv)
+    def forward(self, fk: Tf2D) -> Tf2D:
+        return kinematic_chain_append(fk, self.joint)
 
     def reverse(self) -> Self:
-        return type(self)(self.hom_inv, self.hom)
+        return type(self)(Tf2D(self.joint.inverse, self.joint.direct))
 
 
 class Gap(KinematicElement):
@@ -96,11 +96,11 @@ class Gap(KinematicElement):
         self.func2d = Gap2DKernel()
         self.func3d = Gap3DKernel()
 
-    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        if dfk[0].shape[0] == 3:
-            return self.func2d.forward(dfk, ifk, self.x)
+    def forward(self, fk: Tf) -> Tf:
+        if fk.shape[0] == 3:
+            return self.func2d.forward(fk, self.x)
         else:
-            return self.func3d.forward(dfk, ifk, self.x)
+            return self.func3d.forward(fk, self.x)
 
     def reverse(self) -> Self:
         return type(self)(-self.x.detach(), self.x.requires_grad)
@@ -119,14 +119,14 @@ class Translate2D(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
 
-    def forward(
-        self, dfk: HomMatrix2D, ifk: HomMatrix2D
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return self.func.forward(dfk, ifk, self.x, self.y)
+    def forward(self, fk: Tf2D) -> Tf2D:
+        return self.func.forward(fk, self.x, self.y)
 
     def reverse(self) -> Self:
         return type(self)(
-            -self.x.detach(), -self.y.detach(), (self.x.requires_grad, self.y.requires_grad)
+            -self.x.detach(),
+            -self.y.detach(),
+            (self.x.requires_grad, self.y.requires_grad),
         )
 
 
@@ -140,10 +140,8 @@ class TranslateVec2D(KinematicElement):
         self.func = Translate2DKernel()
         self.t = init_param(self, "t", t, trainable)
 
-    def forward(
-        self, dfk: HomMatrix2D, ifk: HomMatrix2D
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return self.func.forward(dfk, ifk, *torch.unbind(self.t))
+    def forward(self, fk: Tf2D) -> Tf2D:
+        return self.func.forward(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -164,10 +162,8 @@ class Translate3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(
-        self, dfk: HomMatrix3D, ifk: HomMatrix3D
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.x, self.y, self.z)
+    def forward(self, fk: Tf3D) -> Tf3D:
+        return self.func.forward(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
         return type(self)(
@@ -188,10 +184,8 @@ class TranslateVec3D(KinematicElement):
         self.func = Translate3DKernel()
         self.t = init_param(self, "t", t, trainable)
 
-    def forward(
-        self, dfk: HomMatrix3D, ifk: HomMatrix3D
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, *torch.unbind(self.t))
+    def forward(self, fk: Tf3D) -> Tf3D:
+        return self.func.forward(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -209,10 +203,8 @@ class Rotate2D(KinematicElement):
         self.func = Rotate2DKernel()
         self.theta = init_param(self, "theta", theta, trainable)
 
-    def forward(
-        self, dfk: HomMatrix2D, ifk: HomMatrix2D
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return self.func.forward(dfk, ifk, self.theta)
+    def forward(self, fk: Tf2D) -> Tf2D:
+        return self.func.forward(fk, self.theta)
 
     def reverse(self) -> Self:
         return type(self)(-self.theta.detach(), self.theta.requires_grad)
@@ -231,10 +223,8 @@ class AbsolutePosition2D(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
 
-    def forward(
-        self, dfk: HomMatrix2D, ifk: HomMatrix2D
-    ) -> tuple[HomMatrix2D, HomMatrix2D]:
-        return self.func.forward(dfk, ifk, self.x, self.y)
+    def forward(self, fk: Tf2D) -> Tf2D:
+        return self.func.forward(fk, self.x, self.y)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition2D kinematic element is not reversable")
@@ -255,10 +245,8 @@ class AbsolutePosition3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(
-        self, dfk: HomMatrix3D, ifk: HomMatrix3D
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.x, self.y, self.z)
+    def forward(self, fk: Tf3D) -> Tf3D:
+        return self.func.forward(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition3D kinematic element is not reversable")
@@ -277,10 +265,8 @@ class Rotate3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(
-        self, dfk: HomMatrix3D, ifk: HomMatrix3D
-    ) -> tuple[HomMatrix3D, HomMatrix3D]:
-        return self.func.forward(dfk, ifk, self.y, self.z)
+    def forward(self, fk: Tf3D) -> Tf3D:
+        return self.func.forward(fk, self.y, self.z)
 
     # TODO support reverse for 3D rotations
 
@@ -303,11 +289,11 @@ class Rotate(KinematicElement):
         self.func2d = Rotate2DKernel()
         self.func3d = Rotate3DKernel()
 
-    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        if dfk[0].shape[0] == 3:
-            return self.func2d.forward(dfk, ifk, self.z)
+    def forward(self, fk: Tf) -> Tf:
+        if fk.shape[0] == 3:
+            return self.func2d.forward(fk, self.z)
         else:
-            return self.func3d.forward(dfk, ifk, self.y, self.z)
+            return self.func3d.forward(fk, self.y, self.z)
 
 
 class Translate(KinematicElement):
@@ -330,8 +316,8 @@ class Translate(KinematicElement):
         self.func2d = Translate2DKernel()
         self.func3d = Translate3DKernel()
 
-    def forward(self, dfk: HomMatrix, ifk: HomMatrix) -> tuple[HomMatrix, HomMatrix]:
-        if dfk[0].shape[0] == 3:
-            return self.func2d.forward(dfk, ifk, self.x, self.y)
+    def forward(self, fk: Tf) -> Tf:
+        if fk.shape[0] == 3:
+            return self.func2d.forward(fk, self.x, self.y)
         else:
-            return self.func3d.forward(dfk, ifk, self.x, self.y, self.z)
+            return self.func3d.forward(fk, self.x, self.y, self.z)

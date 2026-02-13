@@ -17,13 +17,14 @@
 import torch
 import torch.nn as nn
 
+from torchlensmaker.types import Tf, Tf2D, Tf3D
+
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_extend,
     kinematic_chain_append,
     hom_translate,
     hom_identity,
-    HomMatrix,
     hom_scale,
 )
 from torchlensmaker.surfaces.local_surface import LocalSurface
@@ -64,9 +65,7 @@ class CollisionSurface(nn.Module):
         for name, p in surface.parameters().items():
             self.register_parameter(name, p)
 
-    def kinematic_transform(
-        self, dim: int, dtype: torch.dtype
-    ) -> tuple[HomMatrix, HomMatrix]:
+    def kinematic_transform(self, dim: int, dtype: torch.dtype) -> Tf:
         "Additional transform that applies to the next element"
 
         assert dtype == self.surface.dtype
@@ -90,9 +89,7 @@ class CollisionSurface(nn.Module):
         else:
             return hom_identity(dim, dtype, device)
 
-    def surface_transform(
-        self, dim: int, dtype: torch.dtype
-    ) -> tuple[HomMatrix, HomMatrix]:
+    def surface_transform(self, dim: int, dtype: torch.dtype) -> Tf:
         "Additional transform that applies to the surface"
 
         assert dtype == self.surface.dtype
@@ -108,9 +105,7 @@ class CollisionSurface(nn.Module):
         else:
             return tf_scale
 
-    def forward(
-        self, inputs: OpticalData
-    ) -> tuple[Tensor, Tensor, Tensor, tuple[HomMatrix, HomMatrix]]:
+    def forward(self, inputs: OpticalData) -> tuple[Tensor, Tensor, Tensor, Tf]:
         dim, dtype = inputs.dim, inputs.dtype
 
         # Collision detection with the surface

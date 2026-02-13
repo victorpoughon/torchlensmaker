@@ -17,19 +17,23 @@
 from pathlib import Path
 from itertools import chain
 
+import itertools
+from typing import TypeAlias
+from dataclasses import is_dataclass
 import pytest
 
 import torch
 import onnxruntime
 
-from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
-
-
-def astuple(t: tuple[torch.Tensor, ...] | torch.Tensor):
-    if isinstance(t, tuple):
-        return t
-    else:
-        return (t,)
+from torchlensmaker.types import Tf2D, Tf3D
+from torchlensmaker.core.functional_kernel import (
+    export_onnx,
+    FunctionalKernel,
+    KernelIOType,
+    kernel_flat_io,
+    kernel_flat_names,
+    kernel_names,
+)
 
 
 def check_kernels_example_inputs_and_params(
@@ -37,23 +41,24 @@ def check_kernels_example_inputs_and_params(
 ) -> None:
     example_inputs = kernel.example_inputs(dtype, device)
     assert isinstance(example_inputs, tuple)
-    assert len(example_inputs) == len(kernel.input_names)
+    assert len(example_inputs) == len(kernel.inputs)
     assert all(t.dtype == dtype for t in example_inputs)
 
     example_params = kernel.example_params(dtype, device)
     assert isinstance(example_params, tuple)
-    assert len(example_params) == len(kernel.param_names), (
-        example_params,
-        kernel.param_names,
-    )
+    assert len(example_params) == len(kernel.params)
     # dont check dtype of params because it can be different than the main dtype
     # in some cases, e.g. sampling
 
-    expected_num_outputs = len(kernel.output_names)
+    expected_num_outputs = len(kernel.outputs)
     assert expected_num_outputs != 0, "Kernel with no output is not supported"
 
     # Verify no duplicate names
-    all_names = kernel.input_names + kernel.param_names + kernel.output_names
+    all_names = (
+        kernel_names(kernel.inputs)
+        + kernel_names(kernel.params)
+        + kernel_names(kernel.outputs)
+    )
     assert len(all_names) == len(set(all_names))
 
 
@@ -65,33 +70,30 @@ def check_kernels_eval(
 ) -> None:
     # Evaluate kernel with example inputs
     kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
-    kernel_outputs_tensors = kernel.forward(
+    kernel_outputs = kernel.forward(
         *kernel.example_inputs(dtype, device),
         *kernel.example_params(dtype, device),
         **kwargs,
     )
 
-    assert isinstance(kernel_outputs_tensors, (tuple, torch.Tensor)), (
-        "Kernel forward() must return a tensor or a tuple of tensors"
+    assert isinstance(kernel_outputs, (tuple, KernelIOType)), (
+        f"Kernel return type not allowed: {type(kernel_outputs)}"
     )
 
     # Check number of outputs
-    expected_num_outputs = len(kernel.output_names)
+    expected_num_outputs = len(kernel.outputs)
     if expected_num_outputs == 1:
-        assert isinstance(kernel_outputs_tensors, torch.Tensor), (
-            "Kernel with a single output must return a tensor"
+        assert not isinstance(kernel_outputs, tuple), (
+            "Kernel with a single output must not return a tuple"
         )
     else:
-        assert isinstance(kernel_outputs_tensors, tuple), (
-            "Kernel with multiple outputs must return a tuple of tensors"
+        assert isinstance(kernel_outputs, tuple), (
+            "Kernel with multiple outputs must return a tuple"
         )
-        assert all(isinstance(t, torch.Tensor) for t in kernel_outputs_tensors), (
-            "Kernel with multiple outputs must return a tuple of tensors"
-        )
-        assert expected_num_outputs == len(kernel_outputs_tensors)
+        assert expected_num_outputs == len(kernel_outputs)
 
     # Check dtype and device
-    for actual in astuple(kernel_outputs_tensors):
+    for actual in kernel_flat_io(kernel_outputs):
         # either bool for masks, or the input dtype
         assert actual.dtype == torch.bool or actual.dtype == dtype, (
             f"Expected kernel output dtype {dtype}, got {actual.dtype}"
@@ -113,7 +115,10 @@ def check_kernels_export_onnx(
     export_onnx(model_path, kernel, dtype, device)
 
     # Load the exported model
-    onnx_inputs = [t.numpy(force=True) for t in kernel.example_inputs(dtype, device)]
+    onnx_inputs = [
+        t.numpy(force=True)
+        for t in kernel_flat_io(kernel.example_inputs(dtype, device))
+    ]
     onnx_params = [t.numpy(force=True) for t in kernel.example_params(dtype, device)]
 
     ort_session = onnxruntime.InferenceSession(
@@ -123,9 +128,12 @@ def check_kernels_export_onnx(
     # Check that inputs, params and outputs names match
     model_input_names = [inpt.name for inpt in ort_session.get_inputs()]
     model_output_names = [output.name for output in ort_session.get_outputs()]
+    flat_input_names = kernel_flat_names(kernel.inputs)
+    flat_param_names = kernel_flat_names(kernel.params)
+    flat_output_names = kernel_flat_names(kernel.outputs)
 
-    assert model_input_names == kernel.input_names + kernel.param_names
-    assert model_output_names == kernel.output_names
+    assert model_input_names == flat_input_names + flat_param_names
+    assert model_output_names == flat_output_names
 
     # Evaluate both on example inputs
     ort_input = {
@@ -138,7 +146,7 @@ def check_kernels_export_onnx(
     kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
 
     ort_outputs = ort_session.run(None, ort_input)
-    kernel_outputs_tensors = astuple(
+    kernel_outputs_tensors = kernel_flat_io(
         kernel.forward(
             *kernel.example_inputs(dtype, device),
             *kernel.example_params(dtype, device),
