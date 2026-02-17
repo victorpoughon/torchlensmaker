@@ -30,7 +30,9 @@ from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
 from torchlensmaker.implicit_surfaces.surface_elements import SphereC
 
 
-def check_model_eval(model: nn.Module, inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D]) -> Any:
+def check_model_eval(
+    model: nn.Module, inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D]
+) -> Any:
     "Evaluate a model forwards and run sanity checks"
 
     # Check the forward pass
@@ -47,7 +49,9 @@ def check_model_eval(model: nn.Module, inputs: tuple[Batch2DTensor, Batch2DTenso
 
 
 def check_model_eval_and_grad(
-    model: nn.Module, inputs: tuple[Any], allow_none_grad: bool = False
+    model: nn.Module,
+    inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D],
+    allow_none_grad: bool = False,
 ) -> Any:
     """
     Evaluate a model forwards and backwards and run sanity checks

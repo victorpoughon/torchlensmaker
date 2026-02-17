@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TypeAlias, Callable
-from jaxtyping import Float, Int
+from jaxtyping import Float, Int, Bool
 import torch
 
 from torchlensmaker.types import (
@@ -87,10 +87,14 @@ def implicit_solver_newton_while_loop(
     https://github.com/pytorch/pytorch/issues/172568
     """
 
-    def cond_fn(t, i, n):
+    def cond_fn(
+        t: BatchTensor, i: Int[torch.Tensor, ""], n: Int[torch.Tensor, ""]
+    ) -> Bool[torch.Tensor, ""]:
         return i < (n - 1)
 
-    def body_fn(t, i, n):
+    def body_fn(
+        t: BatchTensor, i: Int[torch.Tensor, ""], n: Int[torch.Tensor, ""]
+    ) -> tuple[BatchTensor, Int[torch.Tensor, ""], Int[torch.Tensor, ""]]:
         points = P + t.unsqueeze(-1) * V
         F, F_grad = implicit_function(points)
 

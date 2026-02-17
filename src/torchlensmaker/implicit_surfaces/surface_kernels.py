@@ -17,6 +17,7 @@
 from functools import partial
 from typing import Any
 
+from typing import TypeAlias
 from jaxtyping import Float, Int, Bool
 import torch
 
@@ -34,11 +35,11 @@ from torchlensmaker.types import (
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_scale,
+    hom_scale_2d,
     hom_identity_2d,
     hom_translate_2d,
     kinematic_chain_append,
-    kinematic_chain_extend,
+    kinematic_chain_extend_2d,
 )
 
 
@@ -90,9 +91,9 @@ def sag_anchor_transforms_2d(
     tf1 = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
 
     # Compose with the existing kinematic chain
-    tfscale = hom_scale(2, scale)
-    tf_surface = kinematic_chain_extend(base, [tf0, tfscale])
-    tf_next = kinematic_chain_extend(base, [tf0, tf1])
+    tfscale = hom_scale_2d(scale)
+    tf_surface = kinematic_chain_extend_2d(base, [tf0, tfscale])
+    tf_next = kinematic_chain_extend_2d(base, [tf0, tf1])
 
     return tf_surface, tf_next
 
@@ -157,16 +158,14 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
 
         # Perform raytrace
-        t, normals, valid = raytrace(
-            P, V, tf_surface, local_solver, domain_function
-        )
+        t, normals, valid = raytrace(P, V, tf_surface, local_solver, domain_function)
 
         return t, normals, valid, tf_surface, tf_next
 
     @staticmethod
     def example_inputs(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, HomMatrix, HomMatrix]:
+    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
         P, V = example_rays_2d(10, dtype, device)
         tf = hom_identity_2d(dtype, device)
         return P, V, tf
