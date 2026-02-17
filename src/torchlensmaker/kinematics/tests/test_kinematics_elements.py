@@ -43,10 +43,52 @@ from torchlensmaker.kinematics.kinematics_elements import (
     KinematicSequential,
 )
 
-from torchlensmaker.testing.test_utils import (
-    check_model_eval,
-    check_model_eval_and_grad,
-)
+
+from torchlensmaker.types import Tf2D, Tf3D, Tf
+
+
+def check_model_eval(model: nn.Module, in_tf: Tf) -> Any:
+    "Evaluate a model forwards and run sanity checks"
+
+    # Check the forward pass
+    out_tf = model(in_tf)
+    assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
+
+    return out_tf
+
+
+def check_model_eval_and_grad(
+    model: nn.Module, in_tf: Tf, allow_none_grad: bool = False
+) -> Any:
+    """
+    Evaluate a model forwards and backwards and run sanity checks
+    Expects at least one trainable parameter
+    """
+
+    # Check the forward pass
+    out_tf = model(in_tf)
+
+    assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
+
+    # Check the backward pass
+    parameters = list(model.named_parameters())
+    assert len(parameters) > 0
+
+    loss = out_tf.direct.sum().pow(2) + out_tf.inverse.sum().pow(2)
+
+    model.zero_grad()
+    loss.backward()  # type: ignore[no-untyped-call]
+    for name, param in parameters:
+        print(f"grad({name}) = {param.grad}")
+        assert allow_none_grad or param.grad is not None
+        if param.grad is not None:
+            assert torch.isfinite(param.grad).all(), (
+                f"Gradient of {name} contains NaN or Inf: {param.grad}"
+            )
+
+    return out_tf
 
 
 def check_valid_kinematic_chain_2d(
@@ -108,9 +150,9 @@ def check_kinematic_element_2d(
     tf = hom_identity_2d(dtype, device)
 
     if trainable:
-        tf_out = check_model_eval_and_grad(element, (tf,), allow_none_grad)
+        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, (tf,))
+        tf_out = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_2d(tf_out, dtype, device)
@@ -127,9 +169,9 @@ def check_kinematic_element_3d(
     tf = hom_identity_3d(dtype, device)
 
     if trainable:
-        tf_out = check_model_eval_and_grad(element, (tf,), allow_none_grad)
+        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, (tf,))
+        tf_out = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_3d(tf_out, dtype, device)
