@@ -57,7 +57,7 @@ class OpticalData:
     loss: torch.Tensor
 
     def target(self) -> torch.Tensor:
-        return transform_points(self.dfk, torch.zeros((self.dim,), dtype=self.dtype))
+        return transform_points(self.fk.direct, torch.zeros((self.dim,), dtype=self.dtype))
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
@@ -112,13 +112,12 @@ def default_input(
     if dtype is None:
         dtype = torch.get_default_dtype()
 
-    dfk, ifk = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
+    tfid = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
 
     return OpticalData(
         dim=dim,
         dtype=dtype,
-        dfk=dfk,
-        ifk=ifk,
+        fk=tfid,
         P=torch.empty((0, dim), dtype=dtype),
         V=torch.empty((0, dim), dtype=dtype),
         rays_wavelength=torch.empty((0,), dtype=dtype),

@@ -19,14 +19,15 @@ from jaxtyping import Float
 import torch
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.types import ScalarTensor, BatchTensor
 
 
 class NonDispersiveMaterialKernel(FunctionalKernel):
     "Material model for a constant index of refraction"
 
-    input_names = ["wavelength"]
-    param_names = ["n"]
-    output_names = ["index"]
+    inputs = {"wavelength": BatchTensor}
+    params = {"n": ScalarTensor}
+    outputs = {"index": BatchTensor}
 
     @staticmethod
     def forward(
@@ -51,9 +52,14 @@ class NonDispersiveMaterialKernel(FunctionalKernel):
 class CauchyMaterialKernel(FunctionalKernel):
     "Material model using Cauchy's equation with four coefficents"
 
-    input_names = ["wavelength"]
-    param_names = ["A", "B", "C", "D"]
-    output_names = ["index"]
+    inputs = {"wavelength": BatchTensor}
+    params = {
+        "A": ScalarTensor,
+        "B": ScalarTensor,
+        "C": ScalarTensor,
+        "D": ScalarTensor,
+    }
+    outputs = {"index": BatchTensor}
 
     @staticmethod
     def forward(
@@ -93,9 +99,16 @@ class CauchyMaterialKernel(FunctionalKernel):
 class SellmeierMaterialKernel(FunctionalKernel):
     "Material model using Sellmeier equation with six coefficents"
 
-    input_names = ["wavelength"]
-    param_names = ["B1", "B2", "B3", "C1", "C2", "C3"]
-    output_names = ["index"]
+    inputs = {"wavelength": BatchTensor}
+    params = params = {
+        "B1": ScalarTensor,
+        "B2": ScalarTensor,
+        "B3": ScalarTensor,
+        "C1": ScalarTensor,
+        "C2": ScalarTensor,
+        "C3": ScalarTensor,
+    }
+    outputs = {"index": BatchTensor}
 
     @staticmethod
     def forward(

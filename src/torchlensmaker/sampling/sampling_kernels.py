@@ -21,11 +21,13 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 from .sampling import disk_sampling
 
+from torchlensmaker.types import BatchTensor, Batch2DTensor
+
 
 class ZeroSampling1DKernel(FunctionalKernel):
-    input_names = []
-    param_names = []
-    output_names = ["samples"]
+    inputs = {}
+    params = {}
+    outputs = {"samples": BatchTensor}
     forward_dtype_device = True
 
     @staticmethod
@@ -46,9 +48,9 @@ class ZeroSampling1DKernel(FunctionalKernel):
 
 
 class ZeroSampling2DKernel(FunctionalKernel):
-    input_names = []
-    param_names = []
-    output_names = ["samples"]
+    inputs = {}
+    params = {}
+    outputs = {"samples": Batch2DTensor}
     forward_dtype_device = True
 
     @staticmethod
@@ -69,9 +71,9 @@ class ZeroSampling2DKernel(FunctionalKernel):
 
 
 class ExactSampling1DKernel(FunctionalKernel):
-    input_names = []
-    param_names = ["ref_samples"]
-    output_names = ["samples"]
+    inputs = {}
+    params = {"ref_samples": BatchTensor}
+    outputs = {"samples": BatchTensor}
     # https://github.com/pytorch/pytorch/issues/173076
     export_legacy = True
     forward_dtype_device = True
@@ -96,9 +98,9 @@ class ExactSampling1DKernel(FunctionalKernel):
 
 
 class ExactSampling2DKernel(FunctionalKernel):
-    input_names = []
-    param_names = ["ref_samples"]
-    output_names = ["samples"]
+    inputs = {}
+    params = {"ref_samples": Batch2DTensor}
+    outputs = {"samples": Batch2DTensor}
     # https://github.com/pytorch/pytorch/issues/173076
     export_legacy = True
     forward_dtype_device = True
@@ -141,9 +143,9 @@ class ExactSampling2DKernel(FunctionalKernel):
 
 
 class LinspaceSampling1DKernel(FunctionalKernel):
-    input_names = []
-    param_names = ["N"]
-    output_names = ["samples"]
+    inputs = {}
+    params = {"N": Int[torch.Tensor, ""]}
+    outputs = {"samples": BatchTensor}
     forward_dtype_device = True
     export_legacy = True
 
@@ -174,9 +176,9 @@ class LinspaceSampling1DKernel(FunctionalKernel):
 
 
 class LinspaceSampling2DKernel(FunctionalKernel):
-    input_names = []
-    param_names = ["Nx", "Ny"]
-    output_names = ["samples"]
+    inputs = {}
+    params = {"Nx": Int[torch.Tensor, ""], "Ny": Int[torch.Tensor, ""]}
+    outputs = {"samples": Batch2DTensor}
     forward_dtype_device = True
     export_legacy = True
 
@@ -212,9 +214,9 @@ class LinspaceSampling2DKernel(FunctionalKernel):
 
 
 class DiskSampling2DKernel(FunctionalKernel):
-    input_names = []
-    param_names = ["Nrho", "Ntheta"]
-    output_names = ["samples"]
+    inputs = {}
+    params = {"Nrho": Int[torch.Tensor, ""], "Ntheta": Int[torch.Tensor, ""]}
+    outputs = {"samples": Batch2DTensor}
     forward_dtype_device = True
     export_legacy = True
 

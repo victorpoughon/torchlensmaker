@@ -95,13 +95,13 @@ def test_flatten_kernel_names() -> None:
     t3 = hom_identity_3d(torch.get_default_dtype(), torch.get_default_device())
 
     # TF2D
-    assert kernel_flat_names([("tf_in", Tf2D)]) == ["tf_in.direct", "tf_in.inverse"]
+    assert kernel_flat_names({"tf_in": Tf2D}) == ["tf_in.direct", "tf_in.inverse"]
 
     # TF3D
-    assert kernel_flat_names([("tf_in", Tf3D)]) == ["tf_in.direct", "tf_in.inverse"]
+    assert kernel_flat_names({"tf_in": Tf3D}) == ["tf_in.direct", "tf_in.inverse"]
 
     # mix case
-    assert kernel_flat_names([("a", Tf3D), ("b", Tf3D), ("c", t(5))]) == [
+    assert kernel_flat_names({"a": Tf2D, "b": Tf3D, "c": torch.Tensor}) == [
         "a.direct",
         "a.inverse",
         "b.direct",

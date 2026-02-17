@@ -32,7 +32,7 @@ torch.export.register_dataclass(Tf2D)
 torch.export.register_dataclass(Tf3D)
 
 def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
-    return [name for name, typ in args]
+    return [name for name, typ in args.items()]
 
 def kernel_flat_io(
     t: KernelIOType | tuple[KernelIOType, ...],
@@ -49,9 +49,9 @@ def kernel_flat_io(
         raise RuntimeError("flatten_kernel_outputs(): Invalid kernel output type")
 
 
-def kernel_flat_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
+def kernel_flat_names(args: dict[str, Type[KernelIOType]]) -> list[str]:
     flat_names: list[str] = []
-    for name, typ in args:
+    for name, typ in args.items():
         if is_dataclass(typ):
             flat_names.extend([name + "." + f.name for f in fields(typ)])
         else:
@@ -61,9 +61,9 @@ def kernel_flat_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
 
 
 class FunctionalKernel:
-    inputs: list[tuple[str, Type[KernelIOType]]]
-    params: list[tuple[str, Type[KernelIOType]]]
-    outputs: list[tuple[str, Type[KernelIOType]]]
+    inputs: dict[str, Type[KernelIOType]]
+    params: dict[str, Type[KernelIOType]]
+    outputs: dict[str, Type[KernelIOType]]
     forward_dtype_device: bool = (
         False  # true if the kernel forward() function takes dtype and device arguments
     )

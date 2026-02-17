@@ -26,6 +26,8 @@ from torchlensmaker.core.tensor_manip import (
 
 from torchlensmaker.core.geometry import rotate_x_zy
 
+from torchlensmaker.types import BatchTensor, Batch2DTensor, Batch3DTensor, ScalarTensor
+
 
 class ObjectGeometry2DKernel(FunctionalKernel):
     """
@@ -38,26 +40,26 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     will determine if the object is in the near field or at infinity.
     """
 
-    input_names = [
-        "angular_samples",  # (Na,) normalized [-1, 1] samples in the angular dimension
-        "spatial_samples",  # (Ns,) normalized [-1, 1] samples in the spatial dimension
-        "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
-    ]
+    inputs = {
+        "angular_samples": BatchTensor,  # (Na,) normalized [-1, 1] samples in the angular dimension
+        "spatial_samples": BatchTensor,  # (Ns,) normalized [-1, 1] samples in the spatial dimension
+        "wavelength_samples": BatchTensor,  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
+    }
 
-    param_names = [
-        "angular_diameter",  # angular diameter in radians
-        "spatial_diameter",  # spatial diameter in length units
-        "wavelength_lower",  # lower bound for the wavelength domain
-        "wavelength_upper",  # upper bound for the wavelength domain
-    ]
+    params = {
+        "angular_diameter": ScalarTensor,  # angular diameter in radians
+        "spatial_diameter": ScalarTensor,  # spatial diameter in length units
+        "wavelength_lower": ScalarTensor,  # lower bound for the wavelength domain
+        "wavelength_upper": ScalarTensor,  # upper bound for the wavelength domain
+    }
 
-    output_names = [
-        "P",  # (N, 2) rays origins
-        "V",  # (N, 2) rays direction
-        "W",  # (N,) rays wavelength
-        "angular_coordinates",  # (N,) rays angular coordinates
-        "spatial_coordinates",  # (N,) rays spatial coordinates
-    ]
+    outputs = {
+        "P": Batch2DTensor,  # (N, 2) rays origins
+        "V": Batch2DTensor,  # (N, 2) rays direction
+        "W": BatchTensor,  # (N,) rays wavelength
+        "angular_coordinates": BatchTensor,  # (N,) rays angular coordinates
+        "spatial_coordinates": BatchTensor,  # (N,) rays spatial coordinates
+    }
 
     @staticmethod
     def forward(
@@ -137,26 +139,26 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     will determine if the object is in the near field or at infinity.
     """
 
-    input_names = [
-        "angular_samples",  # (Np, 2) normalized [-1, 1] samples in the angular dimension
-        "spatial_samples",  # (Nf, 2) normalized [-1, 1] samples in the spatial dimension
-        "wavelength_samples",  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
-    ]
+    inputs = {
+        "angular_samples": Batch2DTensor,  # (Np, 2) normalized [-1, 1] samples in the angular dimension
+        "spatial_samples": Batch2DTensor,  # (Nf, 2) normalized [-1, 1] samples in the spatial dimension
+        "wavelength_samples": BatchTensor,  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
+    }
 
-    param_names = [
-        "angular_diameter",  # angular diameter in radians
-        "spatial_diameter",  # spatial diameter in length units
-        "wavelength_lower",  # lower bound for the wavelength domain
-        "wavelength_upper",  # upper bound for the wavelength domain
-    ]
+    params = {
+        "angular_diameter": ScalarTensor,  # angular diameter in radians
+        "spatial_diameter": ScalarTensor,  # spatial diameter in length units
+        "wavelength_lower": ScalarTensor,  # lower bound for the wavelength domain
+        "wavelength_upper": ScalarTensor,  # upper bound for the wavelength domain
+    }
 
-    output_names = [
-        "P",  # (N, 3) rays origins
-        "V",  # (N, 3) rays direction
-        "W",  # (N,) rays wavelength
-        "angular_coordinates",  # (N, 2) rays angular coordinates
-        "spatial_coordinates",  # (N, 2) rays spatial coordinates
-    ]
+    outputs = {
+        "P": Batch3DTensor,  # (N, 3) rays origins
+        "V": Batch3DTensor,  # (N, 3) rays direction
+        "W": BatchTensor,  # (N,) rays wavelength
+        "angular_coordinates": Batch2DTensor,  # (N, 2) rays angular coordinates
+        "spatial_coordinates": Batch2DTensor,  # (N, 2) rays spatial coordinates
+    }
 
     @staticmethod
     def forward(

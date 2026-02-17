@@ -95,7 +95,7 @@ class GenericLightSource(LightSourceBase):
         R = self.material(W)
 
         # Apply kinematic transform
-        P, V = transform_rays(data.dfk, P, V)
+        P, V = transform_rays(data.fk.direct, P, V)
 
         return data.replace(
             P=P,

@@ -44,7 +44,7 @@ def tokinematic(mod: nn.Module) -> KinematicElement:
     elif isinstance(mod, RefractiveSurface):
         dtype = mod.collision_surface.surface.dtype
         return ExactKinematicElement2D(
-            *mod.collision_surface.kinematic_transform(2, dtype)
+            mod.collision_surface.kinematic_transform(2, dtype)
         )
     else:
         raise RuntimeError("inner_thickness() got invalid lens")
@@ -62,7 +62,7 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     # Compute front surface vertex kinematic model
     A1 = KinematicSequential(
         ExactKinematicElement2D(
-            *first_surface.collision_surface.surface_transform(2, dtype)
+            first_surface.collision_surface.surface_transform(2, dtype)
         )
     )
 
@@ -72,17 +72,17 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     A2 = KinematicSequential(
         *[tokinematic(mod) for mod in islice(lens.sequence, len(lens.sequence) - 1)],
         ExactKinematicElement2D(
-            *last_surface.collision_surface.surface_transform(2, dtype)
+            last_surface.collision_surface.surface_transform(2, dtype)
         ),
     )
 
     root = hom_identity_2d(dtype, device)
-    a1, _ = A1(*root)
-    a2, _ = A2(*root)
+    a1 = A1(root)
+    a2 = A2(root)
 
     root_point = torch.zeros((2,), dtype=dtype)
-    p1 = transform_points(a1, root_point)
-    p2 = transform_points(a2, root_point)
+    p1 = transform_points(a1.direct, root_point)
+    p2 = transform_points(a2.direct, root_point)
 
     return (p2 - p1)[0]
 
@@ -99,7 +99,7 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     # Compute front surface vertex kinematic model
     A1 = KinematicSequential(
         ExactKinematicElement2D(
-            *front_surface.collision_surface.surface_transform(2, dtype)
+            front_surface.collision_surface.surface_transform(2, dtype)
         ),
         Translate2D(x=front_surface.collision_surface.surface.extent_x()),
     )
@@ -110,18 +110,18 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     A2 = KinematicSequential(
         *[tokinematic(mod) for mod in islice(lens.sequence, len(lens.sequence) - 1)],
         ExactKinematicElement2D(
-            *rear_surface.collision_surface.surface_transform(2, dtype)
+            rear_surface.collision_surface.surface_transform(2, dtype)
         ),
         Translate2D(x=rear_surface.collision_surface.surface.extent_x()),
     )
 
     root = hom_identity_2d(dtype, device)
-    a1, _ = A1(*root)
-    a2, _ = A2(*root)
+    a1 = A1(root)
+    a2 = A2(root)
 
     root_point = torch.zeros((2,), dtype=dtype)
-    p1 = transform_points(a1, root_point)
-    p2 = transform_points(a2, root_point)
+    p1 = transform_points(a1.direct, root_point)
+    p2 = transform_points(a2.direct, root_point)
 
     return (p2 - p1)[0]
 

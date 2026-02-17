@@ -27,7 +27,9 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_translate_2d,
     hom_translate_3d,
     hom_rotate_2d,
+    hom_rotate_3d,
     hom_compose,
+    hom_scale,
 )
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
@@ -68,9 +70,7 @@ def basic_transform(
                 transforms.append(hom_translate_3d(-anchor_translate))
 
         # scale
-        Md = hom_matrix(torch.eye(dim, dtype=dtype) * scale)
-        Mi = hom_matrix(torch.eye(dim, dtype=dtype) * 1.0 / scale)
-        transforms.append((Md, Mi))
+        transforms.append(hom_scale(dim, torch.as_tensor(scale, dtype=dtype)))
 
         # rotate
         if dim == 2:
@@ -78,12 +78,7 @@ def basic_transform(
                 hom_rotate_2d(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)))
             )
         elif dim == 3:
-            Mr = euler_angles_to_matrix(
-                torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)), "XYZ"
-            ).to(dtype=dtype)  # TODO need to support dtype in euler_angles_to_matrix
-            Hrot, Hrot_inv = hom_matrix_3d(Mr), hom_matrix_3d(Mr.T)
-
-            transforms.append((Hrot, Hrot_inv))
+            transforms.append(hom_rotate_3d(thetas[0], thetas[1]))
 
         # translate
         if dim == 2:
@@ -91,8 +86,6 @@ def basic_transform(
         elif dim == 3:
             transforms.append(hom_translate_3d(torch.as_tensor(translate, dtype=dtype)))
 
-        homs = [h for (h, hi) in transforms]
-        homs_inv = [hi for (h, hi) in transforms]
-        return hom_compose(homs, homs_inv)
+        return hom_compose(transforms)
 
     return makeit2d

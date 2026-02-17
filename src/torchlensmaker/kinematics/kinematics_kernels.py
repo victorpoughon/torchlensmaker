@@ -36,9 +36,9 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
 class Gap2DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf2D)]
-    params = [("X", ScalarTensor)]
-    outputs = [("tf_out", Tf2D)]
+    inputs = {"tf_in": Tf2D}
+    params = {"X": ScalarTensor}
+    outputs = {"tf_out": Tf2D}
 
     @staticmethod
     def forward(fk: Tf2D, X: ScalarTensor) -> Tf2D:
@@ -55,9 +55,9 @@ class Gap2DKernel(FunctionalKernel):
 
 
 class Gap3DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf3D)]
-    params = [("X", ScalarTensor)]
-    outputs = [("tf_out", Tf3D)]
+    inputs = {"tf_in": Tf3D}
+    params = {"X": ScalarTensor}
+    outputs = {"tf_out": Tf3D}
 
     @staticmethod
     def forward(fk: Tf3D, X: ScalarTensor) -> Tf3D:
@@ -76,9 +76,9 @@ class Gap3DKernel(FunctionalKernel):
 
 
 class Translate2DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf2D)]
-    params = [("X", ScalarTensor), ("Y", ScalarTensor)]
-    outputs = [("tf_out", Tf2D)]
+    inputs = {"tf_in": Tf2D}
+    params = {"X": ScalarTensor, "Y": ScalarTensor}
+    outputs = {"tf_out": Tf2D}
 
     @staticmethod
     def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
@@ -100,9 +100,9 @@ class Translate2DKernel(FunctionalKernel):
 
 
 class Translate3DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf3D)]
-    params = [("X", ScalarTensor), ("Y", ScalarTensor), ("Z", ScalarTensor)]
-    outputs = [("tf_out", Tf3D)]
+    inputs = {"tf_in": Tf3D}
+    params = {"X": ScalarTensor, "Y": ScalarTensor, "Z": ScalarTensor}
+    outputs = {"tf_out": Tf3D}
 
     @staticmethod
     def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
@@ -127,9 +127,9 @@ class Translate3DKernel(FunctionalKernel):
 class Rotate2DKernel(FunctionalKernel):
     "2D rotation in degrees"
 
-    inputs = [("tf_in", Tf2D)]
-    params = [("theta", ScalarTensor)]
-    outputs = [("tf_out", Tf2D)]
+    inputs = {"tf_in": Tf2D}
+    params = {"theta": ScalarTensor}
+    outputs = {"tf_out": Tf2D}
 
     @staticmethod
     def forward(fk: Tf2D, theta: ScalarTensor) -> Tf2D:
@@ -146,9 +146,9 @@ class Rotate2DKernel(FunctionalKernel):
 
 
 class AbsolutePosition2DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf2D)]
-    params = [("X", ScalarTensor), ("Y", ScalarTensor)]
-    outputs = [("tf_out", Tf2D)]
+    inputs = {"tf_in": Tf2D}
+    params = {"X": ScalarTensor, "Y": ScalarTensor}
+    outputs = {"tf_out": Tf2D}
 
     @staticmethod
     def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
@@ -169,9 +169,9 @@ class AbsolutePosition2DKernel(FunctionalKernel):
 
 
 class AbsolutePosition3DKernel(FunctionalKernel):
-    inputs = [("tf_in", Tf3D)]
-    params = [("X", ScalarTensor), ("Y", ScalarTensor), ("Z", ScalarTensor)]
-    outputs = [("tf_out", Tf3D)]
+    inputs = {"tf_in": Tf3D}
+    params = {"X": ScalarTensor, "Y": ScalarTensor, "Z": ScalarTensor}
+    outputs = {"tf_out": Tf3D}
 
     @staticmethod
     def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
@@ -195,9 +195,9 @@ class AbsolutePosition3DKernel(FunctionalKernel):
 class Rotate3DKernel(FunctionalKernel):
     "3D rotation in degrees"
 
-    inputs = [("tf_in", Tf3D)]
-    params = [("y", ScalarTensor), ("z", ScalarTensor)]
-    outputs = [("tf_out", Tf3D)]
+    inputs = {"tf_in": Tf3D}
+    params = {"y": ScalarTensor, "z": ScalarTensor}
+    outputs = {"tf_out": Tf3D}
 
     @staticmethod
     def forward(fk: Tf3D, y: ScalarTensor, z: ScalarTensor) -> Tf3D:

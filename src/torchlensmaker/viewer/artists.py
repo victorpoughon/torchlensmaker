@@ -49,13 +49,13 @@ class CollisionSurfaceArtist(Artist):
         inputs = collective.input_tree[module]
         dim, dtype = inputs.dim, inputs.dtype
 
-        homs, homs_inv = module.surface_transform(dim, dtype)
-        dfk, ifk = kinematic_chain_append(inputs.dfk, inputs.ifk, homs, homs_inv)
+        tf_surface = module.surface_transform(dim, dtype)
+        fk_surface = kinematic_chain_append(inputs.fk, tf_surface)
 
-        rendered_module = [tlmviewer.render_surface(module.surface, dfk, dim)]
+        rendered_module = [tlmviewer.render_surface(module.surface, fk_surface.direct, dim)]
 
         # Render rays
-        t, normals, valid, _, _ = collective.output_tree[module]
+        t, normals, valid, _ = collective.output_tree[module]
 
         rendered_rays = tlmviewer.render_hit_miss_rays(
             inputs.P,
@@ -69,7 +69,7 @@ class CollisionSurfaceArtist(Artist):
         )
 
         # Render joints
-        rendered_joints = tlmviewer.render_joint(inputs.dfk)
+        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
 
         return rendered_module + rendered_rays + rendered_joints
 
@@ -83,7 +83,7 @@ class RefractiveSurfaceArtist(Artist):
         inputs = collective.input_tree[module]
         output, valid_refraction = collective.output_tree[module]
 
-        t, _, collision_valid, _, _ = collective.output_tree[module.collision_surface]
+        t, _, collision_valid, _ = collective.output_tree[module.collision_surface]
         collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
         tir_mask = torch.logical_and(~valid_refraction, collision_valid)
 
@@ -130,7 +130,7 @@ class FocalPointArtist(Artist):
             default_color=tlmviewer.color_valid,
         )
 
-        rendered_joints = tlmviewer.render_joint(inputs.dfk)
+        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
         return rendered_module + rendered_rays + rendered_joints
 
 
@@ -144,5 +144,5 @@ class SequentialArtist(Artist):
 
 class KinematicArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        dfk, ifk = collective.input_tree[module]
-        return tlmviewer.render_joint(dfk)
+        tf = collective.input_tree[module]
+        return tlmviewer.render_joint(tf.direct)

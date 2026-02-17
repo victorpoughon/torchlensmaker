@@ -70,7 +70,7 @@ class ReflectiveSurface(SequentialElement):
         return self
 
     def forward(self, data: OpticalData) -> OpticalData:
-        t, normals, valid, new_dfk, new_ifk = self.collision_surface(data)
+        t, normals, valid, fk_next = self.collision_surface(data)
 
         # full frame collision points
         collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
@@ -81,7 +81,7 @@ class ReflectiveSurface(SequentialElement):
         if self._miss == "absorb":
             # return hits only
             return data.filter_variables(valid).replace(
-                P=collision_points[valid], V=reflected, dfk=new_dfk, ifk=new_ifk
+                P=collision_points[valid], V=reflected, fk=fk_next
             )
 
         elif self._miss == "pass":
@@ -89,8 +89,7 @@ class ReflectiveSurface(SequentialElement):
             return data.replace(
                 P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid]),
                 V=data.V.masked_scatter(valid.unsqueeze(-1), reflected),
-                dfk=new_dfk,
-                ifk=new_ifk,
+                fk=fk_next,
             )
 
         elif self._miss == "error":
@@ -100,9 +99,7 @@ class ReflectiveSurface(SequentialElement):
                     f"Some rays ({misses}) don't collide with surface, but miss option is '{self._miss}'"
                 )
             # return all rays as hits
-            return data.replace(
-                P=collision_points, V=reflected, dfk=new_dfk, ifk=new_ifk
-            )
+            return data.replace(P=collision_points, V=reflected, fk=fk_next)
 
 
 TIRMode: TypeAlias = Literal["absorb", "reflect"]
@@ -136,15 +133,13 @@ class RefractiveSurface(SequentialElement):
 
     def forward(self, data: OpticalData) -> tuple[OpticalData, Tensor]:
         # Collision detection
-        t, normals, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
+        t, normals, valid_collision, tf_next = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         # Zero rays special case
         # (needs to happen after self.collision_surface is called to enable rendering of it)
         if data.P.numel() == 0:
-            return data.replace(dfk=new_dfk, ifk=new_ifk), torch.full(
-                (data.P.shape[0],), True
-            )
+            return data.replace(fk=tf_next), torch.full((data.P.shape[0],), True)
 
         # Compute indices of refraction
         n1 = data.rays_index
@@ -194,8 +189,7 @@ class RefractiveSurface(SequentialElement):
             rays_field=new_rays_field,
             rays_wavelength=new_rays_wavelength,
             rays_index=new_rays_index,
-            dfk=new_dfk,
-            ifk=new_ifk,
+            fk=tf_next,
         ), valid_refraction
 
     def sequential(self, data: OpticalData) -> OpticalData:
@@ -213,7 +207,7 @@ class Aperture(SequentialElement):
 
     def forward(self, data: OpticalData) -> OpticalData:
         # Collision detection
-        t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
+        t, _, valid_collision, tf_next = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         # Keep colliding rays only
@@ -226,8 +220,7 @@ class Aperture(SequentialElement):
                 data.rays_wavelength, valid_collision
             ),
             rays_index=filter_optional_tensor(data.rays_index, valid_collision),
-            dfk=new_dfk,
-            ifk=new_ifk,  # correct but useless cause Aperture is only circular plane currently
+            fk=tf_next,  # correct but useless cause Aperture is only circular plane currently
         )
 
     def reverse(self) -> Self:
@@ -274,7 +267,7 @@ class ImagePlane(SequentialElement):
             return data
 
         # Collision detection
-        t, _, valid_collision, new_dfk, new_ifk = self.collision_surface(data)
+        t, _, valid_collision, _ = self.collision_surface(data)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         if data.rays_field is None:

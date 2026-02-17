@@ -79,7 +79,7 @@ class CollisionSurface(nn.Module):
         if self.anchors == ("extent", "extent"):
             t0 = hom_translate(-self.scale * self.surface.extent(dim))
             t1 = hom_translate(self.scale * self.surface.extent(dim))
-            return kinematic_chain_append(*t0, *t1)
+            return kinematic_chain_append(t0, t1)
         elif self.anchors == ("extent", "origin"):
             t0 = hom_translate(-self.scale * self.surface.extent(dim))
             return t0
@@ -101,7 +101,7 @@ class CollisionSurface(nn.Module):
 
         if self.anchors[0] == "extent":
             tf_anchor = hom_translate(-self.scale * self.surface.extent(dim))
-            return kinematic_chain_append(*tf_anchor, *tf_scale)
+            return kinematic_chain_append(tf_anchor, tf_scale)
         else:
             return tf_scale
 
@@ -109,22 +109,18 @@ class CollisionSurface(nn.Module):
         dim, dtype = inputs.dim, inputs.dtype
 
         # Collision detection with the surface
-        homs, homs_inv = self.surface_transform(dim, dtype)
-        surface_dfk, surface_ifk = kinematic_chain_append(
-            inputs.dfk, inputs.ifk, homs, homs_inv
-        )
+        tf_surface = self.surface_transform(dim, dtype)
+        fk_surface = kinematic_chain_append(inputs.fk, tf_surface)
 
         t, collision_normals, collision_valid = intersect(
             self.surface,
             inputs.P,
             inputs.V,
-            surface_dfk,
-            surface_ifk,
+            fk_surface.direct,
+            fk_surface.inverse,
         )
 
-        new_homs, new_homs_inv = self.kinematic_transform(dim, dtype)
-        new_dfk, new_ifk = kinematic_chain_append(
-            inputs.dfk, inputs.ifk, new_homs, new_homs_inv
-        )
+        tf_kinematic = self.kinematic_transform(dim, dtype)
+        fk_next = kinematic_chain_append(inputs.fk, tf_kinematic)
 
-        return t, collision_normals, collision_valid, new_dfk, new_ifk
+        return t, collision_normals, collision_valid, fk_next
