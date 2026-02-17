@@ -180,3 +180,56 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
             torch.tensor((0.0, 0.0), dtype=dtype, device=device),
             torch.tensor(-1.0, dtype=dtype, device=device),
         )
+
+
+def intersection_2d_yaxis(
+    P: Batch2DTensor, V: Batch2DTensor
+) -> tuple[BatchTensor, Batch2DTensor]:
+    "Ray intersection with the Y axis"
+
+    t = -P[..., 0] / V[..., 0]
+    normals = torch.tensor(((1.0, 0.0)), dtype=V.dtype, device=V.device).expand_as(V)
+    return t, normals
+
+
+class Disk2DSurfaceKernel(FunctionalKernel):
+    """
+    Functional kernel for a 2D disk (aka a line segment perpendicular to the
+    optical axis), parameterized by lens diameter.
+    """
+
+    inputs = {
+        "P": Batch2DTensor,
+        "V": Batch2DTensor,
+        "tf_in": Tf2D,
+    }
+
+    params = {
+        "diameter": ScalarTensor,
+    }
+
+    outputs = {
+        "t": BatchTensor,
+        "normals": Batch2DTensor,
+        "valid": MaskTensor,
+        "surface_tf": Tf2D,
+        "next_tf": Tf2D,
+    }
+
+    @staticmethod
+    def forward(
+        P: Batch2DTensor,
+        V: Batch2DTensor,
+        tf_in: Tf2D,
+        diameter: ScalarTensor,
+    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
+        # Setup the local solver
+        local_solver = intersection_2d_yaxis
+
+        # Domain function defined by the lens diamter
+        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
+
+        # Perform raytrace
+        t, normals, valid = raytrace(P, V, tf_in, local_solver, domain_function)
+
+        return t, normals, valid, tf_in, tf_in

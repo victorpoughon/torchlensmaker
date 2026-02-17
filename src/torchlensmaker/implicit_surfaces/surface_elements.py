@@ -19,7 +19,7 @@ import torch.nn as nn
 
 
 from jaxtyping import Float
-from typing import Self
+from typing import Self, Any
 
 from torchlensmaker.types import (
     ScalarTensor,
@@ -32,7 +32,7 @@ from torchlensmaker.types import (
 
 from torchlensmaker.core.tensor_manip import init_param
 
-from .surface_kernels import SphereC2DSurfaceKernel
+from .surface_kernels import SphereC2DSurfaceKernel, Disk2DSurfaceKernel
 
 
 class SphereC(nn.Module):
@@ -65,3 +65,35 @@ class SphereC(nn.Module):
         return self.func2d.forward(
             P, V, tf, self.diameter, self.C, self.anchors, self.scale
         )
+
+    def render(self) -> Any:
+        return {
+            "type": "surface-sag",
+            "diameter": self.diameter.item(),
+            "sag-function": {
+                "sag-type": "spherical",
+                "C": self.C.item(),
+            },
+        }
+
+
+class Disk(nn.Module):
+    """
+    Disk surface (2D or 3D)
+    """
+
+    def __init__(self, diameter: float | ScalarTensor):
+        super().__init__()
+        self.diameter = init_param(self, "diameter", diameter, False)
+        self.func2d = Disk2DSurfaceKernel()
+
+    def forward(
+        self, P: BatchTensor, V: BatchTensor, tf: Tf2D
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
+        return self.func2d.forward(P, V, tf, self.diameter)
+
+    def render(self) -> Any:
+        return {
+            "type": "surface-plane",
+            "radius": self.diameter.item() / 2,
+        }
