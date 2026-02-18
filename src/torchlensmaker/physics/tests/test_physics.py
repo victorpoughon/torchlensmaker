@@ -25,6 +25,9 @@ import itertools
 import pytest
 
 
+# TODO test refraction in 3D
+
+
 @pytest.fixture
 def random_rays_2D() -> tuple[Batch2DTensor, Batch2DTensor]:
     N = 10000
@@ -32,14 +35,55 @@ def random_rays_2D() -> tuple[Batch2DTensor, Batch2DTensor]:
     raw_normals = normalize(torch.rand(N, 2) * 2 - 1)
 
     # Keep normals pointing against the rays
-    dot = torch.sum(raw_normals * rays, dim=1)
+    dot = torch.sum(raw_normals * rays, dim=-1)
     normals = torch.where(
-        (dot > 0).unsqueeze(1).expand_as(raw_normals), -raw_normals, raw_normals
+        (dot > 0).unsqueeze(-1).expand_as(raw_normals), -raw_normals, raw_normals
     )
 
-    assert torch.all(torch.sum(normals * rays, dim=1) <= 0)
-
+    assert torch.all(torch.sum(normals * rays, dim=-1) <= 0)
     return rays, normals
+
+
+@pytest.fixture
+def random_rays_3D() -> tuple[Batch2DTensor, Batch2DTensor]:
+    N = 10000
+    rays = normalize(torch.rand(N, 3) * 2 - 1)
+    raw_normals = normalize(torch.rand(N, 3) * 2 - 1)
+
+    # Keep normals pointing against the rays
+    dot = torch.sum(raw_normals * rays, dim=-1)
+    normals = torch.where(
+        (dot > 0).unsqueeze(-1).expand_as(raw_normals), -raw_normals, raw_normals
+    )
+
+    assert torch.all(torch.sum(normals * rays, dim=-1) <= 0)
+    return rays, normals
+
+
+def test_reflection_2D(
+    random_rays_2D: tuple[Batch2DTensor, Batch2DTensor],
+) -> None:
+    rays, normals = random_rays_2D
+
+    reflected = reflection(rays, normals)
+
+    assert reflected.shape == rays.shape
+    assert reflected.dtype == rays.dtype
+    assert reflected.device == rays.device
+    assert torch.all(torch.sum(normals * reflected, dim=-1) >= 0)
+
+
+def test_reflection_3D(
+    random_rays_3D: tuple[Batch2DTensor, Batch2DTensor],
+) -> None:
+    rays, normals = random_rays_3D
+
+    reflected = reflection(rays, normals)
+
+    assert reflected.shape == rays.shape
+    assert reflected.dtype == rays.dtype
+    assert reflected.device == rays.device
+    assert torch.all(torch.sum(normals * reflected, dim=-1) >= 0)
 
 
 def nspace(N: int) -> Any:
@@ -49,7 +93,7 @@ def nspace(N: int) -> Any:
     return itertools.product(n1space, n2space)
 
 
-def test_refraction2D_clamp(
+def test_refraction_2D_clamp(
     random_rays_2D: tuple[Batch2DTensor, Batch2DTensor],
 ) -> None:
     rays, normals = random_rays_2D
@@ -67,7 +111,7 @@ def test_refraction2D_clamp(
         assert torch.all(dot >= 0)
 
 
-def test_refraction2D_nan(random_rays_2D: tuple[Batch2DTensor, Batch2DTensor]) -> None:
+def test_refraction_2D_nan(random_rays_2D: tuple[Batch2DTensor, Batch2DTensor]) -> None:
     rays, normals = random_rays_2D
     N, D = rays.shape
 
@@ -85,7 +129,7 @@ def test_refraction2D_nan(random_rays_2D: tuple[Batch2DTensor, Batch2DTensor]) -
         assert torch.all(dot >= 0)
 
 
-def test_refraction_reflect_2D(
+def test_refraction_2D_reflect(
     random_rays_2D: tuple[Batch2DTensor, Batch2DTensor],
 ) -> None:
     rays, normals = random_rays_2D
@@ -103,7 +147,7 @@ def test_refraction_reflect_2D(
         assert torch.all(dot >= 0)
 
 
-def test_refraction_drop_2D(
+def test_refraction_2D_drop(
     random_rays_2D: tuple[Batch2DTensor, Batch2DTensor],
 ) -> None:
     rays, normals = random_rays_2D
