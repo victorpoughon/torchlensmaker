@@ -157,7 +157,7 @@ def check_kernels_export_onnx(
     kernel_outputs = [t.numpy(force=True) for t in kernel_outputs_tensors]
 
     # Compare values, dtype, shape
-    for actual, expected in zip(ort_outputs, kernel_outputs):
+    for actual, expected, arg in zip(ort_outputs, kernel_outputs, kernel.outputs.items()):
         assert actual.dtype == expected.dtype, (actual.dtype, expected.dtype)
-        assert actual.shape == expected.shape
+        assert actual.shape == expected.shape, arg
         torch.testing.assert_close(actual, expected)

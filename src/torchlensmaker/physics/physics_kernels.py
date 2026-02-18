@@ -19,6 +19,7 @@ from torchlensmaker.types import (
     ScalarTensor,
     BatchNDTensor,
     BatchTensor,
+    MaskTensor,
 )
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from .physics import reflection, refraction
@@ -40,6 +41,45 @@ class ReflectionKernel(FunctionalKernel):
         return (
             torch.tensor([[0.0, 1.0]], dtype=dtype, device=device),
             torch.tensor([[0.0, -1.0]], dtype=dtype, device=device),
+        )
+
+    @staticmethod
+    def example_params(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return tuple()
+
+
+class RefractionKernel(FunctionalKernel):
+    """
+    Functional for optical refraction.
+    TIR rays are reflected.
+    """
+
+    inputs = {
+        "rays": BatchNDTensor,
+        "normals": BatchNDTensor,
+        "n1": BatchTensor,
+        "n2": BatchTensor,
+    }
+    params = {}
+    outputs = {"refracted": BatchNDTensor, "valid": MaskTensor}
+
+    @staticmethod
+    def forward(
+        rays: BatchNDTensor, normals: BatchNDTensor, n1: BatchTensor, n2: BatchTensor
+    ) -> tuple[BatchNDTensor, MaskTensor]:
+        return refraction(rays, normals, n1, n2, critical_angle="reflect")
+
+    @staticmethod
+    def example_inputs(
+        dtype: torch.dtype, device: torch.device
+    ) -> tuple[BatchNDTensor, BatchNDTensor, BatchTensor, BatchTensor]:
+        return (
+            torch.tensor([[0.0, 1.0], [0.0, 1.0]], dtype=dtype, device=device),
+            torch.tensor([[0.0, -1.0], [0.0, -1.0]], dtype=dtype, device=device),
+            torch.tensor(1.0, dtype=dtype, device=device),
+            torch.tensor(1.2, dtype=dtype, device=device),
         )
 
     @staticmethod

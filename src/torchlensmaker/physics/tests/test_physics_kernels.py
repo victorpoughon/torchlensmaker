@@ -25,7 +25,8 @@ import torch
 import onnxruntime
 
 from torchlensmaker.physics.physics_kernels import (
-    ReflectionKernel
+    ReflectionKernel,
+    RefractionKernel,
 )
 
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
@@ -39,6 +40,7 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "Reflection": ReflectionKernel(),
+    "Refraction": RefractionKernel(),
 }
 
 
