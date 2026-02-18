@@ -70,7 +70,7 @@ class FunctionalKernel:
     export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
 
     @staticmethod
-    def forward(*args: Any) -> KernelIOType:
+    def forward(*args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
         raise NotImplementedError
 
     @staticmethod
