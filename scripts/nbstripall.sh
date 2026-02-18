@@ -3,4 +3,4 @@
 set -euo pipefail
 
 # Find and process all *.ipynb files in the specified directories and their subdirectories
-find src/ docs/src/ test_notebooks/ -type f -name "*.ipynb" -exec nbstripout-fast {} +
+find src/ docs/src/ dev_notebooks/ -type f -name "*.ipynb" -exec nbstripout-fast {} +

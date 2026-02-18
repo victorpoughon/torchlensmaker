@@ -55,6 +55,9 @@ def basic_transform(
         dim = 2
     else:
         raise RuntimeError("invalid arguments to basic_transform")
+    
+    translate = torch.as_tensor(translate, dtype=dtype)
+    thetas = torch.as_tensor(thetas, dtype=dtype)
 
     def makeit2d(surface: LocalSurface) -> Tf:
         dtype = surface.dtype
@@ -75,16 +78,16 @@ def basic_transform(
         # rotate
         if dim == 2:
             transforms.append(
-                hom_rotate_2d(torch.deg2rad(torch.as_tensor(thetas, dtype=dtype)))
+                hom_rotate_2d(torch.deg2rad(thetas))
             )
         elif dim == 3:
             transforms.append(hom_rotate_3d(thetas[0], thetas[1]))
 
         # translate
         if dim == 2:
-            transforms.append(hom_translate_2d(torch.as_tensor(translate, dtype=dtype)))
+            transforms.append(hom_translate_2d(translate))
         elif dim == 3:
-            transforms.append(hom_translate_3d(torch.as_tensor(translate, dtype=dtype)))
+            transforms.append(hom_translate_3d(translate))
 
         return hom_compose(transforms)
 

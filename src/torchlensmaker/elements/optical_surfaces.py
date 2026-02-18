@@ -34,7 +34,7 @@ from torchlensmaker.materials.get_material_model import (
     MaterialModel,
     get_material_model,
 )
-from torchlensmaker.core.physics import (
+from torchlensmaker.physics.physics import (
     refraction,
     reflection,
 )

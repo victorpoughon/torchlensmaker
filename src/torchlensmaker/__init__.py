@@ -38,7 +38,7 @@ from torchlensmaker.types import (
 ######
 
 from torchlensmaker.core.dim import Dim
-from torchlensmaker.core.physics import reflection, refraction
+from torchlensmaker.physics.physics import reflection, refraction
 from torchlensmaker.core.intersect import intersect
 from torchlensmaker.core.full_forward import forward_tree, full_forward
 

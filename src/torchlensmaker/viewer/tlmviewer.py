@@ -200,12 +200,12 @@ def render_surface_local(
     surface: LocalSurface,
     dim: int,
 ) -> Any:
-    hom, _ = hom_identity(
+    tfid = hom_identity(
         dim, dtype=surface.dtype, device=torch.device("cpu")
     )  # TODO gpu support
     return render_surface(
         surface,
-        hom,
+        tfid.direct,
         dim=dim,
     )
 

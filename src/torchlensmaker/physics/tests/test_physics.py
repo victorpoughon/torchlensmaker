@@ -1,5 +1,5 @@
 import torch
-from torchlensmaker.core.physics import (
+from torchlensmaker.physics.physics import (
     refraction,
 )
 from torch.nn.functional import normalize
