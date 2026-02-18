@@ -18,21 +18,21 @@ import torch
 from torch.nn.functional import normalize
 
 from typing import Literal
+from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, MaskTensor
 
-Tensor = torch.Tensor
 RefractionCriticalAngleMode = Literal["drop", "nan", "clamp", "reflect"]
 
 
-def reflection(rays: Tensor, normals: Tensor) -> Tensor:
+def reflection(rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
     """
     Vector based reflection.
 
     Args:
-        ray: unit vectors of the incident rays, shape (B, 2)
-        normal: unit vectors normal to the surface, shape (B, 2)
+        ray: unit vectors of the incident rays, shape (B, 2|3)
+        normal: unit vectors normal to the surface, shape (B, 2|3)
 
     Returns:
-        vectors of the reflected vector with shape (B, 2)
+        vectors of the reflected vector with shape (B, 2|3)
     """
 
     dot_product = torch.sum(rays * normals, dim=1, keepdim=True)
@@ -41,12 +41,12 @@ def reflection(rays: Tensor, normals: Tensor) -> Tensor:
 
 
 def refraction(
-    rays: Tensor,
-    normals: Tensor,
-    n1: float | Tensor,
-    n2: float | Tensor,
+    rays: BatchNDTensor,
+    normals: BatchNDTensor,
+    n1: float | ScalarTensor | BatchTensor,
+    n2: float | ScalarTensor | BatchTensor,
     critical_angle: RefractionCriticalAngleMode = "drop",
-) -> tuple[Tensor, Tensor]:
+) -> tuple[BatchNDTensor, MaskTensor]:
     """
     Vector based refraction (Snell's law).
 
