@@ -20,7 +20,6 @@ from torch.nn.functional import normalize
 from torchlensmaker.physics.physics import refraction, reflection
 from torchlensmaker.types import Batch2DTensor
 
-from typing import Any
 import itertools
 import pytest
 
@@ -86,11 +85,16 @@ def test_reflection_3D(
     assert torch.all(torch.sum(normals * reflected, dim=-1) >= 0)
 
 
-def nspace(N: int) -> Any:
-    n1space = [1.0, torch.full((N,), 1.0), 1.5, torch.full((N,), 1.5)]
+def nspace(N: int) -> list[tuple[torch.Tensor, torch.Tensor]]:
+    n1space = [
+        torch.tensor(1.0),
+        torch.full((N,), 1.0),
+        torch.tensor(1.5),
+        torch.full((N,), 1.5),
+    ]
     n2space = n1space
 
-    return itertools.product(n1space, n2space)
+    return list(itertools.product(n1space, n2space))
 
 
 def test_refraction_2D_clamp(

@@ -43,8 +43,8 @@ def reflection(rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
 def refraction(
     rays: BatchNDTensor,
     normals: BatchNDTensor,
-    n1: float | ScalarTensor | BatchTensor,
-    n2: float | ScalarTensor | BatchTensor,
+    n1: BatchTensor,
+    n2: BatchTensor,
     critical_angle: RefractionCriticalAngleMode = "drop",
 ) -> tuple[BatchNDTensor, MaskTensor]:
     """
@@ -71,8 +71,8 @@ def refraction(
     Args:
         rays: unit vectors of the incident rays, shape (N, 2/3)
         normals: unit vectors normal to the surface, shape (N, 2/3)
-        n1: index of refraction of the incident medium, float or tensor of shape (N)
-        n2: index of refraction of the refracted medium float or tensor of shape (N)
+        n1: index of refraction of the incident medium, tensor of shape () or (N,)
+        n2: index of refraction of the refracted medium tensor of shape () or (N,)
         critical_angle: one of 'nan', 'clamp', 'drop', 'reflect' (default: 'nan')
 
     Returns:
@@ -90,8 +90,8 @@ def refraction(
 
     # Convert n1 and n2 into tensors
     N = rays.shape[0]
-    n1 = torch.as_tensor(n1).expand((N,))
-    n2 = torch.as_tensor(n2).expand((N,))
+    n1 = n1.expand((N,))
+    n2 = n2.expand((N,))
 
     # Compute R_perp
     eta = n1 / n2
