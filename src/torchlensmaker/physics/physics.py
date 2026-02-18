@@ -125,9 +125,8 @@ def refraction(
         R_para = (
             -torch.sqrt(1 - torch.sum(R_perp * R_perp, dim=1, keepdim=True)) * normals
         )
-        R = R_perp + R_para
+        R = torch.where(valid.unsqueeze(1), R_perp + R_para, reflection(rays, normals))
 
-        R[~valid] = reflection(rays, normals)[~valid]
         return normalize(R), valid
 
     else:
