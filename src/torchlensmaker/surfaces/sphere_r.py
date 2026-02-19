@@ -99,53 +99,6 @@ class SphereR(LocalSurface):
     def bounding_radius(self) -> float:
         return math.sqrt((self.diameter / 2) ** 2 + self.extent_x() ** 2)
 
-    def samples2D_half(self, N: int, epsilon: float) -> Tensor:
-        C = 1 / self.R
-        if torch.abs(C * self.diameter) < 0.1:
-            # If the curvature is low, use linear sampling along the y axis
-            return sphere_samples_linear(
-                curvature=C,
-                start=0.0,
-                end=(self.diameter / 2) * (1 - epsilon),
-                N=N,
-                dtype=self.dtype,
-            )
-        else:
-            # Else, use the angular parameterization of the circle so that
-            # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin((self.diameter / 2) / torch.abs(self.R))
-            return sphere_samples_angular(
-                radius=self.R,
-                start=0.0,
-                end=theta_max * (1 - epsilon),
-                N=N,
-                dtype=self.dtype,
-            )
-
-    def samples2D_full(self, N: int, epsilon: float) -> Tensor:
-        "Like samples2D but on the entire domain"
-        C = 1 / self.R
-        if torch.abs(C * self.diameter) < 0.1:
-            # If the curvature is low, use linear sampling along the y axis
-            return sphere_samples_linear(
-                curvature=C,
-                start=(-self.diameter / 2) * (1 - epsilon),
-                end=(self.diameter / 2) * (1 - epsilon),
-                N=N,
-                dtype=self.dtype,
-            )
-        else:
-            # Else, use the angular parameterization of the circle so that
-            # samples are smoother, especially for high curvature circles.
-            theta_max = torch.arcsin((self.diameter / 2) / torch.abs(self.R))
-            return sphere_samples_angular(
-                radius=self.R,
-                start=-theta_max * (1 - epsilon),
-                end=theta_max * (1 - epsilon),
-                N=N,
-                dtype=self.dtype,
-            )
-
     def center(self, dim: int) -> Tensor:
         if dim == 2:
             return torch.tensor([self.R, 0.0], dtype=self.dtype)

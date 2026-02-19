@@ -152,20 +152,6 @@ class SagSurface(ImplicitSurface):
         within_tol = torch.abs(G - points[:, 0]) < tol
         return torch.logical_and(within_diameter, within_tol)
 
-    def samples2D_full(self, N: int, epsilon: float) -> torch.Tensor:
-        start = -(1 - epsilon) * self.diameter / 2
-        end = (1 - epsilon) * self.diameter / 2
-        r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.sag_function.g(r, self.tau())
-        return torch.stack((x, r), dim=-1)
-
-    def samples2D_half(self, N: int, epsilon: float) -> torch.Tensor:
-        start = 0.0
-        end = (1 - epsilon) * self.diameter / 2
-        r = torch.linspace(start, end, N, dtype=self.dtype)
-        x = self.sag_function.g(r, self.tau())
-        return torch.stack((x, r), dim=-1)
-
     def to_dict(self, dim: int) -> dict[str, Any]:
         return {
             "type": "surface-sag",
