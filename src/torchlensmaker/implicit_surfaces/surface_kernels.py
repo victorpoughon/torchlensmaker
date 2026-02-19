@@ -128,8 +128,8 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf2D,
     }
 
-    @staticmethod
-    def forward(
+    def apply(
+        self,
         P: Batch2DTensor,
         V: Batch2DTensor,
         tf_in: Tf2D,
@@ -162,17 +162,15 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
 
         return t, normals, valid, tf_surface, tf_next
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
         P, V = example_rays_2d(10, dtype, device)
         tf = hom_identity_2d(dtype, device)
         return P, V, tf
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[ScalarTensor, ScalarTensor, Float[torch.Tensor, " 2"], ScalarTensor]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
@@ -216,8 +214,8 @@ class Disk2DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf2D,
     }
 
-    @staticmethod
-    def forward(
+    def apply(
+        self,
         P: Batch2DTensor,
         V: Batch2DTensor,
         tf_in: Tf2D,
@@ -232,4 +230,16 @@ class Disk2DSurfaceKernel(FunctionalKernel):
         # Perform raytrace
         t, normals, valid = raytrace(P, V, tf_in, local_solver, domain_function)
 
-        return t, normals, valid, tf_in, tf_in
+        return t, normals, valid, tf_in.clone(), tf_in.clone()
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
+        P, V = example_rays_2d(10, dtype, device)
+        tf = hom_identity_2d(dtype, device)
+        return P, V, tf
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor]:
+        return (torch.tensor(10.0, dtype=dtype, device=device),)
