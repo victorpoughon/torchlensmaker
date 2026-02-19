@@ -72,7 +72,7 @@ class ObjectGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
     ]:
-        P, V, W, psamples, fsamples = self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.apply(
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
             wavelength_samples=wavelength_samples,
@@ -130,7 +130,7 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
     ]:
-        P, V, W, angular_samples, spatial_samples = self.kernel.forward(
+        P, V, W, angular_samples, spatial_samples = self.kernel.apply(
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
             wavelength_samples=wavelength_samples,
@@ -184,7 +184,7 @@ class ObjectGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
     ]:
-        P, V, W, psamples, fsamples = self.kernel.forward(
+        P, V, W, psamples, fsamples = self.kernel.apply(
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
             wavelength_samples=wavelength_samples,
@@ -238,7 +238,7 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
     ]:
-        P, V, W, angular_samples, spatial_samples = self.kernel.forward(
+        P, V, W, angular_samples, spatial_samples = self.kernel.apply(
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
             wavelength_samples=wavelength_samples,

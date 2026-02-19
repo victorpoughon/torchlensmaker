@@ -31,7 +31,7 @@ class ZeroSampling1DKernel(FunctionalKernel):
     forward_dtype_device = True
 
     @staticmethod
-    def forward(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, " 1"]:
+    def apply(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, " 1"]:
         return torch.zeros((1), dtype=dtype, device=device)
 
     @staticmethod
@@ -54,7 +54,7 @@ class ZeroSampling2DKernel(FunctionalKernel):
     forward_dtype_device = True
 
     @staticmethod
-    def forward(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, "1 2"]:
+    def apply(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, "1 2"]:
         return torch.zeros((1, 2), dtype=dtype, device=device)
 
     @staticmethod
@@ -79,7 +79,7 @@ class ExactSampling1DKernel(FunctionalKernel):
     forward_dtype_device = True
 
     @staticmethod
-    def forward(
+    def apply(
         ref_samples: Float[torch.Tensor, " N"], dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
         return ref_samples.to(dtype=dtype, device=device)
@@ -106,7 +106,7 @@ class ExactSampling2DKernel(FunctionalKernel):
     forward_dtype_device = True
 
     @staticmethod
-    def forward(
+    def apply(
         ref_samples: Float[torch.Tensor, "N 2"],
         dtype: torch.dtype,
         device: torch.device,
@@ -150,7 +150,7 @@ class LinspaceSampling1DKernel(FunctionalKernel):
     export_legacy = True
 
     @staticmethod
-    def forward(
+    def apply(
         N: Int[torch.Tensor, ""], dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
         one = torch.ones((), dtype=dtype, device=device)
@@ -183,7 +183,7 @@ class LinspaceSampling2DKernel(FunctionalKernel):
     export_legacy = True
 
     @staticmethod
-    def forward(
+    def apply(
         Nx: Int[torch.Tensor, ""],
         Ny: Int[torch.Tensor, ""],
         dtype: torch.dtype,
@@ -221,7 +221,7 @@ class DiskSampling2DKernel(FunctionalKernel):
     export_legacy = True
 
     @staticmethod
-    def forward(
+    def apply(
         Nrho: Int[torch.Tensor, ""],
         Ntheta: Int[torch.Tensor, ""],
         dtype: torch.dtype,

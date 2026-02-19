@@ -62,7 +62,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     }
 
     @staticmethod
-    def forward(
+    def apply(
         angular_samples: Float[torch.Tensor, " Na"],
         spatial_samples: Float[torch.Tensor, " Ns"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -161,7 +161,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     }
 
     @staticmethod
-    def forward(
+    def apply(
         angular_samples: Float[torch.Tensor, "Np 2"],
         spatial_samples: Float[torch.Tensor, "Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],

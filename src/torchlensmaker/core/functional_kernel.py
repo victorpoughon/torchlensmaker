@@ -31,8 +31,10 @@ KernelIOType: TypeAlias = torch.Tensor | Tf2D | Tf3D
 torch.export.register_dataclass(Tf2D)
 torch.export.register_dataclass(Tf3D)
 
+
 def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
     return [name for name, typ in args.items()]
+
 
 def kernel_flat_io(
     t: KernelIOType | tuple[KernelIOType, ...],
@@ -70,7 +72,7 @@ class FunctionalKernel:
     export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
 
     @staticmethod
-    def forward(*args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
+    def apply(*args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
         raise NotImplementedError
 
     @staticmethod
@@ -122,12 +124,12 @@ def export_onnx_dynamo(
     )
 
     def forward_with_bound_dtype_device(*args):
-        return kernel.forward(*args, dtype=dtype, device=device)
+        return kernel.apply(*args, dtype=dtype, device=device)
 
     kernel_forward = (
         forward_with_bound_dtype_device
         if kernel.forward_dtype_device
-        else kernel.forward
+        else kernel.apply
     )
 
     flat_input_names = kernel_flat_names(kernel.inputs)
@@ -162,12 +164,12 @@ def export_onnx_legacy(
     )
 
     def forward_with_bound_dtype_device(*args):
-        return kernel.forward(*args, dtype=dtype, device=device)
+        return kernel.apply(*args, dtype=dtype, device=device)
 
     kernel_forward = (
         forward_with_bound_dtype_device
         if kernel.forward_dtype_device
-        else kernel.forward
+        else kernel.apply
     )
 
     flat_input_names = kernel_flat_names(kernel.inputs)

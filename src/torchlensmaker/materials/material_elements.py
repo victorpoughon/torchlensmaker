@@ -50,7 +50,7 @@ class NonDispersiveMaterial(MaterialModel):
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(wavelength, self.n)
+        return self.kernel.apply(wavelength, self.n)
 
 
 class CauchyMaterial(MaterialModel):
@@ -71,7 +71,7 @@ class CauchyMaterial(MaterialModel):
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(wavelength, self.A, self.B, self.C, self.D)
+        return self.kernel.apply(wavelength, self.A, self.B, self.C, self.D)
 
 
 class SellmeierMaterial(MaterialModel):
@@ -96,6 +96,6 @@ class SellmeierMaterial(MaterialModel):
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(
+        return self.kernel.apply(
             wavelength, self.B1, self.B2, self.B3, self.C1, self.C2, self.C3
         )

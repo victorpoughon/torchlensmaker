@@ -70,7 +70,7 @@ def check_kernels_eval(
 ) -> None:
     # Evaluate kernel with example inputs
     kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
-    kernel_outputs = kernel.forward(
+    kernel_outputs = kernel.apply(
         *kernel.example_inputs(dtype, device),
         *kernel.example_params(dtype, device),
         **kwargs,
@@ -147,7 +147,7 @@ def check_kernels_export_onnx(
 
     ort_outputs = ort_session.run(None, ort_input)
     kernel_outputs_tensors = kernel_flat_io(
-        kernel.forward(
+        kernel.apply(
             *kernel.example_inputs(dtype, device),
             *kernel.example_params(dtype, device),
             **kwargs,

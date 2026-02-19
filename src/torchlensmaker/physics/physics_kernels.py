@@ -31,7 +31,7 @@ class ReflectionKernel(FunctionalKernel):
     outputs = {"reflected": BatchNDTensor}
 
     @staticmethod
-    def forward(rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
+    def apply(rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
         return reflection(rays, normals)
 
     @staticmethod
@@ -66,7 +66,7 @@ class RefractionKernel(FunctionalKernel):
     outputs = {"refracted": BatchNDTensor, "valid": MaskTensor}
 
     @staticmethod
-    def forward(
+    def apply(
         rays: BatchNDTensor, normals: BatchNDTensor, n1: BatchTensor, n2: BatchTensor
     ) -> tuple[BatchNDTensor, MaskTensor]:
         return refraction(rays, normals, n1, n2, critical_angle="reflect")

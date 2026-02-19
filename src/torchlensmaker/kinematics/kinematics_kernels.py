@@ -41,7 +41,7 @@ class Gap2DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf2D}
 
     @staticmethod
-    def forward(fk: Tf2D, X: ScalarTensor) -> Tf2D:
+    def apply(fk: Tf2D, X: ScalarTensor) -> Tf2D:
         joint = hom_translate_2d(torch.stack((X, torch.zeros_like(X))))
         return kinematic_chain_append_2d(fk, joint)
 
@@ -60,7 +60,7 @@ class Gap3DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf3D}
 
     @staticmethod
-    def forward(fk: Tf3D, X: ScalarTensor) -> Tf3D:
+    def apply(fk: Tf3D, X: ScalarTensor) -> Tf3D:
         joint = hom_translate_3d(
             torch.stack((X, torch.zeros_like(X), torch.zeros_like(X)))
         )
@@ -81,7 +81,7 @@ class Translate2DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf2D}
 
     @staticmethod
-    def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
+    def apply(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
         joint = hom_translate_2d(torch.stack((X, Y)))
         return kinematic_chain_append_2d(fk, joint)
 
@@ -105,7 +105,7 @@ class Translate3DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf3D}
 
     @staticmethod
-    def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
+    def apply(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
         joint = hom_translate_3d(torch.stack((X, Y, Z)))
         return kinematic_chain_append_3d(fk, joint)
 
@@ -132,7 +132,7 @@ class Rotate2DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf2D}
 
     @staticmethod
-    def forward(fk: Tf2D, theta: ScalarTensor) -> Tf2D:
+    def apply(fk: Tf2D, theta: ScalarTensor) -> Tf2D:
         joint = hom_rotate_2d(torch.deg2rad(theta))
         return kinematic_chain_append_2d(fk, joint)
 
@@ -151,7 +151,7 @@ class AbsolutePosition2DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf2D}
 
     @staticmethod
-    def forward(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
+    def apply(fk: Tf2D, X: ScalarTensor, Y: ScalarTensor) -> Tf2D:
         return hom_translate_2d(torch.stack([X, Y]))
 
     @staticmethod
@@ -174,7 +174,7 @@ class AbsolutePosition3DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf3D}
 
     @staticmethod
-    def forward(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
+    def apply(fk: Tf3D, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf3D:
         return hom_translate_3d(torch.stack([X, Y, Z]))
 
     @staticmethod
@@ -200,7 +200,7 @@ class Rotate3DKernel(FunctionalKernel):
     outputs = {"tf_out": Tf3D}
 
     @staticmethod
-    def forward(fk: Tf3D, y: ScalarTensor, z: ScalarTensor) -> Tf3D:
+    def apply(fk: Tf3D, y: ScalarTensor, z: ScalarTensor) -> Tf3D:
         joint = hom_rotate_3d(y, z)
         return kinematic_chain_append_3d(fk, joint)
 

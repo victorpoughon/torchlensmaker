@@ -39,7 +39,7 @@ class ZeroSampler1D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(dtype, device)
+        return self.kernel.apply(dtype, device)
 
 
 class ZeroSampler2D(nn.Module):
@@ -50,7 +50,7 @@ class ZeroSampler2D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, "N 2"]:
-        return self.kernel.forward(dtype, device)
+        return self.kernel.apply(dtype, device)
 
 
 class ExactSampler1D(nn.Module):
@@ -65,7 +65,7 @@ class ExactSampler1D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(self.samples, dtype, device)
+        return self.kernel.apply(self.samples, dtype, device)
 
 
 class ExactSampler2D(nn.Module):
@@ -80,7 +80,7 @@ class ExactSampler2D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, "N 2"]:
-        return self.kernel.forward(self.samples, dtype, device)
+        return self.kernel.apply(self.samples, dtype, device)
 
 
 class LinspaceSampler1D(nn.Module):
@@ -95,7 +95,7 @@ class LinspaceSampler1D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
-        return self.kernel.forward(self.N, dtype, device)
+        return self.kernel.apply(self.N, dtype, device)
 
 
 class LinspaceSampler2D(nn.Module):
@@ -113,7 +113,7 @@ class LinspaceSampler2D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, "N 2"]:
-        return self.kernel.forward(self.Nx, self.Ny, dtype, device)
+        return self.kernel.apply(self.Nx, self.Ny, dtype, device)
 
 
 class DiskSampler2D(nn.Module):
@@ -131,4 +131,4 @@ class DiskSampler2D(nn.Module):
     def forward(
         self, dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, "N 2"]:
-        return self.kernel.forward(self.Nrho, self.Ntheta, dtype, device)
+        return self.kernel.apply(self.Nrho, self.Ntheta, dtype, device)

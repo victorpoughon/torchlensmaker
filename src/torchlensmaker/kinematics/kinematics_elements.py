@@ -98,9 +98,9 @@ class Gap(KinematicElement):
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
-            return self.func2d.forward(fk, self.x)
+            return self.func2d.apply(fk, self.x)
         else:
-            return self.func3d.forward(fk, self.x)
+            return self.func3d.apply(fk, self.x)
 
     def reverse(self) -> Self:
         return type(self)(-self.x.detach(), self.x.requires_grad)
@@ -120,7 +120,7 @@ class Translate2D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
 
     def forward(self, fk: Tf2D) -> Tf2D:
-        return self.func.forward(fk, self.x, self.y)
+        return self.func.apply(fk, self.x, self.y)
 
     def reverse(self) -> Self:
         return type(self)(
@@ -141,7 +141,7 @@ class TranslateVec2D(KinematicElement):
         self.t = init_param(self, "t", t, trainable)
 
     def forward(self, fk: Tf2D) -> Tf2D:
-        return self.func.forward(fk, *torch.unbind(self.t))
+        return self.func.apply(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -163,7 +163,7 @@ class Translate3D(KinematicElement):
         self.z = init_param(self, "z", z, zt)
 
     def forward(self, fk: Tf3D) -> Tf3D:
-        return self.func.forward(fk, self.x, self.y, self.z)
+        return self.func.apply(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
         return type(self)(
@@ -185,7 +185,7 @@ class TranslateVec3D(KinematicElement):
         self.t = init_param(self, "t", t, trainable)
 
     def forward(self, fk: Tf3D) -> Tf3D:
-        return self.func.forward(fk, *torch.unbind(self.t))
+        return self.func.apply(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -204,7 +204,7 @@ class Rotate2D(KinematicElement):
         self.theta = init_param(self, "theta", theta, trainable)
 
     def forward(self, fk: Tf2D) -> Tf2D:
-        return self.func.forward(fk, self.theta)
+        return self.func.apply(fk, self.theta)
 
     def reverse(self) -> Self:
         return type(self)(-self.theta.detach(), self.theta.requires_grad)
@@ -224,7 +224,7 @@ class AbsolutePosition2D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
 
     def forward(self, fk: Tf2D) -> Tf2D:
-        return self.func.forward(fk, self.x, self.y)
+        return self.func.apply(fk, self.x, self.y)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition2D kinematic element is not reversable")
@@ -246,7 +246,7 @@ class AbsolutePosition3D(KinematicElement):
         self.z = init_param(self, "z", z, zt)
 
     def forward(self, fk: Tf3D) -> Tf3D:
-        return self.func.forward(fk, self.x, self.y, self.z)
+        return self.func.apply(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition3D kinematic element is not reversable")
@@ -266,7 +266,7 @@ class Rotate3D(KinematicElement):
         self.z = init_param(self, "z", z, zt)
 
     def forward(self, fk: Tf3D) -> Tf3D:
-        return self.func.forward(fk, self.y, self.z)
+        return self.func.apply(fk, self.y, self.z)
 
     # TODO support reverse for 3D rotations
 
@@ -291,9 +291,9 @@ class Rotate(KinematicElement):
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
-            return self.func2d.forward(fk, self.z)
+            return self.func2d.apply(fk, self.z)
         else:
-            return self.func3d.forward(fk, self.y, self.z)
+            return self.func3d.apply(fk, self.y, self.z)
 
 
 class Translate(KinematicElement):
@@ -318,6 +318,6 @@ class Translate(KinematicElement):
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
-            return self.func2d.forward(fk, self.x, self.y)
+            return self.func2d.apply(fk, self.x, self.y)
         else:
-            return self.func3d.forward(fk, self.x, self.y, self.z)
+            return self.func3d.apply(fk, self.x, self.y, self.z)

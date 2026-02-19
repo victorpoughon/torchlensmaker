@@ -30,7 +30,7 @@ class NonDispersiveMaterialKernel(FunctionalKernel):
     outputs = {"index": BatchTensor}
 
     @staticmethod
-    def forward(
+    def apply(
         wavelength: Float[torch.Tensor, " N"],
         n: Float[torch.Tensor, ""],
     ) -> Float[torch.Tensor, " N"]:
@@ -62,7 +62,7 @@ class CauchyMaterialKernel(FunctionalKernel):
     outputs = {"index": BatchTensor}
 
     @staticmethod
-    def forward(
+    def apply(
         wavelength: Float[torch.Tensor, " N"],
         A: Float[torch.Tensor, ""],
         B: Float[torch.Tensor, ""],
@@ -111,7 +111,7 @@ class SellmeierMaterialKernel(FunctionalKernel):
     outputs = {"index": BatchTensor}
 
     @staticmethod
-    def forward(
+    def apply(
         wavelength: Float[torch.Tensor, " N"],
         B1: Float[torch.Tensor, ""],
         B2: Float[torch.Tensor, ""],
