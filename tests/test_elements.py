@@ -181,3 +181,22 @@ def test_cooke():
     optics.set_sampling3d(pupil=100, wavelength=4)
     tlm.show3d(optics)
     # f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
+
+
+def test_nolens():
+    surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.02)) # y = a*x^2
+
+    optics = tlm.Sequential(
+        tlm.PointSourceAtInfinity(beam_diameter=18.5),
+        tlm.Gap(10),
+        tlm.RefractiveSurface(surface, material="water", anchors=("origin", "extent")),
+        tlm.Gap(2),
+        tlm.RefractiveSurface(
+            surface, material="water", scale=-1, anchors=("extent", "origin")
+        ),
+        tlm.Gap(50),
+        tlm.FocalPoint(),
+    )
+
+    tlm.show(optics, dim=2)
+    tlm.show(optics, dim=3)
