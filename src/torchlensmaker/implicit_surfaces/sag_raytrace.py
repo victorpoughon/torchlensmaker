@@ -130,7 +130,7 @@ def raytrace(
     t, local_normals = local_solver(P_local, V_local)
 
     # Apply the domain function
-    valid = domain_function(P_local + t.unsqueeze(-1)*V)
+    valid = domain_function(P_local + t.unsqueeze(-1)*V_local)
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection
