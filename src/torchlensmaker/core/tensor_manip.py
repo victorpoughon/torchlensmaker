@@ -72,7 +72,7 @@ def to_tensor_detached(
 def init_param(
     parent: nn.Module,
     name: str,
-    val: float | list[float] | torch.Tensor | nn.Parameter,
+    val: float | Sequence[float] | torch.Tensor | nn.Parameter,
     trainable: bool = False,
     default_dtype: torch.dtype | None = None,
     default_device: torch.device | None = None,
