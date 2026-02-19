@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import TypeAlias
+from typing import TypeAlias, Self
 from jaxtyping import Float, Bool
 import torch
 
@@ -41,6 +41,9 @@ class Tf2D:
     direct: HomMatrix2D
     inverse: HomMatrix2D
 
+    def clone(self) -> Self:
+        return type(self)(self.direct.clone(), self.inverse.clone())
+
     @property
     def dtype(self) -> torch.dtype:
         assert self.direct.dtype == self.inverse.dtype
@@ -63,6 +66,9 @@ class Tf2D:
 class Tf3D:
     direct: HomMatrix3D
     inverse: HomMatrix3D
+
+    def clone(self) -> Self:
+        return type(self)(self.direct.clone(), self.inverse.clone())
 
     @property
     def dtype(self) -> torch.dtype:
