@@ -128,6 +128,9 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf2D,
     }
 
+    def __init__(self, num_iter: int):
+        self.num_iter = num_iter
+
     def apply(
         self,
         P: Batch2DTensor,
@@ -138,15 +141,12 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
-        # TODO static kernel parameter?
-        num_iter: int = 3
-
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
         local_solver = partial(
             sag_surface_local_raytrace_2d,
             sag_function=sag,
-            num_iter=num_iter,
+            num_iter=self.num_iter,
         )
 
         # Compute anchor transforms from anchors and scale

@@ -51,18 +51,19 @@ class SphereC(nn.Module):
         anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
+        num_iter: int = 6,
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
-        self.func2d = SphereC2DSurfaceKernel()
+        self.func2d = SphereC2DSurfaceKernel(num_iter)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf2D
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
-        return self.func2d.forward(
+        return self.func2d.apply(
             P, V, tf, self.diameter, self.C, self.anchors, self.scale
         )
 

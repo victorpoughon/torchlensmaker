@@ -35,7 +35,9 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
 
 
 kernels_library: Dict[str, FunctionalKernel] = {
-    "SphereC2D": SphereC2DSurfaceKernel(),
+    "SphereC2D-1": SphereC2DSurfaceKernel(1),
+    "SphereC2D-6": SphereC2DSurfaceKernel(6),
+    "SphereC2D-12": SphereC2DSurfaceKernel(12),
     "Disk2D": Disk2DSurfaceKernel(),
 }
 
