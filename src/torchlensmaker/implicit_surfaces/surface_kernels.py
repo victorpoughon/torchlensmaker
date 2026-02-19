@@ -29,6 +29,8 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     HomMatrix,
+    Tf2D,
+    Tf3D,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -73,31 +75,26 @@ def sag_anchor_transforms_2d(
     diameter: ScalarTensor,
     anchors: Float[torch.Tensor, " 2"],
     scale: ScalarTensor,
-    dfk: HomMatrix,
-    ifk: HomMatrix,
-) -> tuple[HomMatrix, HomMatrix, HomMatrix, HomMatrix]:
+    base: Tf2D,
+) -> tuple[Tf2D, Tf2D]:
     # First anchor transform
     extent0, _ = sag(anchors[0] * diameter / 2)
     t0_x = -scale * extent0
     t0_y = torch.zeros_like(t0_x)
-    hom0, hom0_inv = hom_translate_2d(torch.stack((t0_x, t0_y), dim=-1))
+    tf0 = hom_translate_2d(torch.stack((t0_x, t0_y), dim=-1))
 
     # Second anchor transform
     extent1, _ = sag(anchors[1] * diameter / 2)
     t1_x = scale * extent1
     t1_y = torch.zeros_like(t0_y)
-    hom1, hom1_inv = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
+    tf1 = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
 
     # Compose with the existing kinematic chain
-    scale_hom, scale_hom_inv = hom_scale(2, scale)
-    surface_dfk, surface_ifk = kinematic_chain_extend(
-        dfk, ifk, [hom0, scale_hom], [hom0_inv, scale_hom_inv]
-    )
-    next_dfk, next_ifk = kinematic_chain_extend(
-        dfk, ifk, [hom0, hom1], [hom0_inv, hom1_inv]
-    )
+    tfscale = hom_scale(2, scale)
+    tf_surface = kinematic_chain_extend(base, [tf0, tfscale])
+    tf_next = kinematic_chain_extend(base, [tf0, tf1])
 
-    return surface_dfk, surface_ifk, next_dfk, next_ifk
+    return tf_surface, tf_next
 
 
 class SphereC2DSurfaceKernel(FunctionalKernel):
@@ -109,37 +106,37 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
     with support for anchors and scale.
     """
 
-    input_names = ["P", "V", "dfk_in", "ifk_in"]
-    param_names = ["diameter", "C", "anchors", "scale"]
-    output_names = [
-        "t",
-        "normals",
-        "valid",
-        "surface_dfk",
-        "surface_ifk",
-        "dfk_out",
-        "ifk_out",
-    ]
+    inputs = {
+        "P": Batch2DTensor,
+        "V": Batch2DTensor,
+        "tf_in": Tf2D,
+    }
+
+    params = {
+        "diameter": ScalarTensor,
+        "C": ScalarTensor,
+        "anchors": Float[torch.Tensor, " 2"],
+        "scale": ScalarTensor,
+    }
+
+    outputs = {
+        "t": BatchTensor,
+        "normals": Batch2DTensor,
+        "valid": MaskTensor,
+        "surface_tf": Tf2D,
+        "next_tf": Tf2D,
+    }
 
     @staticmethod
     def forward(
         P: Batch2DTensor,
         V: Batch2DTensor,
-        dfk: HomMatrix,
-        ifk: HomMatrix,
+        tf_in: Tf2D,
         diameter: ScalarTensor,
         C: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
-    ) -> tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        HomMatrix,
-        HomMatrix,
-        HomMatrix,
-        HomMatrix,
-    ]:
+    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
         # TODO static kernel parameter?
         num_iter: int = 3
 
@@ -152,8 +149,8 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         )
 
         # Compute anchor transforms from anchors and scale
-        surface_dfk, surface_ifk, next_dfk, next_ifk = sag_anchor_transforms_2d(
-            sag, diameter, anchors, scale, dfk, ifk
+        tf_surface, tf_next = sag_anchor_transforms_2d(
+            sag, diameter, anchors, scale, tf_in
         )
 
         # Domain function defined by the lens diamter
@@ -161,24 +158,26 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
 
         # Perform raytrace
         t, normals, valid = raytrace(
-            P, V, surface_dfk, surface_ifk, local_solver, domain_function
+            P, V, tf_surface, local_solver, domain_function
         )
 
-        return t, normals, valid, surface_dfk, surface_ifk, next_dfk, next_ifk
+        return t, normals, valid, tf_surface, tf_next
 
     @staticmethod
     def example_inputs(
         dtype: torch.dtype, device: torch.device
     ) -> tuple[Batch2DTensor, Batch2DTensor, HomMatrix, HomMatrix]:
         P, V = example_rays_2d(10, dtype, device)
-        dfk, ifk = hom_identity_2d(dtype, device)
-        return P, V, dfk, ifk
+        tf = hom_identity_2d(dtype, device)
+        return P, V, tf
 
     @staticmethod
     def example_params(
         dtype: torch.dtype, device: torch.device
-    ) -> tuple[Float[torch.Tensor, ""]]:
+    ) -> tuple[ScalarTensor, ScalarTensor, Float[torch.Tensor, " 2"], ScalarTensor]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),
+            torch.tensor((0.0, 0.0), dtype=dtype, device=device),
+            torch.tensor(-1.0, dtype=dtype, device=device),
         )

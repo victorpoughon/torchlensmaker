@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Dict
+from typing import Dict, Any
 from pathlib import Path
 from itertools import chain
 
@@ -26,13 +26,60 @@ import torch.nn as nn
 import onnxruntime
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
-
+from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
 from torchlensmaker.implicit_surfaces.surface_elements import SphereC
 
-from torchlensmaker.testing.test_utils import (
-    check_model_eval,
-    check_model_eval_and_grad,
-)
+
+def check_model_eval(model: nn.Module, inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D]) -> Any:
+    "Evaluate a model forwards and run sanity checks"
+
+    # Check the forward pass
+    t, normals, valid, tf_surface, tf_next = model(*inputs)
+    assert t.isfinite().all()
+    assert normals.isfinite().all()
+    assert valid.isfinite().all()
+    assert tf_surface.direct.isfinite().all()
+    assert tf_surface.inverse.isfinite().all()
+    assert tf_next.direct.isfinite().all()
+    assert tf_next.inverse.isfinite().all()
+
+    return t, normals, valid, tf_surface, tf_next
+
+
+def check_model_eval_and_grad(
+    model: nn.Module, inputs: tuple[Any], allow_none_grad: bool = False
+) -> Any:
+    """
+    Evaluate a model forwards and backwards and run sanity checks
+    Expects at least one trainable parameter
+    """
+
+    # Check the forward pass
+    t, normals, valid, tf_surface, tf_next = model(*inputs)
+    assert t.isfinite().all()
+    assert normals.isfinite().all()
+    assert valid.isfinite().all()
+    assert tf_surface.direct.isfinite().all()
+    assert tf_surface.inverse.isfinite().all()
+    assert tf_next.direct.isfinite().all()
+    assert tf_next.inverse.isfinite().all()
+
+    # Check the backward pass
+    parameters = list(model.named_parameters())
+    assert len(parameters) > 0
+
+    loss = t.pow(2).sum() + tf_next.direct.sum().pow(2)
+    model.zero_grad()
+    loss.backward()  # type: ignore[no-untyped-call]
+    for name, param in parameters:
+        print(f"grad({name}) = {param.grad}")
+        assert allow_none_grad or param.grad is not None
+        if param.grad is not None:
+            assert torch.isfinite(param.grad).all(), (
+                f"Gradient of {name} contains NaN or Inf: {param.grad}"
+            )
+
+    return t, normals, valid, tf_surface, tf_next
 
 
 def check_surface_module_2d(
@@ -46,26 +93,27 @@ def check_surface_module_2d(
     N = 10
     P = torch.zeros((N, 2), dtype=dtype, device=device)
     V = torch.tensor([1.0, 0.0], dtype=dtype, device=device).expand_as(P)
-    dfk, ifk = hom_identity_2d(dtype, device)
+    tfid = hom_identity_2d(dtype, device)
 
     if trainable:
-        t, normals, valid, dfk_out, ifk_out = check_model_eval_and_grad(
-            mod, (P, V, dfk, ifk), allow_none_grad
+        t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
+            mod, (P, V, tfid), allow_none_grad
         )
     else:
-        t, normals, valid, dfk_out, ifk_out = check_model_eval(mod, (P, V, dfk, ifk))
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
 
     # Check output is sane
     assert t.shape == (N,)
     assert normals.shape == (N, 2)
     assert valid.shape == (N,)
-    assert dfk_out.shape == ifk_out.shape == (3, 3)
+    assert tf_surface.shape == (3, 3)
+    assert tf_next.shape == (3, 3)
 
     assert t.device == device
     assert normals.device == device
     assert valid.device == device
-    assert dfk_out.device == device
-    assert ifk_out.device == device
+    assert tf_surface.device == device
+    assert tf_next.device == device
 
 
 def test_sag_surfaces_modules() -> None:

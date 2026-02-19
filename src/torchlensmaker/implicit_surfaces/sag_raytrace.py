@@ -25,6 +25,7 @@ from torchlensmaker.types import (
     BatchNDTensor,
     HomMatrix,
     MaskTensor,
+    Tf,
 )
 
 from .sag_functions import SagFunction2D, SagFunction3D
@@ -105,8 +106,7 @@ DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 def raytrace(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    hom: HomMatrix,
-    hom_inv: HomMatrix,
+    tf: Tf,
     local_solver: LocalSolver,
     domain_function: DomainFunction,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
@@ -124,7 +124,7 @@ def raytrace(
     """
 
     # Convert rays to surface local frame
-    P_local, V_local = transform_rays(hom_inv, P, V)
+    P_local, V_local = transform_rays(tf.inverse, P, V)
 
     # Call the local solver
     t, local_normals = local_solver(P_local, V_local)
@@ -141,6 +141,6 @@ def raytrace(
     )
 
     # Convert normals to global frame
-    global_normals = transform_vectors(hom, opposite_normals)
+    global_normals = transform_vectors(tf.direct, opposite_normals)
 
     return t, global_normals, valid

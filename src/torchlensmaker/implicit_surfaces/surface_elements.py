@@ -27,6 +27,7 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     HomMatrix,
+    Tf2D,
 )
 
 from torchlensmaker.core.tensor_manip import init_param
@@ -59,8 +60,8 @@ class SphereC(nn.Module):
         self.func2d = SphereC2DSurfaceKernel()
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, dfk: BatchTensor, ifk: BatchTensor
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, HomMatrix, HomMatrix, HomMatrix, HomMatrix]:
+        self, P: BatchTensor, V: BatchTensor, tf: Tf2D
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
         return self.func2d.forward(
-            P, V, dfk, ifk, self.diameter, self.C, self.anchors, self.scale
+            P, V, tf, self.diameter, self.C, self.anchors, self.scale
         )
