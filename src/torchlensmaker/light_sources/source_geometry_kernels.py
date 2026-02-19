@@ -61,8 +61,8 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         "spatial_coordinates": BatchTensor,  # (N,) rays spatial coordinates
     }
 
-    @staticmethod
     def apply(
+        self,
         angular_samples: Float[torch.Tensor, " Na"],
         spatial_samples: Float[torch.Tensor, " Ns"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -108,9 +108,8 @@ class ObjectGeometry2DKernel(FunctionalKernel):
             spatial_coords_full,
         )
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         pupil_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
         field_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
@@ -118,9 +117,8 @@ class ObjectGeometry2DKernel(FunctionalKernel):
 
         return (pupil_samples, field_samples, wavelength_samples)
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(15, dtype=dtype),
@@ -160,8 +158,8 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         "spatial_coordinates": Batch2DTensor,  # (N, 2) rays spatial coordinates
     }
 
-    @staticmethod
     def apply(
+        self,
         angular_samples: Float[torch.Tensor, "Np 2"],
         spatial_samples: Float[torch.Tensor, "Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -210,9 +208,8 @@ class ObjectGeometry3DKernel(FunctionalKernel):
             spatial_coords_full,
         )
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         pupil_samples = torch.tensor(
             [
@@ -248,9 +245,8 @@ class ObjectGeometry3DKernel(FunctionalKernel):
 
         return (pupil_samples, field_samples, wavelength_samples)
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(15, dtype=dtype),

@@ -123,7 +123,7 @@ class DiskSampler2D(nn.Module):
         super().__init__()
         self.Nrho = to_tensor(Nrho, default_dtype=torch.int64)
         self.Ntheta = to_tensor(Ntheta, default_dtype=torch.int64)
-        self.kernel = DiskSampling2DKernel
+        self.kernel = DiskSampling2DKernel()
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(Nrho={self.Nrho}, Ntheta={self.Ntheta})"

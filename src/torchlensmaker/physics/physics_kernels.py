@@ -30,22 +30,19 @@ class ReflectionKernel(FunctionalKernel):
     params = {}
     outputs = {"reflected": BatchNDTensor}
 
-    @staticmethod
-    def apply(rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
+    def apply(self, rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
         return reflection(rays, normals)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor]:
         return (
             torch.tensor([[0.0, 1.0]], dtype=dtype, device=device),
             torch.tensor([[0.0, -1.0]], dtype=dtype, device=device),
         )
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
@@ -65,15 +62,17 @@ class RefractionKernel(FunctionalKernel):
     params = {}
     outputs = {"refracted": BatchNDTensor, "valid": MaskTensor}
 
-    @staticmethod
     def apply(
-        rays: BatchNDTensor, normals: BatchNDTensor, n1: BatchTensor, n2: BatchTensor
+        self,
+        rays: BatchNDTensor,
+        normals: BatchNDTensor,
+        n1: BatchTensor,
+        n2: BatchTensor,
     ) -> tuple[BatchNDTensor, MaskTensor]:
         return refraction(rays, normals, n1, n2, critical_angle="reflect")
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor, BatchTensor, BatchTensor]:
         return (
             torch.tensor([[0.0, 1.0], [0.0, 1.0]], dtype=dtype, device=device),
@@ -82,8 +81,7 @@ class RefractionKernel(FunctionalKernel):
             torch.tensor(1.2, dtype=dtype, device=device),
         )
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()

@@ -29,22 +29,20 @@ class NonDispersiveMaterialKernel(FunctionalKernel):
     params = {"n": ScalarTensor}
     outputs = {"index": BatchTensor}
 
-    @staticmethod
     def apply(
+        self,
         wavelength: Float[torch.Tensor, " N"],
         n: Float[torch.Tensor, ""],
     ) -> Float[torch.Tensor, " N"]:
         return n.expand_as(wavelength)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor(1.5, dtype=dtype),)
 
@@ -61,8 +59,8 @@ class CauchyMaterialKernel(FunctionalKernel):
     }
     outputs = {"index": BatchTensor}
 
-    @staticmethod
     def apply(
+        self,
         wavelength: Float[torch.Tensor, " N"],
         A: Float[torch.Tensor, ""],
         B: Float[torch.Tensor, ""],
@@ -78,15 +76,13 @@ class CauchyMaterialKernel(FunctionalKernel):
         )
         return index
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(1.31044, dtype=dtype),
@@ -110,8 +106,8 @@ class SellmeierMaterialKernel(FunctionalKernel):
     }
     outputs = {"index": BatchTensor}
 
-    @staticmethod
     def apply(
+        self,
         wavelength: Float[torch.Tensor, " N"],
         B1: Float[torch.Tensor, ""],
         B2: Float[torch.Tensor, ""],
@@ -127,15 +123,13 @@ class SellmeierMaterialKernel(FunctionalKernel):
         )
         return index
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(0.6961663, dtype=dtype),

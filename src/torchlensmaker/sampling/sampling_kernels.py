@@ -30,19 +30,18 @@ class ZeroSampling1DKernel(FunctionalKernel):
     outputs = {"samples": BatchTensor}
     forward_dtype_device = True
 
-    @staticmethod
-    def apply(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, " 1"]:
+    def apply(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, " 1"]:
         return torch.zeros((1), dtype=dtype, device=device)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
@@ -53,19 +52,18 @@ class ZeroSampling2DKernel(FunctionalKernel):
     outputs = {"samples": Batch2DTensor}
     forward_dtype_device = True
 
-    @staticmethod
-    def apply(dtype: torch.dtype, device: torch.device) -> Float[torch.Tensor, "1 2"]:
+    def apply(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> Float[torch.Tensor, "1 2"]:
         return torch.zeros((1, 2), dtype=dtype, device=device)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
@@ -78,21 +76,21 @@ class ExactSampling1DKernel(FunctionalKernel):
     export_legacy = True
     forward_dtype_device = True
 
-    @staticmethod
     def apply(
-        ref_samples: Float[torch.Tensor, " N"], dtype: torch.dtype, device: torch.device
+        self,
+        ref_samples: Float[torch.Tensor, " N"],
+        dtype: torch.dtype,
+        device: torch.device,
     ) -> Float[torch.Tensor, " N"]:
         return ref_samples.to(dtype=dtype, device=device)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor([-0.5, 0.0, 0.5], dtype=dtype, device=device),)
 
@@ -105,23 +103,21 @@ class ExactSampling2DKernel(FunctionalKernel):
     export_legacy = True
     forward_dtype_device = True
 
-    @staticmethod
     def apply(
+        self,
         ref_samples: Float[torch.Tensor, "N 2"],
         dtype: torch.dtype,
         device: torch.device,
     ) -> Float[torch.Tensor, "N 2"]:
         return ref_samples.to(dtype=dtype, device=device)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(
@@ -149,9 +145,8 @@ class LinspaceSampling1DKernel(FunctionalKernel):
     forward_dtype_device = True
     export_legacy = True
 
-    @staticmethod
     def apply(
-        N: Int[torch.Tensor, ""], dtype: torch.dtype, device: torch.device
+        self, N: Int[torch.Tensor, ""], dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
         one = torch.ones((), dtype=dtype, device=device)
         # note: extra .to(dtype=) seems required for onnx export dtype correctness
@@ -162,15 +157,13 @@ class LinspaceSampling1DKernel(FunctionalKernel):
         )
         return samples
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (torch.tensor(10, dtype=torch.int64, device=device),)
 
@@ -182,8 +175,8 @@ class LinspaceSampling2DKernel(FunctionalKernel):
     forward_dtype_device = True
     export_legacy = True
 
-    @staticmethod
     def apply(
+        self,
         Nx: Int[torch.Tensor, ""],
         Ny: Int[torch.Tensor, ""],
         dtype: torch.dtype,
@@ -197,15 +190,13 @@ class LinspaceSampling2DKernel(FunctionalKernel):
         Xgrid, Ygrid = torch.meshgrid(X, Y, indexing="xy")
         return torch.stack((Xgrid.reshape(-1), Ygrid.reshape(-1)), dim=-1)
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(10, dtype=torch.int64, device=device),
@@ -220,8 +211,8 @@ class DiskSampling2DKernel(FunctionalKernel):
     forward_dtype_device = True
     export_legacy = True
 
-    @staticmethod
     def apply(
+        self,
         Nrho: Int[torch.Tensor, ""],
         Ntheta: Int[torch.Tensor, ""],
         dtype: torch.dtype,
@@ -231,15 +222,13 @@ class DiskSampling2DKernel(FunctionalKernel):
         assert samples.dtype == dtype
         return samples
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return tuple()
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         return (
             torch.tensor(10, dtype=torch.int64, device=device),

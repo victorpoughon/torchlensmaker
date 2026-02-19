@@ -71,19 +71,16 @@ class FunctionalKernel:
     )
     export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
 
-    @staticmethod
-    def apply(*args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
+    def apply(self, *args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
         raise NotImplementedError
 
-    @staticmethod
     def example_inputs(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[KernelIOType, ...]:
         raise NotImplementedError
 
-    @staticmethod
     def example_params(
-        dtype: torch.dtype, device: torch.device
+        self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
         raise NotImplementedError
 
@@ -127,9 +124,7 @@ def export_onnx_dynamo(
         return kernel.apply(*args, dtype=dtype, device=device)
 
     kernel_forward = (
-        forward_with_bound_dtype_device
-        if kernel.forward_dtype_device
-        else kernel.apply
+        forward_with_bound_dtype_device if kernel.forward_dtype_device else kernel.apply
     )
 
     flat_input_names = kernel_flat_names(kernel.inputs)
@@ -167,9 +162,7 @@ def export_onnx_legacy(
         return kernel.apply(*args, dtype=dtype, device=device)
 
     kernel_forward = (
-        forward_with_bound_dtype_device
-        if kernel.forward_dtype_device
-        else kernel.apply
+        forward_with_bound_dtype_device if kernel.forward_dtype_device else kernel.apply
     )
 
     flat_input_names = kernel_flat_names(kernel.inputs)
