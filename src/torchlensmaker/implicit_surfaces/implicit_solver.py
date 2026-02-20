@@ -22,6 +22,8 @@ from torchlensmaker.types import (
     BatchTensor,
     Batch2DTensor,
     Batch3DTensor,
+    BatchNDTensor,
+    MaskTensor,
 )
 
 from torch._higher_order_ops import while_loop
@@ -35,6 +37,9 @@ ImplicitFunction2D: TypeAlias = Callable[
 ImplicitFunction3D: TypeAlias = Callable[
     [Batch3DTensor], tuple[BatchTensor, Batch3DTensor]
 ]
+
+# (points) -> valid mask
+DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 
 
 def implicit_solver_newton(
@@ -115,3 +120,30 @@ def implicit_solver_newton_while_loop(
     t, i, _ = body_fn(t, i, num_iter)
 
     return t
+
+
+def implicit_surface_local_raytrace(
+    P: Float[torch.Tensor, "N D"],
+    V: Float[torch.Tensor, "N D"],
+    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
+    domain_function: DomainFunction,
+    num_iter: int,
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+    """
+    Raytracing for a sag surface in 2D in local frame
+    """
+
+    t = implicit_solver_newton(P, V, implicit_function, num_iter)
+
+    # To get the normals of an implicit surface,
+    # normalize the gradient of the implicit function
+    points = P + t.unsqueeze(-1) * V
+    _, Fgrad = implicit_function(points)
+    local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
+
+    # Apply the domain function to contraint to the valid domain.
+    # This is required because typically sag functions extend beyond
+    # that domain or even to infinity
+    valid = domain_function(P + t.unsqueeze(-1) * V)
+
+    return t, local_normals, valid

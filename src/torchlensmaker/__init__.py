@@ -108,11 +108,9 @@ from torchlensmaker.sampling.sampling import disk_sampling
 # Implicit surfaces
 ###################
 
-from torchlensmaker.implicit_surfaces.sag_raytrace import (
+from torchlensmaker.implicit_surfaces.sag_functions import (
     sag_to_implicit_2d,
     sag_to_implicit_3d,
-)
-from torchlensmaker.implicit_surfaces.sag_functions import (
     spherical_sag_2d,
     spherical_sag_3d,
     parabolic_sag_2d,

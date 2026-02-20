@@ -20,17 +20,49 @@ from jaxtyping import Float
 import torch
 
 from torchlensmaker.core.tensor_manip import bbroad
-
-
-BatchTensor: TypeAlias = Float[torch.Tensor, "..."]
-Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
-ScalarTensor: TypeAlias = Float[torch.Tensor, ""]
+from .implicit_solver import ImplicitFunction2D, ImplicitFunction3D
+from torchlensmaker.types import (
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+    BatchTensor,
+    ScalarTensor,
+)
 
 # r -> g(r), g_grad(r)
 SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]
 
 # y, z -> g(y, z), g_grad(y, z)
 SagFunction3D = Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
+
+
+def sag_to_implicit_2d(sag: SagFunction2D) -> ImplicitFunction2D:
+    "Wrap a 2D sag function into an implicit function"
+
+    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
+        x, r = points.unbind(-1)
+        g, g_grad = sag(r)
+        f = g - x
+        f_grad = torch.stack((-torch.ones_like(x), g_grad), dim=-1)
+        return f, f_grad
+
+    return implicit
+
+
+def sag_to_implicit_3d(sag: SagFunction3D) -> ImplicitFunction3D:
+    "Wrap a 3D sag function into an implicit function"
+
+    def implicit(points: Batch3DTensor) -> tuple[BatchTensor, Batch3DTensor]:
+        x, y, z = points.unbind(-1)
+        g, g_grad = sag(y, z)
+        f = g - x
+        grad_x = -torch.ones_like(x)
+        grad_y, grad_z = g_grad.unbind(-1)
+        f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
+
+        return f, f_grad
+
+    return implicit
 
 
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:

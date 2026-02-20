@@ -39,9 +39,9 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 
-from .sag_functions import spherical_sag_2d
+from .sag_functions import spherical_sag_2d, sag_to_implicit_2d
+from .implicit_solver import implicit_surface_local_raytrace
 
-from .sag_raytrace import implicit_surface_local_raytrace, sag_to_implicit_2d
 from .raytrace import raytrace
 from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
 from .kernels_utils import example_rays_2d
