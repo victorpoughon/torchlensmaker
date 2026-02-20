@@ -43,7 +43,7 @@ from .sag_functions import spherical_sag_2d
 
 from .sag_raytrace import sag_surface_local_raytrace_2d
 from .raytrace import raytrace
-from .sag_geometry import lens_diameter_domain_2d, sag_anchor_transforms_2d
+from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
 from .kernels_utils import example_rays_2d
 
 
@@ -99,8 +99,10 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         )
 
         # Compute anchor transforms from anchors and scale
-        tf_surface, tf_next = sag_anchor_transforms_2d(
-            sag, diameter, anchors, scale, tf_in
+        extent0, _ = sag(anchors[0] * diameter / 2)
+        extent1, _ = sag(anchors[1] * diameter / 2)
+        tf_surface, tf_next = anchor_transforms_2d(
+            extent0, extent1, scale, tf_in
         )
 
         # Domain function defined by the lens diamter

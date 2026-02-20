@@ -32,24 +32,20 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_extend_2d,
 )
 
-from .sag_functions import SagFunction2D
-
-
 def lens_diameter_domain_2d(
     points: Batch2DTensor, diameter: ScalarTensor
 ) -> MaskTensor:
     return torch.abs(points[..., 1]) <= diameter / 2
 
 
-def sag_anchor_transforms_2d(
-    sag: SagFunction2D,
-    diameter: ScalarTensor,
-    anchors: Float[torch.Tensor, " 2"],
+def anchor_transforms_2d(
+    anchor0: ScalarTensor,
+    anchor1: ScalarTensor,
     scale: ScalarTensor,
     base: Tf2D,
 ) -> tuple[Tf2D, Tf2D]:
     """
-    Compute transforms required to position a sag surface that has anchors and a scale.
+    Compute transforms required to position a surface that has anchors and a scale.
 
     They are:
     - the "surface transform": the tf that applies to the surface itself to
@@ -59,14 +55,12 @@ def sag_anchor_transforms_2d(
       chain
     """
     # First anchor transform
-    extent0, _ = sag(anchors[0] * diameter / 2)
-    t0_x = -scale * extent0
+    t0_x = -scale * anchor0
     t0_y = torch.zeros_like(t0_x)
     tf0 = hom_translate_2d(torch.stack((t0_x, t0_y), dim=-1))
 
     # Second anchor transform
-    extent1, _ = sag(anchors[1] * diameter / 2)
-    t1_x = scale * extent1
+    t1_x = scale * anchor1
     t1_y = torch.zeros_like(t0_y)
     tf1 = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
 
