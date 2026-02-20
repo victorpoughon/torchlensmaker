@@ -33,3 +33,20 @@ def example_rays_2d(
     V = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P)
 
     return P, V
+
+
+def example_rays_3d(
+    N: int, dtype: torch.dtype, device: torch.device
+) -> tuple[BatchNDTensor, BatchNDTensor]:
+    P = torch.stack(
+        (
+            torch.zeros((N,), dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+
+    return P, V

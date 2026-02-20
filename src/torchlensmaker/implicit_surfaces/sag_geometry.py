@@ -21,6 +21,7 @@ import torch
 from torchlensmaker.types import (
     ScalarTensor,
     Batch2DTensor,
+    Batch3DTensor,
     MaskTensor,
     Tf2D,
     Tf3D,
@@ -32,10 +33,19 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_extend_2d,
 )
 
+
 def lens_diameter_domain_2d(
     points: Batch2DTensor, diameter: ScalarTensor
 ) -> MaskTensor:
     return torch.abs(points[..., 1]) <= diameter / 2
+
+
+def lens_diameter_domain_3d(
+    points: Batch3DTensor, diameter: ScalarTensor
+) -> MaskTensor:
+    _, y, z = points.unbind(-1)
+    r2 = y**2 + z**2
+    return r2 <= (diameter / 2) ** 2
 
 
 def anchor_transforms_2d(

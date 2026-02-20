@@ -25,9 +25,11 @@ import torch
 import torch.nn as nn
 import onnxruntime
 
-from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d, hom_identity_3d
 from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
-from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import SphereByCurvature
+from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
+    SphereByCurvature,
+)
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
@@ -121,7 +123,41 @@ def check_surface_module_2d(
     assert tf_next.device == device
 
 
-def test_sag_surfaces_modules() -> None:
+def check_surface_module_3d(
+    mod: nn.Module,
+    trainable: bool,
+    dtype: torch.dtype,
+    device: torch.device,
+    allow_none_grad: bool = False,
+) -> None:
+    # Check that surface model can be evaluated and differentiated
+    N = 10
+    P = torch.zeros((N, 3), dtype=dtype, device=device)
+    V = torch.tensor([1.0, 0.0, 0.0], dtype=dtype, device=device).expand_as(P)
+    tfid = hom_identity_3d(dtype, device)
+
+    if trainable:
+        t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
+            mod, (P, V, tfid), allow_none_grad
+        )
+    else:
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
+
+    # Check output is sane
+    assert t.shape == (N,)
+    assert normals.shape == (N, 3)
+    assert valid.shape == (N,)
+    assert tf_surface.shape == (4, 4)
+    assert tf_next.shape == (4, 4)
+
+    assert t.device == device
+    assert normals.device == device
+    assert valid.device == device
+    assert tf_surface.device == device
+    assert tf_next.device == device
+
+
+def test_sag_surfaces_modules_2d() -> None:
     dtype, device = torch.float64, torch.device("cpu")
     torch.set_default_dtype(dtype)
     torch.set_default_device(device)
@@ -135,3 +171,16 @@ def test_sag_surfaces_modules() -> None:
 
     for module in surfaces_2d:
         check_surface_module_2d(module, False, dtype, device)
+
+
+def test_sag_surfaces_modules_3d() -> None:
+    dtype, device = torch.float64, torch.device("cpu")
+    torch.set_default_dtype(dtype)
+    torch.set_default_device(device)
+
+    surfaces_3d = [
+        Disk(10.0),
+    ]
+
+    for module in surfaces_3d:
+        check_surface_module_3d(module, False, dtype, device)

@@ -24,11 +24,20 @@ from typing import TypeAlias
 Tensor: TypeAlias = torch.Tensor
 
 
-def unit_vector(dim: int, dtype: torch.dtype | None = None) -> Tensor:
+def unit_vector(
+    dim: int, dtype: torch.dtype | None = None, device: torch.device | None = None
+) -> Tensor:
     "Unit vector along the X axis"
     if dtype is None:
         dtype = torch.get_default_dtype()
-    return torch.cat((torch.ones(1, dtype=dtype), torch.zeros(dim - 1, dtype=dtype)))
+    if device is None:
+        device = torch.get_default_device()
+    return torch.cat(
+        (
+            torch.ones(1, dtype=dtype, device=device),
+            torch.zeros(dim - 1, dtype=dtype, device=device),
+        )
+    )
 
 
 def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
