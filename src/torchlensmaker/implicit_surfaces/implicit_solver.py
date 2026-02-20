@@ -38,6 +38,8 @@ ImplicitFunction3D: TypeAlias = Callable[
     [Batch3DTensor], tuple[BatchTensor, Batch3DTensor]
 ]
 
+ImplicitFunction: TypeAlias = ImplicitFunction2D | ImplicitFunction3D
+
 # (points) -> valid mask
 DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 
@@ -80,7 +82,7 @@ def implicit_solver_newton(
 def implicit_solver_newton_while_loop(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
-    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
+    implicit_function: ImplicitFunction,
     num_iter: Int[torch.Tensor, ""],
 ) -> Float[torch.Tensor, " N"]:
     """
@@ -128,9 +130,9 @@ def implicit_surface_local_raytrace(
     implicit_function: ImplicitFunction2D | ImplicitFunction3D,
     domain_function: DomainFunction,
     num_iter: int,
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
     """
-    Raytracing for a sag surface in 2D in local frame
+    Raytracing for implicit surfaces in local frame
     """
 
     t = implicit_solver_newton(P, V, implicit_function, num_iter)
