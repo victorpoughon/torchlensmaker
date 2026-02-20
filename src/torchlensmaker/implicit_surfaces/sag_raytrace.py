@@ -40,7 +40,7 @@ DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 def sag_to_implicit_2d(sag: SagFunction2D) -> ImplicitFunction2D:
     "Wrap a 2D sag function into an implicit function"
 
-    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, BatchTensor]:
+    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
         x, r = points.unbind(-1)
         g, g_grad = sag(r)
         f = g - x
@@ -72,7 +72,7 @@ def sag_surface_local_raytrace_2d(
     sag_function: SagFunction2D,
     domain_function: DomainFunction,
     num_iter: int,
-) -> tuple[BatchTensor, Batch2DTensor]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
     """
     Raytracing for a sag surface in 2D in local frame
     """

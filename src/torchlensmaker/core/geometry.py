@@ -112,7 +112,7 @@ def unit3d_rot(
     ).squeeze(0)
 
 
-def within_radius(radius: float, points: torch.Tensor) -> torch.Tensor:
+def within_radius(radius: torch.Tensor, points: torch.Tensor) -> torch.Tensor:
     "Mask indicating if points of shape (..., 2|3) are within 'radius' distance from the X axis"
 
     dim = points.shape[-1]

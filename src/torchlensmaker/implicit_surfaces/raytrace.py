@@ -64,7 +64,7 @@ def raytrace(
     P_local, V_local = transform_rays(tf.inverse, P, V)
 
     # Call the local solver
-    t, local_normals, valid = local_solver(P=P_local, V=V_local)
+    t, local_normals, valid = local_solver(P_local, V_local)
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection

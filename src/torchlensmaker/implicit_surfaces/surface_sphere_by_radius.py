@@ -44,7 +44,7 @@ from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
 from .kernels_utils import example_rays_2d
 
 
-def sphere_radius_center(dim: int, R: ScalarTensor):
+def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
     return torch.cat(
         (R.unsqueeze(0), torch.zeros((dim - 1,), dtype=R.dtype, device=R.device))
     )
@@ -263,7 +263,9 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
             torch.tensor(-1.0, dtype=dtype, device=device),
         )
 
+
 # TODO 3D
+
 
 class SphereByRadius(nn.Module):
     """

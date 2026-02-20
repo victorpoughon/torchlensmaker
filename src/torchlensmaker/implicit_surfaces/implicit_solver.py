@@ -28,7 +28,7 @@ from torch._higher_order_ops import while_loop
 
 # x, r -> F(x, r), F_grad(x, r)
 ImplicitFunction2D: TypeAlias = Callable[
-    [Batch2DTensor], tuple[BatchTensor, BatchTensor]
+    [Batch2DTensor], tuple[BatchTensor, Batch2DTensor]
 ]
 
 # x, y, z -> F(x, y, z), F_grad(x, y, z)

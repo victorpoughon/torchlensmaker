@@ -31,6 +31,9 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_scale_2d,
     hom_translate_2d,
     kinematic_chain_extend_2d,
+    hom_scale_3d,
+    hom_translate_3d,
+    kinematic_chain_extend_3d,
 )
 
 
@@ -78,5 +81,41 @@ def anchor_transforms_2d(
     tfscale = hom_scale_2d(scale)
     tf_surface = kinematic_chain_extend_2d(base, [tf0, tfscale])
     tf_next = kinematic_chain_extend_2d(base, [tf0, tf1])
+
+    return tf_surface, tf_next
+
+
+def anchor_transforms_3d(
+    anchor0: ScalarTensor,
+    anchor1: ScalarTensor,
+    scale: ScalarTensor,
+    base: Tf3D,
+) -> tuple[Tf3D, Tf3D]:
+    """
+    Compute transforms required to position a surface that has anchors and a scale.
+
+    They are:
+    - the "surface transform": the tf that applies to the surface itself to
+      position it in global frame
+    - the "next transform": the tf that applies to the next element in a
+      sequential system where the surface is the latest element of the kinematic
+      chain
+    """
+    # First anchor transform
+    t0_x = -scale * anchor0
+    t0_y = torch.zeros_like(t0_x)
+    t0_z = torch.zeros_like(t0_x)
+    tf0 = hom_translate_3d(torch.stack((t0_x, t0_y, t0_z), dim=-1))
+
+    # Second anchor transform
+    t1_x = scale * anchor1
+    t1_y = torch.zeros_like(t1_x)
+    t1_z = torch.zeros_like(t1_x)
+    tf1 = hom_translate_3d(torch.stack((t1_x, t1_y, t1_z), dim=-1))
+
+    # Compose with the existing kinematic chain
+    tfscale = hom_scale_3d(scale)
+    tf_surface = kinematic_chain_extend_3d(base, [tf0, tfscale])
+    tf_next = kinematic_chain_extend_3d(base, [tf0, tf1])
 
     return tf_surface, tf_next

@@ -17,7 +17,7 @@
 from functools import partial
 import torch
 import torch.nn as nn
-from typing import Any
+from typing import Any, cast
 
 from torchlensmaker.types import (
     ScalarTensor,
@@ -29,6 +29,7 @@ from torchlensmaker.types import (
     HomMatrix,
     Tf2D,
     Tf3D,
+    Tf,
 )
 from torchlensmaker.core.geometry import unit_vector
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -44,10 +45,10 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 
 
 def intersection_disk_2d(
-    diameter: ScalarTensor,
     P: Batch2DTensor,
     V: Batch2DTensor,
-) -> tuple[BatchTensor, Batch2DTensor]:
+    diameter: ScalarTensor,
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
     "2D ray intersection with the Y axis"
 
     t = -P[..., 0] / V[..., 0]
@@ -59,10 +60,10 @@ def intersection_disk_2d(
 
 
 def intersection_disk_3d(
-    diameter: ScalarTensor,
     P: Batch2DTensor,
     V: Batch2DTensor,
-) -> tuple[BatchTensor, Batch2DTensor]:
+    diameter: ScalarTensor,
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor]:
     "3D ray intersection with the YZ plane"
 
     t = -P[..., 0] / V[..., 0]
@@ -184,12 +185,12 @@ class Disk(nn.Module):
         self.func3d = Disk3DSurfaceKernel()
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf2D
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
+        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         if P.shape[-1] == 2:
-            return self.func2d.apply(P, V, tf, self.diameter)
+            return self.func2d.apply(P, V, cast(Tf2D, tf), self.diameter)
         else:
-            return self.func3d.apply(P, V, tf, self.diameter)
+            return self.func3d.apply(P, V, cast(Tf3D, tf), self.diameter)
 
     def render(self) -> Any:
         return {
