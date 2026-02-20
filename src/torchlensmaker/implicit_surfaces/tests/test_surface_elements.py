@@ -180,6 +180,7 @@ def test_sag_surfaces_modules_3d() -> None:
 
     surfaces_3d = [
         Disk(10.0),
+        SphereByCurvature(10, 0.05),
     ]
 
     for module in surfaces_3d:
