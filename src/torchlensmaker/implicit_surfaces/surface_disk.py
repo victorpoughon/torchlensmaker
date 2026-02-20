@@ -120,7 +120,7 @@ class Disk(nn.Module):
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf2D
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
-        return self.func2d.forward(P, V, tf, self.diameter)
+        return self.func2d.apply(P, V, tf, self.diameter)
 
     def render(self) -> Any:
         return {

@@ -130,6 +130,7 @@ def test_sag_surfaces_modules() -> None:
         SphereByCurvature(10.0, C=0.0),
         SphereByCurvature(10.0, C=0.5),
         SphereByCurvature(10.0, C=-0.5),
+        Disk(10.0),
     ]
 
     for module in surfaces_2d:
