@@ -16,11 +16,9 @@
 
 from functools import partial
 from typing import Any
-
-from typing import TypeAlias
-from jaxtyping import Float, Int, Bool
+from jaxtyping import Float
 import torch
-
+import torch.nn as nn
 
 from torchlensmaker.types import (
     ScalarTensor,
@@ -35,68 +33,18 @@ from torchlensmaker.types import (
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_scale_2d,
     hom_identity_2d,
-    hom_translate_2d,
-    kinematic_chain_append,
-    kinematic_chain_extend_2d,
 )
 
-
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from .sag_functions import spherical_sag_2d, SagFunction2D
+from torchlensmaker.core.tensor_manip import init_param
+
+from .sag_functions import spherical_sag_2d
 
 from .sag_raytrace import sag_surface_local_raytrace_2d
 from .raytrace import raytrace
-
-
-def example_rays_2d(
-    N: int, dtype: torch.dtype, device: torch.device
-) -> tuple[BatchNDTensor, BatchNDTensor]:
-    P = torch.stack(
-        (
-            torch.zeros((N,), dtype=dtype, device=device),
-            torch.linspace(-1, 1, N, dtype=dtype, device=device),
-        ),
-        dim=-1,
-    )
-
-    V = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P)
-
-    return P, V
-
-
-def lens_diameter_domain_2d(
-    points: Batch2DTensor, diameter: ScalarTensor
-) -> MaskTensor:
-    return torch.abs(points[..., 1]) <= diameter / 2
-
-
-def sag_anchor_transforms_2d(
-    sag: SagFunction2D,
-    diameter: ScalarTensor,
-    anchors: Float[torch.Tensor, " 2"],
-    scale: ScalarTensor,
-    base: Tf2D,
-) -> tuple[Tf2D, Tf2D]:
-    # First anchor transform
-    extent0, _ = sag(anchors[0] * diameter / 2)
-    t0_x = -scale * extent0
-    t0_y = torch.zeros_like(t0_x)
-    tf0 = hom_translate_2d(torch.stack((t0_x, t0_y), dim=-1))
-
-    # Second anchor transform
-    extent1, _ = sag(anchors[1] * diameter / 2)
-    t1_x = scale * extent1
-    t1_y = torch.zeros_like(t0_y)
-    tf1 = hom_translate_2d(torch.stack((t1_x, t1_y), dim=-1))
-
-    # Compose with the existing kinematic chain
-    tfscale = hom_scale_2d(scale)
-    tf_surface = kinematic_chain_extend_2d(base, [tf0, tfscale])
-    tf_next = kinematic_chain_extend_2d(base, [tf0, tf1])
-
-    return tf_surface, tf_next
+from .sag_geometry import lens_diameter_domain_2d, sag_anchor_transforms_2d
+from .kernels_utils import example_rays_2d
 
 
 class SphereC2DSurfaceKernel(FunctionalKernel):
@@ -181,66 +129,46 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         )
 
 
-def intersection_2d_yaxis(
-    P: Batch2DTensor, V: Batch2DTensor
-) -> tuple[BatchTensor, Batch2DTensor]:
-    "Ray intersection with the Y axis"
 
-    t = -P[..., 0] / V[..., 0]
-    normals = torch.tensor(((1.0, 0.0)), dtype=V.dtype, device=V.device).expand_as(V)
-    return t, normals
-
-
-class Disk2DSurfaceKernel(FunctionalKernel):
+class SphereC(nn.Module):
     """
-    Functional kernel for a 2D disk (aka a line segment perpendicular to the
-    optical axis), parameterized by lens diameter.
+    Spherical surface (2D or 3D) parameterized by lens diameter and curvature.
+
+    Represented by a sag function and raytraced by implicit solver
+    Support for anchors and scale.
     """
 
-    inputs = {
-        "P": Batch2DTensor,
-        "V": Batch2DTensor,
-        "tf_in": Tf2D,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": Batch2DTensor,
-        "valid": MaskTensor,
-        "surface_tf": Tf2D,
-        "next_tf": Tf2D,
-    }
-
-    def apply(
+    def __init__(
         self,
-        P: Batch2DTensor,
-        V: Batch2DTensor,
-        tf_in: Tf2D,
-        diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
-        # Setup the local solver
-        local_solver = intersection_2d_yaxis
+        diameter: float | ScalarTensor,
+        C: float | ScalarTensor | nn.Parameter,
+        *,
+        anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
+        scale: float | ScalarTensor = 1.0,
+        trainable: bool = True,
+        num_iter: int = 6,
+    ):
+        super().__init__()
+        self.diameter = init_param(self, "diameter", diameter, False)
+        self.C = init_param(self, "C", C, trainable)
+        self.anchors = init_param(self, "anchors", anchors, False)
+        self.scale = init_param(self, "scale", scale, False)
+        self.func2d = SphereC2DSurfaceKernel(num_iter)
 
-        # Domain function defined by the lens diamter
-        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
+    def forward(
+        self, P: BatchTensor, V: BatchTensor, tf: Tf2D
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
+        return self.func2d.apply(
+            P, V, tf, self.diameter, self.C, self.anchors, self.scale
+        )
 
-        # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_in, local_solver, domain_function)
+    def render(self) -> Any:
+        return {
+            "type": "surface-sag",
+            "diameter": self.diameter.item(),
+            "sag-function": {
+                "sag-type": "spherical",
+                "C": self.C.item(),
+            },
+        }
 
-        return t, normals, valid, tf_in.clone(), tf_in.clone()
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
-        P, V = example_rays_2d(10, dtype, device)
-        tf = hom_identity_2d(dtype, device)
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor]:
-        return (torch.tensor(10.0, dtype=dtype, device=device),)

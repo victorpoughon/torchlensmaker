@@ -65,11 +65,6 @@ def spherical_sag_2d(
     return g, g_grad
 
 
-def spherical_sag_2d_domain(C: ScalarTensor) -> Float[torch.Tensor, " 2"]:
-    sign = torch.sign(C)
-    return torch.stack((-sign / C, sign / C), dim=-1)
-
-
 def spherical_sag_3d(
     y: BatchTensor, z: BatchTensor, C: ScalarTensor
 ) -> tuple[BatchTensor, Batch2DTensor]:

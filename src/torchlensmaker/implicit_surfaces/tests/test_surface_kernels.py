@@ -23,7 +23,8 @@ import pytest
 import torch
 import onnxruntime
 
-from torchlensmaker.implicit_surfaces.surface_kernels import SphereC2DSurfaceKernel, Disk2DSurfaceKernel
+from torchlensmaker.implicit_surfaces.surface_spherec import SphereC2DSurfaceKernel
+from torchlensmaker.implicit_surfaces.surface_disk import Disk2DSurfaceKernel
 
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 

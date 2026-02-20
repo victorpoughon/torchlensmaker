@@ -27,7 +27,8 @@ import onnxruntime
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
 from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
-from torchlensmaker.implicit_surfaces.surface_elements import SphereC
+from torchlensmaker.implicit_surfaces.surface_spherec import SphereC
+from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
 def check_model_eval(
