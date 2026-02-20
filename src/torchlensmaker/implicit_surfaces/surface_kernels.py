@@ -46,7 +46,8 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from .sag_functions import spherical_sag_2d, SagFunction2D
 
-from .sag_raytrace import sag_surface_local_raytrace_2d, raytrace
+from .sag_raytrace import sag_surface_local_raytrace_2d
+from .raytrace import raytrace
 
 
 def example_rays_2d(
