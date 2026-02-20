@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Callable, TypeAlias
-from jaxtyping import Float
+from jaxtyping import Float, Bool
 import torch
 
 from torchlensmaker.types import (
@@ -31,14 +31,13 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 
 
-# (P, V) -> t, normals
+# (P, V) -> t, local_normals, valid
 LocalSolver: TypeAlias = Callable[
     [Float[torch.Tensor, "N D"], Float[torch.Tensor, "N D"]],
-    tuple[Float[torch.Tensor, "  N"], Float[torch.Tensor, "N D"]],
+    tuple[
+        Float[torch.Tensor, "  N"], Float[torch.Tensor, "N D"], Bool[torch.Tensor, " N"]
+    ],
 ]
-
-# (points) -> valid mask
-DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 
 
 def raytrace(
@@ -46,7 +45,6 @@ def raytrace(
     V: BatchNDTensor,
     tf: Tf,
     local_solver: LocalSolver,
-    domain_function: DomainFunction,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
     """
     Surface raytracing
@@ -66,10 +64,7 @@ def raytrace(
     P_local, V_local = transform_rays(tf.inverse, P, V)
 
     # Call the local solver
-    t, local_normals = local_solver(P_local, V_local)
-
-    # Apply the domain function
-    valid = domain_function(P_local + t.unsqueeze(-1) * V_local)
+    t, local_normals, valid = local_solver(P=P_local, V=V_local)
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection

@@ -15,12 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from jaxtyping import Float
+from typing import TypeAlias, Callable
 import torch
 
 from torchlensmaker.types import (
     BatchTensor,
     Batch2DTensor,
     Batch3DTensor,
+    BatchNDTensor,
+    MaskTensor,
 )
 
 from .sag_functions import SagFunction2D, SagFunction3D
@@ -29,6 +32,9 @@ from .implicit_solver import (
     ImplicitFunction2D,
     ImplicitFunction3D,
 )
+
+# (points) -> valid mask
+DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
 
 
 def sag_to_implicit_2d(sag: SagFunction2D) -> ImplicitFunction2D:
@@ -64,21 +70,25 @@ def sag_surface_local_raytrace_2d(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
     sag_function: SagFunction2D,
+    domain_function: DomainFunction,
     num_iter: int,
 ) -> tuple[BatchTensor, Batch2DTensor]:
     """
-    Sag surface 2D raytracing in local frame of reference
+    Raytracing for a sag surface in 2D in local frame
     """
 
     implicit_function = sag_to_implicit_2d(sag_function)
     t = implicit_solver_newton(P, V, implicit_function, num_iter)
 
-    # Note that here the raytracing is not constrained to the domain of the sag
-    # function defined by the lens diameter. The sag function typically extends
-    # beyond that domain and some solution here might be outside of it.
-
-    # Compute normals
+    # To get the normals of an implicit surface,
+    # normalize the gradient of the implicit function
     points = P + t.unsqueeze(-1) * V
-    _, normals = implicit_function(points)
+    _, Fgrad = implicit_function(points)
+    local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
 
-    return t, normals
+    # Apply the domain function to contraint to the valid domain.
+    # This is required because typically sag functions extend beyond
+    # that domain or even to infinity
+    valid = domain_function(P + t.unsqueeze(-1) * V)
+
+    return t, local_normals, valid

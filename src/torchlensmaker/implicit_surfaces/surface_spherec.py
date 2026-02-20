@@ -92,24 +92,21 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
+        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
         local_solver = partial(
             sag_surface_local_raytrace_2d,
             sag_function=sag,
+            domain_function=domain_function,
             num_iter=self.num_iter,
         )
 
         # Compute anchor transforms from anchors and scale
         extent0, _ = sag(anchors[0] * diameter / 2)
         extent1, _ = sag(anchors[1] * diameter / 2)
-        tf_surface, tf_next = anchor_transforms_2d(
-            extent0, extent1, scale, tf_in
-        )
-
-        # Domain function defined by the lens diamter
-        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
+        tf_surface, tf_next = anchor_transforms_2d(extent0, extent1, scale, tf_in)
 
         # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_surface, local_solver, domain_function)
+        t, normals, valid = raytrace(P, V, tf_surface, local_solver)
 
         return t, normals, valid, tf_surface, tf_next
 
@@ -129,7 +126,6 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
             torch.tensor((0.0, 0.0), dtype=dtype, device=device),
             torch.tensor(-1.0, dtype=dtype, device=device),
         )
-
 
 
 class SphereC(nn.Module):
@@ -173,4 +169,3 @@ class SphereC(nn.Module):
                 "C": self.C.item(),
             },
         }
-

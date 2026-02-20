@@ -41,14 +41,20 @@ from .raytrace import raytrace
 from .sag_geometry import lens_diameter_domain_2d
 from .kernels_utils import example_rays_2d
 
-def intersection_2d_yaxis(
-    P: Batch2DTensor, V: Batch2DTensor
+
+def intersection_disk_2d(
+    diameter: ScalarTensor,
+    P: Batch2DTensor,
+    V: Batch2DTensor,
 ) -> tuple[BatchTensor, Batch2DTensor]:
     "Ray intersection with the Y axis"
 
     t = -P[..., 0] / V[..., 0]
     normals = torch.tensor(((1.0, 0.0)), dtype=V.dtype, device=V.device).expand_as(V)
-    return t, normals
+
+    points = P + t.unsqueeze(-1) * V
+    valid = lens_diameter_domain_2d(points, diameter)
+    return t, normals, valid
 
 
 class Disk2DSurfaceKernel(FunctionalKernel):
@@ -82,14 +88,9 @@ class Disk2DSurfaceKernel(FunctionalKernel):
         tf_in: Tf2D,
         diameter: ScalarTensor,
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
-        # Setup the local solver
-        local_solver = intersection_2d_yaxis
-
-        # Domain function defined by the lens diamter
-        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
-
         # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_in, local_solver, domain_function)
+        local_solver = partial(intersection_disk_2d, diameter=diameter)
+        t, normals, valid = raytrace(P, V, tf_in, local_solver)
 
         return t, normals, valid, tf_in.clone(), tf_in.clone()
 
