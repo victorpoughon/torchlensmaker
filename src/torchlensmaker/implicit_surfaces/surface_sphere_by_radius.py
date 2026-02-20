@@ -95,7 +95,7 @@ def sphere_radius_contains(
 
 
 def sphere_radius_raytracing(
-    diameter: ScalarTensor, R: ScalarTensor, P: BatchNDTensor, V: BatchNDTensor
+    P: BatchNDTensor, V: BatchNDTensor, diameter: ScalarTensor, R: ScalarTensor
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
     N, D = P.shape
 

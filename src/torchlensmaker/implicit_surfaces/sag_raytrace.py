@@ -66,10 +66,10 @@ def sag_to_implicit_3d(sag: SagFunction3D) -> ImplicitFunction3D:
     return implicit
 
 
-def sag_surface_local_raytrace_2d(
+def implicit_surface_local_raytrace(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
-    sag_function: SagFunction2D,
+    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
     domain_function: DomainFunction,
     num_iter: int,
 ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
@@ -77,7 +77,6 @@ def sag_surface_local_raytrace_2d(
     Raytracing for a sag surface in 2D in local frame
     """
 
-    implicit_function = sag_to_implicit_2d(sag_function)
     t = implicit_solver_newton(P, V, implicit_function, num_iter)
 
     # To get the normals of an implicit surface,

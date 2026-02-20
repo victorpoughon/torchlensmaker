@@ -41,7 +41,7 @@ from torchlensmaker.core.tensor_manip import init_param
 
 from .sag_functions import spherical_sag_2d
 
-from .sag_raytrace import sag_surface_local_raytrace_2d
+from .sag_raytrace import implicit_surface_local_raytrace, sag_to_implicit_2d
 from .raytrace import raytrace
 from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
 from .kernels_utils import example_rays_2d
@@ -92,10 +92,11 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
+        implicit_function = sag_to_implicit_2d(sag)
         domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
         local_solver = partial(
-            sag_surface_local_raytrace_2d,
-            sag_function=sag,
+            implicit_surface_local_raytrace,
+            implicit_function=implicit_function,
             domain_function=domain_function,
             num_iter=self.num_iter,
         )
