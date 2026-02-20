@@ -27,7 +27,7 @@ import onnxruntime
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
 from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
-from torchlensmaker.implicit_surfaces.surface_spherec import SphereC
+from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import SphereByCurvature
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
@@ -127,9 +127,9 @@ def test_sag_surfaces_modules() -> None:
     torch.set_default_device(device)
 
     surfaces_2d = [
-        SphereC(10.0, C=0.0),
-        SphereC(10.0, C=0.5),
-        SphereC(10.0, C=-0.5),
+        SphereByCurvature(10.0, C=0.0),
+        SphereByCurvature(10.0, C=0.5),
+        SphereByCurvature(10.0, C=-0.5),
     ]
 
     for module in surfaces_2d:

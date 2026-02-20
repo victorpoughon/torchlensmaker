@@ -47,7 +47,7 @@ from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
 from .kernels_utils import example_rays_2d
 
 
-class SphereC2DSurfaceKernel(FunctionalKernel):
+class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
     """
     Functional kernel for a 2D spherical arc parameterized by:
         - signed surface curvature
@@ -128,7 +128,7 @@ class SphereC2DSurfaceKernel(FunctionalKernel):
         )
 
 
-class SphereC(nn.Module):
+class SphereByCurvature(nn.Module):
     """
     Spherical surface (2D or 3D) parameterized by lens diameter and curvature.
 
@@ -151,7 +151,7 @@ class SphereC(nn.Module):
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
-        self.func2d = SphereC2DSurfaceKernel(num_iter)
+        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf2D

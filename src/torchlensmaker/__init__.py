@@ -126,8 +126,8 @@ from torchlensmaker.implicit_surfaces.sag_functions import (
     sag_sum_3d,
 )
 from torchlensmaker.implicit_surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.implicit_surfaces.surface_spherec import SphereC
-from torchlensmaker.implicit_surfaces.surface_spherer import SphereByRadius
+from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import SphereByCurvature
+from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import SphereByRadius
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
