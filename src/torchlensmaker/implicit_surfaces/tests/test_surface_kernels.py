@@ -25,6 +25,7 @@ import onnxruntime
 
 from torchlensmaker.implicit_surfaces.surface_spherec import SphereC2DSurfaceKernel
 from torchlensmaker.implicit_surfaces.surface_disk import Disk2DSurfaceKernel
+from torchlensmaker.implicit_surfaces.surface_spherer import SphereByRadius2DSurfaceKernel
 
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
 
@@ -39,6 +40,7 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC2D-1": SphereC2DSurfaceKernel(1),
     "SphereC2D-6": SphereC2DSurfaceKernel(6),
     "SphereC2D-12": SphereC2DSurfaceKernel(12),
+    # "SphereR2D": SphereByRadius2DSurfaceKernel(),
     "Disk2D": Disk2DSurfaceKernel(),
 }
 
