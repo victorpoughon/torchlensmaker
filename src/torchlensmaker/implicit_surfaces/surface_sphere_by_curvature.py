@@ -16,7 +16,7 @@
 
 from functools import partial
 from typing import Any
-from jaxtyping import Float
+from jaxtyping import Float, Bool
 import torch
 import torch.nn as nn
 
@@ -79,6 +79,7 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         "C": ScalarTensor,
         "anchors": Float[torch.Tensor, " 2"],
         "scale": ScalarTensor,
+        "normalize": Bool[torch.Tensor, ""],
     }
 
     outputs = {
@@ -103,11 +104,16 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
+        normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
-        implicit_function = sag_to_implicit_2d(sag)
-        domain_function = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=self.tol)
+        one = torch.ones((), dtype=P.dtype, device=P.device)
+        tau = torch.where(normalize, diameter / 2, one)
+        implicit_function = sag_to_implicit_2d(sag, tau=tau)
+        domain_function = partial(
+            lens_diameter_implicit_domain_2d, diameter=diameter, tol=self.tol
+        )
         local_solver = partial(
             implicit_surface_local_raytrace,
             implicit_function=implicit_function,
@@ -141,6 +147,7 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
             torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor((0.0, 0.0), dtype=dtype, device=device),
             torch.tensor(-1.0, dtype=dtype, device=device),
+            torch.tensor(False, dtype=torch.bool, device=device),
         )
 
 
@@ -164,6 +171,7 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         "C": ScalarTensor,
         "anchors": Float[torch.Tensor, " 2"],
         "scale": ScalarTensor,
+        "normalize": Bool[torch.Tensor, ""],
     }
 
     outputs = {
@@ -188,10 +196,13 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
+        normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf3D, Tf3D]:
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_3d, C=C)
-        implicit_function = sag_to_implicit_3d(sag)
+        one = torch.ones((), dtype=P.dtype, device=P.device)
+        tau = torch.where(normalize, diameter / 2, one)
+        implicit_function = sag_to_implicit_3d(sag, tau=tau)
         domain_function = partial(
             lens_diameter_implicit_domain_3d, diameter=diameter, tol=self.tol
         )
@@ -229,6 +240,7 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
             torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor((0.0, 0.0), dtype=dtype, device=device),
             torch.tensor(-1.0, dtype=dtype, device=device),
+            torch.tensor(False, dtype=torch.bool, device=device),
         )
 
 
@@ -248,6 +260,7 @@ class SphereByCurvature(nn.Module):
         anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
+        normalize: bool = False,
         num_iter: int = 6,
         damping: float = 0.95,
         tol: float = 1e-6,
@@ -257,6 +270,9 @@ class SphereByCurvature(nn.Module):
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
+        self.normalize = init_param(
+            self, "normalize", normalize, False, default_dtype=torch.bool
+        )
         self.func2d = SphereByCurvature2DSurfaceKernel(num_iter, damping, tol)
         self.func3d = SphereByCurvature3DSurfaceKernel(num_iter, damping, tol)
 
@@ -265,11 +281,25 @@ class SphereByCurvature(nn.Module):
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         if P.shape[-1] == 2:
             return self.func2d.apply(
-                P, V, tf, self.diameter, self.C, self.anchors, self.scale
+                P,
+                V,
+                tf,
+                self.diameter,
+                self.C,
+                self.anchors,
+                self.scale,
+                self.normalize,
             )
         else:
             return self.func3d.apply(
-                P, V, tf, self.diameter, self.C, self.anchors, self.scale
+                P,
+                V,
+                tf,
+                self.diameter,
+                self.C,
+                self.anchors,
+                self.scale,
+                self.normalize,
             )
 
     def render(self) -> Any:
@@ -279,5 +309,6 @@ class SphereByCurvature(nn.Module):
             "sag-function": {
                 "sag-type": "spherical",
                 "C": self.C.item(),
+                "normalize": self.normalize.item(),
             },
         }
