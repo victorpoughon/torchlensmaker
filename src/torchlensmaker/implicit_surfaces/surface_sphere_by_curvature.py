@@ -89,8 +89,9 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf2D,
     }
 
-    def __init__(self, num_iter: int, tol: float):
+    def __init__(self, num_iter: int, damping: float, tol: float):
         self.num_iter = num_iter
+        self.damping = damping
         self.tol = tol
 
     def apply(
@@ -112,6 +113,7 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
             implicit_function=implicit_function,
             domain_function=domain_function,
             num_iter=self.num_iter,
+            damping=self.damping,
         )
 
         # Compute anchor transforms from anchors and scale
@@ -172,8 +174,9 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf3D,
     }
 
-    def __init__(self, num_iter: int, tol: float):
+    def __init__(self, num_iter: int, damping: float, tol: float):
         self.num_iter = num_iter
+        self.damping = damping
         self.tol = tol
 
     def apply(
@@ -197,6 +200,7 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
             implicit_function=implicit_function,
             domain_function=domain_function,
             num_iter=self.num_iter,
+            damping=self.damping,
         )
 
         # Compute anchor transforms from anchors and scale
@@ -245,6 +249,7 @@ class SphereByCurvature(nn.Module):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
         num_iter: int = 6,
+        damping: float = 0.95,
         tol: float = 1e-6,
     ):
         super().__init__()
@@ -252,8 +257,8 @@ class SphereByCurvature(nn.Module):
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
-        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter, tol)
-        self.func3d = SphereByCurvature3DSurfaceKernel(num_iter, tol)
+        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter, damping, tol)
+        self.func3d = SphereByCurvature3DSurfaceKernel(num_iter, damping, tol)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

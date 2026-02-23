@@ -49,6 +49,7 @@ def implicit_solver_newton(
     V: Float[torch.Tensor, "N D"],
     implicit_function: ImplicitFunction2D | ImplicitFunction3D,
     num_iter: int,
+    damping: float,
 ) -> Float[torch.Tensor, " N"]:
     """
     Newton's method, diffentiable over the last iteration
@@ -68,7 +69,7 @@ def implicit_solver_newton(
             F, F_grad = implicit_function(points)
 
             delta = F / torch.sum(F_grad * V, dim=-1)
-            t = t - delta
+            t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     # One differentiable step
     points = P + t.unsqueeze(-1) * V
@@ -84,6 +85,7 @@ def implicit_solver_newton_while_loop(
     V: Float[torch.Tensor, "N D"],
     implicit_function: ImplicitFunction,
     num_iter: Int[torch.Tensor, ""],
+    damping: Float[torch.Tensor, ""],
 ) -> Float[torch.Tensor, " N"]:
     """
     Newton's method, diffentiable over the last iteration
@@ -106,7 +108,7 @@ def implicit_solver_newton_while_loop(
         F, F_grad = implicit_function(points)
 
         delta = F / torch.sum(F_grad * V, dim=-1)
-        t = t - delta
+        t = torch.maximum(torch.zeros_like(t), t - damping * delta)
         i = i + 1
         return t, i, n.clone()
 
@@ -130,12 +132,13 @@ def implicit_surface_local_raytrace(
     implicit_function: ImplicitFunction2D | ImplicitFunction3D,
     domain_function: DomainFunction,
     num_iter: int,
+    damping: float,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
     """
     Raytracing for implicit surfaces in local frame
     """
 
-    t = implicit_solver_newton(P, V, implicit_function, num_iter)
+    t = implicit_solver_newton(P, V, implicit_function, num_iter, damping)
 
     # To get the normals of an implicit surface,
     # normalize the gradient of the implicit function

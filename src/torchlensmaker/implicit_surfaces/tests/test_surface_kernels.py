@@ -44,12 +44,12 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
 
 
 kernels_library: Dict[str, FunctionalKernel] = {
-    "SphereC2D-1": SphereByCurvature2DSurfaceKernel(1, 1e-3),
-    "SphereC2D-6": SphereByCurvature2DSurfaceKernel(6, 1e-6),
-    "SphereC2D-12": SphereByCurvature2DSurfaceKernel(12, 1e-12),
-    "SphereC3D-1": SphereByCurvature3DSurfaceKernel(1, 1e-3),
-    "SphereC3D-6": SphereByCurvature3DSurfaceKernel(6, 1e-6),
-    "SphereC3D-12": SphereByCurvature3DSurfaceKernel(12, 1e-6),
+    "SphereC2D-1": SphereByCurvature2DSurfaceKernel(1, 0.9, 1e-3),
+    "SphereC2D-6": SphereByCurvature2DSurfaceKernel(6, 1.0, 1e-6),
+    "SphereC2D-12": SphereByCurvature2DSurfaceKernel(12, 0.5, 1e-12),
+    "SphereC3D-1": SphereByCurvature3DSurfaceKernel(1, 1.0, 1e-3),
+    "SphereC3D-6": SphereByCurvature3DSurfaceKernel(6, 0.9, 1e-6),
+    "SphereC3D-12": SphereByCurvature3DSurfaceKernel(12, 0.9, 1e-6),
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
     "Disk2D": Disk2DSurfaceKernel(),
     "Disk3D": Disk3DSurfaceKernel(),
