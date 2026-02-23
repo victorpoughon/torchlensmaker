@@ -30,6 +30,7 @@ from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
 from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
 )
+from torchlensmaker.implicit_surfaces.surface_parabola import Parabola
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
@@ -166,6 +167,9 @@ def test_sag_surfaces_modules_2d() -> None:
         SphereByCurvature(10.0, C=0.0),
         SphereByCurvature(10.0, C=0.5),
         SphereByCurvature(10.0, C=-0.5),
+        Parabola(10.0, A=-0.0),
+        Parabola(10.0, A=0.5),
+        Parabola(10.0, A=-0.5),
         Disk(10.0),
     ]
 
@@ -181,6 +185,9 @@ def test_sag_surfaces_modules_3d() -> None:
     surfaces_3d = [
         Disk(10.0),
         SphereByCurvature(10, 0.05),
+        Parabola(10.0, A=-0.0),
+        Parabola(10.0, A=0.5),
+        Parabola(10.0, A=-0.5),
     ]
 
     for module in surfaces_3d:

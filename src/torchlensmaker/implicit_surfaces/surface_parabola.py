@@ -41,18 +41,18 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 
 from .sag_functions import (
-    spherical_sag_2d,
-    spherical_sag_3d,
+    parabolic_sag_2d,
+    parabolic_sag_3d,
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_surface import sag_surface_2d, sag_surface_3d
 
 
-class SphereByCurvatureSurfaceKernel(FunctionalKernel):
+class ParabolaSurfaceKernel(FunctionalKernel):
     """
-    Functional kernel for a 2D or 3D spherical arc surface parameterized by:
-        - signed surface curvature
+    Functional kernel for a 2D or 3D parabolic arc surface parameterized by:
+        - signed coefficient A, where x = A*y^2
         - lens diameter
 
     with support for anchors and scale.
@@ -66,7 +66,7 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
 
     params = {
         "diameter": ScalarTensor,
-        "C": ScalarTensor,
+        "A": ScalarTensor,
         "anchors": Float[torch.Tensor, " 2"],
         "scale": ScalarTensor,
         "normalize": Bool[torch.Tensor, ""],
@@ -92,20 +92,20 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
-        C: ScalarTensor,
+        A: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         if self.dim == 2:
-            sag_function = spherical_sag_2d
+            sag_function = parabolic_sag_2d
             apply_impl = sag_surface_2d
         else:
-            sag_function = spherical_sag_3d
+            sag_function = parabolic_sag_3d
             apply_impl = sag_surface_3d
 
         return apply_impl(
-            partial(sag_function, C=C),
+            partial(sag_function, A=A),
             self.num_iter,
             self.damping,
             self.tol,
@@ -142,9 +142,9 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         )
 
 
-class SphereByCurvature(nn.Module):
+class Parabola(nn.Module):
     """
-    Spherical surface (2D or 3D) parameterized by lens diameter and curvature.
+    Parabolic surface (2D or 3D) parameterized by lens diameter and parabolic coefficient.
 
     Represented by a sag function and raytraced by implicit solver
     Support for anchors and scale.
@@ -153,7 +153,7 @@ class SphereByCurvature(nn.Module):
     def __init__(
         self,
         diameter: float | ScalarTensor,
-        C: float | ScalarTensor | nn.Parameter,
+        A: float | ScalarTensor | nn.Parameter,
         *,
         anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
         scale: float | ScalarTensor = 1.0,
@@ -165,14 +165,14 @@ class SphereByCurvature(nn.Module):
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
-        self.C = init_param(self, "C", C, trainable)
+        self.a = init_param(self, "A", A, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
-        self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
+        self.func2d = ParabolaSurfaceKernel(2, num_iter, damping, tol)
+        self.func3d = ParabolaSurfaceKernel(3, num_iter, damping, tol)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
@@ -183,7 +183,7 @@ class SphereByCurvature(nn.Module):
             V,
             tf,
             self.diameter,
-            self.C,
+            self.A,
             self.anchors,
             self.scale,
             self.normalize,
@@ -194,8 +194,8 @@ class SphereByCurvature(nn.Module):
             "type": "surface-sag",
             "diameter": self.diameter.item(),
             "sag-function": {
-                "sag-type": "spherical",
-                "C": self.C.item(),
+                "sag-type": "parabolic",
+                "A": self.A.item(),
                 "normalize": self.normalize.item(),
             },
         }
