@@ -49,9 +49,9 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_surface import sag_surface_2d, sag_surface_3d
 
 
-class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
+class SphereByCurvatureSurfaceKernel(FunctionalKernel):
     """
-    Functional kernel for a 2D spherical arc parameterized by:
+    Functional kernel for a 2D or 3D spherical arc surface parameterized by:
         - signed surface curvature
         - lens diameter
 
@@ -59,9 +59,9 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
     """
 
     inputs = {
-        "P": Batch2DTensor,
-        "V": Batch2DTensor,
-        "tf_in": Tf2D,
+        "P": BatchNDTensor,
+        "V": BatchNDTensor,
+        "tf_in": Tf,
     }
 
     params = {
@@ -74,31 +74,37 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
 
     outputs = {
         "t": BatchTensor,
-        "normals": Batch2DTensor,
+        "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf2D,
-        "next_tf": Tf2D,
+        "surface_tf": Tf,
+        "next_tf": Tf,
     }
 
-    def __init__(self, num_iter: int, damping: float, tol: float):
+    def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
+        self.dim = dim
+        if dim == 2:
+            self.sag_function = spherical_sag_2d
+            self.apply_impl = sag_surface_2d
+        else:
+            self.sag_function = spherical_sag_3d
+            self.apply_impl = sag_surface_3d
         self.num_iter = num_iter
         self.damping = damping
         self.tol = tol
 
     def apply(
         self,
-        P: Batch2DTensor,
-        V: Batch2DTensor,
-        tf_in: Tf2D,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
+        tf_in: Tf,
         diameter: ScalarTensor,
         C: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
-        sag = partial(spherical_sag_2d, C=C)
-        return sag_surface_2d(
-            sag,
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+        return self.apply_impl(
+            partial(self.sag_function, C=C),
             self.num_iter,
             self.damping,
             self.tol,
@@ -113,90 +119,14 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
-        P, V = example_rays_2d(10, dtype, device)
-        tf = hom_identity_2d(dtype, device)
-        return P, V, tf
+    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        if self.dim == 2:
+            P, V = example_rays_2d(10, dtype, device)
+            tf = hom_identity_2d(dtype, device)
+        else:
+            P, V = example_rays_3d(10, dtype, device)
+            tf = hom_identity_3d(dtype, device)
 
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor, Float[torch.Tensor, " 2"], ScalarTensor]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor((0.0, 0.0), dtype=dtype, device=device),
-            torch.tensor(-1.0, dtype=dtype, device=device),
-            torch.tensor(False, dtype=torch.bool, device=device),
-        )
-
-
-class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 3D spherical cap parameterized by:
-        - signed surface curvature
-        - lens diameter
-
-    with support for anchors and scale.
-    """
-
-    inputs = {
-        "P": Batch3DTensor,
-        "V": Batch3DTensor,
-        "tf_in": Tf3D,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "anchors": Float[torch.Tensor, " 2"],
-        "scale": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": Batch3DTensor,
-        "valid": MaskTensor,
-        "surface_tf": Tf3D,
-        "next_tf": Tf3D,
-    }
-
-    def __init__(self, num_iter: int, damping: float, tol: float):
-        self.num_iter = num_iter
-        self.damping = damping
-        self.tol = tol
-
-    def apply(
-        self,
-        P: Batch3DTensor,
-        V: Batch3DTensor,
-        tf_in: Tf3D,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        anchors: Float[torch.Tensor, " 2"],
-        scale: ScalarTensor,
-        normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf3D, Tf3D]:
-        sag = partial(spherical_sag_3d, C=C)
-        return sag_surface_3d(
-            sag,
-            self.num_iter,
-            self.damping,
-            self.tol,
-            P,
-            V,
-            tf_in,
-            diameter,
-            anchors,
-            scale,
-            normalize,
-        )
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch3DTensor, Batch3DTensor, Tf3D]:
-        P, V = example_rays_3d(10, dtype, device)
-        tf = hom_identity_3d(dtype, device)
         return P, V, tf
 
     def example_params(
@@ -240,8 +170,8 @@ class SphereByCurvature(nn.Module):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter, damping, tol)
-        self.func3d = SphereByCurvature3DSurfaceKernel(num_iter, damping, tol)
+        self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
+        self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

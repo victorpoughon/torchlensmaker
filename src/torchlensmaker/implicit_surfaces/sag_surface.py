@@ -28,6 +28,7 @@ from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
     ScalarTensor,
+    MaskTensor,
     Tf2D,
     Tf3D,
 )
@@ -61,7 +62,7 @@ def sag_surface_2d(
     anchors: Float[torch.Tensor, " 2"],
     scale: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-):
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
@@ -95,14 +96,14 @@ def sag_surface_3d(
     num_iter: int,
     damping: float,
     tol: float,
-    P: Batch2DTensor,
-    V: Batch2DTensor,
-    tf_in: Tf2D,
+    P: Batch3DTensor,
+    V: Batch3DTensor,
+    tf_in: Tf3D,
     diameter: ScalarTensor,
     anchors: Float[torch.Tensor, " 2"],
     scale: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-):
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf3D, Tf3D]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
