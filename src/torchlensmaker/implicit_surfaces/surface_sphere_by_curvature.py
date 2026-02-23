@@ -57,6 +57,7 @@ from .sag_geometry import (
     anchor_transforms_3d,
 )
 from .kernels_utils import example_rays_2d, example_rays_3d
+from .sag_surface import sag_surface_2d, sag_surface_3d
 
 
 class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
@@ -106,31 +107,20 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
-        # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
-        one = torch.ones((), dtype=P.dtype, device=P.device)
-        tau = torch.where(normalize, diameter / 2, one)
-        implicit_function = sag_to_implicit_2d(sag, tau=tau)
-        domain_function = partial(
-            lens_diameter_implicit_domain_2d, diameter=diameter, tol=self.tol
+        return sag_surface_2d(
+            sag,
+            self.num_iter,
+            self.damping,
+            self.tol,
+            P,
+            V,
+            tf_in,
+            diameter,
+            anchors,
+            scale,
+            normalize,
         )
-        local_solver = partial(
-            implicit_surface_local_raytrace,
-            implicit_function=implicit_function,
-            domain_function=domain_function,
-            num_iter=self.num_iter,
-            damping=self.damping,
-        )
-
-        # Compute anchor transforms from anchors and scale
-        extent0, _ = sag(anchors[0] * diameter / 2)
-        extent1, _ = sag(anchors[1] * diameter / 2)
-        tf_surface, tf_next = anchor_transforms_2d(extent0, extent1, scale, tf_in)
-
-        # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_surface, local_solver)
-
-        return t, normals, valid, tf_surface, tf_next
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -198,32 +188,20 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf3D, Tf3D]:
-        # Setup the local solver for this surface class
         sag = partial(spherical_sag_3d, C=C)
-        one = torch.ones((), dtype=P.dtype, device=P.device)
-        tau = torch.where(normalize, diameter / 2, one)
-        implicit_function = sag_to_implicit_3d(sag, tau=tau)
-        domain_function = partial(
-            lens_diameter_implicit_domain_3d, diameter=diameter, tol=self.tol
+        return sag_surface_3d(
+            sag,
+            self.num_iter,
+            self.damping,
+            self.tol,
+            P,
+            V,
+            tf_in,
+            diameter,
+            anchors,
+            scale,
+            normalize,
         )
-        local_solver = partial(
-            implicit_surface_local_raytrace,
-            implicit_function=implicit_function,
-            domain_function=domain_function,
-            num_iter=self.num_iter,
-            damping=self.damping,
-        )
-
-        # Compute anchor transforms from anchors and scale
-        # In 3D, take Y=tau, Z=0 as the extent point, but this is arbitrary
-        extent0, _ = sag(anchors[0] * diameter / 2, torch.zeros_like(anchors[0]))
-        extent1, _ = sag(anchors[1] * diameter / 2, torch.zeros_like(anchors[0]))
-        tf_surface, tf_next = anchor_transforms_3d(extent0, extent1, scale, tf_in)
-
-        # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_surface, local_solver)
-
-        return t, normals, valid, tf_surface, tf_next
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
