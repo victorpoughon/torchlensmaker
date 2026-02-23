@@ -19,6 +19,7 @@ from jaxtyping import Float
 import torch
 
 from torchlensmaker.types import (
+    BatchTensor,
     ScalarTensor,
     Batch2DTensor,
     Batch3DTensor,
@@ -49,6 +50,30 @@ def lens_diameter_domain_3d(
     _, y, z = points.unbind(-1)
     r2 = y**2 + z**2
     return r2 <= (diameter / 2) ** 2
+
+
+def lens_diameter_implicit_domain_2d(
+    F: BatchTensor,
+    points: Batch2DTensor,
+    diameter: ScalarTensor,
+    tol: float,
+) -> MaskTensor:
+    in_diameter = torch.abs(points[..., 1]) <= diameter / 2
+    in_F = torch.abs(F) <= tol
+    return torch.logical_and(in_diameter, in_F)
+
+
+def lens_diameter_implicit_domain_3d(
+    F: BatchTensor,
+    points: Batch3DTensor,
+    diameter: ScalarTensor,
+    tol: float,
+) -> MaskTensor:
+    _, y, z = points.unbind(-1)
+    r2 = y**2 + z**2
+    in_diameter = r2 <= (diameter / 2) ** 2
+    in_F = torch.abs(F) <= tol
+    return torch.logical_and(in_diameter, in_F)
 
 
 def anchor_transforms_2d(

@@ -51,9 +51,9 @@ from .implicit_solver import implicit_surface_local_raytrace
 
 from .raytrace import raytrace
 from .sag_geometry import (
-    lens_diameter_domain_2d,
+    lens_diameter_implicit_domain_2d,
+    lens_diameter_implicit_domain_3d,
     anchor_transforms_2d,
-    lens_diameter_domain_3d,
     anchor_transforms_3d,
 )
 from .kernels_utils import example_rays_2d, example_rays_3d
@@ -89,8 +89,9 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf2D,
     }
 
-    def __init__(self, num_iter: int):
+    def __init__(self, num_iter: int, tol: float):
         self.num_iter = num_iter
+        self.tol = tol
 
     def apply(
         self,
@@ -105,7 +106,7 @@ class SphereByCurvature2DSurfaceKernel(FunctionalKernel):
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_2d, C=C)
         implicit_function = sag_to_implicit_2d(sag)
-        domain_function = partial(lens_diameter_domain_2d, diameter=diameter)
+        domain_function = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=self.tol)
         local_solver = partial(
             implicit_surface_local_raytrace,
             implicit_function=implicit_function,
@@ -171,8 +172,9 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         "next_tf": Tf3D,
     }
 
-    def __init__(self, num_iter: int):
+    def __init__(self, num_iter: int, tol: float):
         self.num_iter = num_iter
+        self.tol = tol
 
     def apply(
         self,
@@ -187,7 +189,9 @@ class SphereByCurvature3DSurfaceKernel(FunctionalKernel):
         # Setup the local solver for this surface class
         sag = partial(spherical_sag_3d, C=C)
         implicit_function = sag_to_implicit_3d(sag)
-        domain_function = partial(lens_diameter_domain_3d, diameter=diameter)
+        domain_function = partial(
+            lens_diameter_implicit_domain_3d, diameter=diameter, tol=self.tol
+        )
         local_solver = partial(
             implicit_surface_local_raytrace,
             implicit_function=implicit_function,
@@ -241,14 +245,15 @@ class SphereByCurvature(nn.Module):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
         num_iter: int = 6,
+        tol: float = 1e-6,
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
-        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter)
-        self.func3d = SphereByCurvature3DSurfaceKernel(num_iter)
+        self.func2d = SphereByCurvature2DSurfaceKernel(num_iter, tol)
+        self.func3d = SphereByCurvature3DSurfaceKernel(num_iter, tol)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

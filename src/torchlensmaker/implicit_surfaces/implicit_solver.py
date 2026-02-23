@@ -41,7 +41,7 @@ ImplicitFunction3D: TypeAlias = Callable[
 ImplicitFunction: TypeAlias = ImplicitFunction2D | ImplicitFunction3D
 
 # (points) -> valid mask
-DomainFunction: TypeAlias = Callable[[BatchNDTensor], MaskTensor]
+DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
 
 
 def implicit_solver_newton(
@@ -140,12 +140,12 @@ def implicit_surface_local_raytrace(
     # To get the normals of an implicit surface,
     # normalize the gradient of the implicit function
     points = P + t.unsqueeze(-1) * V
-    _, Fgrad = implicit_function(points)
+    F, Fgrad = implicit_function(points)
     local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
 
     # Apply the domain function to contraint to the valid domain.
     # This is required because typically sag functions extend beyond
     # that domain or even to infinity
-    valid = domain_function(P + t.unsqueeze(-1) * V)
+    valid = domain_function(F, P + t.unsqueeze(-1) * V)
 
     return t, local_normals, valid

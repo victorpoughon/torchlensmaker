@@ -40,7 +40,7 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 
 from .raytrace import raytrace
-from .sag_geometry import lens_diameter_domain_2d, anchor_transforms_2d
+from .sag_geometry import anchor_transforms_2d
 from .kernels_utils import example_rays_2d
 
 
