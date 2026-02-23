@@ -27,7 +27,6 @@ from torchlensmaker.types import (
     Batch3DTensor,
     BatchNDTensor,
     MaskTensor,
-    HomMatrix,
     Tf2D,
     Tf3D,
     Tf,
@@ -43,19 +42,9 @@ from torchlensmaker.core.tensor_manip import init_param
 
 from .sag_functions import (
     spherical_sag_2d,
-    sag_to_implicit_2d,
     spherical_sag_3d,
-    sag_to_implicit_3d,
 )
-from .implicit_solver import implicit_surface_local_raytrace
 
-from .raytrace import raytrace
-from .sag_geometry import (
-    lens_diameter_implicit_domain_2d,
-    lens_diameter_implicit_domain_3d,
-    anchor_transforms_2d,
-    anchor_transforms_3d,
-)
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_surface import sag_surface_2d, sag_surface_3d
 
@@ -257,28 +246,17 @@ class SphereByCurvature(nn.Module):
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        if P.shape[-1] == 2:
-            return self.func2d.apply(
-                P,
-                V,
-                tf,
-                self.diameter,
-                self.C,
-                self.anchors,
-                self.scale,
-                self.normalize,
-            )
-        else:
-            return self.func3d.apply(
-                P,
-                V,
-                tf,
-                self.diameter,
-                self.C,
-                self.anchors,
-                self.scale,
-                self.normalize,
-            )
+        func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
+        return func(
+            P,
+            V,
+            tf,
+            self.diameter,
+            self.C,
+            self.anchors,
+            self.scale,
+            self.normalize,
+        )
 
     def render(self) -> Any:
         return {
