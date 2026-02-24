@@ -23,12 +23,8 @@ import torch.nn as nn
 from torchlensmaker.types import (
     ScalarTensor,
     BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     MaskTensor,
-    Tf2D,
-    Tf3D,
     Tf,
 )
 
@@ -97,12 +93,8 @@ class ParabolaSurfaceKernel(FunctionalKernel):
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        if self.dim == 2:
-            sag_function = parabolic_sag_2d
-            apply_impl = sag_surface_2d
-        else:
-            sag_function = parabolic_sag_3d
-            apply_impl = sag_surface_3d
+        sag_function = parabolic_sag_2d if self.dim == 2 else parabolic_sag_3d
+        apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
             partial(sag_function, A=A),
@@ -111,7 +103,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
             self.tol,
             P,
             V,
-            tf_in,
+            tf_in,  # type: ignore
             diameter,
             anchors,
             scale,
@@ -121,6 +113,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        tf: Tf
         if self.dim == 2:
             P, V = example_rays_2d(10, dtype, device)
             tf = hom_identity_2d(dtype, device)
@@ -132,7 +125,13 @@ class ParabolaSurfaceKernel(FunctionalKernel):
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor, Float[torch.Tensor, " 2"], ScalarTensor]:
+    ) -> tuple[
+        ScalarTensor,
+        ScalarTensor,
+        Float[torch.Tensor, " 2"],
+        ScalarTensor,
+        Bool[torch.Tensor, ""],
+    ]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),
@@ -165,7 +164,7 @@ class Parabola(nn.Module):
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
-        self.a = init_param(self, "A", A, trainable)
+        self.A = init_param(self, "A", A, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
         self.normalize = init_param(

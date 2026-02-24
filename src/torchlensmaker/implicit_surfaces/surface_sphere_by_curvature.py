@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any
+from typing import Any, cast
 from jaxtyping import Float, Bool
 import torch
 import torch.nn as nn
@@ -23,13 +23,11 @@ import torch.nn as nn
 from torchlensmaker.types import (
     ScalarTensor,
     BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     MaskTensor,
+    Tf,
     Tf2D,
     Tf3D,
-    Tf,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -41,6 +39,8 @@ from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 
 from .sag_functions import (
+    SagFunction2D,
+    SagFunction3D,
     spherical_sag_2d,
     spherical_sag_3d,
 )
@@ -97,12 +97,8 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        if self.dim == 2:
-            sag_function = spherical_sag_2d
-            apply_impl = sag_surface_2d
-        else:
-            sag_function = spherical_sag_3d
-            apply_impl = sag_surface_3d
+        sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
+        apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
             partial(sag_function, C=C),
@@ -111,7 +107,7 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
             self.tol,
             P,
             V,
-            tf_in,
+            tf_in,  # type: ignore
             diameter,
             anchors,
             scale,
@@ -121,6 +117,7 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        tf: Tf
         if self.dim == 2:
             P, V = example_rays_2d(10, dtype, device)
             tf = hom_identity_2d(dtype, device)
@@ -132,7 +129,13 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor, Float[torch.Tensor, " 2"], ScalarTensor]:
+    ) -> tuple[
+        ScalarTensor,
+        ScalarTensor,
+        Float[torch.Tensor, " 2"],
+        ScalarTensor,
+        Bool[torch.Tensor, ""],
+    ]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),

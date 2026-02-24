@@ -21,11 +21,11 @@ from torch.onnx import ONNXProgram
 
 from itertools import chain
 from dataclasses import dataclass, is_dataclass, fields, astuple, Field
-from torchlensmaker.types import Tf2D, Tf3D
+from torchlensmaker.types import Tf2D, Tf3D, Tf
 from typing import Type, Any, cast, TypeAlias, get_origin, get_args, Union
 from types import UnionType
 
-KernelIOType: TypeAlias = torch.Tensor | Tf2D | Tf3D
+KernelIOType: TypeAlias = torch.Tensor | Tf2D | Tf3D | Tf
 
 
 torch.export.register_dataclass(Tf2D)
