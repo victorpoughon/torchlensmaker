@@ -95,6 +95,7 @@ class GenericLightSource(LightSourceBase):
         R = self.material(W)
 
         # Apply kinematic transform
+        # TODO could move this into geometry kernel
         P, V = transform_rays(data.fk.direct, P, V)
 
         return data.replace(
