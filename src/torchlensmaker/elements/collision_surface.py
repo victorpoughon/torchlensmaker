@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import Tf, Tf2D, Tf3D
+from torchlensmaker.types import Tf
 
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (

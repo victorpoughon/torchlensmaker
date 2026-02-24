@@ -103,7 +103,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
             self.tol,
             P,
             V,
-            tf_in,  # type: ignore
+            tf_in,
             diameter,
             anchors,
             scale,

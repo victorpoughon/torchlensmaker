@@ -23,24 +23,20 @@ from jaxtyping import Float
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
 
 from torchlensmaker.types import (
-    HomMatrix2D,
-    HomMatrix3D,
     HomMatrix,
-    Tf2D,
-    Tf3D,
     Tf,
     BatchNDTensor,
 )
 
 
-def hom_matrix_2d(M: Float[torch.Tensor, "2 2"]) -> HomMatrix2D:
+def hom_matrix_2d(M: Float[torch.Tensor, "2 2"]) -> HomMatrix:
     "Extend a 2x2 matrix to a homonegenous coordinates 3x3 matrix"
     right = torch.zeros((2, 1), dtype=M.dtype, device=M.device)
     bottom = torch.tensor([[0.0, 0.0, 1.0]], dtype=M.dtype, device=M.device)
     return torch.cat((torch.cat((M, right), dim=1), bottom), dim=0)
 
 
-def hom_matrix_3d(M: Float[torch.Tensor, "3 3"]) -> HomMatrix3D:
+def hom_matrix_3d(M: Float[torch.Tensor, "3 3"]) -> HomMatrix:
     "Extend a 3x3 matrix to a homonegenous coordinates 4x4 matrix"
     right = torch.zeros((3, 1), dtype=M.dtype, device=M.device)
     bottom = torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=M.dtype, device=M.device)
@@ -53,17 +49,17 @@ def hom_matrix(M: Float[torch.Tensor, "D D"]) -> HomMatrix:
     return hom_matrix_2d(M) if M.shape[0] == 2 else hom_matrix_3d(M)
 
 
-def hom_identity_2d(dtype: torch.dtype, device: torch.device) -> Tf2D:
+def hom_identity_2d(dtype: torch.dtype, device: torch.device) -> Tf:
     "Identity 2D homogeneous transform matrices"
-    return Tf2D(
+    return Tf(
         torch.eye(3, dtype=dtype, device=device),
         torch.eye(3, dtype=dtype, device=device),
     )
 
 
-def hom_identity_3d(dtype: torch.dtype, device: torch.device) -> Tf3D:
+def hom_identity_3d(dtype: torch.dtype, device: torch.device) -> Tf:
     "Identity 3D homogeneous transform matrices"
-    return Tf3D(
+    return Tf(
         torch.eye(4, dtype=dtype, device=device),
         torch.eye(4, dtype=dtype, device=device),
     )
@@ -76,25 +72,25 @@ def hom_identity(dim: int, dtype: torch.dtype, device: torch.device) -> Tf:
     )
 
 
-def hom_translate_2d(T: Float[torch.Tensor, "2"]) -> Tf2D:
+def hom_translate_2d(T: Float[torch.Tensor, "2"]) -> Tf:
     "Homogeneous transform matrices for a 2D translation"
     eye = torch.eye(2, dtype=T.dtype, device=T.device)
     top_direct = torch.cat((eye, T.unsqueeze(1)), dim=1)
     top_inverse = torch.cat((eye, -T.unsqueeze(1)), dim=1)
     bottom = torch.tensor([[0.0, 0.0, 1.0]], dtype=T.dtype, device=T.device)
-    return Tf2D(
+    return Tf(
         torch.cat((top_direct, bottom), dim=0),
         torch.cat((top_inverse, bottom), dim=0),
     )
 
 
-def hom_translate_3d(T: Float[torch.Tensor, "3"]) -> Tf3D:
+def hom_translate_3d(T: Float[torch.Tensor, "3"]) -> Tf:
     "Homogeneous transform matrices for a 3D translation"
     eye = torch.eye(3, dtype=T.dtype, device=T.device)
     top_direct = torch.cat((eye, T.unsqueeze(1)), dim=1)
     top_inverse = torch.cat((eye, -T.unsqueeze(1)), dim=1)
     bottom = torch.tensor([[0.0, 0.0, 0.0, 1.0]], dtype=T.dtype, device=T.device)
-    return Tf3D(
+    return Tf(
         torch.cat((top_direct, bottom), dim=0),
         torch.cat((top_inverse, bottom), dim=0),
     )
@@ -107,7 +103,7 @@ def hom_translate(T: Float[torch.Tensor, " D"]) -> Tf:
     return hom_translate_2d(T) if T.shape[0] == 2 else hom_translate_3d(T)
 
 
-def hom_rotate_2d(theta: Float[torch.Tensor, ""]) -> Tf2D:
+def hom_rotate_2d(theta: Float[torch.Tensor, ""]) -> Tf:
     "Homogeneous transform matrices for a 2D rotation in radians"
     zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
     bottom = torch.tensor([0.0, 0.0, 1.0], dtype=theta.dtype, device=theta.device)
@@ -118,10 +114,10 @@ def hom_rotate_2d(theta: Float[torch.Tensor, ""]) -> Tf2D:
             bottom,
         ),
     )
-    return Tf2D(rot, rot.T)
+    return Tf(rot, rot.T)
 
 
-def hom_rotate_3d(y: Float[torch.Tensor, ""], z: Float[torch.Tensor, ""]) -> Tf3D:
+def hom_rotate_3d(y: Float[torch.Tensor, ""], z: Float[torch.Tensor, ""]) -> Tf:
     """
     Transform for a 2 axis euler angles 3D rotation in degrees
 
@@ -140,10 +136,10 @@ def hom_rotate_3d(y: Float[torch.Tensor, ""], z: Float[torch.Tensor, ""]) -> Tf3
         "XYZ",
     ).to(dtype=y.dtype)  # TODO need to support dtype in euler_angles_to_matrix
 
-    return Tf3D(hom_matrix_3d(M), hom_matrix_3d(M.T))
+    return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
 
 
-def hom_scale_2d(scale: Float[torch.Tensor, ""]) -> Tf2D:
+def hom_scale_2d(scale: Float[torch.Tensor, ""]) -> Tf:
     """
     Homogeneous transform matrices for a 2D scale on all axes
     """
@@ -152,10 +148,10 @@ def hom_scale_2d(scale: Float[torch.Tensor, ""]) -> Tf2D:
     H_inv = hom_matrix(
         torch.reciprocal(scale) * torch.eye(2, dtype=scale.dtype, device=scale.device)
     )
-    return Tf2D(H, H_inv)
+    return Tf(H, H_inv)
 
 
-def hom_scale_3d(scale: Float[torch.Tensor, ""]) -> Tf3D:
+def hom_scale_3d(scale: Float[torch.Tensor, ""]) -> Tf:
     """
     Homogeneous transform matrices for a 3D scale on all axes
     """
@@ -164,7 +160,7 @@ def hom_scale_3d(scale: Float[torch.Tensor, ""]) -> Tf3D:
     H_inv = hom_matrix(
         torch.reciprocal(scale) * torch.eye(3, dtype=scale.dtype, device=scale.device)
     )
-    return Tf3D(H, H_inv)
+    return Tf(H, H_inv)
 
 
 def hom_scale(dim: int, scale: Float[torch.Tensor, ""]) -> Tf:
@@ -176,10 +172,10 @@ def hom_scale(dim: int, scale: Float[torch.Tensor, ""]) -> Tf:
     H_inv = hom_matrix(
         torch.reciprocal(scale) * torch.eye(dim, dtype=scale.dtype, device=scale.device)
     )
-    return Tf2D(H, H_inv) if dim == 2 else Tf3D(H, H_inv)
+    return Tf(H, H_inv)
 
 
-def kinematic_chain_append_2d(fk: Tf2D, joint: Tf2D) -> Tf2D:
+def kinematic_chain_append_2d(fk: Tf, joint: Tf) -> Tf:
     """
     Append a joint to a 2D forward kinematic chain
 
@@ -190,13 +186,13 @@ def kinematic_chain_append_2d(fk: Tf2D, joint: Tf2D) -> Tf2D:
     assert fk.dtype == joint.dtype
     assert fk.device == joint.device
 
-    return Tf2D(
+    return Tf(
         fk.direct @ joint.direct,
         joint.inverse @ fk.inverse,
     )
 
 
-def kinematic_chain_append_3d(fk: Tf3D, joint: Tf3D) -> Tf3D:
+def kinematic_chain_append_3d(fk: Tf, joint: Tf) -> Tf:
     """
     Append a joint to a 3D forward kinematic chain
 
@@ -207,7 +203,7 @@ def kinematic_chain_append_3d(fk: Tf3D, joint: Tf3D) -> Tf3D:
     assert fk.dtype == joint.dtype
     assert fk.device == joint.device
 
-    return Tf3D(
+    return Tf(
         fk.direct @ joint.direct,
         joint.inverse @ fk.inverse,
     )
@@ -224,13 +220,13 @@ def kinematic_chain_append(fk: Tf, joint: Tf) -> Tf:
     assert fk.shape == joint.shape
     assert fk.dtype == joint.dtype
 
-    return type(fk)(
+    return Tf(
         fk.direct @ joint.direct,
         joint.inverse @ fk.inverse,
     )
 
 
-def kinematic_chain_extend_2d(fk: Tf2D, joints: list[Tf2D]) -> Tf2D:
+def kinematic_chain_extend_2d(fk: Tf, joints: list[Tf]) -> Tf:
     """
     Extend a 2D kinematic chain with a list of joints
 
@@ -243,7 +239,7 @@ def kinematic_chain_extend_2d(fk: Tf2D, joints: list[Tf2D]) -> Tf2D:
     return fk
 
 
-def kinematic_chain_extend_3d(fk: Tf3D, joints: list[Tf3D]) -> Tf3D:
+def kinematic_chain_extend_3d(fk: Tf, joints: list[Tf]) -> Tf:
     """
     Extend a 3D kinematic chain with a list of joints
 
@@ -269,7 +265,7 @@ def kinematic_chain_extend(fk: Tf, joints: list[Tf]) -> Tf:
     return fk
 
 
-def hom_compose_2d(tfs: list[Tf2D]) -> Tf2D:
+def hom_compose_2d(tfs: list[Tf]) -> Tf:
     """
     Compose a list of 2D transforms
     """
@@ -281,11 +277,11 @@ def hom_compose_2d(tfs: list[Tf2D]) -> Tf2D:
     assert all(device == tf.device for tf in tfs)
 
     return functools.reduce(
-        lambda a, b: Tf2D(b.direct @ a.direct, a.inverse @ b.inverse), tfs
+        lambda a, b: Tf(b.direct @ a.direct, a.inverse @ b.inverse), tfs
     )
 
 
-def hom_compose_3d(tfs: list[Tf3D]) -> Tf3D:
+def hom_compose_3d(tfs: list[Tf]) -> Tf:
     """
     Compose a list of 3D transforms
     """
@@ -297,7 +293,7 @@ def hom_compose_3d(tfs: list[Tf3D]) -> Tf3D:
     assert all(device == tf.device for tf in tfs)
 
     return functools.reduce(
-        lambda a, b: Tf3D(b.direct @ a.direct, a.inverse @ b.inverse), tfs
+        lambda a, b: Tf(b.direct @ a.direct, a.inverse @ b.inverse), tfs
     )
 
 
@@ -312,9 +308,8 @@ def hom_compose(tfs: list[Tf]) -> Tf:
     assert all(dtype == tf.dtype for tf in tfs)
     assert all(device == tf.device for tf in tfs)
 
-    cls = type(tfs[0])
     return functools.reduce(
-        lambda a, b: cls(b.direct @ a.direct, a.inverse @ b.inverse), tfs
+        lambda a, b: Tf(b.direct @ a.direct, a.inverse @ b.inverse), tfs
     )
 
 

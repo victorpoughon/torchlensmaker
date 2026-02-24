@@ -29,7 +29,7 @@ from torchlensmaker.types import (
     Batch2DTensor,
     BatchNDTensor,
     MaskTensor,
-    Tf2D,
+    Tf,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -204,7 +204,7 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
     inputs = {
         "P": Batch2DTensor,
         "V": Batch2DTensor,
-        "tf_in": Tf2D,
+        "tf_in": Tf,
     }
 
     params = {
@@ -218,20 +218,20 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": Batch2DTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf2D,
-        "next_tf": Tf2D,
+        "surface_tf": Tf,
+        "next_tf": Tf,
     }
 
     def apply(
         self,
         P: Batch2DTensor,
         V: Batch2DTensor,
-        tf_in: Tf2D,
+        tf_in: Tf,
         diameter: ScalarTensor,
         R: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
+    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
         # Setup the local solver for this surface class
         local_solver = partial(sphere_radius_raytracing, diameter=diameter, R=R)
 
@@ -248,7 +248,7 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
+    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf]:
         P, V = example_rays_2d(10, dtype, device)
         tf = hom_identity_2d(dtype, device)
         return P, V, tf
@@ -289,8 +289,8 @@ class SphereByRadius(nn.Module):
         self.func2d = SphereByRadius2DSurfaceKernel()
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf2D
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf2D, Tf2D]:
+        self, P: BatchTensor, V: BatchTensor, tf: Tf
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         return self.func2d.apply(
             P, V, tf, self.diameter, self.R, self.anchors, self.scale
         )

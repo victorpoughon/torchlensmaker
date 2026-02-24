@@ -26,7 +26,7 @@ import torch.nn as nn
 import onnxruntime
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d, hom_identity_3d
-from torchlensmaker.types import BatchTensor, Batch2DTensor, Tf2D
+from torchlensmaker.types import BatchNDTensor, Tf
 from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
 )
@@ -35,7 +35,7 @@ from torchlensmaker.implicit_surfaces.surface_disk import Disk
 
 
 def check_model_eval(
-    model: nn.Module, inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D]
+    model: nn.Module, inputs: tuple[BatchNDTensor, BatchNDTensor, Tf]
 ) -> Any:
     "Evaluate a model forwards and run sanity checks"
 
@@ -54,7 +54,7 @@ def check_model_eval(
 
 def check_model_eval_and_grad(
     model: nn.Module,
-    inputs: tuple[Batch2DTensor, Batch2DTensor, Tf2D],
+    inputs: tuple[BatchNDTensor, BatchNDTensor, Tf],
     allow_none_grad: bool = False,
 ) -> Any:
     """

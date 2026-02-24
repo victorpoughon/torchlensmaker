@@ -26,8 +26,6 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     Tf,
-    Tf2D,
-    Tf3D,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -107,7 +105,7 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
             self.tol,
             P,
             V,
-            tf_in,  # type: ignore
+            tf_in,
             diameter,
             anchors,
             scale,

@@ -24,12 +24,8 @@ from torchlensmaker.core.tensor_manip import to_tensor, init_param, expand_bool_
 from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.types import (
-    HomMatrix2D,
-    HomMatrix3D,
     HomMatrix,
     ScalarTensor,
-    Tf2D,
-    Tf3D,
     Tf,
 )
 from .kinematics_kernels import (
@@ -60,7 +56,7 @@ class KinematicSequential(nn.Module):
         super().__init__()
         self.sequence = nn.ModuleList(sequence)
 
-    def forward(self, fk: Tf):
+    def forward(self, fk: Tf) -> Tf:
         for mod in self.sequence:
             fk = mod(fk)
         return fk
@@ -69,15 +65,15 @@ class KinematicSequential(nn.Module):
 # TODO this is used for lens only to make a "kinematic only" sequential model
 # no kernel needed for now
 class ExactKinematicElement2D(KinematicElement):
-    def __init__(self, joint: Tf2D):
+    def __init__(self, joint: Tf):
         super().__init__()
         self.joint = joint
 
-    def forward(self, fk: Tf2D) -> Tf2D:
+    def forward(self, fk: Tf) -> Tf:
         return kinematic_chain_append(fk, self.joint)
 
     def reverse(self) -> Self:
-        return type(self)(Tf2D(self.joint.inverse, self.joint.direct))
+        return type(self)(Tf(self.joint.inverse, self.joint.direct))
 
 
 class Gap(KinematicElement):
@@ -119,7 +115,7 @@ class Translate2D(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
 
-    def forward(self, fk: Tf2D) -> Tf2D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
 
     def reverse(self) -> Self:
@@ -140,7 +136,7 @@ class TranslateVec2D(KinematicElement):
         self.func = Translate2DKernel()
         self.t = init_param(self, "t", t, trainable)
 
-    def forward(self, fk: Tf2D) -> Tf2D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
@@ -162,7 +158,7 @@ class Translate3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(self, fk: Tf3D) -> Tf3D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
@@ -184,7 +180,7 @@ class TranslateVec3D(KinematicElement):
         self.func = Translate3DKernel()
         self.t = init_param(self, "t", t, trainable)
 
-    def forward(self, fk: Tf3D) -> Tf3D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
 
     def reverse(self) -> Self:
@@ -203,7 +199,7 @@ class Rotate2D(KinematicElement):
         self.func = Rotate2DKernel()
         self.theta = init_param(self, "theta", theta, trainable)
 
-    def forward(self, fk: Tf2D) -> Tf2D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.theta)
 
     def reverse(self) -> Self:
@@ -223,7 +219,7 @@ class AbsolutePosition2D(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
 
-    def forward(self, fk: Tf2D) -> Tf2D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
 
     def reverse(self) -> Self:
@@ -245,7 +241,7 @@ class AbsolutePosition3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(self, fk: Tf3D) -> Tf3D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
     def reverse(self) -> Self:
@@ -265,7 +261,7 @@ class Rotate3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
-    def forward(self, fk: Tf3D) -> Tf3D:
+    def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.y, self.z)
 
     # TODO support reverse for 3D rotations

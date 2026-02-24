@@ -27,8 +27,6 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     HomMatrix,
-    Tf2D,
-    Tf3D,
     Tf,
 )
 from torchlensmaker.core.geometry import unit_vector
@@ -83,7 +81,7 @@ class Disk2DSurfaceKernel(FunctionalKernel):
     inputs = {
         "P": Batch2DTensor,
         "V": Batch2DTensor,
-        "tf_in": Tf2D,
+        "tf_in": Tf,
     }
 
     params = {
@@ -94,17 +92,17 @@ class Disk2DSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": Batch2DTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf2D,
-        "next_tf": Tf2D,
+        "surface_tf": Tf,
+        "next_tf": Tf,
     }
 
     def apply(
         self,
         P: Batch2DTensor,
         V: Batch2DTensor,
-        tf_in: Tf2D,
+        tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf2D, Tf2D]:
+    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
         # Perform raytrace
         local_solver = partial(intersection_disk_2d, diameter=diameter)
         t, normals, valid = raytrace(P, V, tf_in, local_solver)
@@ -113,7 +111,7 @@ class Disk2DSurfaceKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf2D]:
+    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf]:
         P, V = example_rays_2d(10, dtype, device)
         tf = hom_identity_2d(dtype, device)
         return P, V, tf
@@ -132,7 +130,7 @@ class Disk3DSurfaceKernel(FunctionalKernel):
     inputs = {
         "P": Batch3DTensor,
         "V": Batch3DTensor,
-        "tf_in": Tf3D,
+        "tf_in": Tf,
     }
 
     params = {
@@ -143,17 +141,17 @@ class Disk3DSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": Batch3DTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf3D,
-        "next_tf": Tf3D,
+        "surface_tf": Tf,
+        "next_tf": Tf,
     }
 
     def apply(
         self,
         P: Batch3DTensor,
         V: Batch3DTensor,
-        tf_in: Tf3D,
+        tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf3D, Tf3D]:
+    ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf, Tf]:
         # Perform raytrace
         local_solver = partial(intersection_disk_3d, diameter=diameter)
         t, normals, valid = raytrace(P, V, tf_in, local_solver)
@@ -162,7 +160,7 @@ class Disk3DSurfaceKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch3DTensor, Batch3DTensor, Tf3D]:
+    ) -> tuple[Batch3DTensor, Batch3DTensor, Tf]:
         P, V = example_rays_3d(10, dtype, device)
         tf = hom_identity_3d(dtype, device)
         return P, V, tf
@@ -188,9 +186,9 @@ class Disk(nn.Module):
         self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         if P.shape[-1] == 2:
-            return self.func2d.apply(P, V, cast(Tf2D, tf), self.diameter)
+            return self.func2d.apply(P, V, tf, self.diameter)
         else:
-            return self.func3d.apply(P, V, cast(Tf3D, tf), self.diameter)
+            return self.func3d.apply(P, V, tf, self.diameter)
 
     def render(self) -> Any:
         return {

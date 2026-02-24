@@ -28,8 +28,6 @@ from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
-    HomMatrix2D,
-    HomMatrix3D,
     HomMatrix,
 )
 

@@ -21,15 +21,14 @@ from torch.onnx import ONNXProgram
 
 from itertools import chain
 from dataclasses import dataclass, is_dataclass, fields, astuple, Field
-from torchlensmaker.types import Tf2D, Tf3D, Tf
+from torchlensmaker.types import Tf
 from typing import Type, Any, cast, TypeAlias, get_origin, get_args, Union
 from types import UnionType
 
-KernelIOType: TypeAlias = torch.Tensor | Tf2D | Tf3D | Tf
+KernelIOType: TypeAlias = torch.Tensor | Tf
 
 
-torch.export.register_dataclass(Tf2D)
-torch.export.register_dataclass(Tf3D)
+torch.export.register_dataclass(Tf)
 
 
 def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:

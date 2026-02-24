@@ -24,8 +24,7 @@ from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     MaskTensor,
-    Tf2D,
-    Tf3D,
+    Tf,
 )
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -80,8 +79,8 @@ def anchor_transforms_2d(
     anchor0: ScalarTensor,
     anchor1: ScalarTensor,
     scale: ScalarTensor,
-    base: Tf2D,
-) -> tuple[Tf2D, Tf2D]:
+    base: Tf,
+) -> tuple[Tf, Tf]:
     """
     Compute transforms required to position a surface that has anchors and a scale.
 
@@ -114,8 +113,8 @@ def anchor_transforms_3d(
     anchor0: ScalarTensor,
     anchor1: ScalarTensor,
     scale: ScalarTensor,
-    base: Tf3D,
-) -> tuple[Tf3D, Tf3D]:
+    base: Tf,
+) -> tuple[Tf, Tf]:
     """
     Compute transforms required to position a surface that has anchors and a scale.
 

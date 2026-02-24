@@ -21,7 +21,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import Tf2D, Tf3D, Tf
+from torchlensmaker.types import Tf
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_compose_2d,
@@ -69,7 +69,7 @@ def test_hom_matrix() -> None:
     assert torch.allclose(hom_id3, torch.eye(4, dtype=id2.dtype, device=id2.device))
 
 
-def transforms_2d() -> list[Tf2D]:
+def transforms_2d() -> list[Tf]:
     base = hom_identity_2d(
         dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )
@@ -141,7 +141,7 @@ def test_transform_functions_2d() -> None:
             assert torch.allclose(vectors, transform_vectors(tf.inverse, out_vectors))
 
 
-def transforms_3d() -> list[Tf3D]:
+def transforms_3d() -> list[Tf]:
     base = hom_identity_3d(
         dtype=torch.get_default_dtype(), device=torch.get_default_device()
     )

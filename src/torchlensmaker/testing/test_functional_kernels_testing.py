@@ -25,7 +25,6 @@ import pytest
 import torch
 import onnxruntime
 
-from torchlensmaker.types import Tf2D, Tf3D
 from torchlensmaker.core.functional_kernel import (
     export_onnx,
     FunctionalKernel,

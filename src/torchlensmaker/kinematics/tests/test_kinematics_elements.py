@@ -21,7 +21,7 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import HomMatrix2D, HomMatrix3D, Tf2D, Tf3D
+from torchlensmaker.types import HomMatrix, Tf
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
@@ -43,8 +43,6 @@ from torchlensmaker.kinematics.kinematics_elements import (
     KinematicSequential,
 )
 
-
-from torchlensmaker.types import Tf2D, Tf3D, Tf
 
 
 def check_model_eval(model: nn.Module, in_tf: Tf) -> Any:
@@ -92,7 +90,7 @@ def check_model_eval_and_grad(
 
 
 def check_valid_kinematic_chain_2d(
-    tf: Tf2D,
+    tf: Tf,
     expected_dtype: torch.dtype,
     expected_device: torch.device,
 ) -> None:
@@ -116,7 +114,7 @@ def check_valid_kinematic_chain_2d(
 
 
 def check_valid_kinematic_chain_3d(
-    tf: Tf3D,
+    tf: Tf,
     expected_dtype: torch.dtype,
     expected_device: torch.device,
 ) -> None:

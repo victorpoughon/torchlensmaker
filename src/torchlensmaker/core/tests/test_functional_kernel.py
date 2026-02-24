@@ -22,7 +22,7 @@ from torchlensmaker.core.functional_kernel import (
     kernel_flat_io,
     kernel_flat_names,
 )
-from torchlensmaker.types import Tf2D, Tf3D, Tf
+from torchlensmaker.types import Tf
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -67,10 +67,10 @@ def test_flatten_kernel_io() -> None:
         ),
     )
 
-    # Tf2D
+    # Tf
     assert_equal_tensors_of_tuples(kernel_flat_io(t2), (t2.direct, t2.inverse))
 
-    # Tf3D
+    # Tf
     assert_equal_tensors_of_tuples(kernel_flat_io(t3), (t3.direct, t3.inverse))
 
     # Heavily nested case
@@ -90,22 +90,11 @@ def test_flatten_kernel_io() -> None:
 
 
 def test_flatten_kernel_names() -> None:
-    t = torch.tensor
-    t2 = hom_identity_2d(torch.get_default_dtype(), torch.get_default_device())
-    t3 = hom_identity_3d(torch.get_default_dtype(), torch.get_default_device())
-
-    # TF2D
-    # assert kernel_flat_names({"tf_in": Tf2D}) == ["tf_in.direct", "tf_in.inverse"]
-
-    # TF3D
-    # assert kernel_flat_names({"tf_in": Tf3D}) == ["tf_in.direct", "tf_in.inverse"]
-
-    # Tf2D | Tf3D
-    assert kernel_flat_names({"tf_in": Tf2D | Tf3D}) == ["tf_in.direct", "tf_in.inverse"]
+    # Tf
     assert kernel_flat_names({"tf_in": Tf}) == ["tf_in.direct", "tf_in.inverse"]
 
     # mix case
-    assert kernel_flat_names({"a": Tf2D, "b": Tf3D, "c": torch.Tensor}) == [
+    assert kernel_flat_names({"a": Tf, "b": Tf, "c": torch.Tensor}) == [
         "a.direct",
         "a.inverse",
         "b.direct",
