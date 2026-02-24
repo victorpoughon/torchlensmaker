@@ -19,11 +19,9 @@ import torch
 import torch.nn as nn
 from torch.onnx import ONNXProgram
 
-from itertools import chain
-from dataclasses import dataclass, is_dataclass, fields, astuple, Field
+from dataclasses import is_dataclass, fields, astuple
 from torchlensmaker.types import Tf
-from typing import Type, Any, cast, TypeAlias, get_origin, get_args, Union
-from types import UnionType
+from typing import Type, Any, cast, TypeAlias
 
 KernelIOType: TypeAlias = torch.Tensor | Tf
 
@@ -50,40 +48,11 @@ def kernel_flat_io(
         raise RuntimeError("flatten_kernel_outputs(): Invalid kernel output type")
 
 
-def is_dataclass_union(t: Any) -> bool:
-    "like is_dataclass but also works on union of dataclasses"
-    origin = get_origin(t)
-
-    # Bare dataclass type or instance
-    if origin is None:
-        return is_dataclass(t)
-
-    # typing.Union[...] or A | B
-    if origin in (Union, UnionType):
-        return all(is_dataclass(arg) for arg in get_args(t))
-
-    return False
-
-
-def fields_dataclass_union(t: Any) -> tuple[Field, ...]:
-    """
-    like fields() but works on union of dataclasses
-    assuming all arguments of the union have the same fields
-    """
-    if is_dataclass(t):
-        return fields(t)
-    else:
-        args = list(get_args(t))
-        return fields(args[0])
-
-
 def kernel_flat_names(args: dict[str, Type[KernelIOType]]) -> list[str]:
     flat_names: list[str] = []
     for name, typ in args.items():
-        if is_dataclass_union(typ):
-            flat_names.extend(
-                [f"{name}.{field.name}" for field in fields_dataclass_union(typ)]
-            )
+        if is_dataclass(typ):
+            flat_names.extend([f"{name}.{field.name}" for field in fields(typ)])
         else:
             flat_names.append(name)
 
