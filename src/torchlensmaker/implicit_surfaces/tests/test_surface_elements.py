@@ -32,6 +32,7 @@ from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
 )
 from torchlensmaker.implicit_surfaces.surface_parabola import Parabola
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
+from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import SphereByRadius
 
 
 def check_model_eval(
@@ -167,6 +168,7 @@ def test_sag_surfaces_modules_2d() -> None:
         SphereByCurvature(10.0, C=0.0),
         SphereByCurvature(10.0, C=0.5),
         SphereByCurvature(10.0, C=-0.5),
+        SphereByRadius(10, 5),
         Parabola(10.0, A=-0.0),
         Parabola(10.0, A=0.5),
         Parabola(10.0, A=-0.5),
@@ -185,6 +187,7 @@ def test_sag_surfaces_modules_3d() -> None:
     surfaces_3d = [
         Disk(10.0),
         SphereByCurvature(10, 0.05),
+        SphereByRadius(10, 5),
         Parabola(10.0, A=-0.0),
         Parabola(10.0, A=0.5),
         Parabola(10.0, A=-0.5),

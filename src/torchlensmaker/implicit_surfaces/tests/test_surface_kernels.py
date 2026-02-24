@@ -31,7 +31,7 @@ from torchlensmaker.implicit_surfaces.surface_disk import (
 )
 from torchlensmaker.implicit_surfaces.surface_parabola import ParabolaSurfaceKernel
 from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import (
-    SphereByRadius2DSurfaceKernel,
+    SphereByRadiusSurfaceKernel,
 )
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel

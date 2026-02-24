@@ -34,14 +34,15 @@ from torchlensmaker.types import (
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
+    hom_identity_3d,
 )
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 
 from .raytrace import raytrace
-from .sag_geometry import anchor_transforms_2d
-from .kernels_utils import example_rays_2d
+from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
+from .kernels_utils import example_rays_2d, example_rays_3d
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
@@ -192,9 +193,9 @@ def sphere_radius_raytracing(
     return init_t + t, local_normals, valid
 
 
-class SphereByRadius2DSurfaceKernel(FunctionalKernel):
+class SphereByRadiusSurfaceKernel(FunctionalKernel):
     """
-    Functional kernel for a 2D spherical arc parameterized by:
+    Functional kernel for a 2D or 3D spherical arc parameterized by:
         - signed surface radius
         - lens diameter
 
@@ -202,8 +203,8 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
     """
 
     inputs = {
-        "P": Batch2DTensor,
-        "V": Batch2DTensor,
+        "P": BatchNDTensor,
+        "V": BatchNDTensor,
         "tf_in": Tf,
     }
 
@@ -216,30 +217,39 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
 
     outputs = {
         "t": BatchTensor,
-        "normals": Batch2DTensor,
+        "normals": BatchNDTensor,
         "valid": MaskTensor,
         "surface_tf": Tf,
         "next_tf": Tf,
     }
 
+    def __init__(self, dim: int):
+        self.dim = dim
+
     def apply(
         self,
-        P: Batch2DTensor,
-        V: Batch2DTensor,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
         R: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         # Setup the local solver for this surface class
         local_solver = partial(sphere_radius_raytracing, diameter=diameter, R=R)
 
         # Compute anchor transforms from anchors and scale
         extent = sphere_radius_extent_x(diameter, R)
-        tf_surface, tf_next = anchor_transforms_2d(
-            anchors[0] * extent, anchors[1] * extent, scale, tf_in
-        )
+        if self.dim == 2:
+            tf_surface, tf_next = anchor_transforms_2d(
+                anchors[0] * extent, anchors[1] * extent, scale, tf_in
+            )
+        else:
+            # In 3D, take Y=tau, Z=0 as the extent point, but this is arbitrary
+            tf_surface, tf_next = anchor_transforms_3d(
+                anchors[0] * extent, anchors[1] * extent, scale, tf_in
+            )
 
         # Perform raytrace
         t, normals, valid = raytrace(P, V, tf_surface, local_solver)
@@ -248,9 +258,13 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf]:
-        P, V = example_rays_2d(10, dtype, device)
-        tf = hom_identity_2d(dtype, device)
+    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        if self.dim == 2:
+            P, V = example_rays_2d(10, dtype, device)
+            tf = hom_identity_2d(dtype, device)
+        else:
+            P, V = example_rays_3d(10, dtype, device)
+            tf = hom_identity_3d(dtype, device)
         return P, V, tf
 
     def example_params(
@@ -262,9 +276,6 @@ class SphereByRadius2DSurfaceKernel(FunctionalKernel):
             torch.tensor((0.0, 0.0), dtype=dtype, device=device),
             torch.tensor(-1.0, dtype=dtype, device=device),
         )
-
-
-# TODO 3D
 
 
 class SphereByRadius(nn.Module):
@@ -286,14 +297,14 @@ class SphereByRadius(nn.Module):
         self.R = init_param(self, "R", R, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
-        self.func2d = SphereByRadius2DSurfaceKernel()
+        self.func2d = SphereByRadiusSurfaceKernel(2)
+        self.func3d = SphereByRadiusSurfaceKernel(3)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        return self.func2d.apply(
-            P, V, tf, self.diameter, self.R, self.anchors, self.scale
-        )
+        func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
+        return func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
 
     def render(self) -> Any:
         return {
