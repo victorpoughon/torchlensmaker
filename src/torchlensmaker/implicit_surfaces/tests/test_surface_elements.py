@@ -37,6 +37,7 @@ from torchlensmaker.implicit_surfaces.surface_parabola import Parabola
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
 from torchlensmaker.implicit_surfaces.surface_conic import Conic
 from torchlensmaker.implicit_surfaces.surface_asphere import Asphere
+from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomial
 from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import SphereByRadius
 
 
@@ -204,6 +205,9 @@ def test_sag_surfaces_modules_3d() -> None:
         Conic(10, C=-0.1, K=-0.1),
         Asphere(10, C=0.1, K=0.1, alphas=[0.1, 0.01, 0.002]),
         Asphere(10, C=-0.1, K=-0.1, alphas=[0.1, 0.01, 0.002]),
+        XYPolynomial(
+            10, C=0.1, K=-0.1, coefficients=[[0.1, 0.2, 0.0], [0.01, 0.0, 0.01]]
+        ),
     ]
 
     for module in surfaces_3d:
