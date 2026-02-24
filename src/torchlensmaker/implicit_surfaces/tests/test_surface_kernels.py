@@ -33,6 +33,7 @@ from torchlensmaker.implicit_surfaces.surface_parabola import ParabolaSurfaceKer
 from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,
 )
+from torchlensmaker.implicit_surfaces.surface_conic import ConicSurfaceKernel
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
@@ -53,7 +54,11 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "Parabola2D-1": ParabolaSurfaceKernel(2, 1, 1.0, 1e-3),
     "Parabola2D-6": ParabolaSurfaceKernel(2, 1, 1.0, 1e-3),
     "Parabola3D-1": ParabolaSurfaceKernel(3, 1, 1.0, 1e-3),
-    "Parabola3D-6": ParabolaSurfaceKernel(4, 6, 1.0, 1e-3),
+    "Parabola3D-6": ParabolaSurfaceKernel(3, 6, 1.0, 1e-3),
+    "Conic2D-1": ConicSurfaceKernel(2, 1, 1.0, 1e-3),
+    "Conic2D-6": ConicSurfaceKernel(2, 6, 1.0, 1e-3),
+    "Conic3D-1": ConicSurfaceKernel(3, 1, 1.0, 1e-3),
+    "Conic3D-6": ConicSurfaceKernel(3, 6, 1.0, 1e-3),
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
     "Disk2D": Disk2DSurfaceKernel(),
     "Disk3D": Disk3DSurfaceKernel(),

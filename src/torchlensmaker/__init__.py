@@ -126,6 +126,7 @@ from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import SphereB
 from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import SphereByRadius
 from torchlensmaker.implicit_surfaces.surface_parabola import Parabola
 from torchlensmaker.implicit_surfaces.surface_disk import Disk
+from torchlensmaker.implicit_surfaces.surface_conic import Conic
 
 
 ##########
@@ -133,7 +134,7 @@ from torchlensmaker.implicit_surfaces.surface_disk import Disk
 ##########
 
 from torchlensmaker.surfaces.sphere_r import SphereR
-from torchlensmaker.surfaces.conics import Sphere, Conic, Asphere
+from torchlensmaker.surfaces.conics import Sphere, Asphere
 from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
 from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.surfaces.plane import Plane, CircularPlane, SquarePlane
