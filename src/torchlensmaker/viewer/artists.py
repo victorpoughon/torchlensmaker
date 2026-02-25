@@ -73,6 +73,36 @@ class ReflectiveSurfaceArtist(Artist):
 
 class RefractiveSurfaceArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
+        # Render module
+        inputs = collective.input_tree[module]
+        t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
+
+        # Render surface
+        rendered_surface = module.surface.render()
+        rendered_surface["matrix"] = fk_surface.direct.tolist()
+
+        # Render rays
+        rendered_rays = tlmviewer.render_hit_miss_rays(
+            inputs.P,
+            inputs.V,
+            t,
+            inputs.target()[0],
+            valid,
+            variables_hit=inputs.ray_variables_dict(valid),
+            variables_miss=inputs.ray_variables_dict(~valid),
+            domain=collective.ray_variables_domains,
+        )
+
+        # Render joints
+        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
+
+        ## TODO render TIR rays
+
+        return [rendered_surface] + rendered_rays + rendered_joints
+
+
+class RefractiveSurfaceArtistOld(Artist):
+    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render the surface normally
         rendered_surface = collective.render(module.collision_surface)
 

@@ -18,8 +18,8 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import BatchNDTensor
-from .physics_kernels import ReflectionKernel
+from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor
+from .physics_kernels import ReflectionKernel, RefractionKernel
 
 
 class ReflectiveInterface(nn.Module):
@@ -29,3 +29,18 @@ class ReflectiveInterface(nn.Module):
 
     def forward(self, rays: BatchNDTensor, normals: BatchNDTensor) -> BatchNDTensor:
         return self.func.apply(rays, normals)
+
+
+class RefractiveInterface(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.func = RefractionKernel()
+
+    def forward(
+        self,
+        rays: BatchNDTensor,
+        normals: BatchNDTensor,
+        n1: BatchTensor,
+        n2: BatchTensor,
+    ) -> tuple[BatchNDTensor, MaskTensor]:
+        return self.func.apply(rays, normals, n1, n2)
