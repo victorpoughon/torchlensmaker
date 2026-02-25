@@ -18,37 +18,18 @@ import torch
 import torch.nn as nn
 
 from typing import Sequence, Optional, TypeAlias, Literal, Self
-
+from torchlensmaker.types import BatchTensor, ScalarTensor
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    kinematic_chain_extend,
-    kinematic_chain_append,
-    hom_translate,
-    hom_identity,
-    HomMatrix,
-    hom_scale,
-)
-from torchlensmaker.surfaces.local_surface import LocalSurface
-from torchlensmaker.surfaces.plane import CircularPlane
-from torchlensmaker.materials.get_material_model import (
-    MaterialModel,
-    get_material_model,
-)
-from torchlensmaker.physics.physics import (
-    refraction,
-    reflection,
-)
+from torchlensmaker.implicit_surfaces.surface_disk import Disk
+
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
-from torchlensmaker.elements.collision_surface import CollisionSurface
-
-Tensor = torch.Tensor
 
 
 def linear_magnification(
-    object_coordinates: Tensor, image_coordinates: Tensor
-) -> tuple[Tensor, Tensor]:
-    T, V = object_coordinates, image_coordinates
+    field_coordinates: BatchTensor, image_coordinates: BatchTensor
+) -> tuple[BatchTensor, BatchTensor]:
+    T, V = field_coordinates, image_coordinates
 
     # Fit linear magnification with least square and compute residuals
     mag = torch.sum(T * V) / torch.sum(T**2)
@@ -70,11 +51,11 @@ class ImagePlane(SequentialElement):
 
     def __init__(
         self,
-        diameter: float,
-        magnification: Optional[int | float | Tensor] = None,
+        diameter: float | ScalarTensor,
+        magnification: Optional[int | float | ScalarTensor] = None,
     ):
         super().__init__()
-        self.collision_surface = CollisionSurface(CircularPlane(diameter))
+        self.surface = Disk(diameter)
         self.magnification = (
             to_tensor(magnification) if magnification is not None else None
         )
@@ -84,7 +65,7 @@ class ImagePlane(SequentialElement):
             return data
 
         # Collision detection
-        t, _, valid_collision, _ = self.collision_surface(data)
+        t, _, valid_collision, _, _ = self.surface(data.P, data.V, data.fk)
         collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
 
         if data.rays_field is None:

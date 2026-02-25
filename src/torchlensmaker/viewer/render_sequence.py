@@ -27,6 +27,8 @@ from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_surfaces.aperture import Aperture
 from torchlensmaker.elements.focal_point import FocalPoint
+from torchlensmaker.optical_surfaces.image_plane import ImagePlane
+
 from torchlensmaker.lens.lens import Lens
 
 # from torchlensmaker.lenses import LensBase
@@ -49,6 +51,7 @@ from .artists import (
     ForwardArtist,
     KinematicArtist,
     ApertureArtist,
+    ImagePlaneArtist,
 )
 
 import json
@@ -77,7 +80,7 @@ default_artists: Dict[type, list[Artist]] = {
     ReflectiveSurface: [ReflectiveSurfaceArtist()],
     RefractiveSurface: [RefractiveSurfaceArtist()],
     Aperture: [ApertureArtist()],
-    # ImagePlane: [ForwardArtist(lambda mod: mod.collision_surface)],
+    ImagePlane: [ImagePlaneArtist()],
     KinematicElement: [KinematicArtist()],
 }
 
