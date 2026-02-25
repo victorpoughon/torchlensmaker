@@ -20,6 +20,7 @@ import torch.nn as nn
 
 from typing import Sequence, Optional, TypeAlias, Literal, Self
 from torchlensmaker.types import BatchTensor, MaskTensor, MissMode, TIRMode
+from torchlensmaker.core.tensor_manip import filter_optional_tensor
 from torchlensmaker.optical_data import OpticalData, propagate
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import RefractiveInterface
@@ -68,4 +69,4 @@ class RefractiveSurface(SequentialElement):
             valid = torch.logical_and(valid_collision, valid_refraction)
 
         propagated = propagate(data, t, valid, refracted[valid], self._miss_mode)
-        return propagated.replace(fk=fk_next)
+        return propagated.replace(rays_index=n2[valid], fk=fk_next)

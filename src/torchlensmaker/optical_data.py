@@ -77,6 +77,7 @@ class OpticalData:
             rays_pupil=filter_optional_tensor(self.rays_pupil, valid),
             rays_field=filter_optional_tensor(self.rays_field, valid),
             rays_wavelength=filter_optional_tensor(self.rays_wavelength, valid),
+            rays_index=filter_optional_tensor(self.rays_index, valid),
         )
 
     def ray_variables_dict(

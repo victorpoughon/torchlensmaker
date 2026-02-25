@@ -75,6 +75,8 @@ class RefractiveSurfaceArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render module
         inputs = collective.input_tree[module]
+        
+        ## little problem here, cannot reuse surface because it will mess up collective io tree
         t, normals, collision_valid, fk_surface, fk_next = collective.output_tree[module.surface]
 
         # Render surface

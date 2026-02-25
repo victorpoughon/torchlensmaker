@@ -32,7 +32,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     KinematicElement,
     Translate2D,
 )
-from torchlensmaker.elements.optical_surfaces import RefractiveSurface
+from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 
 if TYPE_CHECKING:
     from .lens import Lens
