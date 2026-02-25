@@ -49,58 +49,6 @@ AnchorType: TypeAlias = Literal["origin", "extent"]
 MissMode: TypeAlias = Literal["absorb", "pass", "error"]
 
 
-class ReflectiveSurface(SequentialElement):
-    def __init__(
-        self,
-        surface: LocalSurface,
-        scale: float = 1.0,
-        anchors: tuple[AnchorType, AnchorType] = ("origin", "origin"),
-        miss: MissMode = "absorb",
-    ):
-        super().__init__()
-        self.collision_surface = CollisionSurface(surface, scale, anchors)
-        self._miss = miss
-
-    @property
-    def surface(self) -> LocalSurface:
-        return self.collision_surface.surface
-
-    def reverse(self) -> Self:
-        # TODO make a copy, surface should be a module
-        return self
-
-    def forward(self, data: OpticalData) -> OpticalData:
-        t, normals, valid, fk_next = self.collision_surface(data)
-
-        # full frame collision points
-        collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
-
-        # Compute reflection for colliding rays
-        reflected = reflection(data.V[valid], normals[valid])
-
-        if self._miss == "absorb":
-            # return hits only
-            return data.filter_variables(valid).replace(
-                P=collision_points[valid], V=reflected, fk=fk_next
-            )
-
-        elif self._miss == "pass":
-            # insert hit rays as reflected
-            return data.replace(
-                P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid]),
-                V=data.V.masked_scatter(valid.unsqueeze(-1), reflected),
-                fk=fk_next,
-            )
-
-        elif self._miss == "error":
-            misses = (~valid).sum()
-            if misses != 0:
-                raise RuntimeError(
-                    f"Some rays ({misses}) don't collide with surface, but miss option is '{self._miss}'"
-                )
-            # return all rays as hits
-            return data.replace(P=collision_points, V=reflected, fk=fk_next)
-
 
 TIRMode: TypeAlias = Literal["absorb", "reflect"]
 

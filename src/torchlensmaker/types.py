@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import TypeAlias, Self
+from typing import TypeAlias, Self, Literal
 from jaxtyping import Float, Bool
 import torch
 
@@ -31,6 +31,8 @@ MaskTensor: TypeAlias = Bool[torch.Tensor, "..."]
 # Homogeneous coordinates matrix
 HomMatrix: TypeAlias = Float[torch.Tensor, "D D"]
 
+MissMode: TypeAlias = Literal["absorb", "pass"]
+TIRMode: TypeAlias = Literal["absorb", "reflect"]
 
 # Geometric transform (2D or 3D) represented by a pair of homogeneous coordinate
 # matrices for the direct and inverse transforms

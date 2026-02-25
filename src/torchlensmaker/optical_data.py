@@ -21,7 +21,7 @@ import torch
 from jaxtyping import Float
 
 
-from torchlensmaker.types import Tf
+from torchlensmaker.types import Tf, BatchTensor, MaskTensor, BatchNDTensor, MissMode
 from torchlensmaker.core.tensor_manip import filter_optional_tensor, filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
@@ -103,6 +103,37 @@ class OpticalData:
         update(self.rays_wavelength, "wavelength")
 
         return d
+
+
+# TODO move to RayBundle
+def propagate_absorb(
+    data: OpticalData, t: BatchTensor, valid: MaskTensor
+) -> OpticalData:
+    collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
+    return data.filter_variables(valid).replace(P=collision_points[valid])
+
+
+def propagate_pass(data: OpticalData, t: BatchTensor, valid: MaskTensor) -> OpticalData:
+    collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
+    return data.replace(
+        P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid])
+    )
+
+def propagate(
+    data: OpticalData,
+    t: BatchTensor,
+    valid: MaskTensor,
+    V: BatchNDTensor,
+    miss_mode: MissMode,
+) -> OpticalData:
+    if miss_mode == "absorb":
+        prop = propagate_absorb(data, t, valid)
+        return prop.replace(V=V)
+
+    elif miss_mode == "pass":
+        prop = propagate_pass(data, t, valid)
+
+        return prop.replace(V=data.V.masked_scatter(valid.unsqueeze(-1), V))
 
 
 def default_input(

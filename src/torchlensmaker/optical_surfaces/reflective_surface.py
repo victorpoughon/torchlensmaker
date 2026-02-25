@@ -19,13 +19,10 @@ import torch
 import torch.nn as nn
 
 from typing import Sequence, Optional, TypeAlias, Literal, Self
-
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.types import BatchTensor, MaskTensor, BatchNDTensor, MissMode
+from torchlensmaker.optical_data import OpticalData, propagate
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
-
-
-MissMode: TypeAlias = Literal["absorb", "pass", "error"]
 
 
 class ReflectiveSurface(SequentialElement):
@@ -43,30 +40,6 @@ class ReflectiveSurface(SequentialElement):
         t, normals, valid, fk_surface, fk_next = self.surface(data.P, data.V, data.fk)
         reflected = self.reflective_interface(data.V[valid], normals[valid])
 
-        # "ray advancer": given everything it needs, construct the next ray
-        # bundle, changing origin points and respecting masks
+        propagated = propagate(data, t, valid, reflected, self._miss_mode)
 
-        collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
-
-        if self._miss_mode == "absorb":
-            # return hits only
-            return data.filter_variables(valid).replace(
-                P=collision_points[valid], V=reflected, fk=fk_next
-            )
-
-        elif self._miss_mode == "pass":
-            # insert hit rays as reflected
-            return data.replace(
-                P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid]),
-                V=data.V.masked_scatter(valid.unsqueeze(-1), reflected),
-                fk=fk_next,
-            )
-
-        elif self._miss_mode == "error":
-            misses = (~valid).sum()
-            if misses != 0:
-                raise RuntimeError(
-                    f"Some rays ({misses}) don't collide with surface, but miss option is '{self._miss_mode}'"
-                )
-            # return all rays as hits
-            return data.replace(P=collision_points, V=reflected, fk=fk_next)
+        return propagated.replace(fk=fk_next)
