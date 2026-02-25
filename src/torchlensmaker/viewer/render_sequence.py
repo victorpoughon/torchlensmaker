@@ -25,6 +25,7 @@ from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
+from torchlensmaker.optical_surfaces.aperture import Aperture
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.lens.lens import Lens
 
@@ -47,6 +48,7 @@ from .artists import (
     RefractiveSurfaceArtist,
     ForwardArtist,
     KinematicArtist,
+    ApertureArtist,
 )
 
 import json
@@ -74,7 +76,7 @@ default_artists: Dict[type, list[Artist]] = {
     SubChain: [ForwardArtist(lambda mod: mod._sequential)],
     ReflectiveSurface: [ReflectiveSurfaceArtist()],
     RefractiveSurface: [RefractiveSurfaceArtist()],
-    # Aperture: [ForwardArtist(lambda mod: mod.collision_surface)],
+    Aperture: [ApertureArtist()],
     # ImagePlane: [ForwardArtist(lambda mod: mod.collision_surface)],
     KinematicElement: [KinematicArtist()],
 }
