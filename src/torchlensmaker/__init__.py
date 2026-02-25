@@ -146,6 +146,8 @@ from torchlensmaker.surfaces.sag_surface import SagSurface
 # Optical elements
 ##################
 
+from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
+
 from torchlensmaker.elements.sequential import (
     Sequential,
     SubChain,
@@ -153,7 +155,6 @@ from torchlensmaker.elements.sequential import (
 )
 from torchlensmaker.elements.optical_surfaces import (
     CollisionSurface,
-    ReflectiveSurface,
     RefractiveSurface,
     Aperture,
     ImagePlane,

@@ -23,13 +23,7 @@ from typing import Any, Optional, Dict
 from torchlensmaker.optical_data import default_input
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
-from torchlensmaker.elements.optical_surfaces import (
-    CollisionSurface,
-    ReflectiveSurface,
-    RefractiveSurface,
-    Aperture,
-    ImagePlane,
-)
+from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.lens.lens import Lens
 
@@ -48,7 +42,7 @@ from .rendering import Artist
 from .artists import (
     SequentialArtist,
     FocalPointArtist,
-    CollisionSurfaceArtist,
+    ReflectiveSurfaceArtist,
     RefractiveSurfaceArtist,
     ForwardArtist,
     KinematicArtist,
@@ -77,11 +71,10 @@ default_artists: Dict[type, list[Artist]] = {
     FocalPoint: [FocalPointArtist()],
     Lens: [ForwardArtist(lambda mod: mod.sequence)],
     SubChain: [ForwardArtist(lambda mod: mod._sequential)],
-    CollisionSurface: [CollisionSurfaceArtist()],
-    ReflectiveSurface: [ForwardArtist(lambda mod: mod.collision_surface)],
-    RefractiveSurface: [RefractiveSurfaceArtist()],
-    Aperture: [ForwardArtist(lambda mod: mod.collision_surface)],
-    ImagePlane: [ForwardArtist(lambda mod: mod.collision_surface)],
+    ReflectiveSurface: [ReflectiveSurfaceArtist()],
+    # RefractiveSurface: [RefractiveSurfaceArtist()],
+    # Aperture: [ForwardArtist(lambda mod: mod.collision_surface)],
+    # ImagePlane: [ForwardArtist(lambda mod: mod.collision_surface)],
     KinematicElement: [KinematicArtist()],
 }
 

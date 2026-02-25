@@ -43,20 +43,17 @@ class ForwardArtist(Artist):
         return collective.render(self.getter(module))
 
 
-class CollisionSurfaceArtist(Artist):
+class ReflectiveSurfaceArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render module
         inputs = collective.input_tree[module]
-        dim, dtype = inputs.dim, inputs.dtype
+        t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
 
-        tf_surface = module.surface_transform(dim, dtype)
-        fk_surface = kinematic_chain_append(inputs.fk, tf_surface)
-
-        rendered_module = [tlmviewer.render_surface(module.surface, fk_surface.direct, dim)]
+        # Render surface
+        rendered_surface = module.surface.render()
+        rendered_surface["matrix"] = fk_surface.direct.tolist()
 
         # Render rays
-        t, normals, valid, _ = collective.output_tree[module]
-
         rendered_rays = tlmviewer.render_hit_miss_rays(
             inputs.P,
             inputs.V,
@@ -71,7 +68,7 @@ class CollisionSurfaceArtist(Artist):
         # Render joints
         rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
 
-        return rendered_module + rendered_rays + rendered_joints
+        return [rendered_surface] + rendered_rays + rendered_joints
 
 
 class RefractiveSurfaceArtist(Artist):

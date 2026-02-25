@@ -28,6 +28,8 @@ from torchlensmaker.types import (
     Tf,
 )
 
+from .surface_element import SurfaceElement
+
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -170,7 +172,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         )
 
 
-class Asphere(nn.Module):
+class Asphere(SurfaceElement):
     """
     Asphere surface (2D or 3D) parameterized by:
     - lens diameter

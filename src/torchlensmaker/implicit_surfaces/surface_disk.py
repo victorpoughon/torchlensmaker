@@ -29,6 +29,7 @@ from torchlensmaker.types import (
     HomMatrix,
     Tf,
 )
+from .surface_element import SurfaceElement
 from torchlensmaker.core.geometry import unit_vector
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
@@ -171,7 +172,7 @@ class Disk3DSurfaceKernel(FunctionalKernel):
         return (torch.tensor(10.0, dtype=dtype, device=device),)
 
 
-class Disk(nn.Module):
+class Disk(SurfaceElement):
     """
     Disk surface (2D or 3D)
     """

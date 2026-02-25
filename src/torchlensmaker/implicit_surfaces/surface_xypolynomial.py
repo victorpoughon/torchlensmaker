@@ -27,7 +27,7 @@ from torchlensmaker.types import (
     MaskTensor,
     Tf,
 )
-
+from .surface_element import SurfaceElement
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
@@ -149,7 +149,7 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         )
 
 
-class XYPolynomial(nn.Module):
+class XYPolynomial(SurfaceElement):
     """
     XYPolynomial 3D surface parameterized by:
     - lens diameter
