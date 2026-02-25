@@ -69,7 +69,7 @@ def raytrace(
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection
     # i.e. the normal such that dot(normal, ray) < 0
-    dot = torch.sum(local_normals * V, dim=-1)
+    dot = torch.sum(local_normals * V_local, dim=-1)
     opposite_normals = torch.where(
         (dot > 0).unsqueeze(-1).expand_as(local_normals), -local_normals, local_normals
     )
