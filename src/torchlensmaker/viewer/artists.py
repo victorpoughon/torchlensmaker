@@ -75,7 +75,7 @@ class RefractiveSurfaceArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render module
         inputs = collective.input_tree[module]
-        t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
+        t, normals, collision_valid, fk_surface, fk_next = collective.output_tree[module.surface]
 
         # Render surface
         rendered_surface = module.surface.render()
@@ -87,36 +87,21 @@ class RefractiveSurfaceArtist(Artist):
             inputs.V,
             t,
             inputs.target()[0],
-            valid,
-            variables_hit=inputs.ray_variables_dict(valid),
-            variables_miss=inputs.ray_variables_dict(~valid),
+            collision_valid,
+            variables_hit=inputs.ray_variables_dict(collision_valid),
+            variables_miss=inputs.ray_variables_dict(~collision_valid),
             domain=collective.ray_variables_domains,
         )
 
         # Render joints
         rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
 
-        ## TODO render TIR rays
-
-        return [rendered_surface] + rendered_rays + rendered_joints
-
-
-class RefractiveSurfaceArtistOld(Artist):
-    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        # Render the surface normally
-        rendered_surface = collective.render(module.collision_surface)
-
-        # Also render rays
-        inputs = collective.input_tree[module]
-        output, valid_refraction = collective.output_tree[module]
-
-        t, _, collision_valid, _ = collective.output_tree[module.collision_surface]
-        collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
-        tir_mask = torch.logical_and(~valid_refraction, collision_valid)
-
-        # render tir absorbed rays
+        # Render TIR absorbed rays
         # TODO make a ray type for it in tlmviewer
-        if module._tir == "absorb" and tir_mask.sum() > 0:
+        _, valid_refraction = collective.output_tree[module.refractive_interface]
+        tir_mask = torch.logical_and(~valid_refraction, collision_valid)
+        if module._tir_mode == "absorb" and tir_mask.sum() > 0:
+            collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
             rays_tir = [
                 tlmviewer.render_rays(
                     inputs.P[tir_mask],
@@ -130,7 +115,7 @@ class RefractiveSurfaceArtistOld(Artist):
         else:
             rays_tir = []
 
-        return rendered_surface + rays_tir
+        return [rendered_surface] + rendered_rays + rendered_joints + rays_tir
 
 
 class FocalPointArtist(Artist):
