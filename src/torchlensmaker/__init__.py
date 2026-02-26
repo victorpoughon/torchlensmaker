@@ -37,7 +37,6 @@ from torchlensmaker.types import (
 
 from torchlensmaker.core.dim import Dim
 from torchlensmaker.physics.physics import reflection, refraction
-from torchlensmaker.core.intersect import intersect
 from torchlensmaker.core.full_forward import forward_tree, full_forward
 
 from torchlensmaker.core.parameter import parameter
@@ -46,14 +45,6 @@ from torchlensmaker.core.geometry import (
     rotated_unit_vector,
     unit2d_rot,
     unit3d_rot,
-)
-from torchlensmaker.core.sag_functions import (
-    Spherical,
-    Parabolic,
-    Aspheric,
-    Conical,
-    SagSum,
-    SagFunction,
 )
 from torchlensmaker.core.tensor_manip import to_tensor
 
