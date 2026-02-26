@@ -130,6 +130,9 @@ class Square(SurfaceElement):
         )
         return self.func3d.apply(P, V, tf, self.side_length)
 
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+        return torch.zeros_like(r)
+
     def render(self) -> Any:
         max_radius = math.sqrt(2) * self.side_length / 2
         a = self.side_length.item() / 2

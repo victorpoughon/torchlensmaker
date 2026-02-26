@@ -207,6 +207,10 @@ class SphereByCurvature(SurfaceElement):
             self.normalize,
         )
 
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+        extent, _ = spherical_sag_2d(r, self.C)
+        return extent
+
     def render(self) -> Any:
         return {
             "type": "surface-sag",

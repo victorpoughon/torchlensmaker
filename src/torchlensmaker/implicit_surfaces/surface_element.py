@@ -17,7 +17,7 @@
 from typing import Any
 import torch.nn as nn
 from typing import Self
-from torchlensmaker.types import Tf, BatchTensor, BatchNDTensor, MaskTensor
+from torchlensmaker.types import Tf, BatchTensor, BatchNDTensor, MaskTensor, ScalarTensor
 
 
 class SurfaceElement(nn.Module):
@@ -27,6 +27,14 @@ class SurfaceElement(nn.Module):
 
     def clone(self, **overrides) -> Self:
         raise NotImplementedError
+    
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+        """
+        X coordinate of the surface at distance r from the optical axis. None if
+        the surface is not axially symmetric, or if the surface can't compute
+        this value.
+        """
+        return None
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

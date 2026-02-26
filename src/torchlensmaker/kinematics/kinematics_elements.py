@@ -62,20 +62,6 @@ class KinematicSequential(nn.Module):
         return fk
 
 
-# TODO this is used for lens only to make a "kinematic only" sequential model
-# no kernel needed for now
-class ExactKinematicElement2D(KinematicElement):
-    def __init__(self, joint: Tf):
-        super().__init__()
-        self.joint = joint
-
-    def forward(self, fk: Tf) -> Tf:
-        return kinematic_chain_append(fk, self.joint)
-
-    def reverse(self) -> Self:
-        return type(self)(Tf(self.joint.inverse, self.joint.direct))
-
-
 class Gap(KinematicElement):
     """
     Translation along the X axis

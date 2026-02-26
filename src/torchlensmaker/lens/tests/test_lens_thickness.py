@@ -22,12 +22,12 @@ import torchlensmaker as tlm
 
 def test_lens_thickness() -> None:
     lens1 = tlm.lenses.singlet(
-        tlm.SphereByCurvature(diameter=30, C=1/55),
+        tlm.SphereByCurvature(diameter=25, C=1/55),
         tlm.InnerGap(1.0),
         tlm.SphereByCurvature(diameter=30, C=1/55),
         material="BK7",
     )
     
-    # lens1.inner_thickness()
-    # lens1.outer_thickness()
-    lens1.minimal_diameter()
+    print("Lens inner thickness", lens1.inner_thickness().item())
+    print("Lens outer thickness", lens1.outer_thickness())
+    print("Lens minimal diameter", lens1.minimal_diameter().item())

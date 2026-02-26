@@ -204,6 +204,10 @@ class Parabola(SurfaceElement):
             self.scale,
             self.normalize,
         )
+    
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+        extent, _ = parabolic_sag_2d(r, self.A)
+        return extent
 
     def render(self) -> Any:
         return {

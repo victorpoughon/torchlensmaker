@@ -24,30 +24,21 @@ import torch.nn as nn
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
+    hom_translate_2d,
+    kinematic_chain_append,
     transform_points,
 )
 from torchlensmaker.kinematics.kinematics_elements import (
     KinematicSequential,
-    ExactKinematicElement2D,
     KinematicElement,
     Translate2D,
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
+from torchlensmaker.optical_data import default_input
+from torchlensmaker.core.full_forward import forward_tree
 
 if TYPE_CHECKING:
     from .lens import Lens
-
-
-def tokinematic(mod: nn.Module) -> KinematicElement:
-    if isinstance(mod, KinematicElement):
-        return mod
-    elif isinstance(mod, RefractiveSurface):
-        dtype = mod.collision_surface.surface.dtype
-        return ExactKinematicElement2D(
-            mod.collision_surface.kinematic_transform(2, dtype)
-        )
-    else:
-        raise RuntimeError("inner_thickness() got invalid lens")
 
 
 def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
@@ -55,75 +46,52 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
 
     first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
 
-    # Infer dtype, device from first surface
-    # TODO gpu support
-    dtype, device = first_surface.collision_surface.surface.dtype, torch.device("cpu")
+    # Infer dtype, device from the first gap element
+    dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
 
-    # Compute front surface vertex kinematic model
-    A1 = KinematicSequential(
-        ExactKinematicElement2D(
-            first_surface.collision_surface.surface_transform(2, dtype)
-        )
-    )
+    # Evaluate the lens with zero rays, so we can extract surface transforms
+    input_tree, output_tree = forward_tree(lens, default_input(2, dtype))
+    front_vertex_tf = output_tree[first_surface.surface][3]
+    rear_vertex_tf = output_tree[last_surface.surface][3]
 
-    # Compute rear surface vertex kinematic model
-    # by converting the lens sequence to purely kinematic elements
-    # except for the last surface
-    A2 = KinematicSequential(
-        *[tokinematic(mod) for mod in islice(lens.sequence, len(lens.sequence) - 1)],
-        ExactKinematicElement2D(
-            last_surface.collision_surface.surface_transform(2, dtype)
-        ),
-    )
+    root = torch.zeros((2,), dtype=dtype, device=device)
+    front_vertex = transform_points(front_vertex_tf.direct, root)
+    rear_vertex = transform_points(rear_vertex_tf.direct, root)
 
-    root = hom_identity_2d(dtype, device)
-    a1 = A1(root)
-    a2 = A2(root)
-
-    root_point = torch.zeros((2,), dtype=dtype)
-    p1 = transform_points(a1.direct, root_point)
-    p2 = transform_points(a2.direct, root_point)
-
-    return (p2 - p1)[0]
+    return (rear_vertex - front_vertex)[0]
 
 
 def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
-    "Thickness of a lens at the edge"
+    "Thickness of a lens at the outer edge"
 
-    front_surface, rear_surface = lens.sequence[0], lens.sequence[-1]
+    first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
+    tau = lens_minimal_diameter(lens) / 2
+    front_extent, rear_extent = first_surface.surface.outer_extent(tau), last_surface.surface.outer_extent(tau)
 
-    # Infer dtype, device from first surface
-    # TODO gpu support
-    dtype, device = front_surface.collision_surface.surface.dtype, torch.device("cpu")
+    if front_extent is None:
+        raise RuntimeError("Lens front surface doesn't have an outer extent defined, cannot compute outer thickness")
+    
+    if rear_extent is None:
+        raise RuntimeError("Lens rear surface doesn't have an outer extent defined, cannot compute outer thickness")
 
-    # Compute front surface vertex kinematic model
-    A1 = KinematicSequential(
-        ExactKinematicElement2D(
-            front_surface.collision_surface.surface_transform(2, dtype)
-        ),
-        Translate2D(x=front_surface.collision_surface.surface.extent_x()),
-    )
+    # Infer dtype, device from the first gap element
+    dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
 
-    # Compute rear surface vertex kinematic model
-    # by converting the lens sequence to purely kinematic elements
-    # except for the last surface
-    A2 = KinematicSequential(
-        *[tokinematic(mod) for mod in islice(lens.sequence, len(lens.sequence) - 1)],
-        ExactKinematicElement2D(
-            rear_surface.collision_surface.surface_transform(2, dtype)
-        ),
-        Translate2D(x=rear_surface.collision_surface.surface.extent_x()),
-    )
+    # Evaluate the lens with zero rays, so we can extract surface transforms
+    input_tree, output_tree = forward_tree(lens, default_input(2, dtype))
+    front_vertex_tf = output_tree[first_surface.surface][3]
+    rear_vertex_tf = output_tree[last_surface.surface][3]
 
-    root = hom_identity_2d(dtype, device)
-    a1 = A1(root)
-    a2 = A2(root)
+    # Append translation along X to include the surface outer edge extent
+    zero = torch.zeros((), dtype=dtype, device=device)
+    front_extent_tf = hom_translate_2d(torch.stack((front_extent, zero)))
+    rear_extent_tf = hom_translate_2d(torch.stack((rear_extent, zero)))
 
-    root_point = torch.zeros((2,), dtype=dtype)
-    p1 = transform_points(a1.direct, root_point)
-    p2 = transform_points(a2.direct, root_point)
+    root = torch.zeros((2,), dtype=dtype)
+    front_outer_vertex = transform_points(kinematic_chain_append(front_vertex_tf, front_extent_tf).direct, root)
+    rear_outer_vertex = transform_points(kinematic_chain_append(rear_vertex_tf, rear_extent_tf).direct, root)
 
-    return (p2 - p1)[0]
+    return (rear_outer_vertex - front_outer_vertex)[0]
 
 
 def lens_minimal_diameter(lens: "Lens") -> Float[torch.Tensor, ""]:

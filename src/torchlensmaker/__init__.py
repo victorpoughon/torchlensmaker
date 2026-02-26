@@ -83,7 +83,6 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Translate3D,
     Rotate,
     Translate,
-    ExactKinematicElement2D,
 )
 
 ##########
