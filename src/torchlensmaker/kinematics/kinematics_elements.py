@@ -91,6 +91,9 @@ class Gap(KinematicElement):
         self.x = init_param(self, "x", x, trainable)
         self.func2d = Gap2DKernel()
         self.func3d = Gap3DKernel()
+    
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
