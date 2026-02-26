@@ -34,8 +34,8 @@ def check_lens(lens: tlm.Lens) -> None:
 def test_cemented() -> None:
     lens1 = tlm.lenses.cemented(
         surfaces=[
-            tlm.Sphere(diameter=30, R=55),
-            tlm.Sphere(diameter=30, R=55),
+            tlm.SphereByRadius(diameter=30, R=55),
+            tlm.SphereByRadius(diameter=30, R=55),
         ],
         gaps=[
             tlm.InnerGap(1.0),
@@ -48,9 +48,9 @@ def test_cemented() -> None:
 
 def test_singlet() -> None:
     lens1 = tlm.lenses.singlet(
-        tlm.Sphere(diameter=30, R=55),
+        tlm.SphereByCurvature(diameter=30, C=1/55),
         tlm.InnerGap(1.0),
-        tlm.Sphere(diameter=30, R=55),
+        tlm.SphereByCurvature(diameter=30, C=1/55),
         material="BK7",
     )
 

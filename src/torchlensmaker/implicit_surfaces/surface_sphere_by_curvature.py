@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, cast
+from typing import Any, cast, Self
 from jaxtyping import Float, Bool
 import torch
 import torch.nn as nn
@@ -176,6 +176,21 @@ class SphereByCurvature(SurfaceElement):
         )
         self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
         self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(
+            diameter=self.diameter,
+            C=self.C,
+            anchors=self.anchors,
+            scale=self.scale,
+            trainable=self.C.requires_grad,
+            normalize=self.normalize,
+            num_iter=self.func2d.num_iter,
+            damping=self.func2d.damping,
+            tol=self.func2d.tol,
+        )
+        kwargs.update(overrides)
+        return type(self)(**kwargs)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

@@ -18,7 +18,7 @@ import torch
 import torch.nn as nn
 import math
 
-from typing import Any
+from typing import Any, Self
 from functools import partial
 from jaxtyping import Float
 from torchlensmaker.core.geometry import unit_vector, within_radius
@@ -301,6 +301,17 @@ class SphereByRadius(SurfaceElement):
         self.scale = init_param(self, "scale", scale, False)
         self.func2d = SphereByRadiusSurfaceKernel(2)
         self.func3d = SphereByRadiusSurfaceKernel(3)
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(
+            diameter=self.diameter,
+            R=self.R,
+            anchors=self.anchors,
+            scale=self.scale,
+            trainable=self.R.requires_grad,
+        )
+        kwargs.update(overrides)
+        return type(self)(**kwargs)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

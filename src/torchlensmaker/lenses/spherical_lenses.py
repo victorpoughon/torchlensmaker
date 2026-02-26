@@ -26,9 +26,8 @@ def spherical_biconvex(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
-    dtype: torch.dtype | None = None,
 ):
-    sphere = tlm.Sphere(diameter, R, dtype=dtype)
+    sphere = tlm.SphereByCurvature(diameter, 1/R)
 
     # TODO check curvature is indeed biconvex TLM-84
 
@@ -46,9 +45,8 @@ def spherical_biconcave(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
-    dtype: torch.dtype | None = None,
 ):
-    sphere = tlm.Sphere(diameter, R, dtype=dtype)
+    sphere = tlm.SphereByCurvature(diameter, 1/R)
 
     # TODO check curvature is indeed biconcave TLM-84
 
@@ -66,10 +64,9 @@ def spherical_planoconvex(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
-    dtype: torch.dtype | None = None,
 ):
-    sphere = tlm.Sphere(diameter, R, dtype=dtype)
-    plane = tlm.CircularPlane(diameter)
+    sphere = tlm.SphereByCurvature(diameter, 1/R)
+    plane = tlm.Disk(diameter)
 
     # TODO check curvature is indeed convex TLM-84
 
@@ -88,10 +85,9 @@ def spherical_convexplano(
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
-    dtype: torch.dtype | None = None,
 ):
-    sphere = tlm.Sphere(diameter, R, dtype=dtype)
-    plane = tlm.CircularPlane(diameter)
+    sphere = tlm.SphereByCurvature(diameter, 1/R)
+    plane = tlm.Disk(diameter)
 
     # TODO check curvature is indeed convex TLM-84
 

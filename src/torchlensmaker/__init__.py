@@ -104,6 +104,7 @@ from torchlensmaker.sampling.sampling import disk_sampling
 # Implicit surfaces
 ###################
 
+from torchlensmaker.implicit_surfaces.surface_element import SurfaceElement
 from torchlensmaker.implicit_surfaces.sag_functions import (
     sag_to_implicit_2d,
     sag_to_implicit_3d,
@@ -128,19 +129,6 @@ from torchlensmaker.implicit_surfaces.surface_conic import Conic
 from torchlensmaker.implicit_surfaces.surface_asphere import Asphere
 from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomial
 
-
-
-##########
-# Surfaces
-##########
-
-from torchlensmaker.surfaces.sphere_r import SphereR
-from torchlensmaker.surfaces.conics import Sphere
-from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
-from torchlensmaker.surfaces.local_surface import LocalSurface
-from torchlensmaker.surfaces.plane import Plane, CircularPlane, SquarePlane
-from torchlensmaker.surfaces.implicit_cylinder import ImplicitCylinder
-from torchlensmaker.surfaces.sag_surface import SagSurface
 
 ##################
 # Optical elements

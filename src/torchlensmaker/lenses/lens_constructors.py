@@ -22,7 +22,7 @@ import torchlensmaker as tlm
 
 
 def cemented(
-    surfaces: list[tlm.LocalSurface],
+    surfaces: list[tlm.SurfaceElement],
     gaps: list[tlm.PositionGap],
     materials=list[tlm.MaterialModel | str],
 ) -> tlm.Lens:
@@ -56,10 +56,8 @@ def cemented(
     # Process position gaps into surface anchors by adding 'origin' at start and end
     pgap_anchors = map(tlm.position_gap_to_anchors, gaps)
     flat = [s for a, b in pgap_anchors for s in (a, b)]
-    flat_with_origin = ["origin", *flat, "origin"]
+    flat_with_origin = [0, *flat, 0]
     all_anchors = list(zip(flat_with_origin[::2], flat_with_origin[1::2]))
-
-    print(all_anchors)
 
     # Add a dummy gap for the loop iteration
     gaps.append(tlm.InnerGap(0))
@@ -72,9 +70,8 @@ def cemented(
     ):
         sequence.append(
             tlm.RefractiveSurface(
-                surface,
+                surface.clone(anchors=anchors),
                 material=material,
-                anchors=anchors,
             )
         )
         if i != len(surfaces) - 1:
@@ -84,9 +81,9 @@ def cemented(
 
 
 def singlet(
-    surface1: tlm.LocalSurface,
+    surface1: tlm.SurfaceElement,
     gap: tlm.PositionGap,
-    surface2: tlm.LocalSurface,
+    surface2: tlm.SurfaceElement,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
 ) -> tlm.Lens:
@@ -109,7 +106,7 @@ def singlet(
 
 
 def symmetric_singlet(
-    surface: tlm.LocalSurface,
+    surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
@@ -130,20 +127,22 @@ def symmetric_singlet(
 
     return tlm.Lens(
         tlm.RefractiveSurface(
-            surface, anchors=("origin", gap_anchors[0]), material=material
+            surface.clone(anchors=(0, gap_anchors[0])),
+            material=material,
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            surface,
-            anchors=(gap_anchors[1], "origin"),
-            scale=-1,
+            surface.clone(
+                anchors=(gap_anchors[1], 0),
+                scale=-1,
+            ),
             material=exit_material,
         ),
     )
 
 
 def semiplanar_rear(
-    surface: tlm.LocalSurface,
+    surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
@@ -166,21 +165,19 @@ def semiplanar_rear(
 
     return tlm.Lens(
         tlm.RefractiveSurface(
-            surface,
-            anchors=("origin", gap_anchors[0]),
-            scale=scale,
+            surface.clone(anchors=(0, gap_anchors[0]), scale=scale),
             material=material,
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            tlm.CircularPlane(surface.diameter),
+            tlm.Disk(surface.diameter),
             material=exit_material,
         ),
     )
 
 
 def semiplanar_front(
-    surface: tlm.LocalSurface,
+    surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
     exit_material: tlm.MaterialModel | str = "air",
@@ -205,20 +202,18 @@ def semiplanar_front(
         tlm.RefractiveSurface(tlm.CircularPlane(surface.diameter), material=material),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            surface,
-            anchors=(gap_anchors[1], "origin"),
-            scale=scale,
+            surface.clone(anchors=(gap_anchors[1], 0), scale=scale),
             material=exit_material,
         ),
     )
 
 
 def doublet(
-    surface1: tlm.LocalSurface,
+    surface1: tlm.SurfaceElement,
     gap1: tlm.PositionGap,
-    surface2: tlm.LocalSurface,
+    surface2: tlm.SurfaceElement,
     gap2: tlm.PositionGap,
-    surface3: tlm.LocalSurface,
+    surface3: tlm.SurfaceElement,
     materials: list[tlm.MaterialModel | str],
 ) -> tlm.Lens:
     """

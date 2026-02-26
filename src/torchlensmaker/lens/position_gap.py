@@ -35,14 +35,11 @@ class OuterGap:
 
 PositionGap: TypeAlias = InnerGap | OuterGap
 
-Anchor = Literal["origin", "extent"]
-Anchors = tuple[Anchor, Anchor]
 
-
-def position_gap_to_anchors(pgap: PositionGap) -> Anchors:
+def position_gap_to_anchors(pgap: PositionGap) -> tuple[float, float]:
     "Convert a position gap to a pair of anchors"
     match pgap:
-        case InnerGap(g):
-            return ("origin", "origin")
-        case OuterGap(g):
-            return ("extent", "extent")
+        case InnerGap(_):
+            return (0, 0)
+        case OuterGap(_):
+            return (1, 1)

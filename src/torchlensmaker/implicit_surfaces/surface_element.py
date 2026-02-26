@@ -16,6 +16,7 @@
 
 from typing import Any
 import torch.nn as nn
+from typing import Self
 from torchlensmaker.types import Tf, BatchTensor, BatchNDTensor, MaskTensor
 
 
@@ -23,6 +24,9 @@ class SurfaceElement(nn.Module):
     """
     Abstract base class for surfaces
     """
+
+    def clone(self, **overrides) -> Self:
+        raise NotImplementedError
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
