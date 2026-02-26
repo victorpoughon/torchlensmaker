@@ -134,10 +134,10 @@ def lens_minimal_diameter(lens: "Lens") -> Float[torch.Tensor, ""]:
     out of all the surfaces in the lens
     """
 
-    mini = lens.sequence[0].collision_surface.surface.diameter
+    mini = lens.sequence[0].surface.diameter
     for mod in lens.sequence:
         if isinstance(mod, RefractiveSurface):
-            diam = mod.collision_surface.surface.diameter
+            diam = mod.surface.diameter
             if diam < mini:
                 mini = diam
 
