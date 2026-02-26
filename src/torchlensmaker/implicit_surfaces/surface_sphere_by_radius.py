@@ -76,7 +76,7 @@ def sphere_radius_normals(R: ScalarTensor, points: BatchNDTensor) -> MaskTensor:
 def sphere_radius_extent_x(diameter: ScalarTensor, R: ScalarTensor) -> ScalarTensor:
     tau = diameter / 2
     R2, tau2 = R**2, tau**2
-    return R - torch.sqrt(R2 - tau2)
+    return torch.sign(R) * (torch.abs(R) - torch.sqrt(R2 - tau2))
 
 
 def sphere_radius_contains(
