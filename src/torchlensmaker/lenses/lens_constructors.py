@@ -199,7 +199,7 @@ def semiplanar_front(
     gap_anchors = tlm.position_gap_to_anchors(gap)
 
     return tlm.Lens(
-        tlm.RefractiveSurface(tlm.CircularPlane(surface.diameter), material=material),
+        tlm.RefractiveSurface(tlm.Disk(surface.diameter), material=material),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
             surface.clone(anchors=(gap_anchors[1], 0), scale=scale),
