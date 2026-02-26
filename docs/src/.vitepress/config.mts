@@ -100,6 +100,10 @@ export default defineConfig({
               text: "Reflecting Telescope",
               link: "/examples/reflecting_telescope",
             },
+            {
+              text: "Reflection and Refraction",
+              link: "/examples/reflection_and_refraction",
+            },
             { text: "Triple Biconvex", link: "/examples/triple_biconvex" },
             {
               text: "Variable Lens Sequence",
