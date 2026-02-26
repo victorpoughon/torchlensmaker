@@ -162,9 +162,9 @@ class SphereByCurvature(SurfaceElement):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
         normalize: bool = False,
-        num_iter: int = 6,
+        num_iter: int = 12,
         damping: float = 0.95,
-        tol: float = 1e-6,
+        tol: float = 1e-4,
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
