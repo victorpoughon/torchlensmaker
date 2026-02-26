@@ -28,8 +28,7 @@ from importlib.metadata import version
 
 from typing import Any, Optional
 
-from torchlensmaker.surfaces.local_surface import LocalSurface
-from torchlensmaker.surfaces.implicit_surface import ImplicitSurface
+from torchlensmaker.implicit_surfaces.surface_element import SurfaceElement
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
@@ -179,7 +178,7 @@ def new_scene(mode: str) -> Any:
 
 
 def render_surface(
-    surface: ImplicitSurface,
+    surface: SurfaceElement,
     dfk: HomMatrix,
     dim: int,
 ) -> object:
@@ -188,7 +187,7 @@ def render_surface(
     """
 
     # Convert the surface to a dict
-    obj = surface.to_dict(dim)
+    obj = surface.render()
 
     # Add the matrix transform
     obj["matrix"] = dfk.tolist()
@@ -197,12 +196,10 @@ def render_surface(
 
 
 def render_surface_local(
-    surface: LocalSurface,
+    surface: SurfaceElement,
     dim: int,
 ) -> Any:
-    tfid = hom_identity(
-        dim, dtype=surface.dtype, device=torch.device("cpu")
-    )  # TODO gpu support
+    tfid = hom_identity(dim, dtype=torch.float32, device=torch.device("cpu"))
     return render_surface(
         surface,
         tfid.direct,
@@ -394,4 +391,3 @@ def render_joint(dfk: HomMatrix) -> Any:
             "layers": [LAYER_JOINTS],
         }
     ]
-
