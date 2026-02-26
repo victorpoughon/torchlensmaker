@@ -75,7 +75,7 @@ def implicit_solver_newton(
     points = P + t.unsqueeze(-1) * V
     F, F_grad = implicit_function(points)
     delta = F / torch.sum(F_grad * V, dim=-1)
-    t = t - delta
+    t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     return t
 
