@@ -26,12 +26,11 @@ from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureSurfaceKernel,
 )
 from torchlensmaker.implicit_surfaces.surface_disk import (
-    Disk2DSurfaceKernel,
-    Disk3DSurfaceKernel,
+    DiskSurfaceKernel,
 )
 from torchlensmaker.implicit_surfaces.surface_parabola import ParabolaSurfaceKernel
 from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import (
-    SphereByRadiusSurfaceKernel,
+    SphereByRadiusSurfaceKernel, # TODO
 )
 from torchlensmaker.implicit_surfaces.surface_conic import ConicSurfaceKernel
 from torchlensmaker.implicit_surfaces.surface_asphere import AsphereSurfaceKernel
@@ -68,8 +67,8 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "XYPolynomial3D-1": XYPolynomialSurfaceKernel(6, 1.0, 1e-3),
     "XYPolynomial3D-2": XYPolynomialSurfaceKernel(6, 1.0, 1e-3),
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
-    "Disk2D": Disk2DSurfaceKernel(),
-    "Disk3D": Disk3DSurfaceKernel(),
+    "Disk2D": DiskSurfaceKernel(2),
+    "Disk3D": DiskSurfaceKernel(3),
 }
 
 

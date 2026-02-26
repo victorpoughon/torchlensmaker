@@ -73,15 +73,15 @@ def intersection_disk_3d(
     return t, normals, valid
 
 
-class Disk2DSurfaceKernel(FunctionalKernel):
+class DiskSurfaceKernel(FunctionalKernel):
     """
-    Functional kernel for a 2D disk (aka a line segment perpendicular to the
-    optical axis), parameterized by lens diameter.
+    Functional kernel for a disk perpendicular to the optical axis.
+    In 2D, it reduces to a line segment, sometimes called a plane.
     """
 
     inputs = {
-        "P": Batch2DTensor,
-        "V": Batch2DTensor,
+        "P": BatchNDTensor,
+        "V": BatchNDTensor,
         "tf_in": Tf,
     }
 
@@ -91,79 +91,36 @@ class Disk2DSurfaceKernel(FunctionalKernel):
 
     outputs = {
         "t": BatchTensor,
-        "normals": Batch2DTensor,
+        "normals": BatchNDTensor,
         "valid": MaskTensor,
         "surface_tf": Tf,
         "next_tf": Tf,
     }
 
+    def __init__(self, dim: int):
+        self.dim = dim
+
     def apply(
         self,
-        P: Batch2DTensor,
-        V: Batch2DTensor,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
-        # Perform raytrace
-        local_solver = partial(intersection_disk_2d, diameter=diameter)
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+        solver = intersection_disk_2d if self.dim == 2 else intersection_disk_3d
+        local_solver = partial(solver, diameter=diameter)
         t, normals, valid = raytrace(P, V, tf_in, local_solver)
-
         return t, normals, valid, tf_in.clone(), tf_in.clone()
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch2DTensor, Batch2DTensor, Tf]:
-        P, V = example_rays_2d(10, dtype, device)
-        tf = hom_identity_2d(dtype, device)
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor]:
-        return (torch.tensor(10.0, dtype=dtype, device=device),)
-
-
-class Disk3DSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 3D disk, parameterized by lens diameter.
-    """
-
-    inputs = {
-        "P": Batch3DTensor,
-        "V": Batch3DTensor,
-        "tf_in": Tf,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": Batch3DTensor,
-        "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
-    }
-
-    def apply(
-        self,
-        P: Batch3DTensor,
-        V: Batch3DTensor,
-        tf_in: Tf,
-        diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf, Tf]:
-        # Perform raytrace
-        local_solver = partial(intersection_disk_3d, diameter=diameter)
-        t, normals, valid = raytrace(P, V, tf_in, local_solver)
-
-        return t, normals, valid, tf_in.clone(), tf_in.clone()
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[Batch3DTensor, Batch3DTensor, Tf]:
-        P, V = example_rays_3d(10, dtype, device)
-        tf = hom_identity_3d(dtype, device)
+    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        if self.dim == 2:
+            P, V = example_rays_2d(10, dtype, device)
+            tf = hom_identity_2d(dtype, device)
+        else:
+            P, V = example_rays_3d(10, dtype, device)
+            tf = hom_identity_3d(dtype, device)
         return P, V, tf
 
     def example_params(
@@ -180,16 +137,14 @@ class Disk(SurfaceElement):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
-        self.func2d = Disk2DSurfaceKernel()
-        self.func3d = Disk3DSurfaceKernel()
+        self.func2d = DiskSurfaceKernel(2)
+        self.func3d = DiskSurfaceKernel(3)
 
     def forward(
         self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        if P.shape[-1] == 2:
-            return self.func2d.apply(P, V, tf, self.diameter)
-        else:
-            return self.func3d.apply(P, V, tf, self.diameter)
+        func = self.func2d if P.shape[-1] == 2 else self.func3d
+        return func.apply(P, V, tf, self.diameter)
 
     def render(self) -> Any:
         return {
