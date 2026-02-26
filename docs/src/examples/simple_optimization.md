@@ -4,7 +4,7 @@
 ```python
 import torchlensmaker as tlm
 
-surface = tlm.Sphere(diameter=15, R=tlm.parameter(25))
+surface = tlm.SphereByCurvature(diameter=15, C=1./25, trainable=True)
 lens = tlm.lenses.symmetric_singlet(surface, tlm.OuterGap(1.5), material="BK7")
 
 optics = tlm.Sequential(
@@ -22,7 +22,7 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, pupil=100)
 ```
 
-    2.sequence.0.collision_surface.C Parameter containing:
+    2.sequence.0.surface.C Parameter containing:
     tensor(0.0400, requires_grad=True)
 
 
@@ -45,7 +45,7 @@ tlm.optimize(
     num_iter = 60
 ).plot()
 
-print("Final arc radius:", surface.radius())
+print("Final arc radius:", 1/surface.C.item())
 print("Outer thickness:", lens.outer_thickness())
 print("Inner thickness:", lens.inner_thickness())
 
@@ -53,27 +53,27 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, pupil=100)
 ```
 
-    [  1/60] L= 1.56896 | grad norm= 161.9366912841797
-    [  4/60] L= 1.09283 | grad norm= 157.6260528564453
-    [  7/60] L= 0.62933 | grad norm= 153.8096160888672
-    [ 10/60] L= 0.18314 | grad norm= 133.94639587402344
-    [ 13/60] L= 0.21391 | grad norm= 147.71240234375
-    [ 16/60] L= 0.36217 | grad norm= 146.74325561523438
-    [ 19/60] L= 0.31395 | grad norm= 147.05523681640625
-    [ 22/60] L= 0.14082 | grad norm= 148.20101928710938
-    [ 25/60] L= 0.12373 | grad norm= 82.25103759765625
-    [ 28/60] L= 0.19203 | grad norm= 134.01866149902344
-    [ 31/60] L= 0.16661 | grad norm= 82.7745361328125
-    [ 34/60] L= 0.10847 | grad norm= 8.580143928527832
-    [ 37/60] L= 0.11461 | grad norm= 8.976351737976074
-    [ 40/60] L= 0.12784 | grad norm= 148.28854370117188
-    [ 43/60] L= 0.11511 | grad norm= 9.006994247436523
-    [ 46/60] L= 0.11255 | grad norm= 8.847447395324707
-    [ 49/60] L= 0.11013 | grad norm= 8.690470695495605
-    [ 52/60] L= 0.10780 | grad norm= 8.534743309020996
-    [ 55/60] L= 0.10967 | grad norm= 82.0810775756836
-    [ 58/60] L= 0.11062 | grad norm= 8.722641944885254
-    [ 60/60] L= 0.11190 | grad norm= 8.805546760559082
+    [  1/60] L= 1.56896 | grad norm= 161.1410369873047
+    [  4/60] L= 1.09283 | grad norm= 156.91146850585938
+    [  7/60] L= 0.62931 | grad norm= 153.17071533203125
+    [ 10/60] L= 0.18310 | grad norm= 133.4958038330078
+    [ 13/60] L= 0.21412 | grad norm= 147.20242309570312
+    [ 16/60] L= 0.36245 | grad norm= 146.2548065185547
+    [ 19/60] L= 0.31415 | grad norm= 146.56021118164062
+    [ 22/60] L= 0.14089 | grad norm= 147.6809844970703
+    [ 25/60] L= 0.12372 | grad norm= 82.12677001953125
+    [ 28/60] L= 0.19185 | grad norm= 133.56570434570312
+    [ 31/60] L= 0.16637 | grad norm= 82.64508056640625
+    [ 34/60] L= 0.10851 | grad norm= 8.301421165466309
+    [ 37/60] L= 0.11468 | grad norm= 8.708842277526855
+    [ 40/60] L= 0.12953 | grad norm= 147.75596618652344
+    [ 43/60] L= 0.11523 | grad norm= 8.744029998779297
+    [ 46/60] L= 0.11271 | grad norm= 8.582929611206055
+    [ 49/60] L= 0.11032 | grad norm= 8.424992561340332
+    [ 52/60] L= 0.10804 | grad norm= 8.268692016601562
+    [ 55/60] L= 0.10787 | grad norm= 8.256511688232422
+    [ 58/60] L= 0.10900 | grad norm= 8.335291862487793
+    [ 60/60] L= 0.10929 | grad norm= 8.354530334472656
 
 
 
@@ -82,9 +82,9 @@ tlm.show(optics, dim=3, pupil=100)
     
 
 
-    Final arc radius: 33.782562255859375
+    Final arc radius: 33.372520476664235
     Outer thickness: tensor(1.5000, grad_fn=<SelectBackward0>)
-    Inner thickness: tensor(3.1861, grad_fn=<SelectBackward0>)
+    Inner thickness: tensor(3.2074, grad_fn=<SelectBackward0>)
 
 
 

@@ -22,7 +22,7 @@ import torchlensmaker as tlm
 optics = tlm.Sequential(
     tlm.PointSource(beam_angular_size=105, material="water"),
     tlm.Gap(2),
-    tlm.RefractiveSurface(tlm.CircularPlane(15), tir="reflect", material="air"),
+    tlm.RefractiveSurface(tlm.Disk(15), tir_mode="reflect", material="air"),
 )
 ```
 

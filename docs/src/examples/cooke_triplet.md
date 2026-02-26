@@ -14,12 +14,12 @@ import torchlensmaker as tlm
 
 d1, d2 = 30, 25
 
-r1 = tlm.Sphere(d1, 26.4)
-r2 = tlm.Sphere(d1, -150.7)
-r3 = tlm.Sphere(d2, -29.8)
-r4 = tlm.Sphere(d2, 24.2)
-r5 = tlm.Sphere(d1, 150.7)
-r6 = tlm.Sphere(d1, -26.4)
+r1 = tlm.SphereByRadius(d1, 26.4)
+r2 = tlm.SphereByRadius(d1, -150.7)
+r3 = tlm.SphereByRadius(d2, -29.8)
+r4 = tlm.SphereByRadius(d2, 24.2)
+r5 = tlm.SphereByRadius(d1, 150.7)
+r6 = tlm.SphereByRadius(d1, -26.4)
 ```
 
 Next, we can define the material models for the lenses. In a Cooke Triplet, two materials are used, with the center one being denser to refract light more.
@@ -33,11 +33,6 @@ L1 = tlm.lenses.singlet(r1, tlm.InnerGap(5.9), r2, material=material1)
 L2 = tlm.lenses.singlet(r3, tlm.InnerGap(0.2), r4, material=material2)
 L3 = tlm.lenses.singlet(r5, tlm.InnerGap(5.9), r6, material=material1)
 ```
-
-    [('origin', 'origin'), ('origin', 'origin')]
-    [('origin', 'origin'), ('origin', 'origin')]
-    [('origin', 'origin'), ('origin', 'origin')]
-
 
 The distance between the last lens and the image plane is unclear from the document. Let's guess an inital value of 85, and make it trainable in the model.
 
@@ -103,24 +98,24 @@ tlm.optimize(optics,
 print("Final parameter value:", focal_gap.x.item())
 ```
 
-    [  1/50] L= 8.62332 | grad norm= 3.2334253787994385
-    [  4/50] L= 7.68722 | grad norm= 3.0125513076782227
-    [  7/50] L= 6.82136 | grad norm= 2.7927443981170654
-    [ 10/50] L= 6.02833 | grad norm= 2.5750133991241455
-    [ 13/50] L= 5.30975 | grad norm= 2.3604464530944824
-    [ 16/50] L= 4.66607 | grad norm= 2.1501357555389404
-    [ 19/50] L= 4.09666 | grad norm= 1.9452259540557861
-    [ 22/50] L= 3.59965 | grad norm= 1.746840000152588
-    [ 25/50] L= 3.17212 | grad norm= 1.5560805797576904
-    [ 28/50] L= 2.81011 | grad norm= 1.3739957809448242
-    [ 31/50] L= 2.50872 | grad norm= 1.201544165611267
-    [ 34/50] L= 2.26241 | grad norm= 1.0395724773406982
-    [ 37/50] L= 2.06514 | grad norm= 0.8888047337532043
-    [ 40/50] L= 1.91057 | grad norm= 0.7497930526733398
-    [ 43/50] L= 1.79242 | grad norm= 0.6229360103607178
-    [ 46/50] L= 1.70452 | grad norm= 0.5084332227706909
-    [ 49/50] L= 1.64112 | grad norm= 0.40630587935447693
-    [ 50/50] L= 1.62452 | grad norm= 0.37499135732650757
+    [  1/50] L= 8.62362 | grad norm= 41.41918182373047
+    [  4/50] L= 3.72261 | grad norm= 22.05714225769043
+    [  7/50] L= 2.73191 | grad norm= 15.360520362854004
+    [ 10/50] L= 2.34044 | grad norm= 11.759037017822266
+    [ 13/50] L= 2.65259 | grad norm= 14.827535629272461
+    [ 16/50] L= 1.78272 | grad norm= 1.9360257387161255
+    [ 19/50] L= 2.30073 | grad norm= 11.74817180633545
+    [ 22/50] L= 1.80700 | grad norm= 4.098475933074951
+    [ 25/50] L= 1.91280 | grad norm= 6.850599765777588
+    [ 28/50] L= 1.85311 | grad norm= 5.96938943862915
+    [ 31/50] L= 1.72584 | grad norm= 2.7381818294525146
+    [ 34/50] L= 1.79855 | grad norm= 5.431471347808838
+    [ 37/50] L= 1.66626 | grad norm= 0.5663701295852661
+    [ 40/50] L= 1.71702 | grad norm= 4.116581916809082
+    [ 43/50] L= 1.63741 | grad norm= 1.0191744565963745
+    [ 46/50] L= 1.65062 | grad norm= 2.8752262592315674
+    [ 49/50] L= 1.60761 | grad norm= 1.2536779642105103
+    [ 50/50] L= 1.59686 | grad norm= 0.5003327131271362
 
 
 
@@ -129,7 +124,7 @@ print("Final parameter value:", focal_gap.x.item())
     
 
 
-    Final parameter value: 81.08018493652344
+    Final parameter value: 84.44950866699219
 
 
 

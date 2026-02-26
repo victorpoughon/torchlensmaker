@@ -17,12 +17,12 @@ optics = tlm.Sequential(
     tlm.Rotate2D(-20),
     tlm.SubChain(
         tlm.Rotate2D(-A),
-        tlm.RefractiveSurface(tlm.CircularPlane(S), material="K5"),
+        tlm.RefractiveSurface(tlm.Disk(S), material="K5"),
     ),
     tlm.Gap(R),
     tlm.SubChain(
         tlm.Rotate2D(A),
-        tlm.RefractiveSurface(tlm.CircularPlane(S), material="air"),
+        tlm.RefractiveSurface(tlm.Disk(S), material="air"),
     )
 )
 

@@ -12,8 +12,8 @@ For this example, our telescope will be made of two convave mirrors. To spice th
 ```python
 import torchlensmaker as tlm
 
-primary = tlm.Parabola(35., A=tlm.parameter(-0.0001))
-secondary = tlm.Sphere(35., R=tlm.parameter(450.0))
+primary = tlm.Parabola(35., A=-0.0001, trainable=True)
+secondary = tlm.SphereByCurvature(35., C=1/450.0, trainable=True)
 
 optics = tlm.Sequential(
     tlm.Gap(-100),
@@ -51,33 +51,32 @@ optics.set_sampling2d(pupil=10)
 
 tlm.optimize(
     optics,
-    optimizer = optim.Adam(optics.parameters(), lr=3e-4),
+    optimizer = optim.Adam(optics.parameters(), lr=3e-5),
     dim = 2,
-    num_iter = 40
+    num_iter = 150
 ).plot()
 ```
 
-    [  1/40] L= 4.14344 | grad norm= 5082.36376953125
-    [  3/40] L= 0.47920 | grad norm= 4675.3154296875
-    [  5/40] L= 1.93830 | grad norm= 4376.82177734375
-    [  7/40] L= 1.99583 | grad norm= 4347.521484375
-    [  9/40] L= 0.98014 | grad norm= 4451.8486328125
-    [ 11/40] L= 0.75573 | grad norm= 4644.12646484375
-    [ 13/40] L= 1.55097 | grad norm= 4721.04931640625
-    [ 15/40] L= 1.22367 | grad norm= 4666.35107421875
-    [ 17/40] L= 0.14839 | grad norm= 4522.39599609375
-    [ 19/40] L= 1.01303 | grad norm= 4365.19921875
-    [ 21/40] L= 1.23147 | grad norm= 4325.10302734375
-    [ 23/40] L= 0.75589 | grad norm= 4373.916015625
-    [ 25/40] L= 0.29608 | grad norm= 4495.216796875
-    [ 27/40] L= 0.78485 | grad norm= 4545.55078125
-    [ 29/40] L= 0.48030 | grad norm= 4498.51025390625
-    [ 31/40] L= 0.42176 | grad norm= 4376.47705078125
-    [ 33/40] L= 0.80629 | grad norm= 4319.34619140625
-    [ 35/40] L= 0.50553 | grad norm= 4350.7177734375
-    [ 37/40] L= 0.36812 | grad norm= 4455.01806640625
-    [ 39/40] L= 0.73781 | grad norm= 4494.76953125
-    [ 40/40] L= 0.63783 | grad norm= 4479.029296875
+    [  1/150] L= 4.14344 | grad norm= 5082.25439453125
+    [  9/150] L= 2.63162 | grad norm= 4919.4970703125
+    [ 17/150] L= 1.19015 | grad norm= 4758.87548828125
+    [ 25/150] L= 0.14044 | grad norm= 4606.2333984375
+    [ 33/150] L= 0.31710 | grad norm= 4582.697265625
+    [ 41/150] L= 0.17877 | grad norm= 4637.1953125
+    [ 49/150] L= 0.09737 | grad norm= 4604.17578125
+    [ 57/150] L= 0.07691 | grad norm= 4623.55224609375
+    [ 65/150] L= 0.00736 | grad norm= 4615.05419921875
+    [ 73/150] L= 0.02890 | grad norm= 4617.27685546875
+    [ 81/150] L= 0.02596 | grad norm= 4616.75
+    [ 89/150] L= 0.01480 | grad norm= 4615.32275390625
+    [ 97/150] L= 0.00603 | grad norm= 4243.564453125
+    [105/150] L= 0.02657 | grad norm= 4616.56103515625
+    [113/150] L= 0.00343 | grad norm= 1293.148681640625
+    [121/150] L= 0.00670 | grad norm= 4243.32275390625
+    [129/150] L= 0.01945 | grad norm= 4615.5625
+    [137/150] L= 0.02369 | grad norm= 4610.4677734375
+    [145/150] L= 0.01215 | grad norm= 4614.61328125
+    [150/150] L= 0.01061 | grad norm= 4614.40576171875
 
 
 

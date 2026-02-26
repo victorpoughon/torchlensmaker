@@ -10,7 +10,7 @@ import torchlensmaker as tlm
 
 
 lens = tlm.lenses.symmetric_singlet(
-    tlm.Sphere(diameter=10, R=20),
+    tlm.SphereByRadius(diameter=10, R=20),
     tlm.OuterGap(0.5),
     material="BK7",
 )
@@ -60,7 +60,7 @@ tlm.show2d(optics, end=20)
 import torchlensmaker as tlm
 
 lens = tlm.lenses.symmetric_singlet(
-     tlm.Sphere(diameter=10, R=-18),
+     tlm.SphereByRadius(diameter=10, R=-18),
     tlm.InnerGap(0.5),
     material="BK7",
 )
@@ -87,7 +87,7 @@ import torchlensmaker as tlm
 lens = tlm.lenses.singlet(
     tlm.Parabola(diameter=10, A=0.03),
     tlm.OuterGap(0.5),
-    tlm.Sphere(diameter=10, R=30),
+    tlm.SphereByRadius(diameter=10, R=30),
     material="BK7",
 )
 
@@ -100,9 +100,6 @@ optics = tlm.Sequential(
 tlm.show2d(optics, end=20)
 ```
 
-    [('origin', 'extent'), ('extent', 'origin')]
-
-
 
 <TLMViewer src="./simple_lenses_files/simple_lenses_3.json?url" />
 
@@ -114,13 +111,13 @@ tlm.show2d(optics, end=20)
 import torchlensmaker as tlm
 
 lens1 = tlm.lenses.semiplanar_front(
-    tlm.Sphere(diameter=10, R=-15),
+    tlm.SphereByRadius(diameter=10, R=-15),
     tlm.OuterGap(0.8),
     material="BK7",
 )
 
 lens2 = tlm.lenses.semiplanar_rear(
-    tlm.Sphere(diameter=10, R=-15),
+    tlm.SphereByRadius(diameter=10, R=-15),
     tlm.InnerGap(0.6),
     material="BK7",
 )

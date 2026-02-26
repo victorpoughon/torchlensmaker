@@ -25,7 +25,7 @@ import math
 
 # Use half spheres to model interface boundaries
 radius = 5
-halfsphere = tlm.SphereR(diameter=2*radius, R=radius)
+halfsphere = tlm.SphereByRadius(diameter=2*radius, R=radius)
 
 model = tlm.Sequential(
     # Position the light source just above the optical axis
@@ -38,18 +38,18 @@ model = tlm.Sequential(
     tlm.Gap(50),
 
     # First interface: half sphere (pointing left), refractive air to water
-    tlm.RefractiveSurface(halfsphere, material="water", anchors=("extent", "extent")),
+    tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 1)), material="water"),
     
     # Second interface: half sphere (pointing right), reflective
     tlm.SubChain(
         tlm.Rotate((-180, 0)),
-        tlm.ReflectiveSurface(halfsphere, anchors=("extent", "extent")),
+        tlm.ReflectiveSurface(halfsphere.clone(anchors=(1, 1))),
     ),
 
     # Third interface: half sphere (pointing down), refractive water to air
     tlm.SubChain(
         tlm.Rotate((60, 0)),
-        tlm.RefractiveSurface(halfsphere, material="air", anchors=("extent", "origin")),
+        tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 0)), material="air"),
     ),
 )
 
