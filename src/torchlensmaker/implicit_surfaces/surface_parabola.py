@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any
+from typing import Any, Self
 from jaxtyping import Float, Bool
 import torch
 import torch.nn as nn
@@ -174,6 +174,21 @@ class Parabola(SurfaceElement):
         )
         self.func2d = ParabolaSurfaceKernel(2, num_iter, damping, tol)
         self.func3d = ParabolaSurfaceKernel(3, num_iter, damping, tol)
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(
+            diameter=self.diameter,
+            A=self.A,
+            anchors=self.anchors,
+            scale=self.scale,
+            trainable=self.A.requires_grad,
+            normalize=self.normalize,
+            num_iter=self.func2d.num_iter,
+            damping=self.func2d.damping,
+            tol=self.func2d.tol,
+        )
+        kwargs.update(overrides)
+        return type(self)(**kwargs)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
