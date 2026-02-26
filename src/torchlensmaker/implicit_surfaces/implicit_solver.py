@@ -44,6 +44,10 @@ ImplicitFunction: TypeAlias = ImplicitFunction2D | ImplicitFunction3D
 DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
 
 
+def init_closest_origin(P: BatchNDTensor, V: BatchNDTensor) -> BatchTensor:
+    return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
+
+
 def implicit_solver_newton(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
@@ -56,8 +60,8 @@ def implicit_solver_newton(
     This version exports with static loop unrolling
     """
 
-    # Initialize t at zero
-    t = torch.zeros_like(P[..., -1])
+    # Initialize t at the point closest to the origin
+    t = torch.maximum(torch.zeros_like(P[..., -1]), init_closest_origin(P, V))
 
     if num_iter == 0:
         return t
