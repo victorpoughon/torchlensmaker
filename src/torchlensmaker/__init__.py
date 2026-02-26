@@ -137,7 +137,7 @@ from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomial
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_surfaces.aperture import Aperture
-from torchlensmaker.optical_surfaces.image_plane import ImagePlane
+from torchlensmaker.optical_surfaces.image_plane import ImagePlane, linear_magnification
 
 from torchlensmaker.elements.sequential import (
     Sequential,
