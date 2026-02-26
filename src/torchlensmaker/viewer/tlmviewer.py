@@ -28,7 +28,7 @@ from importlib.metadata import version
 
 from typing import Any, Optional
 
-from torchlensmaker.implicit_surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces.surface_element import SurfaceElement
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,

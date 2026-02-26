@@ -22,19 +22,19 @@ import pytest
 import torch
 import onnxruntime
 
-from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import (
+from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureSurfaceKernel,
 )
-from torchlensmaker.implicit_surfaces.surface_disk import (
+from torchlensmaker.surfaces.surface_disk import (
     DiskSurfaceKernel,
 )
-from torchlensmaker.implicit_surfaces.surface_parabola import ParabolaSurfaceKernel
-from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import (
+from torchlensmaker.surfaces.surface_parabola import ParabolaSurfaceKernel
+from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel, # TODO
 )
-from torchlensmaker.implicit_surfaces.surface_conic import ConicSurfaceKernel
-from torchlensmaker.implicit_surfaces.surface_asphere import AsphereSurfaceKernel
-from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
+from torchlensmaker.surfaces.surface_conic import ConicSurfaceKernel
+from torchlensmaker.surfaces.surface_asphere import AsphereSurfaceKernel
+from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 

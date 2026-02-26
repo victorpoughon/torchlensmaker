@@ -23,7 +23,7 @@ from torchlensmaker.types import ScalarTensor
 from torchlensmaker.optical_data import OpticalData, propagate
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
-from torchlensmaker.implicit_surfaces.surface_disk import Disk
+from torchlensmaker.surfaces.surface_disk import Disk
 
 
 class Aperture(SequentialElement):

@@ -20,7 +20,7 @@ import torch.nn as nn
 from typing import Sequence, Optional, TypeAlias, Literal, Self
 from torchlensmaker.types import BatchTensor, ScalarTensor
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
-from torchlensmaker.implicit_surfaces.surface_disk import Disk
+from torchlensmaker.surfaces.surface_disk import Disk
 
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement

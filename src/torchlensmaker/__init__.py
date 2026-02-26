@@ -90,12 +90,12 @@ from torchlensmaker.sampling.sampler_elements import (
 )
 from torchlensmaker.sampling.sampling import disk_sampling
 
-###################
-# Implicit surfaces
-###################
+##########
+# Surfaces
+##########
 
-from torchlensmaker.implicit_surfaces.surface_element import SurfaceElement
-from torchlensmaker.implicit_surfaces.sag_functions import (
+from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces.sag_functions import (
     sag_to_implicit_2d,
     sag_to_implicit_3d,
     spherical_sag_2d,
@@ -110,15 +110,15 @@ from torchlensmaker.implicit_surfaces.sag_functions import (
     sag_sum_2d,
     sag_sum_3d,
 )
-from torchlensmaker.implicit_surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.implicit_surfaces.surface_sphere_by_curvature import SphereByCurvature
-from torchlensmaker.implicit_surfaces.surface_sphere_by_radius import SphereByRadius
-from torchlensmaker.implicit_surfaces.surface_parabola import Parabola
-from torchlensmaker.implicit_surfaces.surface_disk import Disk
-from torchlensmaker.implicit_surfaces.surface_conic import Conic
-from torchlensmaker.implicit_surfaces.surface_asphere import Asphere
-from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomial
-from torchlensmaker.implicit_surfaces.surface_square import Square
+from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
+from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
+from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
+from torchlensmaker.surfaces.surface_parabola import Parabola
+from torchlensmaker.surfaces.surface_disk import Disk
+from torchlensmaker.surfaces.surface_conic import Conic
+from torchlensmaker.surfaces.surface_asphere import Asphere
+from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
+from torchlensmaker.surfaces.surface_square import Square
 
 
 ##################
