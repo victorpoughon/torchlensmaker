@@ -128,6 +128,7 @@ from torchlensmaker.implicit_surfaces.surface_disk import Disk
 from torchlensmaker.implicit_surfaces.surface_conic import Conic
 from torchlensmaker.implicit_surfaces.surface_asphere import Asphere
 from torchlensmaker.implicit_surfaces.surface_xypolynomial import XYPolynomial
+from torchlensmaker.implicit_surfaces.surface_square import Square
 
 
 ##################
