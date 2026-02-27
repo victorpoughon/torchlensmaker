@@ -11,7 +11,6 @@ documentation. But you're welcome to look around 😊
 * [dev_notebooks/collision_detection_view_testcase.md](dev_notebooks/collision_detection_view_testcase.md)
 * [dev_notebooks/concave_mirror.md](dev_notebooks/concave_mirror.md)
 * [dev_notebooks/demo_dispersion.md](dev_notebooks/demo_dispersion.md)
-* [dev_notebooks/demo_reflection_refraction.md](dev_notebooks/demo_reflection_refraction.md)
 * [dev_notebooks/doc_normalization.md](dev_notebooks/doc_normalization.md)
 * [dev_notebooks/double_gauss.md](dev_notebooks/double_gauss.md)
 * [dev_notebooks/index_example.md](dev_notebooks/index_example.md)
