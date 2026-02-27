@@ -16,7 +16,7 @@
 
 from dataclasses import dataclass
 from typing import TypeAlias, Self, Literal
-from jaxtyping import Float, Bool
+from jaxtyping import Float, Bool, Int64
 import torch
 
 
@@ -27,6 +27,8 @@ Batch2DTensor: TypeAlias = Float[torch.Tensor, "... 2"]
 Batch3DTensor: TypeAlias = Float[torch.Tensor, "... 3"]
 BatchNDTensor: TypeAlias = Float[torch.Tensor, "... D"]
 MaskTensor: TypeAlias = Bool[torch.Tensor, "..."]
+IndexTensor: TypeAlias = Int64[torch.Tensor, "..."]
+IndexNDTensor: TypeAlias = Int64[torch.Tensor, "... D"]
 
 # Homogeneous coordinates matrix
 HomMatrix: TypeAlias = Float[torch.Tensor, "D D"]
