@@ -12,6 +12,7 @@ dependencies = [
   "matplotlib>=3.9.2,<3.11.0",
   "jaxtyping>=0.3.5",
   "ipython>=8.31.0",
+  "tensordict>=0.11.0",
 ]
 
 [project.optional-dependencies]
