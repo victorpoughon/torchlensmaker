@@ -55,8 +55,8 @@ class ReflectiveSurfaceArtist(Artist):
 
         # Render rays
         rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.P,
-            inputs.V,
+            inputs.rays.P,
+            inputs.rays.V,
             t,
             inputs.target()[0],
             valid,
@@ -85,8 +85,8 @@ class RefractiveSurfaceArtist(Artist):
 
         # Render rays
         rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.P,
-            inputs.V,
+            inputs.rays.P,
+            inputs.rays.V,
             t,
             inputs.target()[0],
             collision_valid,
@@ -103,10 +103,10 @@ class RefractiveSurfaceArtist(Artist):
         _, valid_refraction = collective.output_tree[module.refractive_interface]
         tir_mask = torch.logical_and(~valid_refraction, collision_valid)
         if module._tir_mode == "absorb" and tir_mask.sum() > 0:
-            collision_points = inputs.P + t.unsqueeze(1).expand_as(inputs.V) * inputs.V
+            collision_points = inputs.rays.points_at(t)
             rays_tir = [
                 tlmviewer.render_rays(
-                    inputs.P[tir_mask],
+                    inputs.rays.P[tir_mask],
                     collision_points[tir_mask],
                     variables=inputs.ray_variables_dict(tir_mask),
                     domain=collective.ray_variables_domains,
@@ -132,8 +132,8 @@ class ApertureArtist(Artist):
 
         # Render rays
         rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.P,
-            inputs.V,
+            inputs.rays.P,
+            inputs.rays.V,
             t,
             inputs.target()[0],
             valid,
@@ -160,8 +160,8 @@ class ImagePlaneArtist(Artist):
 
         # Render rays
         rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.P,
-            inputs.V,
+            inputs.rays.P,
+            inputs.rays.V,
             t,
             inputs.target()[0],
             valid,
@@ -186,13 +186,13 @@ class FocalPointArtist(Artist):
 
         # Render rays
         # Distance from ray origin P to target
-        dist = torch.linalg.vector_norm(inputs.P - inputs.target(), dim=1)
+        dist = torch.linalg.vector_norm(inputs.rays.P - inputs.target(), dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
         rendered_rays = tlmviewer.render_rays_length(
-            inputs.P,
-            inputs.V,
+            inputs.rays.P,
+            inputs.rays.V,
             t,
             layer=tlmviewer.LAYER_VALID_RAYS,
             variables=inputs.ray_variables_dict(),

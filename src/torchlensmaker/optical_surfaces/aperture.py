@@ -18,9 +18,9 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, Self
+from typing import Self
 from torchlensmaker.types import ScalarTensor
-from torchlensmaker.optical_data import OpticalData, propagate
+from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_disk import Disk
@@ -32,16 +32,16 @@ class Aperture(SequentialElement):
         self.surface = Disk(diameter)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        # Collision detection
-        t, _, valid_collision, tf_surface, tf_next = self.surface(data.P, data.V, data.fk)
-        collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
+        # Collision detection with the surface
+        t, _, valid_collision, tf_surface, tf_next = self.surface(
+            data.rays.P, data.rays.V, data.fk
+        )
 
         # Keep colliding rays only
-        return data.filter_variables(
-            valid_collision
-        ).replace(
-            P=collision_points[valid_collision],
-            V=data.V[valid_collision],
+        new_rays = data.rays.propagate_absorb(t, valid_collision)
+
+        return data.replace(
+            rays=new_rays,
             fk=tf_next,  # correct but useless cause Aperture is only circular plane currently
         )
 

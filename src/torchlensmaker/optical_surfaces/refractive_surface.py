@@ -18,9 +18,8 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, Self
-from torchlensmaker.types import BatchTensor, MaskTensor, MissMode, TIRMode
-from torchlensmaker.core.tensor_manip import filter_optional_tensor
+from typing import Self
+from torchlensmaker.types import MissMode, TIRMode
 from torchlensmaker.optical_data import OpticalData, propagate
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import RefractiveInterface
@@ -51,17 +50,21 @@ class RefractiveSurface(SequentialElement):
 
     def forward(self, data: OpticalData) -> OpticalData:
         # Compute indices of refraction
-        n1 = data.rays_index
-        n2 = self.material(data.rays_wavelength)
-        assert n1.shape == n2.shape == (data.P.shape[0],)
+        n1 = data.rays.index
+        n2 = self.material(data.rays.wavel)
+        assert n1.shape == n2.shape == (data.rays.P.shape[0],)
 
         # Raytrace with the surface
-        t, normals, valid_collision, fk_surface, fk_next = self.surface(data.P, data.V, data.fk)
+        t, normals, valid_collision, fk_surface, fk_next = self.surface(
+            data.rays.P, data.rays.V, data.fk
+        )
 
         # Snell's law happens here
         # Compute refraction on the full frame rays (including non-colliding
         # rays), so that comparing the two valid masks is easier
-        refracted, valid_refraction = self.refractive_interface(data.V, normals, n1, n2)
+        refracted, valid_refraction = self.refractive_interface(
+            data.rays.V, normals, n1, n2
+        )
 
         if self._tir_mode == "reflect":
             valid = valid_collision
@@ -69,4 +72,6 @@ class RefractiveSurface(SequentialElement):
             valid = torch.logical_and(valid_collision, valid_refraction)
 
         propagated = propagate(data, t, valid, refracted[valid], self._miss_mode)
-        return propagated.replace(rays_index=n2[valid], fk=fk_next)
+        return propagated.replace(
+            rays=propagated.rays.replace(index=n2[valid]), fk=fk_next
+        )

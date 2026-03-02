@@ -20,9 +20,12 @@ from dataclasses import dataclass, replace
 import torch
 from jaxtyping import Float
 
-
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.types import Tf, BatchTensor, MaskTensor, BatchNDTensor, MissMode
-from torchlensmaker.core.tensor_manip import filter_optional_tensor, filter_optional_mask
+from torchlensmaker.core.tensor_manip import (
+    filter_optional_tensor,
+    filter_optional_mask,
+)
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
     transform_points,
@@ -38,48 +41,22 @@ class OpticalData:
     # Forward kinematic chain
     fk: Tf
 
-    # Light rays in parametric form: P + tV
-    P: Float[torch.Tensor, "N D"]
-    V: Float[torch.Tensor, "N D"]
-
-    # Ray variables
-    # Tensors of shape (N, 2|3)
-    rays_wavelength: Float[torch.Tensor, " N"]  # wavelength in nm
-    rays_index: Float[torch.Tensor, " N"]  # index of refraction
-    rays_pupil: Float[torch.Tensor, "N D"]  # pupil coordinates
-    rays_field: Float[torch.Tensor, "N D"]  # field coordinates
-
-    # TODO remove? image plane coordinates
-    rays_image: Optional[torch.Tensor]
+    # Rays and associated variables
+    rays: RayBundle
 
     # Loss accumulator
     # Tensor of dim 0
     loss: torch.Tensor
 
     def target(self) -> torch.Tensor:
-        return transform_points(self.fk.direct, torch.zeros((self.dim,), dtype=self.dtype))
+        return transform_points(
+            self.fk.direct, torch.zeros((self.dim,), dtype=self.dtype)
+        )
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
 
-    def get_rays(self, color_dim: str) -> torch.Tensor:
-        if color_dim == "base" and self.rays_pupil is not None:
-            return self.rays_pupil
-        elif color_dim == "object" and self.rays_field is not None:
-            return self.rays_field
-        elif color_dim == "wavelength" and self.rays_wavelength is not None:
-            return self.rays_wavelength
-        else:
-            raise RuntimeError(f"Unknown or unavailable ray variable '{color_dim}'")
-
-    def filter_variables(self, valid: torch.Tensor) -> "OpticalData":
-        return self.replace(
-            rays_pupil=filter_optional_tensor(self.rays_pupil, valid),
-            rays_field=filter_optional_tensor(self.rays_field, valid),
-            rays_wavelength=filter_optional_tensor(self.rays_wavelength, valid),
-            rays_index=filter_optional_tensor(self.rays_index, valid),
-        )
-
+    # TODO remove
     def ray_variables_dict(
         self, valid: Optional[torch.Tensor] = None
     ) -> dict[str, torch.Tensor]:
@@ -98,28 +75,15 @@ class OpticalData:
         # but base and object are 2D variables in 3D
         # TODO tlmviewer: rename base/object to pupil/field
         if self.dim == 2:
-            update(self.rays_pupil, "base")
-            update(self.rays_field, "object")
+            update(self.rays.pupil, "base")
+            update(self.rays.field, "object")
 
-        update(self.rays_wavelength, "wavelength")
+        update(self.rays.wavel, "wavelength")
 
         return d
 
-
-# TODO move to RayBundle
-def propagate_absorb(
-    data: OpticalData, t: BatchTensor, valid: MaskTensor
-) -> OpticalData:
-    collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
-    return data.filter_variables(valid).replace(P=collision_points[valid])
-
-
-def propagate_pass(data: OpticalData, t: BatchTensor, valid: MaskTensor) -> OpticalData:
-    collision_points = data.P + t.unsqueeze(1).expand_as(data.V) * data.V
-    return data.replace(
-        P=data.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid])
-    )
-
+# TODO move to raybundle
+# find a name for propagate but for V
 def propagate(
     data: OpticalData,
     t: BatchTensor,
@@ -128,13 +92,14 @@ def propagate(
     miss_mode: MissMode,
 ) -> OpticalData:
     if miss_mode == "absorb":
-        prop = propagate_absorb(data, t, valid)
-        return prop.replace(V=V)
+        new_rays = data.rays.propagate_absorb(t, valid)
+        return data.replace(rays=new_rays.replace(V=V))
 
     elif miss_mode == "pass":
-        prop = propagate_pass(data, t, valid)
-
-        return prop.replace(V=data.V.masked_scatter(valid.unsqueeze(-1), V))
+        new_rays = data.rays.propagate_pass(t, valid)
+        return data.replace(
+            rays=new_rays.replace(V=data.rays.V.masked_scatter(valid.unsqueeze(-1), V))
+        )
 
 
 def default_input(
@@ -146,16 +111,22 @@ def default_input(
 
     tfid = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
 
+    rays = RayBundle.create(
+        P=torch.empty((0, dim), dtype=dtype),
+        V=torch.empty((0, dim), dtype=dtype),
+        pupil=torch.empty((0, dim), dtype=dtype),
+        field=torch.empty((0, dim), dtype=dtype),
+        wavel=torch.empty((0,), dtype=dtype),
+        index=torch.empty((0,), dtype=dtype),
+        pupil_idx=torch.empty((0,), dtype=torch.int64),
+        field_idx=torch.empty((0,), dtype=torch.int64),
+        wavel_idx=torch.empty((0,), dtype=torch.int64),
+    )
+
     return OpticalData(
         dim=dim,
         dtype=dtype,
         fk=tfid,
-        P=torch.empty((0, dim), dtype=dtype),
-        V=torch.empty((0, dim), dtype=dtype),
-        rays_wavelength=torch.empty((0,), dtype=dtype),
-        rays_index=torch.empty((0,), dtype=dtype),
-        rays_pupil=torch.empty((0, dim), dtype=dtype),
-        rays_field=torch.empty((0, dim), dtype=dtype),
-        rays_image=None,
+        rays=rays,
         loss=torch.tensor(0.0, dtype=dtype),
     )

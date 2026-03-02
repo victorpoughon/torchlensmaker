@@ -134,8 +134,8 @@ def render_sequence(
         outputs = collective.output_tree[optics]
         scene["data"].extend(
             tlmviewer.render_rays_length(
-                outputs.P,
-                outputs.V,
+                outputs.rays.P,
+                outputs.rays.V,
                 end,
                 variables=outputs.ray_variables_dict(),
                 domain=collective.ray_variables_domains,

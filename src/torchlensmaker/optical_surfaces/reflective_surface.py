@@ -37,8 +37,8 @@ class ReflectiveSurface(SequentialElement):
         return self
 
     def forward(self, data: OpticalData) -> OpticalData:
-        t, normals, valid, fk_surface, fk_next = self.surface(data.P, data.V, data.fk)
-        reflected = self.reflective_interface(data.V[valid], normals[valid])
+        t, normals, valid, fk_surface, fk_next = self.surface(data.rays.P, data.rays.V, data.fk)
+        reflected = self.reflective_interface(data.rays.V[valid], normals[valid])
 
         propagated = propagate(data, t, valid, reflected, self._miss_mode)
 

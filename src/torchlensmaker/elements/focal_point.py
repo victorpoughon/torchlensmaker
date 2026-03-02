@@ -30,11 +30,11 @@ class FocalPoint(SequentialElement):
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim = inputs.dim
-        N = inputs.P.shape[0]
+        N = inputs.rays.P.shape[0]
 
         X = inputs.target()
-        P = inputs.P
-        V = inputs.V
+        P = inputs.rays.P
+        V = inputs.rays.V
 
         # Compute ray-point squared distance distance
 

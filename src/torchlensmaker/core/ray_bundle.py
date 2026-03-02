@@ -17,7 +17,7 @@
 from typing import Self
 import torch
 from tensordict import TensorDict
-from torchlensmaker.types import BatchNDTensor, BatchTensor, IndexTensor
+from torchlensmaker.types import BatchNDTensor, BatchTensor, IndexTensor, MaskTensor
 
 
 class RayBundle(TensorDict):
@@ -37,6 +37,22 @@ class RayBundle(TensorDict):
         "field_idx",
         "wavel_idx",
     ]
+
+    @classmethod
+    def create(cls, **kwargs) -> Self:
+        missing_keys = [key for key in cls._required_keys if key not in kwargs]
+        assert len(missing_keys) == 0, (
+            f"RayBundle.create(): required keys missing: {missing_keys}"
+        )
+
+        batch_size = kwargs["P"].shape[0]
+        self = cls(**kwargs, batch_size=batch_size)
+
+        assert self.pupil_idx.dtype == torch.int64
+        assert self.field_idx.dtype == torch.int64
+        assert self.wavel_idx.dtype == torch.int64
+
+        return self
 
     @property
     def P(self) -> BatchNDTensor:
@@ -83,18 +99,18 @@ class RayBundle(TensorDict):
         "Index of the rays in the wavelength sampling dimension"
         return self["wavel_idx"]
 
-    @classmethod
-    def create(cls, **kwargs) -> Self:
-        missing_keys = [key for key in cls._required_keys if key not in kwargs]
-        assert len(missing_keys) == 0, (
-            f"RayBundle.create(): required keys missing: {missing_keys}"
+    def points_at(self, t: BatchTensor) -> BatchNDTensor:
+        "Points on rays at parametric distance t"
+        return self.P + t.unsqueeze(-1).expand_as(self.V) * self.V
+
+    def propagate_absorb(self, t: BatchTensor, valid: MaskTensor) -> Self:
+        "Propagate rays by distance t, removing non valid rays"
+        collision_points = self.points_at(t)
+        return self[valid].replace(P=collision_points[valid])
+
+    def propagate_pass(self, t: BatchTensor, valid: MaskTensor) -> Self:
+        "Propagate rays by distance t, keeping non valid rays in the returned bundle"
+        collision_points = self.points_at(t)
+        return self.replace(
+            P=self.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid])
         )
-
-        batch_size = kwargs["P"].shape[0]
-        self = cls(**kwargs, batch_size=batch_size)
-
-        assert self.pupil_idx.dtype == torch.int64
-        assert self.field_idx.dtype == torch.int64
-        assert self.wavel_idx.dtype == torch.int64
-
-        return self

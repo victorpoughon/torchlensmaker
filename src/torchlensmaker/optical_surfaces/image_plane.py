@@ -61,17 +61,12 @@ class ImagePlane(SequentialElement):
         )
 
     def forward(self, data: OpticalData) -> OpticalData:
-        if data.V.shape[0] == 0:
+        if data.rays.V.shape[0] == 0:
             return data
 
         # Collision detection
-        t, _, valid_collision, _, _ = self.surface(data.P, data.V, data.fk)
-        collision_points = data.P + t.unsqueeze(-1).expand_as(data.V) * data.V
-
-        if data.rays_field is None:
-            raise RuntimeError(
-                "Missing object coordinates on rays (required to compute image magnification)"
-            )
+        t, _, valid_collision, _, _ = self.surface(data.rays.P, data.rays.V, data.fk)
+        collision_points = data.rays.points_at(t)
 
         # TODO 2D only for now
         if data.dim == 3:
@@ -83,7 +78,7 @@ class ImagePlane(SequentialElement):
         # For a plane it's easy though
 
         rays_image = collision_points[:, 1]
-        rays_object = data.rays_field
+        rays_object = data.rays.field
 
         # Compute loss
         assert rays_object.shape == rays_image.shape, (
@@ -97,9 +92,10 @@ class ImagePlane(SequentialElement):
         else:
             loss = torch.sum(torch.pow(res, 2))
 
-        # what to do with rays after an image plane?
+        # Note: image plane is transparent to rays,
+        # we only add information to the rays (the image plane coordinates)
 
         return data.replace(
-            rays_image=rays_image,  # used by spot_diagram
+            rays=data.rays.replace(image=rays_image),
             loss=loss,
         )

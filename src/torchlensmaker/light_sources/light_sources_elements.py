@@ -54,14 +54,7 @@ class LightSourceBase(SequentialElement):
 
     def sequential(self, data: OpticalData) -> OpticalData:
         rays = self(data.fk.direct)
-        return data.replace(
-            P=rays.P,
-            V=rays.V,
-            rays_wavelength=rays.wavel,
-            rays_index=rays.index,
-            rays_pupil=rays.pupil,
-            rays_field=rays.field,
-        )
+        return data.replace(rays=rays)
 
 
 class GenericLightSource(LightSourceBase):

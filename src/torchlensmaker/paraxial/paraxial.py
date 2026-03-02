@@ -116,8 +116,8 @@ def rear_principal_point(
     outputs = lens(inputs)
 
     # Compute intersection locus of input and output rays
-    t = equivalent_locus_2d(inputs.P, inputs.V, outputs.P, outputs.V)
-    collision_points = inputs.P + t[:, 0].unsqueeze(-1).expand_as(inputs.V) * inputs.V
+    t = equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.P, outputs.V)
+    collision_points = inputs.rays.points_at(t[:, 0])
 
     # Fit a parabola to the locus surface to obtain vertex
     return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
@@ -152,7 +152,7 @@ def rear_focal_point(
     inputs = source(tlm.default_input(dim=2))
     outputs = lens(inputs)
 
-    assert inputs.P.shape == outputs.P.shape == (1, 2)
+    assert inputs.rays.P.shape == outputs.P.shape == (1, 2)
 
     # Compute output ray intersection with the optical axis
     t = -outputs.P[:, 1] / outputs.V[:, 1]
