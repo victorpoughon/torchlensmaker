@@ -25,7 +25,7 @@ import pytest
 import torch
 import onnxruntime
 
-from torchlensmaker.types import MaskTensor
+from torchlensmaker.types import MaskTensor, IndexTensor
 
 from torchlensmaker.core.functional_kernel import (
     export_onnx,
@@ -46,6 +46,10 @@ def kernel_output_typecheck(
     if expected_type == MaskTensor:
         assert output.dtype == torch.bool, (
             f"Expected kernel output dtype bool, got {output.dtype}"
+        )
+    elif expected_type == IndexTensor:
+        assert output.dtype == torch.int64, (
+            f"Expected kernel output dtype int64, got {output.dtype}"
         )
     else:
         # Floating point tensor types
