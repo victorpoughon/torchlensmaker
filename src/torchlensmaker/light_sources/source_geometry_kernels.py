@@ -77,6 +77,12 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
     }
 
+    dynamic_shapes = {
+        "angular_samples": {0: "N_angular"},
+        "spatial_samples": {0: "N_spatial"},
+        "wavelength_samples": {0: "N_wavelength"},
+    }
+
     def apply(
         self,
         tf: HomMatrix,
@@ -195,6 +201,12 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         "angular_idx": IndexTensor,  # (N,) index of angular samples
         "spatial_idx": IndexTensor,  # (N,) index of spatial samples
         "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
+    }
+
+    dynamic_shapes = {
+        "angular_samples": {0: "N_angular"},
+        "spatial_samples": {0: "N_spatial"},
+        "wavelength_samples": {0: "N_wavelength"},
     }
 
     def apply(

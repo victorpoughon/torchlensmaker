@@ -63,6 +63,7 @@ class FunctionalKernel:
     inputs: dict[str, Type[KernelIOType]]
     params: dict[str, Type[KernelIOType]]
     outputs: dict[str, Type[KernelIOType]]
+    dynamic_shapes: dict[str, Any] | None = None
     forward_dtype_device: bool = (
         False  # true if the kernel forward() function takes dtype and device arguments
     )
@@ -105,6 +106,25 @@ def export_onnx(
         export_onnx_dynamo(model_path, kernel, dtype, device)
 
 
+def dynamo_dynamic_shapes(
+    names: list[str], dynamic_shapes: dict[str, Any]
+) -> dict[str, Any]:
+    "Prepare kernel dynamic shapes into the argument to the dynamo export function"
+
+    # Must have all input entries in the correct order
+    ret = {}
+    for name in names:
+        if name in dynamic_shapes:
+            ret[name] = dynamic_shapes[name]
+        else:
+            ret[name] = {}
+
+    # Kernel inputs are given as positional args,
+    # so we need to wrap dynamic_shapes in a dict with the "args" key
+    # this is not well documented in pytorch
+    return {"args": tuple(ret.values())}
+
+
 def export_onnx_dynamo(
     model_path: str, kernel: FunctionalKernel, dtype: torch.dtype, device: torch.device
 ) -> None:
@@ -128,6 +148,13 @@ def export_onnx_dynamo(
     flat_param_names = kernel_flat_names(kernel.params)
     flat_output_names = kernel_flat_names(kernel.outputs)
 
+    if kernel.dynamic_shapes is not None:
+        dynamic_shapes = dynamo_dynamic_shapes(
+            flat_input_names + flat_param_names, kernel.dynamic_shapes
+        )
+    else:
+        dynamic_shapes = None
+
     onnx_program = cast(
         ONNXProgram,
         torch.onnx.export(
@@ -135,6 +162,7 @@ def export_onnx_dynamo(
             example_inputs,
             input_names=flat_input_names + flat_param_names,
             output_names=flat_output_names,
+            dynamic_shapes=dynamic_shapes,
             opset_version=18,
             dynamo=True,
         ),
@@ -165,6 +193,8 @@ def export_onnx_legacy(
     flat_input_names = kernel_flat_names(kernel.inputs)
     flat_param_names = kernel_flat_names(kernel.params)
     flat_output_names = kernel_flat_names(kernel.outputs)
+
+    # TODO support dynamic_axes in legacy export
 
     torch.onnx.export(
         FuncModule(kernel_forward),
