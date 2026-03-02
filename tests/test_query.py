@@ -10,9 +10,9 @@ def test_query0():
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
+        tlm.RefractiveSurface(tlm.SphereByCurvature(diameter=25, C=1/-45.759), material="BK7"),
         tlm.Gap(3.419),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-24.887), material="air"),
+        tlm.RefractiveSurface(tlm.SphereByCurvature(diameter=25, C=1/-24.887), material="air"),
         tlm.Gap(97.5088),
         tlm.ImagePlane(50),
     )

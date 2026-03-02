@@ -23,9 +23,13 @@ def test_elements1():
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
+        tlm.RefractiveSurface(
+            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), material="BK7"
+        ),
         tlm.Gap(3.419),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-24.887), material="air"),
+        tlm.RefractiveSurface(
+            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), material="air"
+        ),
         tlm.Gap(97.5088),
         tlm.ImagePlane(50),
     )
@@ -50,12 +54,12 @@ def test_elements2():
         tlm.Rotate2D(-20),
         tlm.SubChain(
             tlm.Rotate2D(-A),
-            tlm.RefractiveSurface(tlm.CircularPlane(S), material="K5"),
+            tlm.RefractiveSurface(tlm.Disk(S), material="K5"),
         ),
         tlm.Gap(R),
         tlm.SubChain(
             tlm.Rotate2D(A),
-            tlm.RefractiveSurface(tlm.CircularPlane(S), material="air"),
+            tlm.RefractiveSurface(tlm.Disk(S), material="air"),
         ),
     )
 
@@ -72,7 +76,7 @@ def test_rainbow():
 
     # Use half spheres to model interface boundaries
     radius = 5
-    halfsphere = tlm.SphereR(diameter=2 * radius, R=radius)
+    halfsphere = tlm.SphereByRadius(diameter=2 * radius, R=radius)
 
     optics = tlm.Sequential(
         # Position the light source just above the optical axis
@@ -83,20 +87,16 @@ def test_rainbow():
         # Move the droplet of water some distance away from the source
         tlm.Gap(50),
         # First interface: half sphere (pointing left), refractive air to water
-        tlm.RefractiveSurface(
-            halfsphere, material="water", anchors=("extent", "extent")
-        ),
+        tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 1)), material="water"),
         # Second interface: half sphere (pointing right), reflective
         tlm.SubChain(
             tlm.Rotate((-180, 0)),
-            tlm.ReflectiveSurface(halfsphere, anchors=("extent", "extent")),
+            tlm.ReflectiveSurface(halfsphere.clone(anchors=(1, 1))),
         ),
         # Third interface: half sphere (pointing down), refractive water to air
         tlm.SubChain(
             tlm.Rotate((60, 0)),
-            tlm.RefractiveSurface(
-                halfsphere, material="air", anchors=("extent", "origin")
-            ),
+            tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 0)), material="air"),
         ),
     )
 
@@ -130,9 +130,13 @@ def test_elements3d():
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-45.759), material="BK7"),
+        tlm.RefractiveSurface(
+            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), material="BK7"
+        ),
         tlm.Gap(3.419),
-        tlm.RefractiveSurface(tlm.Sphere(diameter=25, R=-24.887), material="air"),
+        tlm.RefractiveSurface(
+            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), material="air"
+        ),
         tlm.Gap(97.5088),
         tlm.ImagePlane(50),
     )
@@ -147,12 +151,12 @@ def test_elements3d():
 def test_cooke():
     d1, d2 = 30, 25
 
-    r1 = tlm.Sphere(d1, 26.4)
-    r2 = tlm.Sphere(d1, -150.7)
-    r3 = tlm.Sphere(d2, -29.8)
-    r4 = tlm.Sphere(d2, 24.2)
-    r5 = tlm.Sphere(d1, 150.7)
-    r6 = tlm.Sphere(d1, -26.4)
+    r1 = tlm.SphereByCurvature(d1, 1 / 26.4)
+    r2 = tlm.SphereByCurvature(d1, 1 / -150.7)
+    r3 = tlm.SphereByCurvature(d2, 1 / -29.8)
+    r4 = tlm.SphereByCurvature(d2, 1 / 24.2)
+    r5 = tlm.SphereByCurvature(d1, 1 / 150.7)
+    r6 = tlm.SphereByCurvature(d1, 1 / -26.4)
 
     material1 = tlm.NonDispersiveMaterial(1.5108)
     material2 = tlm.NonDispersiveMaterial(1.6042)
@@ -184,15 +188,18 @@ def test_cooke():
 
 
 def test_nolens():
-    surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.02)) # y = a*x^2
+    surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.02))  # y = a*x^2
 
     optics = tlm.Sequential(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
         tlm.Gap(10),
-        tlm.RefractiveSurface(surface, material="water", anchors=("origin", "extent")),
+        tlm.RefractiveSurface(
+            surface.clone(anchors=(0, 1)), material="water"
+        ),
         tlm.Gap(2),
         tlm.RefractiveSurface(
-            surface, material="water", scale=-1, anchors=("extent", "origin")
+            surface.clone(anchors=(0, 1), scale=-1,),
+            material="water",
         ),
         tlm.Gap(50),
         tlm.FocalPoint(),
