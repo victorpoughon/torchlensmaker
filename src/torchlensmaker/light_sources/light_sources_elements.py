@@ -19,6 +19,8 @@ import torch.nn as nn
 
 from jaxtyping import Float
 
+from torchlensmaker.types import HomMatrix
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.core.dim import Dim
@@ -40,7 +42,6 @@ from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.materials.get_material_model import get_material_model
 
 
-# TODO make forward() not sequential
 class LightSourceBase(SequentialElement):
     def domain(self, dim: int) -> dict[str, list[float]]:
         raise NotImplementedError
@@ -48,8 +49,19 @@ class LightSourceBase(SequentialElement):
     def dim(self) -> Dim:
         raise NotImplementedError
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    def forward(self, tf: HomMatrix) -> RayBundle:
         raise NotImplementedError
+
+    def sequential(self, data: OpticalData) -> OpticalData:
+        rays = self(data.fk.direct)
+        return data.replace(
+            P=rays.P,
+            V=rays.V,
+            rays_wavelength=rays.wavel,
+            rays_index=rays.index,
+            rays_pupil=rays.pupil,
+            rays_field=rays.field,
+        )
 
 
 class GenericLightSource(LightSourceBase):
@@ -71,8 +83,8 @@ class GenericLightSource(LightSourceBase):
     def domain(self, dim: int) -> dict[str, list[float]]:
         return self.geometry.domain()
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        dtype, device = data.dtype, torch.device("cpu")  # TODO gpu support
+    def forward(self, tf: HomMatrix) -> RayBundle:
+        dtype, device = tf.dtype, tf.device
 
         # Compute pupil, field and wavelength samples
         pupil_samples = self.sampler_pupil(dtype, device)
@@ -90,7 +102,7 @@ class GenericLightSource(LightSourceBase):
             field_idx,
             wavel_idx,
         ) = self.geometry(
-            data.fk.direct,
+            tf,
             pupil_samples,
             field_samples,
             wavel_samples,
@@ -102,13 +114,16 @@ class GenericLightSource(LightSourceBase):
         # Compute refraction index with material model
         R = self.material(wavel_coords)
 
-        return data.replace(
+        return RayBundle.create(
             P=P,
             V=V,
-            rays_wavelength=wavel_coords,
-            rays_index=R,
-            rays_pupil=pupil_coords,
-            rays_field=field_coords,
+            pupil=pupil_coords,
+            field=field_coords,
+            wavel=wavel_coords,
+            index=R,
+            pupil_idx=pupil_idx,
+            field_idx=field_idx,
+            wavel_idx=wavel_idx,
         )
 
 
@@ -369,11 +384,12 @@ class MixedDimLightSource(LightSourceBase):
     def dim(self) -> Dim:
         return Dim.MIXED
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        if data.dim == 2:
-            return self.module_2d(data)
+    def forward(self, tf: HomMatrix) -> RayBundle:
+        dim = tf.shape[0] - 1
+        if dim == 2:
+            return self.module_2d(tf)
         else:
-            return self.module_3d(data)
+            return self.module_3d(tf)
 
 
 class Object(MixedDimLightSource):

@@ -93,7 +93,6 @@ class RayBundle(TensorDict):
         batch_size = kwargs["P"].shape[0]
         self = cls(**kwargs, batch_size=batch_size)
 
-        assert self.batch_size.numel() == 1
         assert self.pupil_idx.dtype == torch.int64
         assert self.field_idx.dtype == torch.int64
         assert self.wavel_idx.dtype == torch.int64
