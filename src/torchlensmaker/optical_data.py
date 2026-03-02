@@ -18,12 +18,10 @@ from typing import Any, Optional
 from dataclasses import dataclass, replace
 
 import torch
-from jaxtyping import Float
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.types import Tf, BatchTensor, MaskTensor, BatchNDTensor, MissMode
+from torchlensmaker.types import Tf
 from torchlensmaker.core.tensor_manip import (
-    filter_optional_tensor,
     filter_optional_mask,
 )
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -81,25 +79,6 @@ class OpticalData:
         update(self.rays.wavel, "wavelength")
 
         return d
-
-# TODO move to raybundle
-# find a name for propagate but for V
-def propagate(
-    data: OpticalData,
-    t: BatchTensor,
-    valid: MaskTensor,
-    V: BatchNDTensor,
-    miss_mode: MissMode,
-) -> OpticalData:
-    if miss_mode == "absorb":
-        new_rays = data.rays.propagate_absorb(t, valid)
-        return data.replace(rays=new_rays.replace(V=V))
-
-    elif miss_mode == "pass":
-        new_rays = data.rays.propagate_pass(t, valid)
-        return data.replace(
-            rays=new_rays.replace(V=data.rays.V.masked_scatter(valid.unsqueeze(-1), V))
-        )
 
 
 def default_input(

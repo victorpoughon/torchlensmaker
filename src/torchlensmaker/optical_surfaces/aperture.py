@@ -42,7 +42,7 @@ class Aperture(SequentialElement):
 
         return data.replace(
             rays=new_rays,
-            fk=tf_next,  # correct but useless cause Aperture is only circular plane currently
+            fk=tf_next,  # correct but useless cause Aperture is only ever a disk currently
         )
 
     def reverse(self) -> Self:

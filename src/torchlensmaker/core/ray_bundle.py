@@ -108,9 +108,10 @@ class RayBundle(TensorDict):
         collision_points = self.points_at(t)
         return self[valid].replace(P=collision_points[valid])
 
-    def propagate_pass(self, t: BatchTensor, valid: MaskTensor) -> Self:
-        "Propagate rays by distance t, keeping non valid rays in the returned bundle"
-        collision_points = self.points_at(t)
-        return self.replace(
-            P=self.P.masked_scatter(valid.unsqueeze(-1), collision_points[valid])
-        )
+    def reorient(self, V: BatchNDTensor) -> Self:
+        "Reorient rays to a new direction"
+        return self.replace(V=V)
+
+    def reorient_absorb(self, V: BatchNDTensor, valid: MaskTensor) -> Self:
+        "Reorient rays to a new direction, removing non valid rays"
+        return self[valid].replace(V=V[valid])

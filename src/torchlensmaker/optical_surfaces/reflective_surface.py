@@ -18,28 +18,36 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, Self
-from torchlensmaker.types import BatchTensor, MaskTensor, BatchNDTensor, MissMode
-from torchlensmaker.optical_data import OpticalData, propagate
+from typing import Self
+from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 
 
 class ReflectiveSurface(SequentialElement):
-    def __init__(self, surface: nn.Module, miss_mode: MissMode = "absorb"):
+    def __init__(self, surface: nn.Module):
         super().__init__()
         self.surface = surface
         self.reflective_interface = ReflectiveInterface()
-        self._miss_mode = miss_mode
 
     def reverse(self) -> Self:
         # TODO make a copy, surface should be a module
         return self
 
     def forward(self, data: OpticalData) -> OpticalData:
-        t, normals, valid, fk_surface, fk_next = self.surface(data.rays.P, data.rays.V, data.fk)
-        reflected = self.reflective_interface(data.rays.V[valid], normals[valid])
+        # Raytrace with the surface
+        t, normals, valid_collision, fk_surface, fk_next = self.surface(
+            data.rays.P, data.rays.V, data.fk
+        )
 
-        propagated = propagate(data, t, valid, reflected, self._miss_mode)
+        # First step: propagate rays forward to their collision point
+        # This produces a new ray bundle, with possibly fewer rays
+        rays_step1 = data.rays.propagate_absorb(t, valid_collision)
+        normals = normals[valid_collision]
 
-        return propagated.replace(fk=fk_next)
+        #######
+
+        reflected = self.reflective_interface(rays_step1.V, normals)
+        rays_step2 = rays_step1.reorient(reflected)
+
+        return data.replace(rays=rays_step2, fk=fk_next)

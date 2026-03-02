@@ -98,24 +98,26 @@ class RefractiveSurfaceArtist(Artist):
         # Render joints
         rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
 
+        # TODO reenable
         # Render TIR absorbed rays
         # TODO make a ray type for it in tlmviewer
-        _, valid_refraction = collective.output_tree[module.refractive_interface]
-        tir_mask = torch.logical_and(~valid_refraction, collision_valid)
-        if module._tir_mode == "absorb" and tir_mask.sum() > 0:
-            collision_points = inputs.rays.points_at(t)
-            rays_tir = [
-                tlmviewer.render_rays(
-                    inputs.rays.P[tir_mask],
-                    collision_points[tir_mask],
-                    variables=inputs.ray_variables_dict(tir_mask),
-                    domain=collective.ray_variables_domains,
-                    default_color="pink",
-                    layer=tlmviewer.LAYER_VALID_RAYS,  # TODO remove layers
-                )
-            ]
-        else:
-            rays_tir = []
+        # _, valid_refraction = collective.output_tree[module.refractive_interface]
+        # tir_mask = torch.logical_and(~valid_refraction, collision_valid)
+        # if module._tir_mode == "absorb" and tir_mask.sum() > 0:
+        #     collision_points = inputs.rays.points_at(t)
+        #     rays_tir = [
+        #         tlmviewer.render_rays(
+        #             inputs.rays.P[tir_mask],
+        #             collision_points[tir_mask],
+        #             variables=inputs.ray_variables_dict(tir_mask),
+        #             domain=collective.ray_variables_domains,
+        #             default_color="pink",
+        #             layer=tlmviewer.LAYER_VALID_RAYS,  # TODO remove layers
+        #         )
+        #     ]
+        # else:
+        #     rays_tir = []
+        rays_tir = []
 
         return [rendered_surface] + rendered_rays + rendered_joints + rays_tir
 

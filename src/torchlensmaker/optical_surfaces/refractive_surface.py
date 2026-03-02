@@ -19,8 +19,9 @@ import torch
 import torch.nn as nn
 
 from typing import Self
-from torchlensmaker.types import MissMode, TIRMode
-from torchlensmaker.optical_data import OpticalData, propagate
+from torchlensmaker.types import TIRMode
+from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import RefractiveInterface
 from torchlensmaker.materials.get_material_model import (
@@ -34,14 +35,12 @@ class RefractiveSurface(SequentialElement):
         self,
         surface: nn.Module,
         material: str | MaterialModel,
-        miss_mode: MissMode = "absorb",
         tir_mode: TIRMode = "absorb",
     ):
         super().__init__()
         self.surface = surface
         self.refractive_interface = RefractiveInterface()
         self.material = get_material_model(material)
-        self._miss_mode = miss_mode
         self._tir_mode = tir_mode
 
     def reverse(self) -> Self:
@@ -49,29 +48,37 @@ class RefractiveSurface(SequentialElement):
         return self
 
     def forward(self, data: OpticalData) -> OpticalData:
-        # Compute indices of refraction
-        n1 = data.rays.index
-        n2 = self.material(data.rays.wavel)
-        assert n1.shape == n2.shape == (data.rays.P.shape[0],)
-
         # Raytrace with the surface
         t, normals, valid_collision, fk_surface, fk_next = self.surface(
             data.rays.P, data.rays.V, data.fk
         )
 
+        # First step: propagate rays forward to their collision point
+        # This produces a new ray bundle, with possibly fewer rays
+        rays_step1 = data.rays.propagate_absorb(t, valid_collision)
+        normals = normals[valid_collision]
+
+        ########
+
+        # Compute indices of refraction
+        n1 = rays_step1.index
+        n2 = self.material(rays_step1.wavel)
+        assert n1.shape == n2.shape == (rays_step1.batch_size)
+
         # Snell's law happens here
         # Compute refraction on the full frame rays (including non-colliding
         # rays), so that comparing the two valid masks is easier
         refracted, valid_refraction = self.refractive_interface(
-            data.rays.V, normals, n1, n2
+            rays_step1.V, normals, n1, n2
         )
 
         if self._tir_mode == "reflect":
-            valid = valid_collision
+            rays_step2 = rays_step1.reorient(refracted)
         else:
-            valid = torch.logical_and(valid_collision, valid_refraction)
+            rays_step2 = rays_step1.reorient_absorb(refracted, valid_refraction)
+            n2 = n2[valid_refraction]
 
-        propagated = propagate(data, t, valid, refracted[valid], self._miss_mode)
-        return propagated.replace(
-            rays=propagated.rays.replace(index=n2[valid]), fk=fk_next
-        )
+        # Apply the new index of refraction to the new bundle
+        rays_step3 = rays_step2.replace(index=n2)
+
+        return data.replace(rays=rays_step3, fk=fk_next)
