@@ -17,6 +17,14 @@
 from typing import TypeAlias, Sequence
 from jaxtyping import Float, Int
 import torch
+
+from torchlensmaker.types import (
+    BatchTensor,
+    Batch2DTensor,
+    Batch3DTensor,
+    ScalarTensor,
+    HomMatrix,
+)
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 from torchlensmaker.core.tensor_manip import (
@@ -25,8 +33,11 @@ from torchlensmaker.core.tensor_manip import (
 )
 
 from torchlensmaker.core.geometry import rotate_x_zy
-
-from torchlensmaker.types import BatchTensor, Batch2DTensor, Batch3DTensor, ScalarTensor
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    transform_rays,
+    hom_identity_3d,
+    hom_identity_2d,
+)
 
 
 class ObjectGeometry2DKernel(FunctionalKernel):
@@ -41,6 +52,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     """
 
     inputs = {
+        "tf": HomMatrix,  # kinematic direct transform applied to the light source
         "angular_samples": BatchTensor,  # (Na,) normalized [-1, 1] samples in the angular dimension
         "spatial_samples": BatchTensor,  # (Ns,) normalized [-1, 1] samples in the spatial dimension
         "wavelength_samples": BatchTensor,  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
@@ -63,6 +75,7 @@ class ObjectGeometry2DKernel(FunctionalKernel):
 
     def apply(
         self,
+        tf: HomMatrix,
         angular_samples: Float[torch.Tensor, " Na"],
         spatial_samples: Float[torch.Tensor, " Ns"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -100,6 +113,9 @@ class ObjectGeometry2DKernel(FunctionalKernel):
             (torch.cos(angular_coords_full), torch.sin(angular_coords_full)), dim=-1
         )
 
+        # Apply kinematic transform
+        P, V = transform_rays(tf, P, V)
+
         return (
             P,
             V,
@@ -111,11 +127,12 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
+        tf = hom_identity_2d(dtype, device).direct
         pupil_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
         field_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
         wavelength_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
 
-        return (pupil_samples, field_samples, wavelength_samples)
+        return (tf, pupil_samples, field_samples, wavelength_samples)
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
@@ -138,6 +155,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     """
 
     inputs = {
+        "tf": HomMatrix,  # kinematic direct transform applied to the light source
         "angular_samples": Batch2DTensor,  # (Np, 2) normalized [-1, 1] samples in the angular dimension
         "spatial_samples": Batch2DTensor,  # (Nf, 2) normalized [-1, 1] samples in the spatial dimension
         "wavelength_samples": BatchTensor,  # (Nw,) normalized [-1, 1] samples in the wavelength dimension
@@ -160,6 +178,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
 
     def apply(
         self,
+        tf: HomMatrix,
         angular_samples: Float[torch.Tensor, "Np 2"],
         spatial_samples: Float[torch.Tensor, "Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -200,6 +219,9 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         # Convert pupil to physical space by rotating the unit X vector
         V = rotate_x_zy(angular_coords_full)
 
+        # Apply kinematic transform
+        P, V = transform_rays(tf, P, V)
+
         return (
             P,
             V,
@@ -211,6 +233,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor, ...]:
+        tf = hom_identity_3d(dtype, device).direct
         pupil_samples = torch.tensor(
             [
                 [0, 0],
@@ -243,7 +266,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         )
         wavelength_samples = torch.linspace(-1, 1, 10, dtype=dtype, device=device)
 
-        return (pupil_samples, field_samples, wavelength_samples)
+        return (tf, pupil_samples, field_samples, wavelength_samples)
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device

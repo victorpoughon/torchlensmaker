@@ -39,8 +39,6 @@ from torchlensmaker.light_sources.source_geometry_elements import (
 from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.materials.get_material_model import get_material_model
 
-from torchlensmaker.kinematics.homogeneous_geometry import transform_rays
-
 
 # TODO make forward() not sequential
 class LightSourceBase(SequentialElement):
@@ -83,6 +81,7 @@ class GenericLightSource(LightSourceBase):
 
         # Compute rays with the object geometry
         P, V, W, pupil_coords, field_coords = self.geometry(
+            data.fk.direct,
             pupil_samples,
             field_samples,
             wavel_samples,
@@ -93,10 +92,6 @@ class GenericLightSource(LightSourceBase):
 
         # Compute refraction index with material model
         R = self.material(W)
-
-        # Apply kinematic transform
-        # TODO could move this into geometry kernel
-        P, V = transform_rays(data.fk.direct, P, V)
 
         return data.replace(
             P=P,

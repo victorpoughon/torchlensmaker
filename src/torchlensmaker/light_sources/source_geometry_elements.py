@@ -19,6 +19,7 @@ import torch.nn as nn
 
 from jaxtyping import Float
 
+from torchlensmaker.types import ScalarTensor, HomMatrix
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from .source_geometry_kernels import (
@@ -30,8 +31,8 @@ from .source_geometry_kernels import (
 class ObjectGeometry2D(nn.Module):
     def __init__(
         self,
-        beam_angular_size: Float[torch.Tensor, ""] | float,
-        object_diameter: Float[torch.Tensor, ""] | float,
+        beam_angular_size: ScalarTensor | float,
+        object_diameter: ScalarTensor | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -62,6 +63,7 @@ class ObjectGeometry2D(nn.Module):
 
     def forward(
         self,
+        tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np"],
         field_samples: Float[torch.Tensor, " Nf"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -73,6 +75,7 @@ class ObjectGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
     ]:
         P, V, W, psamples, fsamples = self.kernel.apply(
+            tf,
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
             wavelength_samples=wavelength_samples,
@@ -88,8 +91,8 @@ class ObjectGeometry2D(nn.Module):
 class ObjectAtInfinityGeometry2D(nn.Module):
     def __init__(
         self,
-        beam_diameter: Float[torch.Tensor, ""] | float,
-        angular_size: Float[torch.Tensor, ""] | float,
+        beam_diameter: ScalarTensor | float,
+        angular_size: ScalarTensor | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -120,6 +123,7 @@ class ObjectAtInfinityGeometry2D(nn.Module):
 
     def forward(
         self,
+        tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np"],
         field_samples: Float[torch.Tensor, " Nf"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -131,6 +135,7 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         Float[torch.Tensor, " N"],
     ]:
         P, V, W, angular_samples, spatial_samples = self.kernel.apply(
+            tf,
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
             wavelength_samples=wavelength_samples,
@@ -146,8 +151,8 @@ class ObjectAtInfinityGeometry2D(nn.Module):
 class ObjectGeometry3D(nn.Module):
     def __init__(
         self,
-        beam_angular_size: Float[torch.Tensor, ""] | float,
-        object_diameter: Float[torch.Tensor, ""] | float,
+        beam_angular_size: ScalarTensor | float,
+        object_diameter: ScalarTensor | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -174,6 +179,7 @@ class ObjectGeometry3D(nn.Module):
 
     def forward(
         self,
+        tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np 2"],
         field_samples: Float[torch.Tensor, " Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -185,6 +191,7 @@ class ObjectGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
     ]:
         P, V, W, psamples, fsamples = self.kernel.apply(
+            tf,
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
             wavelength_samples=wavelength_samples,
@@ -200,8 +207,8 @@ class ObjectGeometry3D(nn.Module):
 class ObjectAtInfinityGeometry3D(nn.Module):
     def __init__(
         self,
-        beam_diameter: Float[torch.Tensor, ""] | float,
-        angular_size: Float[torch.Tensor, ""] | float,
+        beam_diameter: ScalarTensor | float,
+        angular_size: ScalarTensor | float,
         wavelength: tuple[int | float, int | float] | int | float = 500,
     ):
         super().__init__()
@@ -228,6 +235,7 @@ class ObjectAtInfinityGeometry3D(nn.Module):
 
     def forward(
         self,
+        tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, "Np 2"],
         field_samples: Float[torch.Tensor, "Nf 2"],
         wavelength_samples: Float[torch.Tensor, " Nw"],
@@ -239,6 +247,7 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         Float[torch.Tensor, "N 2"],
     ]:
         P, V, W, angular_samples, spatial_samples = self.kernel.apply(
+            tf,
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
             wavelength_samples=wavelength_samples,
