@@ -80,7 +80,16 @@ class GenericLightSource(LightSourceBase):
         wavel_samples = self.sampler_wavelength(dtype, device)
 
         # Compute rays with the object geometry
-        P, V, W, pupil_coords, field_coords = self.geometry(
+        (
+            P,
+            V,
+            pupil_coords,
+            field_coords,
+            wavel_coords,
+            pupil_idx,
+            field_idx,
+            wavel_idx,
+        ) = self.geometry(
             data.fk.direct,
             pupil_samples,
             field_samples,
@@ -88,15 +97,15 @@ class GenericLightSource(LightSourceBase):
         )
 
         Nrays = P.shape[0]
-        assert W.shape == (Nrays,), W.shape
+        assert wavel_coords.shape == (Nrays,), wavel_coords.shape
 
         # Compute refraction index with material model
-        R = self.material(W)
+        R = self.material(wavel_coords)
 
         return data.replace(
             P=P,
             V=V,
-            rays_wavelength=W,
+            rays_wavelength=wavel_coords,
             rays_index=R,
             rays_pupil=pupil_coords,
             rays_field=field_coords,

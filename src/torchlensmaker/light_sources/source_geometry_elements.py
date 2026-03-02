@@ -19,7 +19,7 @@ import torch.nn as nn
 
 from jaxtyping import Float
 
-from torchlensmaker.types import ScalarTensor, HomMatrix
+from torchlensmaker.types import ScalarTensor, HomMatrix, IndexTensor
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from .source_geometry_kernels import (
@@ -66,26 +66,47 @@ class ObjectGeometry2D(nn.Module):
         tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np"],
         field_samples: Float[torch.Tensor, " Nf"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
+        wavel_samples: Float[torch.Tensor, " Nw"],
     ) -> tuple[
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
-        P, V, W, psamples, fsamples = self.kernel.apply(
+        (
+            P,
+            V,
+            angular_samples,
+            spatial_samples,
+            wavel_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        ) = self.kernel.apply(
             tf,
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
-            wavelength_samples=wavelength_samples,
+            wavelength_samples=wavel_samples,
             angular_diameter=torch.deg2rad(self.beam_angular_size),
             spatial_diameter=self.object_diameter,
             wavelength_lower=self.wavelength_lower,
             wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, torch.rad2deg(psamples), fsamples
+        return (
+            P,
+            V,
+            torch.rad2deg(angular_samples),
+            spatial_samples,
+            wavel_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        )
 
 
 class ObjectAtInfinityGeometry2D(nn.Module):
@@ -126,26 +147,47 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np"],
         field_samples: Float[torch.Tensor, " Nf"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
+        wavel_samples: Float[torch.Tensor, " Nw"],
     ) -> tuple[
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
-        P, V, W, angular_samples, spatial_samples = self.kernel.apply(
+        (
+            P,
+            V,
+            angular_samples,
+            spatial_samples,
+            wavel_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        ) = self.kernel.apply(
             tf,
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
-            wavelength_samples=wavelength_samples,
+            wavelength_samples=wavel_samples,
             angular_diameter=torch.deg2rad(self.angular_size),
             spatial_diameter=self.beam_diameter,
             wavelength_lower=self.wavelength_lower,
             wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, spatial_samples, torch.rad2deg(angular_samples)
+        return (
+            P,
+            V,
+            spatial_samples,
+            torch.rad2deg(angular_samples),
+            wavel_samples,
+            spatial_idx,
+            angular_idx,
+            wavelength_idx,
+        )
 
 
 class ObjectGeometry3D(nn.Module):
@@ -182,26 +224,47 @@ class ObjectGeometry3D(nn.Module):
         tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, " Np 2"],
         field_samples: Float[torch.Tensor, " Nf 2"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
+        wavel_samples: Float[torch.Tensor, " Nw"],
     ) -> tuple[
         Float[torch.Tensor, "N 3"],
         Float[torch.Tensor, "N 3"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
-        P, V, W, psamples, fsamples = self.kernel.apply(
+        (
+            P,
+            V,
+            angular_samples,
+            spatial_samples,
+            wavel_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        ) = self.kernel.apply(
             tf,
             angular_samples=pupil_samples,
             spatial_samples=field_samples,
-            wavelength_samples=wavelength_samples,
+            wavelength_samples=wavel_samples,
             angular_diameter=torch.deg2rad(self.beam_angular_size),
             spatial_diameter=self.object_diameter,
             wavelength_lower=self.wavelength_lower,
             wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, torch.rad2deg(psamples), fsamples
+        return (
+            P,
+            V,
+            torch.rad2deg(angular_samples),
+            spatial_samples,
+            wavel_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        )
 
 
 class ObjectAtInfinityGeometry3D(nn.Module):
@@ -238,23 +301,44 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         tf: HomMatrix,
         pupil_samples: Float[torch.Tensor, "Np 2"],
         field_samples: Float[torch.Tensor, "Nf 2"],
-        wavelength_samples: Float[torch.Tensor, " Nw"],
+        wavel_samples: Float[torch.Tensor, " Nw"],
     ) -> tuple[
         Float[torch.Tensor, "N 3"],
         Float[torch.Tensor, "N 3"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
-        P, V, W, angular_samples, spatial_samples = self.kernel.apply(
+        (
+            P,
+            V,
+            angular_samples,
+            spatial_samples,
+            wavelength_samples,
+            angular_idx,
+            spatial_idx,
+            wavelength_idx,
+        ) = self.kernel.apply(
             tf,
             angular_samples=field_samples,
             spatial_samples=pupil_samples,
-            wavelength_samples=wavelength_samples,
+            wavelength_samples=wavel_samples,
             angular_diameter=torch.deg2rad(self.angular_size),
             spatial_diameter=self.beam_diameter,
             wavelength_lower=self.wavelength_lower,
             wavelength_upper=self.wavelength_upper,
         )
 
-        return P, V, W, spatial_samples, torch.rad2deg(angular_samples)
+        return (
+            P,
+            V,
+            spatial_samples,
+            torch.rad2deg(angular_samples),
+            wavelength_samples,
+            spatial_idx,
+            angular_idx,
+            wavelength_idx,
+        )

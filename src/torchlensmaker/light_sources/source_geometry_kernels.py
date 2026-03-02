@@ -24,6 +24,7 @@ from torchlensmaker.types import (
     Batch3DTensor,
     ScalarTensor,
     HomMatrix,
+    IndexTensor,
 )
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 
@@ -68,9 +69,12 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     outputs = {
         "P": Batch2DTensor,  # (N, 2) rays origins
         "V": Batch2DTensor,  # (N, 2) rays direction
-        "W": BatchTensor,  # (N,) rays wavelength
-        "angular_coordinates": BatchTensor,  # (N,) rays angular coordinates
-        "spatial_coordinates": BatchTensor,  # (N,) rays spatial coordinates
+        "angular_coordinates": Batch2DTensor,  # (N,) rays angular coordinates
+        "spatial_coordinates": Batch2DTensor,  # (N,) rays spatial coordinates
+        "wavelength_coordinates": BatchTensor,  # (N,) rays wavelength
+        "angular_idx": IndexTensor,  # (N,) index of angular samples
+        "spatial_idx": IndexTensor,  # (N,) index of spatial samples
+        "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
     }
 
     def apply(
@@ -89,20 +93,31 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, " N"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
-        # pupil coordinates are the pupil samples over the beam angular size
+        # angular coordinates are the angular samples over the angular domain
         angular_coords = angular_samples * angular_diameter / 2
+        angular_idx = torch.arange(angular_samples.size(0))
 
-        # field coordinates are the field samples over the object diameter
+        # spatial coordinates are the spatial samples over the spatial domain
         spatial_coords = spatial_samples * spatial_diameter / 2
+        spatial_idx = torch.arange(spatial_samples.size(0))
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
+        wavel_idx = torch.arange(wavelength_samples.size(0))
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
-        spatial_coords_full, angular_coords_full, wavel_coords_full = meshgrid_flat(
-            spatial_coords, angular_coords, wavel_coords
+        angular_coords_full, spatial_coords_full, wavel_coords_full = meshgrid_flat(
+            angular_coords, spatial_coords, wavel_coords
+        )
+
+        # Same for indices
+        angular_idx_full, spatial_idx_full, wavel_idx_full = meshgrid_flat(
+            angular_idx, spatial_idx, wavel_idx
         )
 
         # Convert pupil and field to physical space
@@ -119,9 +134,12 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         return (
             P,
             V,
-            wavel_coords_full,
             angular_coords_full,
             spatial_coords_full,
+            wavel_coords_full,
+            angular_idx_full,
+            spatial_idx_full,
+            wavel_idx_full,
         )
 
     def example_inputs(
@@ -171,9 +189,12 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     outputs = {
         "P": Batch3DTensor,  # (N, 3) rays origins
         "V": Batch3DTensor,  # (N, 3) rays direction
-        "W": BatchTensor,  # (N,) rays wavelength
         "angular_coordinates": Batch2DTensor,  # (N, 2) rays angular coordinates
         "spatial_coordinates": Batch2DTensor,  # (N, 2) rays spatial coordinates
+        "wavelength_coordinates": BatchTensor,  # (N,) rays wavelength
+        "angular_idx": IndexTensor,  # (N,) index of angular samples
+        "spatial_idx": IndexTensor,  # (N,) index of spatial samples
+        "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
     }
 
     def apply(
@@ -192,20 +213,31 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         Float[torch.Tensor, " N"],
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
+        IndexTensor,
+        IndexTensor,
+        IndexTensor,
     ]:
         # pupil coordinates are the pupil samples over the beam angular size
         angular_coords = angular_samples * angular_diameter / 2
+        angular_idx = torch.arange(angular_samples.size(0))
 
         # field coordinates are the field samples over the object diameter
         spatial_coords = spatial_samples * spatial_diameter / 2
+        spatial_idx = torch.arange(spatial_samples.size(0))
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
+        wavel_idx = torch.arange(wavelength_samples.size(0))
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
-        spatial_coords_full, angular_coords_full, wavel_coords_full = meshgrid2d_flat3(
-            spatial_coords, angular_coords, wavel_coords
+        angular_coords_full, spatial_coords_full, wavel_coords_full = meshgrid2d_flat3(
+            angular_coords, spatial_coords, wavel_coords
+        )
+
+        # Same for indices
+        angular_idx_full, spatial_idx_full, wavel_idx_full = meshgrid2d_flat3(
+            angular_idx, spatial_idx, wavel_idx
         )
 
         # Convert field to physical space by adding X=0 to the YZ plane samples
@@ -225,9 +257,12 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         return (
             P,
             V,
-            wavel_coords_full,
             angular_coords_full,
             spatial_coords_full,
+            wavel_coords_full,
+            angular_idx_full,
+            spatial_idx_full,
+            wavel_idx_full,
         )
 
     def example_inputs(
