@@ -18,12 +18,14 @@ from pathlib import Path
 from itertools import chain
 
 import itertools
-from typing import TypeAlias
+from typing import TypeAlias, Type
 from dataclasses import is_dataclass
 import pytest
 
 import torch
 import onnxruntime
+
+from torchlensmaker.types import MaskTensor
 
 from torchlensmaker.core.functional_kernel import (
     export_onnx,
@@ -33,6 +35,28 @@ from torchlensmaker.core.functional_kernel import (
     kernel_flat_names,
     kernel_names,
 )
+
+
+def kernel_output_typecheck(
+    output: KernelIOType,
+    expected_type: Type[KernelIOType],
+    expected_float_dtype: torch.dtype,
+    expected_device: torch.device,
+):
+    if expected_type == MaskTensor:
+        assert output.dtype == torch.bool, (
+            f"Expected kernel output dtype bool, got {output.dtype}"
+        )
+    else:
+        # Floating point tensor types
+        # We could also check shapes here
+        assert output.dtype == expected_float_dtype, (
+            f"Expected kernel output dtype {expected_float_dtype}, got {output.dtype}"
+        )
+
+    assert output.device == expected_device, (
+        f"Expected kernel output dtype {expected_device}, got {output.device}"
+    )
 
 
 def check_kernels_example_inputs_and_params(
@@ -91,15 +115,11 @@ def check_kernels_eval(
         )
         assert expected_num_outputs == len(kernel_outputs)
 
-    # Check dtype and device
-    for actual in kernel_flat_io(kernel_outputs):
-        # either bool for masks, or the input dtype
-        assert actual.dtype == torch.bool or actual.dtype == dtype, (
-            f"Expected kernel output dtype {dtype}, got {actual.dtype}"
-        )
-        assert actual.device == device, (
-            f"Expected kernel output dtype {device}, got {actual.device}"
-        )
+    kernel_outputs_as_tuple = (kernel_outputs,) if not isinstance(kernel_outputs, tuple) else kernel_outputs
+
+    # Check output dtype and device
+    for actual, expected in zip(kernel_outputs_as_tuple, kernel.outputs.values()):
+        kernel_output_typecheck(actual, expected, dtype, device)
 
 
 def check_kernels_export_onnx(
@@ -156,7 +176,9 @@ def check_kernels_export_onnx(
     kernel_outputs = [t.numpy(force=True) for t in kernel_outputs_tensors]
 
     # Compare values, dtype, shape
-    for actual, expected, arg in zip(ort_outputs, kernel_outputs, kernel.outputs.items()):
+    for actual, expected, arg in zip(
+        ort_outputs, kernel_outputs, kernel.outputs.items()
+    ):
         assert actual.dtype == expected.dtype, (actual.dtype, expected.dtype)
         assert actual.shape == expected.shape, arg
         torch.testing.assert_close(actual, expected)
