@@ -175,6 +175,11 @@ def hom_scale(dim: int, scale: Float[torch.Tensor, ""]) -> Tf:
     return Tf(H, H_inv)
 
 
+def hom_target(tf: HomMatrix) -> torch.Tensor:
+    dim = tf.shape[0] - 1
+    return transform_points(tf, torch.zeros((dim,), dtype=tf.dtype))
+
+
 def kinematic_chain_append_2d(fk: Tf, joint: Tf) -> Tf:
     """
     Append a joint to a 2D forward kinematic chain

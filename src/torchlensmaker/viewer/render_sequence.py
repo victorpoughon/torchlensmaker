@@ -24,7 +24,7 @@ from torchlensmaker.optical_data import default_input
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
-from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
+from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface, SurfacePropagator
 from torchlensmaker.optical_surfaces.aperture import Aperture
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.optical_surfaces.image_plane import ImagePlane
@@ -45,13 +45,11 @@ from . import tlmviewer
 from .rendering import Artist
 from .artists import (
     SequentialArtist,
-    FocalPointArtist,
-    ReflectiveSurfaceArtist,
-    RefractiveSurfaceArtist,
     ForwardArtist,
     KinematicArtist,
-    ApertureArtist,
-    ImagePlaneArtist,
+    SurfacePropagatorArtist,
+    FocalPointArtist,
+    ray_variables_dict,
 )
 
 import json
@@ -77,10 +75,11 @@ default_artists: Dict[type, list[Artist]] = {
     FocalPoint: [FocalPointArtist()],
     Lens: [ForwardArtist(lambda mod: mod.sequence)],
     SubChain: [ForwardArtist(lambda mod: mod._sequential)],
-    ReflectiveSurface: [ReflectiveSurfaceArtist()],
-    RefractiveSurface: [RefractiveSurfaceArtist()],
-    Aperture: [ApertureArtist()],
-    ImagePlane: [ImagePlaneArtist()],
+    SurfacePropagator: [SurfacePropagatorArtist()],
+    RefractiveSurface: [ForwardArtist(lambda mod: mod.propagator)],
+    ReflectiveSurface: [ForwardArtist(lambda mod: mod.propagator)],
+    Aperture: [ForwardArtist(lambda mod: mod.propagator)],
+    ImagePlane: [ForwardArtist(lambda mod: mod.propagator)],
     KinematicElement: [KinematicArtist()],
 }
 
@@ -137,7 +136,7 @@ def render_sequence(
                 outputs.rays.P,
                 outputs.rays.V,
                 end,
-                variables=outputs.ray_variables_dict(),
+                variables=ray_variables_dict(outputs.rays),
                 domain=collective.ray_variables_domains,
                 default_color=tlmviewer.color_valid,
                 layer=tlmviewer.LAYER_OUTPUT_RAYS,

@@ -25,6 +25,8 @@ from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
 
+from .surface_propagator import SurfacePropagator
+
 
 def linear_magnification(
     field_coordinates: BatchTensor, image_coordinates: BatchTensor
@@ -40,7 +42,7 @@ def linear_magnification(
 
 class ImagePlane(SequentialElement):
     """
-    Linear magnification circular image plane
+    Linear magnification disk image plane
 
     Loss function with a target magnification:
         L = (target_magnification - current_magnification)**2 + sum(residuals**2)
@@ -55,7 +57,7 @@ class ImagePlane(SequentialElement):
         magnification: Optional[int | float | ScalarTensor] = None,
     ):
         super().__init__()
-        self.surface = Disk(diameter)
+        self.propagator = SurfacePropagator(Disk(diameter))
         self.magnification = (
             to_tensor(magnification) if magnification is not None else None
         )
@@ -65,8 +67,7 @@ class ImagePlane(SequentialElement):
             return data
 
         # Collision detection
-        t, _, valid_collision, _, _ = self.surface(data.rays.P, data.rays.V, data.fk)
-        collision_points = data.rays.points_at(t)
+        rays_propagated, _, _ = self.propagator(data.rays, data.fk)
 
         # TODO 2D only for now
         if data.dim == 3:
@@ -77,8 +78,9 @@ class ImagePlane(SequentialElement):
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
 
+        collision_points = rays_propagated.P
         rays_image = collision_points[:, 1]
-        rays_object = data.rays.field
+        rays_object = rays_propagated.field
 
         # Compute loss
         assert rays_object.shape == rays_image.shape, (

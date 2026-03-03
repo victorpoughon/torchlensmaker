@@ -19,35 +19,42 @@ import torch
 import torch.nn as nn
 
 from typing import Self
+from torchlensmaker.types import BatchNDTensor
 from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
+
+from .surface_propagator import SurfacePropagator
+
+
+class SurfaceReflector(nn.Module):
+    """
+    Implements reflection at a surface boundary to reorient a ray bundle
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.reflective_interface = ReflectiveInterface()
+
+    def forward(self, rays: RayBundle, normals: BatchNDTensor) -> RayBundle:
+        reflected = self.reflective_interface(rays.V, normals)
+        return rays.reorient(reflected)
 
 
 class ReflectiveSurface(SequentialElement):
     def __init__(self, surface: nn.Module):
         super().__init__()
         self.surface = surface
-        self.reflective_interface = ReflectiveInterface()
+        self.propagator = SurfacePropagator(surface)
+        self.reflector = SurfaceReflector()
 
     def reverse(self) -> Self:
         # TODO make a copy, surface should be a module
         return self
 
     def forward(self, data: OpticalData) -> OpticalData:
-        # Raytrace with the surface
-        t, normals, valid_collision, fk_surface, fk_next = self.surface(
-            data.rays.P, data.rays.V, data.fk
-        )
+        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk)
+        rays_reflected = self.reflector(rays_propagated, normals)
 
-        # First step: propagate rays forward to their collision point
-        # This produces a new ray bundle, with possibly fewer rays
-        rays_step1 = data.rays.propagate_absorb(t, valid_collision)
-        normals = normals[valid_collision]
-
-        #######
-
-        reflected = self.reflective_interface(rays_step1.V, normals)
-        rays_step2 = rays_step1.reorient(reflected)
-
-        return data.replace(rays=rays_step2, fk=fk_next)
+        return data.replace(rays=rays_reflected, fk=fk_next)

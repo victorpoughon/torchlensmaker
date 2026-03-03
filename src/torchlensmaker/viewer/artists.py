@@ -17,11 +17,16 @@
 import torch
 import torch.nn as nn
 
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_append,
     transform_points,
+    hom_target,
+)
+from torchlensmaker.core.tensor_manip import (
+    filter_optional_mask,
 )
 
 from . import tlmviewer
@@ -31,6 +36,32 @@ from .rendering import Artist
 
 Tensor = torch.Tensor
 
+# TODO remove
+def ray_variables_dict(
+    rays: RayBundle, valid: Optional[torch.Tensor] = None
+) -> dict[str, torch.Tensor]:
+    "Convert ray variables from to a dict of Tensors"
+    d = {}
+
+    def update(tensor: Optional[torch.Tensor], name: str) -> None:
+        # TODO this if check is temporary to avoid a divide by zero in tlmviewer
+        # ideally we would export all three variables allways, and tlmviewer
+        # handles correctly degenerate cases like PointSource which has all
+        # field coord = 0, or a single wavelength, etc.
+        if tensor.numel() > 0 and (tensor.max() - tensor.min()) > 1e-3:
+            d[name] = filter_optional_mask(tensor, valid)
+
+    # TODO no support for 2D colormaps in tlmviewer yet
+    # but base and object are 2D variables in 3D
+    # TODO tlmviewer: rename base/object to pupil/field
+    dim = rays.P.shape[-1]
+    if dim == 2:
+        update(rays.pupil, "base")
+        update(rays.field, "object")
+
+    update(rays.wavel, "wavelength")
+
+    return d
 
 class ForwardArtist(Artist):
     "Forward rendering to a subobject"
@@ -43,10 +74,10 @@ class ForwardArtist(Artist):
         return collective.render(self.getter(module))
 
 
-class ReflectiveSurfaceArtist(Artist):
+class SurfacePropagatorArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render module
-        inputs = collective.input_tree[module]
+        input_rays, input_tf = collective.input_tree[module]
         t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
 
         # Render surface
@@ -55,127 +86,21 @@ class ReflectiveSurfaceArtist(Artist):
 
         # Render rays
         rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.rays.P,
-            inputs.rays.V,
+            input_rays.P,
+            input_rays.V,
             t,
-            inputs.target()[0],
+            hom_target(input_tf.direct)[0],
             valid,
-            variables_hit=inputs.ray_variables_dict(valid),
-            variables_miss=inputs.ray_variables_dict(~valid),
+            variables_hit=ray_variables_dict(input_rays, valid),
+            variables_miss=ray_variables_dict(input_rays, ~valid),
             domain=collective.ray_variables_domains,
         )
 
         # Render joints
-        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
+        rendered_joints = tlmviewer.render_joint(input_tf.direct)
 
         return [rendered_surface] + rendered_rays + rendered_joints
 
-
-class RefractiveSurfaceArtist(Artist):
-    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        # Render module
-        inputs = collective.input_tree[module]
-        
-        ## little problem here, cannot reuse surface because it will mess up collective io tree
-        t, normals, collision_valid, fk_surface, fk_next = collective.output_tree[module.surface]
-
-        # Render surface
-        rendered_surface = module.surface.render()
-        rendered_surface["matrix"] = fk_surface.direct.tolist()
-
-        # Render rays
-        rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.rays.P,
-            inputs.rays.V,
-            t,
-            inputs.target()[0],
-            collision_valid,
-            variables_hit=inputs.ray_variables_dict(collision_valid),
-            variables_miss=inputs.ray_variables_dict(~collision_valid),
-            domain=collective.ray_variables_domains,
-        )
-
-        # Render joints
-        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
-
-        # TODO reenable
-        # Render TIR absorbed rays
-        # TODO make a ray type for it in tlmviewer
-        # _, valid_refraction = collective.output_tree[module.refractive_interface]
-        # tir_mask = torch.logical_and(~valid_refraction, collision_valid)
-        # if module._tir_mode == "absorb" and tir_mask.sum() > 0:
-        #     collision_points = inputs.rays.points_at(t)
-        #     rays_tir = [
-        #         tlmviewer.render_rays(
-        #             inputs.rays.P[tir_mask],
-        #             collision_points[tir_mask],
-        #             variables=inputs.ray_variables_dict(tir_mask),
-        #             domain=collective.ray_variables_domains,
-        #             default_color="pink",
-        #             layer=tlmviewer.LAYER_VALID_RAYS,  # TODO remove layers
-        #         )
-        #     ]
-        # else:
-        #     rays_tir = []
-        rays_tir = []
-
-        return [rendered_surface] + rendered_rays + rendered_joints + rays_tir
-
-
-class ApertureArtist(Artist):
-    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        # Render module
-        inputs = collective.input_tree[module]
-        t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
-
-        # Render surface
-        rendered_surface = module.surface.render()
-        rendered_surface["matrix"] = fk_surface.direct.tolist()
-
-        # Render rays
-        rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.rays.P,
-            inputs.rays.V,
-            t,
-            inputs.target()[0],
-            valid,
-            variables_hit=inputs.ray_variables_dict(valid),
-            variables_miss=inputs.ray_variables_dict(~valid),
-            domain=collective.ray_variables_domains,
-        )
-
-        # Render joints
-        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
-
-        return [rendered_surface] + rendered_rays + rendered_joints
-
-
-class ImagePlaneArtist(Artist):
-    def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        # Render module
-        inputs = collective.input_tree[module]
-        t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
-
-        # Render surface
-        rendered_surface = module.surface.render()
-        rendered_surface["matrix"] = fk_surface.direct.tolist()
-
-        # Render rays
-        rendered_rays = tlmviewer.render_hit_miss_rays(
-            inputs.rays.P,
-            inputs.rays.V,
-            t,
-            inputs.target()[0],
-            valid,
-            variables_hit=inputs.ray_variables_dict(valid),
-            variables_miss=inputs.ray_variables_dict(~valid),
-            domain=collective.ray_variables_domains,
-        )
-
-        # Render joints
-        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
-
-        return [rendered_surface] + rendered_rays + rendered_joints
 
 
 class FocalPointArtist(Artist):
@@ -188,7 +113,8 @@ class FocalPointArtist(Artist):
 
         # Render rays
         # Distance from ray origin P to target
-        dist = torch.linalg.vector_norm(inputs.rays.P - inputs.target(), dim=1)
+        target = hom_target(inputs.fk.direct)
+        dist = torch.linalg.vector_norm(inputs.rays.P - target, dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
@@ -197,7 +123,7 @@ class FocalPointArtist(Artist):
             inputs.rays.V,
             t,
             layer=tlmviewer.LAYER_VALID_RAYS,
-            variables=inputs.ray_variables_dict(),
+            variables=ray_variables_dict(inputs.rays),
             domain=collective.ray_variables_domains,
             default_color=tlmviewer.color_valid,
         )

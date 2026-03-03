@@ -25,24 +25,19 @@ from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_disk import Disk
 
+from .surface_propagator import SurfacePropagator
 
 class Aperture(SequentialElement):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
-        self.surface = Disk(diameter)
+        self.propagator = SurfacePropagator(Disk(diameter))
 
     def forward(self, data: OpticalData) -> OpticalData:
-        # Collision detection with the surface
-        t, _, valid_collision, tf_surface, tf_next = self.surface(
-            data.rays.P, data.rays.V, data.fk
-        )
-
-        # Keep colliding rays only
-        new_rays = data.rays.propagate_absorb(t, valid_collision)
+        rays_propagated, _, fk_next = self.propagator(data.rays, data.fk)
 
         return data.replace(
-            rays=new_rays,
-            fk=tf_next,  # correct but useless cause Aperture is only ever a disk currently
+            rays=rays_propagated,
+            fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
         )
 
     def reverse(self) -> Self:

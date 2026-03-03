@@ -51,6 +51,7 @@ class KinematicElement(SequentialElement):
         return data.replace(fk=fk)
 
 
+# TODO can be removed?
 class KinematicSequential(nn.Module):
     def __init__(self, *sequence: nn.Module):
         super().__init__()
