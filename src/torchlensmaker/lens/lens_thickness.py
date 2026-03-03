@@ -23,15 +23,9 @@ import torch.nn as nn
 
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity_2d,
     hom_translate_2d,
     kinematic_chain_append,
     transform_points,
-)
-from torchlensmaker.kinematics.kinematics_elements import (
-    KinematicSequential,
-    KinematicElement,
-    Translate2D,
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_data import default_input

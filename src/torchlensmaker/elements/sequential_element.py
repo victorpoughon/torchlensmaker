@@ -16,6 +16,7 @@
 
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
+from typing import Self
 
 
 class SequentialElement(nn.Module):
@@ -30,7 +31,7 @@ class SequentialElement(nn.Module):
         # default implementation just calls forward, can be overwritten
         return self(data)
 
-    def reverse(self) -> "SequentialElement":
+    def reverse(self) -> Self:
         raise NotImplementedError(
             f"reverse() method not implemented for type {type(self).__name__}"
         )

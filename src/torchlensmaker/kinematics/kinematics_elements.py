@@ -39,9 +39,6 @@ from .kinematics_kernels import (
     Gap3DKernel,
 )
 
-# TODO this is used for lens only
-from .homogeneous_geometry import kinematic_chain_append
-
 from torchlensmaker.elements.sequential_element import SequentialElement
 
 
@@ -49,18 +46,6 @@ class KinematicElement(SequentialElement):
     def sequential(self, data: OpticalData) -> OpticalData:
         fk = self(data.fk)
         return data.replace(fk=fk)
-
-
-# TODO can be removed?
-class KinematicSequential(nn.Module):
-    def __init__(self, *sequence: nn.Module):
-        super().__init__()
-        self.sequence = nn.ModuleList(sequence)
-
-    def forward(self, fk: Tf) -> Tf:
-        for mod in self.sequence:
-            fk = mod(fk)
-        return fk
 
 
 class Gap(KinematicElement):

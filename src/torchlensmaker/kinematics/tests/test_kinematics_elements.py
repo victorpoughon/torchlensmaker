@@ -40,7 +40,6 @@ from torchlensmaker.kinematics.kinematics_elements import (
     Gap,
     Rotate,
     Translate,
-    KinematicSequential,
 )
 
 
@@ -434,10 +433,18 @@ def test_elements_shared_parameter() -> None:
     Test sharing parameters between elements
     """
 
-    a = Gap(5.0, trainable=True)
-    b = Gap(x=a.x)
+    class Model(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.a = Gap(5.0, trainable=True)
+            self.b = Gap(x=self.a.x)
+        
+        def forward(self, tf):
+            tf = self.a(tf)
+            tf = self.b(tf)
+            return tf
 
-    seq = KinematicSequential(a, b)
+    model = Model()
 
-    assert len(list(seq.named_parameters())) == 1
-    assert a.x is b.x
+    assert len(list(model.named_parameters())) == 1
+    assert model.a.x is model.b.x

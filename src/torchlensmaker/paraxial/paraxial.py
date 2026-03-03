@@ -41,8 +41,8 @@ def equivalent_locus_2d(
         Pair solution to (Pa + ta * Va) + (Pb + tb * Vb) = 0
 
         To obtain actual collision points, do either of:
-            Pa + t[:, 0].unsqueeze(-1).expand_as(Va)*Va
-            Pb + -t[:, 1].unsqueeze(-1).expand_as(Vb)*Vb
+            Pa + t[:, 0].unsqueeze(-1)*Va
+            Pb + -t[:, 1].unsqueeze(-1)*Vb
     """
 
     # V is the (N, 2, 2) matrix such that Vt = P
@@ -85,7 +85,10 @@ def rear_principal_point(
     pupil_samples=30,
 ) -> Float[torch.Tensor, ""]:
     """
-    Compute rear principal point of a lens using a parabolic model
+    Rear principal point of a lens
+
+    Compute the rear principal point of a lens by fitting a parabolic model to
+    the equivalent refracting locus.
 
     Args:
         lens: the tlm.Lens model
@@ -112,11 +115,11 @@ def rear_principal_point(
     )
 
     # Evaluate the light source and the model to get output rays
-    inputs = source(tlm.default_input(dim=2))
+    inputs = source.sequential(tlm.default_input(dim=2))
     outputs = lens(inputs)
 
-    # Compute intersection locus of input and output rays
-    t = equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.P, outputs.V)
+    # Compute intersection locus of input and output ray bundles
+    t = equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
     collision_points = inputs.rays.points_at(t[:, 0])
 
     # Fit a parabola to the locus surface to obtain vertex
@@ -152,9 +155,9 @@ def rear_focal_point(
     inputs = source(tlm.default_input(dim=2))
     outputs = lens(inputs)
 
-    assert inputs.rays.P.shape == outputs.P.shape == (1, 2)
+    assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)
 
     # Compute output ray intersection with the optical axis
-    t = -outputs.P[:, 1] / outputs.V[:, 1]
+    t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
 
-    return outputs.P[:, 0] + t * outputs.V[:, 0]
+    return outputs.rays.P[:, 0] + t * outputs.rays.V[:, 0]

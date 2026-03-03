@@ -101,7 +101,7 @@ class RayBundle(TensorDict):
 
     def points_at(self, t: BatchTensor) -> BatchNDTensor:
         "Points on rays at parametric distance t"
-        return self.P + t.unsqueeze(-1).expand_as(self.V) * self.V
+        return self.P + t.unsqueeze(-1) * self.V
 
     def propagate_absorb(self, t: BatchTensor, valid: MaskTensor) -> Self:
         "Propagate rays by distance t, removing non valid rays"
