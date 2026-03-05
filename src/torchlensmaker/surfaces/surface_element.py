@@ -17,17 +17,21 @@
 from typing import Any
 import torch.nn as nn
 from typing import Self
-from torchlensmaker.types import Tf, BatchTensor, BatchNDTensor, MaskTensor, ScalarTensor
+from torchlensmaker.types import (
+    Tf,
+    BatchTensor,
+    BatchNDTensor,
+    MaskTensor,
+    ScalarTensor,
+)
+from torchlensmaker.core.base_module import BaseModule
 
 
-class SurfaceElement(nn.Module):
+class SurfaceElement(BaseModule):
     """
     Abstract base class for surfaces
     """
 
-    def clone(self, **overrides) -> Self:
-        raise NotImplementedError
-    
     def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
         """
         X coordinate of the surface at distance r from the optical axis. None if

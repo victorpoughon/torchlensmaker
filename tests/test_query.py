@@ -17,7 +17,7 @@ def test_query0():
         tlm.ImagePlane(50),
     )
 
-    optics.set_sampling2d(pupil=10, field=5, wavelength=3)
+    optics.set_sampling2d(pupil=10, field=5, wavel=3)
     outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
 
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)

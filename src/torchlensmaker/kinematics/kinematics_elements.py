@@ -63,7 +63,11 @@ class Gap(KinematicElement):
         self.x = init_param(self, "x", x, trainable)
         self.func2d = Gap2DKernel()
         self.func3d = Gap3DKernel()
-    
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(x=self.x, trainable=self.x.requires_grad)
+        return type(self)(**kwargs | overrides)
+
     def __repr__(self) -> str:
         return f"{self._get_name()}(x={self.x.item()})"
 
@@ -90,6 +94,14 @@ class Translate2D(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            x=self.x,
+            y=self.y,
+            trainable=(self.x.requires_grad, self.y.requires_grad),
+        )
+        return type(self)(**kwargs | overrides)
+
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
 
@@ -110,6 +122,13 @@ class TranslateVec2D(KinematicElement):
         super().__init__()
         self.func = Translate2DKernel()
         self.t = init_param(self, "t", t, trainable)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            t=self.t,
+            trainable=self.t.requires_grad,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
@@ -133,6 +152,19 @@ class Translate3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            x=self.x,
+            y=self.y,
+            z=self.z,
+            trainable=(
+                self.x.requires_grad,
+                self.y.requires_grad,
+                self.z.requires_grad,
+            ),
+        )
+        return type(self)(**kwargs | overrides)
+
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
@@ -155,6 +187,13 @@ class TranslateVec3D(KinematicElement):
         self.func = Translate3DKernel()
         self.t = init_param(self, "t", t, trainable)
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            t=self.t,
+            trainable=self.t.requires_grad,
+        )
+        return type(self)(**kwargs | overrides)
+
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
 
@@ -173,6 +212,13 @@ class Rotate2D(KinematicElement):
         super().__init__()
         self.func = Rotate2DKernel()
         self.theta = init_param(self, "theta", theta, trainable)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            theta=self.theta,
+            trainable=self.theta.requires_grad,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.theta)
@@ -193,6 +239,14 @@ class AbsolutePosition2D(KinematicElement):
         xt, yt = expand_bool_tuple(2, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            x=self.x,
+            y=self.y,
+            trainable=(self.x.requires_grad, self.y.requires_grad),
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
@@ -216,6 +270,19 @@ class AbsolutePosition3D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            x=self.x,
+            y=self.y,
+            z=self.z,
+            trainable=(
+                self.x.requires_grad,
+                self.y.requires_grad,
+                self.z.requires_grad,
+            ),
+        )
+        return type(self)(**kwargs | overrides)
+
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
@@ -235,6 +302,17 @@ class Rotate3D(KinematicElement):
         yt, zt = expand_bool_tuple(2, trainable)
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            y=self.y,
+            z=self.z,
+            trainable=(
+                self.y.requires_grad,
+                self.z.requires_grad,
+            ),
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.y, self.z)
@@ -259,6 +337,13 @@ class Rotate(KinematicElement):
         self.y = init_param(self, "y", y, yt)
         self.func2d = Rotate2DKernel()
         self.func3d = Rotate3DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            angles=torch.stack((self.z, self.y)),
+            trainable=(self.z.requires_grad, self.y.requires_grad),
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
@@ -286,6 +371,19 @@ class Translate(KinematicElement):
         self.z = init_param(self, "z", z, zt)
         self.func2d = Translate2DKernel()
         self.func3d = Translate3DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            x=self.x,
+            y=self.y,
+            z=self.z,
+            trainable=(
+                self.x.requires_grad,
+                self.y.requires_grad,
+                self.z.requires_grad,
+            ),
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:

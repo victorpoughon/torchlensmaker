@@ -33,13 +33,15 @@ class ObjectGeometry2D(nn.Module):
         self,
         beam_angular_size: ScalarTensor | float,
         object_diameter: ScalarTensor | float,
-        wavelength: tuple[int | float, int | float] | int | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
     ):
         super().__init__()
         self.beam_angular_size = to_tensor(beam_angular_size)
         self.object_diameter = to_tensor(object_diameter)
 
-        if isinstance(wavelength, (int, float)):
+        if isinstance(wavelength, torch.Tensor):
+            self.wavelength_lower, self.wavelength_upper = wavelength.unbind()
+        elif isinstance(wavelength, (int, float)):
             self.wavelength_lower = to_tensor(wavelength)
             self.wavelength_upper = to_tensor(wavelength)
         elif isinstance(wavelength, (tuple, list)):
@@ -114,13 +116,15 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         self,
         beam_diameter: ScalarTensor | float,
         angular_size: ScalarTensor | float,
-        wavelength: tuple[int | float, int | float] | int | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
     ):
         super().__init__()
         self.beam_diameter = to_tensor(beam_diameter)
         self.angular_size = to_tensor(angular_size)
 
-        if isinstance(wavelength, (int, float)):
+        if isinstance(wavelength, torch.Tensor):
+            self.wavelength_lower, self.wavelength_upper = wavelength.unbind()
+        elif isinstance(wavelength, (int, float)):
             self.wavelength_lower = to_tensor(wavelength)
             self.wavelength_upper = to_tensor(wavelength)
         elif isinstance(wavelength, (tuple, list)):
@@ -195,13 +199,15 @@ class ObjectGeometry3D(nn.Module):
         self,
         beam_angular_size: ScalarTensor | float,
         object_diameter: ScalarTensor | float,
-        wavelength: tuple[int | float, int | float] | int | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
     ):
         super().__init__()
         self.beam_angular_size = to_tensor(beam_angular_size)
         self.object_diameter = to_tensor(object_diameter)
 
-        if isinstance(wavelength, (int, float)):
+        if isinstance(wavelength, torch.Tensor):
+            self.wavelength_lower, self.wavelength_upper = wavelength.unbind()
+        elif isinstance(wavelength, (int, float)):
             self.wavelength_lower = to_tensor(wavelength)
             self.wavelength_upper = to_tensor(wavelength)
         elif isinstance(wavelength, (tuple, list)):
@@ -272,13 +278,15 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         self,
         beam_diameter: ScalarTensor | float,
         angular_size: ScalarTensor | float,
-        wavelength: tuple[int | float, int | float] | int | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
     ):
         super().__init__()
         self.beam_diameter = to_tensor(beam_diameter)
         self.angular_size = to_tensor(angular_size)
 
-        if isinstance(wavelength, (int, float)):
+        if isinstance(wavelength, torch.Tensor):
+            self.wavelength_lower, self.wavelength_upper = wavelength.unbind()
+        elif isinstance(wavelength, (int, float)):
             self.wavelength_lower = to_tensor(wavelength)
             self.wavelength_upper = to_tensor(wavelength)
         elif isinstance(wavelength, (tuple, list)):

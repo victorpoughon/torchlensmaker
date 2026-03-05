@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from jaxtyping import Float
+from typing import Self, Any
 import torch
 import torch.nn as nn
 
@@ -31,6 +32,9 @@ class Lens(SequentialElement):
     def __init__(self, *sequence: nn.Module):
         super().__init__()
         self.sequence = Sequential(*sequence)
+
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)(*self.sequence)
 
     def forward(self, data: OpticalData) -> OpticalData:
         return self.sequence(data)

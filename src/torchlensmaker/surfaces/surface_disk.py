@@ -17,7 +17,7 @@
 from functools import partial
 import torch
 import torch.nn as nn
-from typing import Any, cast
+from typing import Any, Self
 
 from torchlensmaker.types import (
     ScalarTensor,
@@ -140,12 +140,16 @@ class Disk(SurfaceElement):
         self.func2d = DiskSurfaceKernel(2)
         self.func3d = DiskSurfaceKernel(3)
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(diameter=self.diameter)
+        return type(self)(**kwargs | overrides)
+
     def forward(
         self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         return func.apply(P, V, tf, self.diameter)
-    
+
     def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
         return torch.zeros_like(r)
 

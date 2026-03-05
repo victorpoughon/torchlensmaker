@@ -18,10 +18,11 @@
 import torch
 import torch.nn as nn
 
-from typing import Self
+from typing import Self, Any
 from torchlensmaker.types import BatchNDTensor
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 
@@ -45,9 +46,16 @@ class SurfaceReflector(nn.Module):
 class ReflectiveSurface(SequentialElement):
     def __init__(self, surface: nn.Module):
         super().__init__()
-        self.surface = surface
         self.propagator = SurfacePropagator(surface)
         self.reflector = SurfaceReflector()
+
+    @property
+    def surface(self) -> SurfaceElement:
+        return self.propagator.surface
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(surface=self.surface)
+        return type(self)(**kwargs | overrides)
 
     def reverse(self) -> Self:
         # TODO make a copy, surface should be a module

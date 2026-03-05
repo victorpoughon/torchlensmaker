@@ -17,6 +17,7 @@
 import torch
 import torch.nn as nn
 
+from typing import Any, Self
 from jaxtyping import Float
 
 from torchlensmaker.types import HomMatrix
@@ -167,6 +168,23 @@ class Object(GenericLightSource):
             ),
         )
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            beam_angular_size=self.geometry_2d.beam_angular_size,
+            object_diameter=self.geometry_2d.object_diameter,
+            material=self.material,
+            wavelength=torch.stack(
+                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
+            ),
+            sampler_pupil_2d=self.sampler_pupil_2d,
+            sampler_field_2d=self.sampler_field_2d,
+            sampler_wavel_2d=self.sampler_wavel_2d,
+            sampler_pupil_3d=self.sampler_pupil_3d,
+            sampler_field_3d=self.sampler_field_3d,
+            sampler_wavel_3d=self.sampler_wavel_3d,
+        )
+        return type(self)(**kwargs | overrides)
+
     def dim(self) -> Dim:
         return Dim.MIXED
 
@@ -200,6 +218,23 @@ class ObjectAtInfinity(GenericLightSource):
                 beam_diameter, angular_size, wavelength
             ),
         )
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            beam_diameter=self.geometry_2d.beam_diameter,
+            angular_size=self.geometry_2d.angular_size,
+            material=self.material,
+            wavelength=torch.stack(
+                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
+            ),
+            sampler_pupil_2d=self.sampler_pupil_2d,
+            sampler_field_2d=self.sampler_field_2d,
+            sampler_wavel_2d=self.sampler_wavel_2d,
+            sampler_pupil_3d=self.sampler_pupil_3d,
+            sampler_field_3d=self.sampler_field_3d,
+            sampler_wavel_3d=self.sampler_wavel_3d,
+        )
+        return type(self)(**kwargs | overrides)
 
     def dim(self) -> Dim:
         return Dim.MIXED
@@ -236,6 +271,20 @@ class PointSource(GenericLightSource):
             ),
         )
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            beam_angular_size=self.geometry_2d.beam_angular_size,
+            material=self.material,
+            wavelength=torch.stack(
+                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
+            ),
+            sampler_pupil_2d=self.sampler_pupil_2d,
+            sampler_wavel_2d=self.sampler_wavel_2d,
+            sampler_pupil_3d=self.sampler_pupil_3d,
+            sampler_wavel_3d=self.sampler_wavel_3d,
+        )
+        return type(self)(**kwargs | overrides)
+
     def dim(self) -> Dim:
         return Dim.MIXED
 
@@ -271,6 +320,20 @@ class PointSourceAtInfinity(GenericLightSource):
             ),
         )
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            beam_diameter=self.geometry_2d.beam_diameter,
+            material=self.material,
+            wavelength=torch.stack(
+                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
+            ),
+            sampler_pupil_2d=self.sampler_pupil_2d,
+            sampler_wavel_2d=self.sampler_wavel_2d,
+            sampler_pupil_3d=self.sampler_pupil_3d,
+            sampler_wavel_3d=self.sampler_wavel_3d,
+        )
+        return type(self)(**kwargs | overrides)
+
     def dim(self) -> Dim:
         return Dim.MIXED
 
@@ -302,6 +365,17 @@ class RaySource(GenericLightSource):
                 wavelength=wavelength,
             ),
         )
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            material=self.material,
+            wavelength=torch.stack(
+                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
+            ),
+            sampler_wavel_2d=self.sampler_wavel_2d,
+            sampler_wavel_3d=self.sampler_wavel_3d,
+        )
+        return type(self)(**kwargs | overrides)
 
     def dim(self) -> Dim:
         return Dim.MIXED

@@ -23,8 +23,8 @@ class BaseModule(nn.Module):
     Base class for tlm modules
     """
 
-    def clone(self, **overrides) -> Self:
-        raise NotImplementedError
+    def clone(self, **overrides: Any) -> Self:
+        raise NotImplementedError(f"clone() not implemented for {type(self).__qualname__}")
     
 
 class MultiForwardModule(BaseModule):

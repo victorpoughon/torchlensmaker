@@ -16,7 +16,7 @@
 
 import torch
 
-
+from typing import Any, Self
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 
@@ -27,6 +27,9 @@ Tensor = torch.Tensor
 class FocalPoint(SequentialElement):
     def __init__(self) -> None:
         super().__init__()
+
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)()
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim = inputs.dim

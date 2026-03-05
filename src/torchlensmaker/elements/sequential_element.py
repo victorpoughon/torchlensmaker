@@ -15,11 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch.nn as nn
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.optical_data import OpticalData
 from typing import Self
 
 
-class SequentialElement(nn.Module):
+class SequentialElement(BaseModule):
     """
     Base class for sequential elements
 

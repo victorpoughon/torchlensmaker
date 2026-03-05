@@ -154,6 +154,9 @@ def check_kinematic_element_2d(
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_2d(tf_out, dtype, device)
 
+    # Check that element can be cloned
+    element.clone()
+
 
 def check_kinematic_element_3d(
     element: nn.Module,
@@ -172,6 +175,9 @@ def check_kinematic_element_3d(
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_3d(tf_out, dtype, device)
+    
+    # Check that element can be cloned
+    element.clone()
 
 
 def test_elements_2d() -> None:

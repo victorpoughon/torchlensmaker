@@ -130,6 +130,8 @@ def check_surface_module_2d(
     assert tf_surface.device == device
     assert tf_next.device == device
 
+    # Check that surface can be cloned
+    mod.clone()
 
 def check_surface_module_3d(
     mod: nn.Module,
@@ -163,6 +165,9 @@ def check_surface_module_3d(
     assert valid.device == device
     assert tf_surface.device == device
     assert tf_next.device == device
+
+    # Check that surface can be cloned
+    mod.clone()
 
 
 def test_sag_surfaces_modules_2d() -> None:

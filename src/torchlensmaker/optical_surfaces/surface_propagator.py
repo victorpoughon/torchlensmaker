@@ -29,7 +29,7 @@ class SurfacePropagator(nn.Module):
 
     def __init__(self, surface: nn.Module):
         super().__init__()
-        self.surface = surface
+        self.surface = surface.clone()
 
     def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, BatchNDTensor, Tf]:
         # Raytrace with the surface

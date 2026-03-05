@@ -11,7 +11,7 @@ def test_elements0():
         tlm.Gap(15),
     )
 
-    optics.set_sampling2d(pupil=10, field=5, wavelength=1)
+    optics.set_sampling2d(pupil=10, field=5, wavel=1)
     outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
@@ -34,7 +34,7 @@ def test_elements1():
         tlm.ImagePlane(50),
     )
 
-    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    optics.set_sampling2d(pupil=10, field=5, wavel=10)
     outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
@@ -65,7 +65,7 @@ def test_elements2():
 
     optics.to(dtype=torch.float64)
 
-    optics.set_sampling2d(wavelength=10)
+    optics.set_sampling2d(wavel=10)
     output = optics(tlm.default_input(dim=2, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
@@ -102,7 +102,7 @@ def test_rainbow():
 
     optics.to(dtype=torch.float64)
 
-    optics.set_sampling2d(pupil=3, field=2, wavelength=3)
+    optics.set_sampling2d(pupil=3, field=2, wavel=3)
     output = optics(tlm.default_input(dim=2, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
@@ -118,7 +118,7 @@ def test_elements3():
 
     optics.to(dtype=torch.float64)
 
-    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    optics.set_sampling2d(pupil=10, field=5, wavel=10)
     output = optics(tlm.default_input(dim=2, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
 
@@ -143,7 +143,7 @@ def test_elements3d():
 
     optics.to(dtype=torch.float64)
 
-    optics.set_sampling2d(pupil=10, field=5, wavelength=10)
+    optics.set_sampling2d(pupil=10, field=5, wavel=10)
     output = optics(tlm.default_input(dim=3, dtype=torch.float64))
     scene = tlm.render_sequence(optics, dim=3, dtype=torch.float64)
 
@@ -182,7 +182,7 @@ def test_cooke():
 
     tlm.show2d(optics, wavelength=3)
 
-    optics.set_sampling3d(pupil=100, wavelength=4)
+    optics.set_sampling3d(pupil=100, wavel=4)
     tlm.show3d(optics)
     # f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
 
@@ -193,17 +193,74 @@ def test_nolens():
     optics = tlm.Sequential(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
         tlm.Gap(10),
-        tlm.RefractiveSurface(
-            surface.clone(anchors=(0, 1)), material="water"
-        ),
+        tlm.RefractiveSurface(surface.clone(anchors=(0, 1)), material="water"),
         tlm.Gap(2),
         tlm.RefractiveSurface(
-            surface.clone(anchors=(0, 1), scale=-1,),
+            surface.clone(
+                anchors=(0, 1),
+                scale=-1,
+            ),
             material="water",
         ),
         tlm.Gap(50),
         tlm.FocalPoint(),
     )
+
+    tlm.show(optics, dim=2)
+    tlm.show(optics, dim=3)
+
+
+def test_surface_reuse() -> None:
+    surface = tlm.Parabola(diameter=15, A=-0.05)
+
+    optics = tlm.Sequential(
+        # tlm.PointSourceAtInfinity(beam_diameter=18.5),
+        tlm.Gap(10),
+        tlm.RefractiveSurface(surface, material="water"),
+        tlm.Gap(2),
+        tlm.RefractiveSurface(surface, material="water"),
+        tlm.Gap(1),
+        tlm.RefractiveSurface(surface, material="water"),
+        tlm.Gap(1),
+        tlm.RefractiveSurface(surface, material="water"),
+    )
+
+    tlm.show(optics, dim=2)
+    tlm.show(optics, dim=3)
+
+
+def test_elements_reuse() -> None:
+    surface = tlm.SphereByCurvature(10, 1 / 50)
+    material = tlm.NonDispersiveMaterial(1.5108)
+    lens = tlm.lenses.symmetric_singlet(surface, tlm.InnerGap(5.9), material=material)
+    gap = tlm.Gap(10)
+
+    manual_lens = tlm.Sequential(
+        tlm.RefractiveSurface(surface, material="water"),
+        tlm.Gap(2),
+        tlm.RefractiveSurface(surface, material="water"),
+    )
+
+    optics = tlm.Sequential(
+        # tlm.PointSourceAtInfinity(beam_diameter=18.5),
+        gap,
+        lens,
+        gap,
+        manual_lens,
+        gap,
+        manual_lens,
+        gap,
+        lens,
+        gap,
+        lens,
+    )
+
+    print(optics)
+
+    print(lens.inner_thickness())
+    print(lens.outer_thickness())
+    print(lens.minimal_diameter())
+    print(tlm.paraxial.rear_focal_point(lens, 500, 0.01))
 
     tlm.show(optics, dim=2)
     tlm.show(optics, dim=3)

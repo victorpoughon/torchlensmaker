@@ -17,7 +17,7 @@
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, Self
+from typing import Sequence, Optional, TypeAlias, Literal, Self, Any
 from torchlensmaker.types import BatchTensor, ScalarTensor
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.surfaces.surface_disk import Disk
@@ -61,6 +61,13 @@ class ImagePlane(SequentialElement):
         self.magnification = (
             to_tensor(magnification) if magnification is not None else None
         )
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            diameter=self.propagator.surface.diameter,
+            magnification=self.magnification,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
         if data.rays.V.shape[0] == 0:

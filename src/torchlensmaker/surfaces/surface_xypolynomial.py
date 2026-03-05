@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Sequence
+from typing import Any, Sequence, Self
 from jaxtyping import Float, Bool
 import torch
 import torch.nn as nn
@@ -186,6 +186,21 @@ class XYPolynomial(SurfaceElement):
         )
         self.func2d = XYPolynomialSurfaceKernel(num_iter, damping, tol)
         self.func3d = XYPolynomialSurfaceKernel(num_iter, damping, tol)
+    
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(
+            diameter=self.diameter,
+            C=self.C,
+            K=self.K,
+            coefficients=self.coefficients,
+            scale=self.scale,
+            trainable=self.C.requires_grad,
+            normalize=self.normalize,
+            num_iter=self.func2d.num_iter,
+            damping=self.func2d.damping,
+            tol=self.func2d.tol,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

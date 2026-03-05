@@ -16,8 +16,10 @@
 
 import torch
 import torch.nn as nn
+from typing import Self, Any
 from jaxtyping import Float, Int
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from .sampling_kernels import (
@@ -31,10 +33,17 @@ from .sampling_kernels import (
 )
 
 
-class ZeroSampler1D(nn.Module):
+class SamplerElement(BaseModule):
+    pass
+
+
+class ZeroSampler1D(SamplerElement):
     def __init__(self):
         super().__init__()
         self.kernel = ZeroSampling1DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)()
 
     def forward(
         self, dtype: torch.dtype, device: torch.device
@@ -42,10 +51,13 @@ class ZeroSampler1D(nn.Module):
         return self.kernel.apply(dtype, device)
 
 
-class ZeroSampler2D(nn.Module):
+class ZeroSampler2D(SamplerElement):
     def __init__(self):
         super().__init__()
         self.kernel = ZeroSampling2DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)()
 
     def forward(
         self, dtype: torch.dtype, device: torch.device
@@ -53,12 +65,16 @@ class ZeroSampler2D(nn.Module):
         return self.kernel.apply(dtype, device)
 
 
-class ExactSampler1D(nn.Module):
+class ExactSampler1D(SamplerElement):
     def __init__(self, samples: Float[torch.Tensor, " N"]):
         super().__init__()
         self.samples = samples
         self.kernel = ExactSampling1DKernel()
 
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(samples=self.samples)
+        return type(self)(**kwargs | overrides)
+
     def __repr__(self) -> str:
         return f"{self._get_name()}(samples=<tensor of shape {self.samples.shape}>)"
 
@@ -68,11 +84,15 @@ class ExactSampler1D(nn.Module):
         return self.kernel.apply(self.samples, dtype, device)
 
 
-class ExactSampler2D(nn.Module):
+class ExactSampler2D(SamplerElement):
     def __init__(self, samples: Float[torch.Tensor, "N 2"]):
         super().__init__()
         self.samples = samples
         self.kernel = ExactSampling2DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(samples=self.samples)
+        return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(samples=<tensor of shape {self.samples.shape}>)"
@@ -83,11 +103,15 @@ class ExactSampler2D(nn.Module):
         return self.kernel.apply(self.samples, dtype, device)
 
 
-class LinspaceSampler1D(nn.Module):
+class LinspaceSampler1D(SamplerElement):
     def __init__(self, N: Int[torch.Tensor, ""] | int):
         super().__init__()
         self.N = to_tensor(N, default_dtype=torch.int64)
         self.kernel = LinspaceSampling1DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(N=self.N)
+        return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(N={self.N})"
@@ -98,7 +122,7 @@ class LinspaceSampler1D(nn.Module):
         return self.kernel.apply(self.N, dtype, device)
 
 
-class LinspaceSampler2D(nn.Module):
+class LinspaceSampler2D(SamplerElement):
     def __init__(
         self, Nx: Int[torch.Tensor, ""] | int, Ny: Int[torch.Tensor, ""] | int
     ):
@@ -106,6 +130,10 @@ class LinspaceSampler2D(nn.Module):
         self.Nx = to_tensor(Nx, default_dtype=torch.int64)
         self.Ny = to_tensor(Ny, default_dtype=torch.int64)
         self.kernel = LinspaceSampling2DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(Nx=self.Nx, Ny=self.Ny)
+        return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(Nx={self.Nx}, Ny={self.Ny})"
@@ -116,7 +144,7 @@ class LinspaceSampler2D(nn.Module):
         return self.kernel.apply(self.Nx, self.Ny, dtype, device)
 
 
-class DiskSampler2D(nn.Module):
+class DiskSampler2D(SamplerElement):
     def __init__(
         self, Nrho: Int[torch.Tensor, ""] | int, Ntheta: Int[torch.Tensor, ""] | int
     ):
@@ -124,6 +152,10 @@ class DiskSampler2D(nn.Module):
         self.Nrho = to_tensor(Nrho, default_dtype=torch.int64)
         self.Ntheta = to_tensor(Ntheta, default_dtype=torch.int64)
         self.kernel = DiskSampling2DKernel()
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs = dict(Nrho=self.Nrho, Ntheta=self.Ntheta)
+        return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(Nrho={self.Nrho}, Ntheta={self.Ntheta})"
