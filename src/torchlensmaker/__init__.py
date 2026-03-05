@@ -136,20 +136,10 @@ from torchlensmaker.elements.sequential import (
 )
 from torchlensmaker.light_sources.light_sources_elements import (
     RaySource,
-    RaySource2D,
-    RaySource3D,
     PointSourceAtInfinity,
-    PointSourceAtInfinity2D,
-    PointSourceAtInfinity3D,
     PointSource,
-    PointSource2D,
-    PointSource3D,
     ObjectAtInfinity,
-    ObjectAtInfinity2D,
-    ObjectAtInfinity3D,
     Object,
-    Object2D,
-    Object3D,
     LightSourceBase,
 )
 from torchlensmaker.light_sources.light_sources_query import (

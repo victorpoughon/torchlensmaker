@@ -63,14 +63,14 @@ class Sequential(nn.Sequential, SequentialElement):
         self,
         pupil: int | Sequence[float] | None = None,
         field: int | Sequence[float] | None = None,
-        wavelength: int | Sequence[float] | None = None,
+        wavel: int | Sequence[float] | None = None,
     ) -> None:
-        return set_sampling2d(self, pupil, field, wavelength)
+        return set_sampling2d(self, pupil, field, wavel)
 
     def set_sampling3d(
         self,
         pupil: int | Sequence[float] | None = None,
         field: int | Sequence[float] | None = None,
-        wavelength: int | Sequence[float] | None = None,
+        wavel: int | Sequence[float] | None = None,
     ) -> None:
-        return set_sampling3d(self, pupil, field, wavelength)
+        return set_sampling3d(self, pupil, field, wavel)

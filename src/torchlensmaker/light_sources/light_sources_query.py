@@ -50,28 +50,27 @@ def set_sampling2d(
     optics: nn.Module,
     pupil: int | Sequence[float] | None = None,
     field: int | Sequence[float] | None = None,
-    wavelength: int | Sequence[float] | None = None,
+    wavel: int | Sequence[float] | None = None,
 ) -> None:
     # Get light sources and filter by dim
     sources = get_elements_by_type(optics, GenericLightSource)
-    sources2d = [s for s in sources if s.dim() == Dim.TWO]
 
-    if len(sources2d) == 0:
+    if len(sources) == 0:
         return
 
-    if len(sources2d) > 1:
-        raise RuntimeError(f"Expected one 2D light source, got {len(sources2d)}")
+    if len(sources) > 1:
+        raise RuntimeError(f"Expected one light source, got {len(sources)}")
 
-    source = cast(GenericLightSource, sources2d[0])
+    source = cast(GenericLightSource, sources[0])
 
     if pupil:
-        source.sampler_pupil = init_sampler1d(pupil)
+        source.sampler_pupil_2d = init_sampler1d(pupil)
 
     if field:
-        source.sampler_field = init_sampler1d(field)
+        source.sampler_field_2d = init_sampler1d(field)
 
-    if wavelength:
-        source.sampler_wavelength = init_sampler1d(wavelength)
+    if wavel:
+        source.sampler_wavelength_2d = init_sampler1d(wavel)
 
 
 def init_sampler2d(value: int | Sequence[float]) -> nn.Module:
@@ -91,25 +90,24 @@ def set_sampling3d(
     optics: nn.Module,
     pupil: int | Sequence[float] | None = None,
     field: int | Sequence[float] | None = None,
-    wavelength: int | Sequence[float] | None = None,
+    wavel: int | Sequence[float] | None = None,
 ) -> None:
     # Get light sources and filter by dim
     sources = get_elements_by_type(optics, GenericLightSource)
-    sources3d = [s for s in sources if s.dim() == Dim.THREE]
 
-    if len(sources3d) == 0:
+    if len(sources) == 0:
         return
 
-    if len(sources3d) > 1:
-        raise RuntimeError(f"Expected one 3D light source, got {len(sources3d)}")
+    if len(sources) > 1:
+        raise RuntimeError(f"Expected one light source, got {len(sources)}")
 
-    source = cast(GenericLightSource, sources3d[0])
+    source = cast(GenericLightSource, sources[0])
 
     if pupil:
-        source.sampler_pupil = init_sampler2d(pupil)
+        source.sampler_pupil_3d = init_sampler2d(pupil)
 
     if field:
-        source.sampler_field = init_sampler2d(field)
+        source.sampler_field_3d = init_sampler2d(field)
 
-    if wavelength:
-        source.sampler_wavelength = init_sampler1d(wavelength)
+    if wavel:
+        source.sampler_wavelength_3d = init_sampler1d(wavel)

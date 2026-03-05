@@ -107,10 +107,10 @@ def rear_principal_point(
 
     # Get the lens minimal diameter and setup the light source
     mdiam = lens.minimal_diameter()
-    source = tlm.PointSourceAtInfinity2D(
+    source = tlm.PointSourceAtInfinity(
         alpha * mdiam,
-        sampler_pupil=tlm.LinspaceSampler1D(pupil_samples),
-        sampler_wavelength=tlm.ZeroSampler1D(),
+        sampler_pupil_2d=tlm.LinspaceSampler1D(pupil_samples),
+        sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=wavelength,
     )
 
@@ -148,7 +148,7 @@ def rear_focal_point(
 
     source = tlm.SubChain(
         tlm.Translate2D(y=h * mdiam),
-        tlm.RaySource2D(material="air", sampler_wavelength=tlm.ZeroSampler1D()),
+        tlm.RaySource(material="air", sampler_wavel_2d=tlm.ZeroSampler1D()),
     )
 
     # Evaluate the light source and the model to get output ray
