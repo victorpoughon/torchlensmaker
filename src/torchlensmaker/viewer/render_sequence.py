@@ -32,7 +32,7 @@ from torchlensmaker.optical_surfaces.image_plane import ImagePlane
 from torchlensmaker.lens.lens import Lens
 
 # from torchlensmaker.lenses import LensBase
-from torchlensmaker.core.full_forward import forward_tree
+from torchlensmaker.core.deep_forward import deep_forward
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
@@ -108,8 +108,9 @@ def render_sequence(
     if dtype is None:
         dtype = torch.get_default_dtype()
 
-    # Evaluate the model with forward_tree to keep all intermediate outputs
-    input_tree, output_tree = forward_tree(optics, default_input(dim, dtype))
+    # Evaluate the model with deep_forward to keep all intermediate outputs
+    with deep_forward(optics) as trace:
+        _ = optics(default_input(dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables_domains = get_domain(optics, dim)
@@ -118,8 +119,8 @@ def render_sequence(
     collective = Collective(
         {**default_artists, **extra_artists},
         ray_variables_domains,
-        input_tree,
-        output_tree,
+        trace.inputs,
+        trace.outputs,
     )
 
     # Initialize the scene

@@ -26,7 +26,7 @@ from torchlensmaker.core.base_module import MultiForwardModule
 @dataclass
 class DeepForwardContextManager:
     model: nn.Module
-    hooks: list[Any] = field(default_factory=list)
+    _hooks: list[Any] = field(default_factory=list)
     inputs: dict[nn.Module, tuple[torch.Tensor, ...]] = field(default_factory=dict)
     outputs: dict[nn.Module, tuple[torch.Tensor, ...]] = field(default_factory=dict)
 
@@ -47,11 +47,11 @@ class DeepForwardContextManager:
             self.outputs[mod] = outs
 
         for _, module in self.model.named_modules():
-            self.hooks.append(module.register_forward_hook(hook))
+            self._hooks.append(module.register_forward_hook(hook))
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-        for h in self.hooks:
+        for h in self._hooks:
             h.remove()
 
 

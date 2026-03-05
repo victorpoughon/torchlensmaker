@@ -29,7 +29,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_data import default_input
-from torchlensmaker.core.full_forward import forward_tree
+from torchlensmaker.core.deep_forward import deep_forward
 
 if TYPE_CHECKING:
     from .lens import Lens
@@ -44,9 +44,11 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
-    input_tree, output_tree = forward_tree(lens, default_input(2, dtype))
-    front_vertex_tf = output_tree[first_surface.surface][3]
-    rear_vertex_tf = output_tree[last_surface.surface][3]
+    with deep_forward(lens) as trace:
+        _ = lens(default_input(2, dtype))
+
+    front_vertex_tf = trace.outputs[first_surface.surface][3]
+    rear_vertex_tf = trace.outputs[last_surface.surface][3]
 
     root = torch.zeros((2,), dtype=dtype, device=device)
     front_vertex = transform_points(front_vertex_tf.direct, root)
@@ -72,9 +74,11 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
-    input_tree, output_tree = forward_tree(lens, default_input(2, dtype))
-    front_vertex_tf = output_tree[first_surface.surface][3]
-    rear_vertex_tf = output_tree[last_surface.surface][3]
+    with deep_forward(lens) as trace:
+        _ = lens(default_input(2, dtype))
+
+    front_vertex_tf = trace.outputs[first_surface.surface][3]
+    rear_vertex_tf = trace.outputs[last_surface.surface][3]
 
     # Append translation along X to include the surface outer edge extent
     zero = torch.zeros((), dtype=dtype, device=device)

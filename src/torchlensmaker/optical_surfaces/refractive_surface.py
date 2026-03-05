@@ -43,7 +43,7 @@ class SurfaceRefractor(nn.Module):
         tir_mode: TIRMode = "absorb",
     ):
         super().__init__()
-        self.material = get_material_model(material)
+        self.material = get_material_model(material).clone()
         self._tir_mode = tir_mode
         self.refractive_interface = RefractiveInterface()
 

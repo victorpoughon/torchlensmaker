@@ -16,8 +16,10 @@
 
 import torch
 import torch.nn as nn
+from typing import Self
 from jaxtyping import Float
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from .material_kernels import (
@@ -31,7 +33,7 @@ from .material_kernels import (
 # LinearSegmentedMaterial
 
 
-class MaterialModel(nn.Module):
+class MaterialModel(BaseModule):
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
@@ -43,7 +45,11 @@ class NonDispersiveMaterial(MaterialModel):
         super().__init__()
         self.n = to_tensor(n)
         self.kernel = NonDispersiveMaterialKernel()
-    
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(n=self.n)
+        return type(self)(**kwargs | overrides)
+
     def __repr__(self) -> str:
         return f"{self._get_name()}(n={self.n})"
 
@@ -67,6 +73,15 @@ class CauchyMaterial(MaterialModel):
         self.C = to_tensor(C)
         self.D = to_tensor(D)
         self.kernel = CauchyMaterialKernel()
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(
+            A=self.A,
+            B=self.B,
+            C=self.C,
+            D=self.D,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
@@ -92,6 +107,17 @@ class SellmeierMaterial(MaterialModel):
         self.C2 = to_tensor(C2)
         self.C3 = to_tensor(C3)
         self.kernel = SellmeierMaterialKernel()
+
+    def clone(self, **overrides) -> Self:
+        kwargs = dict(
+            B1=self.B1,
+            B2=self.B2,
+            B3=self.B3,
+            C1=self.C1,
+            C2=self.C2,
+            C3=self.C3,
+        )
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
