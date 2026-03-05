@@ -310,8 +310,7 @@ class SphereByRadius(SurfaceElement):
             scale=self.scale,
             trainable=self.R.requires_grad,
         )
-        kwargs.update(overrides)
-        return type(self)(**kwargs)
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

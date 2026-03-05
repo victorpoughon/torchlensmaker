@@ -189,8 +189,7 @@ class SphereByCurvature(SurfaceElement):
             damping=self.func2d.damping,
             tol=self.func2d.tol,
         )
-        kwargs.update(overrides)
-        return type(self)(**kwargs)
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

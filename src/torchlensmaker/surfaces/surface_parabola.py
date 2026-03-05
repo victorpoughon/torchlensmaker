@@ -187,8 +187,7 @@ class Parabola(SurfaceElement):
             damping=self.func2d.damping,
             tol=self.func2d.tol,
         )
-        kwargs.update(overrides)
-        return type(self)(**kwargs)
+        return type(self)(**kwargs | overrides)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
@@ -204,7 +203,7 @@ class Parabola(SurfaceElement):
             self.scale,
             self.normalize,
         )
-    
+
     def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
         extent, _ = parabolic_sag_2d(r, self.A)
         return extent
