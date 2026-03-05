@@ -27,6 +27,8 @@ def test_lens_thickness() -> None:
         tlm.SphereByCurvature(diameter=30, C=1/55),
         material="BK7",
     )
+
+    print(lens1)
     
     print("Lens inner thickness", lens1.inner_thickness().item())
     print("Lens outer thickness", lens1.outer_thickness())

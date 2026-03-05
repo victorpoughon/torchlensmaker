@@ -19,11 +19,11 @@ import torch.nn as nn
 
 from typing import Sequence, Optional, TypeAlias, Literal, Self, Any
 from torchlensmaker.types import BatchTensor, ScalarTensor
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.surfaces.surface_disk import Disk
 
 from torchlensmaker.optical_data import OpticalData
-from torchlensmaker.elements.sequential import SequentialElement
 
 from .surface_propagator import SurfacePropagator
 
@@ -40,7 +40,7 @@ def linear_magnification(
     return mag, residuals
 
 
-class ImagePlane(SequentialElement):
+class ImagePlane(BaseModule):
     """
     Linear magnification disk image plane
 
@@ -108,3 +108,6 @@ class ImagePlane(SequentialElement):
             rays=data.rays.replace(image=rays_image),
             loss=loss,
         )
+
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return self(data)

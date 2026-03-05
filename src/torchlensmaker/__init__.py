@@ -132,7 +132,6 @@ from torchlensmaker.optical_surfaces.image_plane import ImagePlane, linear_magni
 from torchlensmaker.elements.sequential import (
     Sequential,
     SubChain,
-    SequentialElement,
 )
 from torchlensmaker.light_sources.light_sources_elements import (
     RaySource,

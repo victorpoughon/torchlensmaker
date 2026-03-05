@@ -39,12 +39,18 @@ from .kinematics_kernels import (
     Gap3DKernel,
 )
 
-from torchlensmaker.elements.sequential_element import SequentialElement
+from torchlensmaker.core.base_module import MultiForwardModule, multiforward
 
 
-class KinematicElement(SequentialElement):
+class KinematicElement(MultiForwardModule):
+    @multiforward
     def sequential(self, data: OpticalData) -> OpticalData:
-        fk = self(data.fk)
+        fk = self.kinematic_prograde(data.fk)
+        return data.replace(fk=fk)
+
+    @multiforward
+    def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+        fk = self.kinematic_retrograde(data.fk)
         return data.replace(fk=fk)
 
 
@@ -71,14 +77,15 @@ class Gap(KinematicElement):
     def __repr__(self) -> str:
         return f"{self._get_name()}(x={self.x.item()})"
 
-    def forward(self, fk: Tf) -> Tf:
-        if fk.shape[0] == 3:
-            return self.func2d.apply(fk, self.x)
-        else:
-            return self.func3d.apply(fk, self.x)
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
+        func = self.func2d if fk.pdim() == 2 else self.func3d
+        return func.apply(fk, self.x)
 
-    def reverse(self) -> Self:
-        return type(self)(-self.x.detach(), self.x.requires_grad)
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        func = self.func2d if fk.pdim() == 2 else self.func3d
+        return func.apply(fk, -self.x)
 
 
 class Translate2D(KinematicElement):
@@ -102,15 +109,13 @@ class Translate2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
 
-    def reverse(self) -> Self:
-        return type(self)(
-            -self.x.detach(),
-            -self.y.detach(),
-            (self.x.requires_grad, self.y.requires_grad),
-        )
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        return self.func.apply(fk, -self.x, -self.y)
 
 
 class TranslateVec2D(KinematicElement):
@@ -130,11 +135,13 @@ class TranslateVec2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
 
-    def reverse(self) -> Self:
-        return type(self)(-self.t.detach(), self.t.requires_grad)
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        return self.func.apply(fk, *torch.unbind(-self.t))
 
 
 class Translate3D(KinematicElement):
@@ -165,16 +172,13 @@ class Translate3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
-    def reverse(self) -> Self:
-        return type(self)(
-            -self.x.detach(),
-            -self.y.detach(),
-            -self.z.detach(),
-            (self.x.requires_grad, self.y.requires_grad, self.z.requires_grad),
-        )
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        return self.func.apply(fk, -self.x, -self.y, -self.z)
 
 
 class TranslateVec3D(KinematicElement):
@@ -194,11 +198,13 @@ class TranslateVec3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, *torch.unbind(self.t))
 
-    def reverse(self) -> Self:
-        return type(self)(-self.t.detach(), self.t.requires_grad)
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        return self.func.apply(fk, *torch.unbind(-self.t))
 
 
 class Rotate2D(KinematicElement):
@@ -220,11 +226,13 @@ class Rotate2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.theta)
 
-    def reverse(self) -> Self:
-        return type(self)(-self.theta.detach(), self.theta.requires_grad)
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        return self.func.apply(fk, -self.theta)
 
 
 class AbsolutePosition2D(KinematicElement):
@@ -248,11 +256,15 @@ class AbsolutePosition2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y)
 
-    def reverse(self) -> Self:
-        raise RuntimeError("AbsolutePosition2D kinematic element is not reversable")
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        raise RuntimeError(
+            "AbsolutePosition2D(): element is not reversable (cannot evaluate retrograde)"
+        )
 
 
 class AbsolutePosition3D(KinematicElement):
@@ -283,10 +295,12 @@ class AbsolutePosition3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.x, self.y, self.z)
 
-    def reverse(self) -> Self:
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
         raise RuntimeError("AbsolutePosition3D kinematic element is not reversable")
 
 
@@ -314,10 +328,14 @@ class Rotate3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         return self.func.apply(fk, self.y, self.z)
 
-    # TODO support reverse for 3D rotations
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        # TODO
+        raise NotImplementedError("TODO")
 
 
 class Rotate(KinematicElement):
@@ -345,11 +363,17 @@ class Rotate(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
             return self.func2d.apply(fk, self.z)
         else:
             return self.func3d.apply(fk, self.y, self.z)
+
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        # TODO
+        raise NotImplementedError("TODO")
 
 
 class Translate(KinematicElement):
@@ -385,8 +409,16 @@ class Translate(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    @multiforward
+    def kinematic_prograde(self, fk: Tf) -> Tf:
         if fk.shape[0] == 3:
             return self.func2d.apply(fk, self.x, self.y)
         else:
             return self.func3d.apply(fk, self.x, self.y, self.z)
+
+    @multiforward
+    def kinematic_retrograde(self, fk: Tf) -> Tf:
+        if fk.shape[0] == 3:
+            return self.func2d.apply(fk, self.x, self.y)
+        else:
+            return self.func3d.apply(fk, -self.x, -self.y, -self.z)

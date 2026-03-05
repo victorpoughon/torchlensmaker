@@ -20,15 +20,14 @@ import torch.nn as nn
 
 from typing import Self, Any
 from torchlensmaker.types import ScalarTensor
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.optical_data import OpticalData
-from torchlensmaker.elements.sequential import SequentialElement
-from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_disk import Disk
 
 from .surface_propagator import SurfacePropagator
 
 
-class Aperture(SequentialElement):
+class Aperture(BaseModule):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
         self.propagator = SurfacePropagator(Disk(diameter))
@@ -45,6 +44,6 @@ class Aperture(SequentialElement):
             fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
         )
 
-    def reverse(self) -> Self:
-        # TODO make a copy, surface should be a module
-        return self
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return self(data)
+

@@ -17,7 +17,7 @@
 import torch
 
 from typing import Any, Self
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
@@ -25,12 +25,15 @@ from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 Tensor = torch.Tensor
 
 
-class FocalPoint(SequentialElement):
+class FocalPoint(BaseModule):
     def __init__(self) -> None:
         super().__init__()
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
+    
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return self(data)
 
     def forward(self, inputs: OpticalData) -> OpticalData:
         dim = inputs.dim

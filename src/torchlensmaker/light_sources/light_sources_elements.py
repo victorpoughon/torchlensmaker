@@ -21,11 +21,11 @@ from typing import Any, Self
 from jaxtyping import Float
 
 from torchlensmaker.types import HomMatrix
+from torchlensmaker.core.dim import Dim
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 
-from torchlensmaker.core.dim import Dim
-from torchlensmaker.elements.sequential_element import SequentialElement
 
 from torchlensmaker.sampling.sampler_elements import (
     LinspaceSampler1D,
@@ -43,10 +43,11 @@ from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.materials.get_material_model import get_material_model
 
 
-class LightSourceBase(SequentialElement):
+class LightSourceBase(BaseModule):
     def domain(self, dim: int) -> dict[str, list[float]]:
         raise NotImplementedError
 
+    # TODO remove
     def dim(self) -> Dim:
         raise NotImplementedError
 

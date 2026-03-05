@@ -19,7 +19,8 @@ from typing import Self, Any
 import torch
 import torch.nn as nn
 
-from torchlensmaker.elements.sequential import SequentialElement, Sequential
+from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.optical_data import OpticalData
 from .lens_thickness import (
     lens_inner_thickness,
@@ -28,7 +29,7 @@ from .lens_thickness import (
 )
 
 
-class Lens(SequentialElement):
+class Lens(BaseModule):
     def __init__(self, *sequence: nn.Module):
         super().__init__()
         self.sequence = Sequential(*sequence)
@@ -38,6 +39,9 @@ class Lens(SequentialElement):
 
     def forward(self, data: OpticalData) -> OpticalData:
         return self.sequence(data)
+
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return self(data)
 
     def inner_thickness(self) -> Float[torch.Tensor, ""]:
         return lens_inner_thickness(self)

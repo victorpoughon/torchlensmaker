@@ -23,7 +23,7 @@ from torchlensmaker.types import TIRMode, Tf, BatchNDTensor
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.physics.physics_elements import RefractiveInterface
 from torchlensmaker.materials.get_material_model import (
     MaterialModel,
@@ -67,7 +67,7 @@ class SurfaceRefractor(nn.Module):
         return new_rays.replace(index=n2)
 
 
-class RefractiveSurface(SequentialElement):
+class RefractiveSurface(BaseModule):
     def __init__(
         self,
         surface: SurfaceElement,
@@ -98,9 +98,8 @@ class RefractiveSurface(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def reverse(self) -> Self:
-        # TODO make a copy, surface should be a module
-        return self
+    def sequential(self, data: OpticalData) -> OpticalData:
+        return self(data)
 
     def forward(self, data: OpticalData) -> OpticalData:
         rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk)

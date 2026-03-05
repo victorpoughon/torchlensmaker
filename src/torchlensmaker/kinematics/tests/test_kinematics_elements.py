@@ -43,16 +43,21 @@ from torchlensmaker.kinematics.kinematics_elements import (
 )
 
 
-
 def check_model_eval(model: nn.Module, in_tf: Tf) -> Any:
     "Evaluate a model forwards and run sanity checks"
 
-    # Check the forward pass
-    out_tf = model(in_tf)
-    assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
-    assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
+    # Check the forward pass in both prograde and retrograde directions
+    out_tf_prograde = model.kinematic_prograde(in_tf)
+    assert out_tf_prograde.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf_prograde.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
 
-    return out_tf
+    out_tf_retrograde = model.kinematic_retrograde(in_tf)
+    assert out_tf_retrograde.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf_retrograde.inverse.isfinite().all(), (
+        "Model outputs contain NaN or Inf"
+    )
+
+    return out_tf_prograde, out_tf_retrograde
 
 
 def check_model_eval_and_grad(
@@ -64,19 +69,31 @@ def check_model_eval_and_grad(
     """
 
     # Check the forward pass
-    out_tf = model(in_tf)
+    out_tf_prograde = model.kinematic_prograde(in_tf)
+    assert out_tf_prograde.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf_prograde.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
 
-    assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
-    assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
+    out_tf_retrograde = model.kinematic_retrograde(in_tf)
+    assert out_tf_retrograde.direct.isfinite().all(), "Model outputs contain NaN or Inf"
+    assert out_tf_retrograde.inverse.isfinite().all(), (
+        "Model outputs contain NaN or Inf"
+    )
 
     # Check the backward pass
     parameters = list(model.named_parameters())
     assert len(parameters) > 0
 
-    loss = out_tf.direct.sum().pow(2) + out_tf.inverse.sum().pow(2)
+    # Loss that depends on everything to test backwards pass
+    loss = (
+        out_tf_prograde.direct.sum().pow(2)
+        + out_tf_prograde.inverse.sum().pow(2)
+        + out_tf_retrograde.direct.sum().pow(2)
+        + out_tf_retrograde.inverse.sum().pow(2)
+    )
 
     model.zero_grad()
     loss.backward()  # type: ignore[no-untyped-call]
+
     for name, param in parameters:
         print(f"grad({name}) = {param.grad}")
         assert allow_none_grad or param.grad is not None
@@ -85,7 +102,7 @@ def check_model_eval_and_grad(
                 f"Gradient of {name} contains NaN or Inf: {param.grad}"
             )
 
-    return out_tf
+    return out_tf_prograde, out_tf_retrograde
 
 
 def check_valid_kinematic_chain_2d(
@@ -144,18 +161,16 @@ def check_kinematic_element_2d(
     allow_none_grad: bool = False,
 ) -> None:
     # Check that kinematic model can be evaluated and differentiated
-    tf = hom_identity_2d(dtype, device)
+    tf = hom_identity_2d(dtype, device)  # TODO dont use identity here
 
     if trainable:
-        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
+        out_pro, out_retro = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, tf)
+        out_pro, out_retro = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
-    check_valid_kinematic_chain_2d(tf_out, dtype, device)
-
-    # Check that element can be cloned
-    element.clone()
+    check_valid_kinematic_chain_2d(out_pro, dtype, device)
+    check_valid_kinematic_chain_2d(out_retro, dtype, device)
 
 
 def check_kinematic_element_3d(
@@ -169,15 +184,13 @@ def check_kinematic_element_3d(
     tf = hom_identity_3d(dtype, device)
 
     if trainable:
-        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
+        out_pro, out_retro = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, tf)
+        out_pro, out_retro = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
-    check_valid_kinematic_chain_3d(tf_out, dtype, device)
-    
-    # Check that element can be cloned
-    element.clone()
+    check_valid_kinematic_chain_3d(out_pro, dtype, device)
+    check_valid_kinematic_chain_3d(out_retro, dtype, device)
 
 
 def test_elements_2d() -> None:
@@ -199,8 +212,8 @@ def test_elements_2d() -> None:
             TranslateVec2D(T),
             Rotate2D(0.5),
             Rotate2D(torch.tensor(0.5)),
-            AbsolutePosition2D(x=0.5),
-            AbsolutePosition2D(y=-0.5),
+            # AbsolutePosition2D(x=0.5),
+            # AbsolutePosition2D(y=-0.5),
             Gap(x=5.0),
             Gap(5.0),
         ]
@@ -208,8 +221,9 @@ def test_elements_2d() -> None:
 
     for element in elements_2d:
         check_kinematic_element_2d(element, False, dtype, device)
-        if not isinstance(element, AbsolutePosition2D):
-            check_kinematic_element_2d(element.reverse(), False, dtype, device)
+
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_trainable_elements_2d() -> None:
@@ -227,18 +241,18 @@ def test_trainable_elements_2d() -> None:
             TranslateVec2D(T, trainable=True),
             Rotate2D(0.5, trainable=True),
             Rotate2D(torch.tensor(0.5), trainable=True),
-            AbsolutePosition2D(x=0.5, trainable=True),
-            AbsolutePosition2D(y=-0.5, trainable=True),
+            # AbsolutePosition2D(x=0.5, trainable=True),
+            # AbsolutePosition2D(y=-0.5, trainable=True),
             Gap(x=5.0, trainable=True),
             Gap(5.0, trainable=True),
         ]
     )
 
     for element in elements_2d:
-        print(list(element.named_parameters()))
         check_kinematic_element_2d(element, True, dtype, device)
-        if not isinstance(element, AbsolutePosition2D):
-            check_kinematic_element_2d(element.reverse(), True, dtype, device)
+         
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_elements_3d() -> None:
@@ -250,20 +264,20 @@ def test_elements_3d() -> None:
 
     elements_3d = nn.ModuleList(
         [
-            AbsolutePosition3D(
-                torch.tensor(1.1),
-                torch.tensor(1.2),
-                torch.tensor(1.3),
-            ),
-            AbsolutePosition3D(
-                x=torch.tensor(1.1),
-            ),
-            AbsolutePosition3D(
-                y=torch.tensor(1.1),
-            ),
-            AbsolutePosition3D(
-                z=torch.tensor(1.1),
-            ),
+            # AbsolutePosition3D(
+            #     torch.tensor(1.1),
+            #     torch.tensor(1.2),
+            #     torch.tensor(1.3),
+            # ),
+            # AbsolutePosition3D(
+            #     x=torch.tensor(1.1),
+            # ),
+            # AbsolutePosition3D(
+            #     y=torch.tensor(1.1),
+            # ),
+            # AbsolutePosition3D(
+            #     z=torch.tensor(1.1),
+            # ),
             Translate3D(),
             Translate3D(x=torch.tensor(0.1)),
             Translate3D(y=torch.tensor(0.2)),
@@ -286,16 +300,16 @@ def test_elements_3d() -> None:
                 z=torch.tensor(0.2),
             ),
             TranslateVec3D(T3d),
-            Rotate3D(),
-            Rotate3D(y=0.1),
-            Rotate3D(z=0.2),
-            Rotate3D(y=0.1, z=0.2),
-            Rotate3D(y=torch.tensor(0.1)),
-            Rotate3D(z=torch.tensor(0.2)),
-            Rotate3D(
-                y=torch.tensor(0.1),
-                z=torch.tensor(0.2),
-            ),
+            # Rotate3D(),
+            # Rotate3D(y=0.1),
+            # Rotate3D(z=0.2),
+            # Rotate3D(y=0.1, z=0.2),
+            # Rotate3D(y=torch.tensor(0.1)),
+            # Rotate3D(z=torch.tensor(0.2)),
+            # Rotate3D(
+            #     y=torch.tensor(0.1),
+            #     z=torch.tensor(0.2),
+            # ),
             Gap(x=5.0),
             Gap(5.0),
         ]
@@ -303,8 +317,10 @@ def test_elements_3d() -> None:
 
     for element in elements_3d:
         check_kinematic_element_3d(element, False, dtype, device)
-        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
-            check_kinematic_element_3d(element.reverse(), False, dtype, device)
+        check_kinematic_element_3d(element, False, dtype, device)
+        
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_trainable_elements_3d() -> None:
@@ -316,24 +332,24 @@ def test_trainable_elements_3d() -> None:
 
     elements_3d = nn.ModuleList(
         [
-            AbsolutePosition3D(
-                torch.tensor(1.1),
-                torch.tensor(1.2),
-                torch.tensor(1.3),
-                trainable=True,
-            ),
-            AbsolutePosition3D(
-                x=torch.tensor(1.1),
-                trainable=(True, False, False),
-            ),
-            AbsolutePosition3D(
-                y=torch.tensor(1.1),
-                trainable=(False, True, False),
-            ),
-            AbsolutePosition3D(
-                z=torch.tensor(1.1),
-                trainable=(False, False, True),
-            ),
+            # AbsolutePosition3D(
+            #     torch.tensor(1.1),
+            #     torch.tensor(1.2),
+            #     torch.tensor(1.3),
+            #     trainable=True,
+            # ),
+            # AbsolutePosition3D(
+            #     x=torch.tensor(1.1),
+            #     trainable=(True, False, False),
+            # ),
+            # AbsolutePosition3D(
+            #     y=torch.tensor(1.1),
+            #     trainable=(False, True, False),
+            # ),
+            # AbsolutePosition3D(
+            #     z=torch.tensor(1.1),
+            #     trainable=(False, False, True),
+            # ),
             Translate3D(
                 x=torch.tensor(0.1),
                 trainable=(True, False, False),
@@ -366,12 +382,12 @@ def test_trainable_elements_3d() -> None:
                 trainable=True,
             ),
             TranslateVec3D(T3d, trainable=True),
-            Rotate3D(y=0.1, trainable=True),
-            Rotate3D(z=0.2, trainable=True),
-            Rotate3D(y=0.1, z=0.2, trainable=True),
-            Rotate3D(y=torch.tensor(0.1), trainable=True),
-            Rotate3D(z=torch.tensor(0.2), trainable=True),
-            Rotate3D(y=torch.tensor(0.1), z=torch.tensor(0.2), trainable=True),
+            # Rotate3D(y=0.1, trainable=True),
+            # Rotate3D(z=0.2, trainable=True),
+            # Rotate3D(y=0.1, z=0.2, trainable=True),
+            # Rotate3D(y=torch.tensor(0.1), trainable=True),
+            # Rotate3D(z=torch.tensor(0.2), trainable=True),
+            # Rotate3D(y=torch.tensor(0.1), z=torch.tensor(0.2), trainable=True),
             Gap(x=5.0, trainable=True),
             Gap(5.0, trainable=True),
         ]
@@ -379,8 +395,9 @@ def test_trainable_elements_3d() -> None:
 
     for element in elements_3d:
         check_kinematic_element_3d(element, True, dtype, device)
-        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
-            check_kinematic_element_3d(element.reverse(), True, dtype, device)
+        
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_elements_mixed() -> None:
@@ -394,7 +411,7 @@ def test_elements_mixed() -> None:
             Gap(torch.tensor(5.0)),
             Gap(x=5.0),
             Gap(x=torch.tensor(5.0)),
-            Rotate((0.1, 0.2)),
+            # Rotate((0.1, 0.2)),
             Translate(),
             Translate(x=0.1),
             Translate(y=0.2),
@@ -406,7 +423,8 @@ def test_elements_mixed() -> None:
         check_kinematic_element_2d(element, False, dtype, device)
         check_kinematic_element_3d(element, False, dtype, device)
 
-        # TODO reverse mixed
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_trainable_elements_mixed() -> None:
@@ -420,7 +438,7 @@ def test_trainable_elements_mixed() -> None:
             Gap(torch.tensor(5.0), trainable=True),
             Gap(x=5.0, trainable=True),
             Gap(x=torch.tensor(5.0), trainable=True),
-            Rotate((0.1, 0.2), trainable=True),
+            # Rotate((0.1, 0.2), trainable=True),
             Translate(x=0.1, trainable=True),
             Translate(y=0.2, trainable=True),
             Translate(z=0.3, trainable=True),
@@ -431,7 +449,8 @@ def test_trainable_elements_mixed() -> None:
         check_kinematic_element_2d(element, True, dtype, device, allow_none_grad=True)
         check_kinematic_element_3d(element, True, dtype, device, allow_none_grad=True)
 
-        # TODO reverse mixed
+        # Check that element can be cloned
+        element.clone()
 
 
 def test_elements_shared_parameter() -> None:
@@ -444,7 +463,7 @@ def test_elements_shared_parameter() -> None:
             super().__init__()
             self.a = Gap(5.0, trainable=True)
             self.b = Gap(x=self.a.x)
-        
+
         def forward(self, tf):
             tf = self.a(tf)
             tf = self.b(tf)

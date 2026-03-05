@@ -22,7 +22,7 @@ from collections import OrderedDict
 import torch.nn as nn
 from torchlensmaker.optical_data import OpticalData
 
-from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.base_module import BaseModule, MultiForwardModule, multiforward
 from torchlensmaker.elements.utils import (
     get_elements_by_type,
 )
@@ -32,10 +32,8 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling3d,
 )
 
-from .sequential_element import SequentialElement
 
-
-class SubChain(SequentialElement):
+class SubChain(BaseModule):
     def __init__(self, *children: nn.Module):
         super().__init__()
         self._sequential = Sequential(*children)
@@ -43,6 +41,9 @@ class SubChain(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
     
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)
+
     def forward(self, inputs: OpticalData) -> OpticalData:
         output: OpticalData = self._sequential(inputs)
         return output.replace(fk=inputs.fk)
@@ -51,7 +52,7 @@ class SubChain(SequentialElement):
 _V = TypeVar("_V")
 
 
-class Sequential(SequentialElement):
+class Sequential(BaseModule):
     def __init__(self, *args: BaseModule):
         super().__init__()
         if len(args) == 1 and isinstance(args[0], OrderedDict):
@@ -85,22 +86,25 @@ class Sequential(SequentialElement):
     def __iter__(self) -> Iterator[BaseModule]:
         return iter(self._modules.values())
 
+    def __reversed__(self) -> Iterator[BaseModule]:
+        return reversed(self._modules.values())
+
     def forward(self, data: OpticalData) -> OpticalData:
         for module in self:
             data = module.sequential(data)
         return data
 
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)
+
+    # @multiforward
+    # def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+    #     for module in reversed(self):
+    #         data = module.forward_retrograde(data)
+    #     return data
+
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
-
-    def reverse(self) -> Self:
-        return type(self)(
-            OrderedDict(
-                reversed(
-                    list((name, mod.reverse()) for (name, mod) in self.named_children())
-                )
-            )
-        )
 
     def set_sampling2d(
         self,
