@@ -17,33 +17,37 @@
 import torch
 import torch.nn as nn
 
-from typing import Callable, Any, Self
+from typing import Any, Self
 from dataclasses import dataclass, field
+
+from torchlensmaker.core.base_module import MultiForwardModule
 
 
 @dataclass
 class DeepForwardContextManager:
     model: nn.Module
     hooks: list[Any] = field(default_factory=list)
-    inputs: dict[str, tuple[torch.Tensor, ...]] = field(default_factory=dict)
-    outputs: dict[str, tuple[torch.Tensor, ...]] = field(default_factory=dict)
+    inputs: dict[nn.Module, tuple[torch.Tensor, ...]] = field(default_factory=dict)
+    outputs: dict[nn.Module, tuple[torch.Tensor, ...]] = field(default_factory=dict)
 
     def __enter__(self) -> Self:
-        def make_hook(path: str) -> Any:
-            def hook(mod: nn.Module, ins: Any, outs: Any) -> None:
-                if isinstance(mod, MultiForwardModule):
-                    # For multiforward inputs, skip the first two arguments
-                    # which are there only to implement multiforward
-                    self.inputs[path] = ins[2] if len(ins) == 3 else ins[2:]
-                else:
-                    # Remove the wrapping tuple if there is only one input
-                    self.inputs[path] = ins[0] if len(ins) == 1 else ins
-                self.outputs[path] = outs
+        def hook(mod: nn.Module, ins: Any, outs: Any) -> None:
+            if mod in self.inputs or mod in self.outputs:
+                raise RuntimeError(
+                    f"deep_forward() error: model contains a duplicated module ({mod}) or multiple calls to the same module forward()"
+                )
 
-            return hook
+            if isinstance(mod, MultiForwardModule):
+                # For multiforward inputs, skip the first two arguments
+                # which are there only to implement multiforward
+                self.inputs[mod] = ins[2] if len(ins) == 3 else ins[2:]
+            else:
+                # Remove the wrapping tuple if there is only one input
+                self.inputs[mod] = ins[0] if len(ins) == 1 else ins
+            self.outputs[mod] = outs
 
-        for path, module in self.model.named_modules():
-            self.hooks.append(module.register_forward_hook(make_hook("." + path)))
+        for _, module in self.model.named_modules():
+            self.hooks.append(module.register_forward_hook(hook))
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
@@ -62,33 +66,15 @@ def deep_forward(model: nn.Module) -> DeepForwardContextManager:
         >     output = model(data)
         > trace.inputs[...]
         > trace.outputs[...]
-        
-    Keys of the returned object are the full qualified module path names with a leading dot.
+
+    Keys of the returned object are the modules
     Supports MultiForwardModule
 
     Args:
         model: PyTorch nn.Module to hook
-    
+
     Returns:
         DeepForwardContextManager object that contains all inputs and outputs
 
     """
     return DeepForwardContextManager(model)
-
-
-class MultiForwardModule(nn.Module):
-    """
-    Enable defining multiple forward functions with the @multiforward decorator
-    and still have hooks called correctly
-    """
-    def forward(
-        self, actual_forward: Callable[[Any], Any], *args: Any, **kwargs: Any
-    ) -> Any:
-        return actual_forward(*args, **kwargs)
-
-
-def multiforward(new_forward_func: Callable[[Any], Any]) -> Callable[[Any], Any]:
-    def wrapper(self: MultiForwardModule, *args: Any, **kwargs: Any) -> Any:
-        return self(new_forward_func, self, *args, **kwargs)
-
-    return wrapper
