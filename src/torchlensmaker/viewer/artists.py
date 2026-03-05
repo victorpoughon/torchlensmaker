@@ -108,7 +108,7 @@ class FocalPointArtist(Artist):
         inputs = collective.input_tree[module]
 
         # Render module
-        target = inputs.target().unsqueeze(0)
+        target = hom_target(inputs.fk.direct).unsqueeze(0)
         rendered_module = [tlmviewer.render_points(target, "red")]
 
         # Render rays

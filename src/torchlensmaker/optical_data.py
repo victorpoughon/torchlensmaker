@@ -22,10 +22,7 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.types import Tf
 
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity,
-    transform_points,
-)
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 
 
 @dataclass
@@ -43,12 +40,6 @@ class OpticalData:
     # Loss accumulator
     # Tensor of dim 0
     loss: torch.Tensor
-
-    # TODO remove
-    def target(self) -> torch.Tensor:
-        return transform_points(
-            self.fk.direct, torch.zeros((self.dim,), dtype=self.dtype)
-        )
 
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)

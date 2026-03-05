@@ -20,6 +20,7 @@ from typing import Any, Self
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 
+from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 
 Tensor = torch.Tensor
 
@@ -35,7 +36,7 @@ class FocalPoint(SequentialElement):
         dim = inputs.dim
         N = inputs.rays.P.shape[0]
 
-        X = inputs.target()
+        X = hom_target(inputs.fk.direct)
         P = inputs.rays.P
         V = inputs.rays.V
 
