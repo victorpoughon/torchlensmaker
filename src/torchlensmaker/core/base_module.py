@@ -24,17 +24,24 @@ class BaseModule(nn.Module):
     """
 
     def clone(self, **overrides: Any) -> Self:
-        raise NotImplementedError(f"clone() not implemented for {type(self).__qualname__}")
-    
+        raise NotImplementedError(
+            f"clone() not implemented for {type(self).__qualname__}"
+        )
+
 
 class MultiForwardModule(BaseModule):
     """
     Enable defining multiple forward functions with the @multiforward decorator
     and still have hooks called correctly
     """
+
     def forward(
         self, actual_forward: Callable[[Any], Any], *args: Any, **kwargs: Any
     ) -> Any:
+        if not callable(actual_forward):
+            raise TypeError(
+                f"'{type(actual_forward).__qualname__}' is not callable. Did you forget to call the multiforward function?"
+            )
         return actual_forward(*args, **kwargs)
 
 
@@ -42,6 +49,7 @@ def multiforward(new_forward_func: Callable[[Any], Any]) -> Callable[[Any], Any]
     """
     Decorator to create a multiforward function
     """
+
     def wrapper(self: MultiForwardModule, *args: Any, **kwargs: Any) -> Any:
         return self(new_forward_func, self, *args, **kwargs)
 

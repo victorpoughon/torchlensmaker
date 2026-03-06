@@ -208,3 +208,103 @@ def test_deep_forward_detects_multiple_forward_call() -> None:
     with pytest.raises(RuntimeError):
         with deep_forward(model) as trace:
             _ = model(data)
+
+
+def test_deep_multi_forward_detects_multiple_forward_call() -> None:
+    class Model(MultiForwardModule):
+        def __init__(self):
+            super().__init__()
+            relu = nn.ReLU()
+            self.block1 = nn.Sequential(
+                nn.Linear(2, 2),
+                relu,
+            )
+            self.block2 = nn.Sequential(
+                nn.Linear(2, 1),
+                relu,
+            )
+
+        @multiforward
+        def forward1(self, point):
+            point = self.block1(point)
+            point = self.block1(point)
+            return point
+
+        @multiforward
+        def forward2(self, point):
+            point = self.block1(point)
+            point = self.block1(point)
+            return point
+
+    model = Model()
+    data = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+
+    # Expect an error due to reused block1 module
+    with pytest.raises(RuntimeError):
+        with deep_forward(model) as trace:
+            _ = model.forward1(data)
+
+def test_multi_deep_forward_delegate() -> None:
+    class Model(MultiForwardModule):
+        def __init__(self):
+            super().__init__()
+            self.block1 = nn.Sequential(
+                nn.Linear(2, 2),
+                nn.ReLU(),
+            )
+            self.block2 = nn.Sequential(
+                nn.Linear(2, 1),
+                nn.Sigmoid(),
+            )
+            self.translation = nn.Parameter(torch.zeros(2))
+
+        @multiforward
+        def forward_kinematic(self, point):
+            x = self.block1(point)
+            x = self.block2(point)
+            x = x.sum()
+            return point + self.translation + x
+
+        @multiforward
+        def reverse_kinematic(self, point):
+            return 0.7 * self.forward_kinematic(point)
+
+    model = Model()
+    data = torch.tensor([[1.0, 2.0], [3.0, 4.0]])
+
+    target_forward = torch.tensor([[11.0, 7.0], [13.0, 9.0]])
+    target_reverse = torch.tensor([[-9.0, -3.0], [-7.0, -1.0]])
+
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1)
+
+    print(model)
+    print()
+
+    for i in range(10):
+        print("> ", i)
+
+        with deep_forward(model) as tree_forward:
+            model.forward_kinematic(data)
+
+        with deep_forward(model) as tree_reverse:
+            model.reverse_kinematic(data)
+
+        print(tree_forward.inputs)
+        print(tree_forward.outputs)
+
+        print(tree_reverse.inputs)
+        print(tree_reverse.outputs)
+
+        translated = tree_forward.outputs[model]
+        reverse = tree_reverse.outputs[model]
+
+        loss_fwd = nn.MSELoss()(translated, target_forward)
+        loss_rev = nn.MSELoss()(reverse, target_reverse)
+
+        # Compute loss dependent on both forward and reverse
+        total_loss = loss_fwd + loss_rev
+
+        optimizer.zero_grad()
+        total_loss.backward()
+        optimizer.step()
+        print(model.translation)

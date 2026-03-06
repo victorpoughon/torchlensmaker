@@ -42,7 +42,8 @@ class Tf:
     direct: HomMatrix
     inverse: HomMatrix
 
-    def dim(self) -> int:
+    def pdim(self) -> int:
+        "Physical dimensions (2 or 3)"
         assert self.direct.shape == self.inverse.shape
         return self.direct.shape[0] - 1
 
