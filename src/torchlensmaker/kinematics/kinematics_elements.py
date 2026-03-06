@@ -29,14 +29,14 @@ from torchlensmaker.types import (
     Tf,
 )
 from .kinematics_kernels import (
-    AbsolutePosition2DKernel,
-    AbsolutePosition3DKernel,
     Rotate2DKernel,
     Rotate3DKernel,
     Translate2DKernel,
     Translate3DKernel,
     Gap2DKernel,
     Gap3DKernel,
+    KinematicChainAppend2DKernel,
+    KinematicChainAppend3DKernel,
 )
 
 from torchlensmaker.elements.sequential_element import SequentialElement
@@ -61,8 +61,10 @@ class Gap(KinematicElement):
     ):
         super().__init__()
         self.x = init_param(self, "x", x, trainable)
-        self.func2d = Gap2DKernel()
-        self.func3d = Gap3DKernel()
+        self.kernel_joint2d = Gap2DKernel()
+        self.kernel_joint3d = Gap3DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(x=self.x, trainable=self.x.requires_grad)
@@ -72,10 +74,10 @@ class Gap(KinematicElement):
         return f"{self._get_name()}(x={self.x.item()})"
 
     def forward(self, fk: Tf) -> Tf:
-        if fk.shape[0] == 3:
-            return self.func2d.apply(fk, self.x)
-        else:
-            return self.func3d.apply(fk, self.x)
+        kernel_joint = self.kernel_joint2d if fk.pdim() == 2 else self.kernel_joint3d
+        kernel_fk = self.kernel_fk2d if fk.pdim() == 2 else self.kernel_fk3d
+        joint = kernel_joint.apply(self.x)
+        return kernel_fk.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(-self.x.detach(), self.x.requires_grad)
@@ -89,10 +91,11 @@ class Translate2D(KinematicElement):
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.func = Translate2DKernel()
         xt, yt = expand_bool_tuple(2, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
+        self.kernel_joint = Translate2DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -103,7 +106,8 @@ class Translate2D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.x, self.y)
+        joint = self.kernel_joint.apply(self.x, self.y)
+        return self.kernel_fk2d.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(
@@ -120,8 +124,9 @@ class TranslateVec2D(KinematicElement):
         trainable: bool = False,
     ):
         super().__init__()
-        self.func = Translate2DKernel()
         self.t = init_param(self, "t", t, trainable)
+        self.kernel_joint = Translate2DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -131,7 +136,8 @@ class TranslateVec2D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, *torch.unbind(self.t))
+        joint = self.kernel_joint.apply(*torch.unbind(self.t))
+        return self.kernel_fk2d.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -146,11 +152,12 @@ class Translate3D(KinematicElement):
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.func = Translate3DKernel()
         xt, yt, zt = expand_bool_tuple(3, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
+        self.kernel_joint = Translate3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -166,7 +173,8 @@ class Translate3D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.x, self.y, self.z)
+        joint = self.kernel_joint.apply(self.x, self.y, self.z)
+        return self.kernel_fk3d.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(
@@ -184,8 +192,9 @@ class TranslateVec3D(KinematicElement):
         trainable: bool = False,
     ):
         super().__init__()
-        self.func = Translate3DKernel()
         self.t = init_param(self, "t", t, trainable)
+        self.kernel_joint = Translate3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -195,7 +204,8 @@ class TranslateVec3D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, *torch.unbind(self.t))
+        joint = self.kernel_joint.apply(*torch.unbind(self.t))
+        return self.kernel_fk3d.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(-self.t.detach(), self.t.requires_grad)
@@ -210,8 +220,9 @@ class Rotate2D(KinematicElement):
         trainable: bool = False,
     ):
         super().__init__()
-        self.func = Rotate2DKernel()
         self.theta = init_param(self, "theta", theta, trainable)
+        self.kernel_joint = Rotate2DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -221,7 +232,8 @@ class Rotate2D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.theta)
+        joint = self.kernel_joint.apply(self.theta)
+        return self.kernel_fk2d.apply(fk, joint)
 
     def reverse(self) -> Self:
         return type(self)(-self.theta.detach(), self.theta.requires_grad)
@@ -235,7 +247,7 @@ class AbsolutePosition2D(KinematicElement):
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.func = AbsolutePosition2DKernel()
+        self.kernel_joint = Translate2DKernel()
         xt, yt = expand_bool_tuple(2, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
@@ -249,7 +261,7 @@ class AbsolutePosition2D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.x, self.y)
+        return self.kernel_joint.apply(self.x, self.y)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition2D kinematic element is not reversable")
@@ -264,7 +276,7 @@ class AbsolutePosition3D(KinematicElement):
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.func = AbsolutePosition3DKernel()
+        self.kernel_joint = Translate3DKernel()
         xt, yt, zt = expand_bool_tuple(3, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
@@ -284,7 +296,7 @@ class AbsolutePosition3D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.x, self.y, self.z)
+        return self.kernel_joint.apply(self.x, self.y, self.z)
 
     def reverse(self) -> Self:
         raise RuntimeError("AbsolutePosition3D kinematic element is not reversable")
@@ -298,7 +310,8 @@ class Rotate3D(KinematicElement):
         trainable: bool | tuple[bool, ...] = False,
     ):
         super().__init__()
-        self.func = Rotate3DKernel()
+        self.kernel_joint = Rotate3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
         yt, zt = expand_bool_tuple(2, trainable)
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
@@ -315,7 +328,8 @@ class Rotate3D(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        return self.func.apply(fk, self.y, self.z)
+        joint = self.kernel_joint.apply(self.y, self.z)
+        return self.kernel_fk3d.apply(fk, joint)
 
     # TODO support reverse for 3D rotations
 
@@ -335,8 +349,10 @@ class Rotate(KinematicElement):
         z, y = to_tensor(angles).unbind()
         self.z = init_param(self, "z", z, zt)
         self.y = init_param(self, "y", y, yt)
-        self.func2d = Rotate2DKernel()
-        self.func3d = Rotate3DKernel()
+        self.kernel_joint2d = Rotate2DKernel()
+        self.kernel_joint3d = Rotate3DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -346,10 +362,12 @@ class Rotate(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        if fk.shape[0] == 3:
-            return self.func2d.apply(fk, self.z)
+        if fk.pdim() == 2:
+            joint = self.kernel_joint2d.apply(self.z)
+            return self.kernel_fk2d.apply(fk, joint)
         else:
-            return self.func3d.apply(fk, self.y, self.z)
+            joint = self.kernel_joint3d.apply(self.y, self.z)
+            return self.kernel_fk3d.apply(fk, joint)
 
 
 class Translate(KinematicElement):
@@ -369,8 +387,10 @@ class Translate(KinematicElement):
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
         self.z = init_param(self, "z", z, zt)
-        self.func2d = Translate2DKernel()
-        self.func3d = Translate3DKernel()
+        self.kernel_joint2d = Translate2DKernel()
+        self.kernel_joint3d = Translate3DKernel()
+        self.kernel_fk2d = KinematicChainAppend2DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
@@ -386,7 +406,9 @@ class Translate(KinematicElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, fk: Tf) -> Tf:
-        if fk.shape[0] == 3:
-            return self.func2d.apply(fk, self.x, self.y)
+        if fk.pdim() == 2:
+            joint = self.kernel_joint2d.apply(self.x, self.y)
+            return self.kernel_fk2d.apply(fk, joint)
         else:
-            return self.func3d.apply(fk, self.x, self.y, self.z)
+            joint = self.kernel_joint3d.apply(self.x, self.y, self.z)
+            return self.kernel_fk3d.apply(fk, joint)

@@ -24,12 +24,14 @@ import torch
 import onnxruntime
 
 from torchlensmaker.kinematics.kinematics_kernels import (
+    Gap2DKernel,
+    Gap3DKernel,
     Translate2DKernel,
     Translate3DKernel,
     Rotate2DKernel,
     Rotate3DKernel,
-    AbsolutePosition2DKernel,
-    AbsolutePosition3DKernel,
+    KinematicChainAppend2DKernel,
+    KinematicChainAppend3DKernel,
 )
 
 from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
@@ -42,12 +44,14 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
 
 
 kernels_library: Dict[str, FunctionalKernel] = {
+    "Gap2D": Gap2DKernel(),
+    "Gap3D": Gap3DKernel(),
     "Rotate2D": Rotate2DKernel(),
     "Rotate3D": Rotate3DKernel(),
     "Translate2D": Translate2DKernel(),
     "Translate3D": Translate3DKernel(),
-    "AbsolutePosition2D": AbsolutePosition2DKernel(),
-    "AbsolutePosition3D": AbsolutePosition3DKernel(),
+    "KinematicChainAppend2D": KinematicChainAppend2DKernel(),
+    "KinematicChainAppend3D": KinematicChainAppend3DKernel(),
 }
 
 
