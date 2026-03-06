@@ -37,11 +37,11 @@ class Lens(BaseModule):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self.sequence)
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        return self.sequence(data)
-
-    def sequential(self, data: OpticalData) -> OpticalData:
-        return self(data)
+    def sequential_prograde(self, data: OpticalData) -> OpticalData:
+        return self.sequence.sequential_prograde(data)
+    
+    def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+        return self.sequence.sequential_retrograde(data)
 
     def inner_thickness(self) -> Float[torch.Tensor, ""]:
         return lens_inner_thickness(self)

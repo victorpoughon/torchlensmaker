@@ -41,7 +41,7 @@ class SurfaceElement(BaseModule):
         return None
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, /, reverse: bool
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         raise NotImplementedError
 

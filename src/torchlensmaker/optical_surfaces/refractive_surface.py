@@ -98,11 +98,24 @@ class RefractiveSurface(BaseModule):
         )
         return type(self)(**kwargs | overrides)
 
-    def sequential(self, data: OpticalData) -> OpticalData:
-        return self(data)
+    def sequential_prograde(self, data: OpticalData) -> OpticalData:
+        return self.optical_prograde(data)
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk)
+    def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+        return self.optical_retrograde(data)
+
+    def optical_prograde(self, data: OpticalData) -> OpticalData:
+        rays_propagated, normals, fk_next = self.propagator(
+            data.rays, data.fk, reverse=False
+        )
+        rays_refracted = self.refractor(rays_propagated, normals)
+
+        return data.replace(rays=rays_refracted, fk=fk_next)
+
+    def optical_retrograde(self, data: OpticalData) -> OpticalData:
+        rays_propagated, normals, fk_next = self.propagator(
+            data.rays, data.fk, reverse=True
+        )
         rays_refracted = self.refractor(rays_propagated, normals)
 
         return data.replace(rays=rays_refracted, fk=fk_next)

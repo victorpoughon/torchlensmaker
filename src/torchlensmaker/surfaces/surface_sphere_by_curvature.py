@@ -27,6 +27,7 @@ from torchlensmaker.types import (
     MaskTensor,
     Tf,
 )
+from torchlensmaker.core.base_module import BaseModule, MultiForwardModule, multiforward
 
 from .surface_element import SurfaceElement
 
@@ -192,16 +193,17 @@ class SphereByCurvature(SurfaceElement):
         return type(self)(**kwargs | overrides)
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, reverse: bool
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
+        anchors = self.anchors if not reverse else self.anchors.flip([0])
         return func(
             P,
             V,
             tf,
             self.diameter,
             self.C,
-            self.anchors,
+            anchors,
             self.scale,
             self.normalize,
         )

@@ -24,7 +24,10 @@ from torchlensmaker.optical_data import default_input
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
-from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface, SurfacePropagator
+from torchlensmaker.optical_surfaces.refractive_surface import (
+    RefractiveSurface,
+    SurfacePropagator,
+)
 from torchlensmaker.optical_surfaces.aperture import Aperture
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.optical_surfaces.image_plane import ImagePlane
@@ -104,13 +107,17 @@ def render_sequence(
     end: Optional[float] = None,
     title: str = "",
     extra_artists: Dict[type, Artist] = {},
+    reverse: bool = False,
 ) -> Any:
     if dtype is None:
         dtype = torch.get_default_dtype()
 
     # Evaluate the model with deep_forward to keep all intermediate outputs
     with deep_forward(optics) as trace:
-        _ = optics(default_input(dim, dtype))
+        if not reverse:
+            _ = optics.sequential_prograde(default_input(dim, dtype))
+        else:
+            _ = optics.sequential_retrograde(default_input(dim, dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables_domains = get_domain(optics, dim)
@@ -163,6 +170,7 @@ def show(
     pupil: Any | None = None,
     field: Any | None = None,
     wavelength: Any | None = None,
+    reverse: bool = False,
 ) -> None | Any:
     "Render an optical stack and show it with ipython display"
 
@@ -174,7 +182,7 @@ def show(
     elif dim == 3:
         set_sampling3d(optics, pupil, field, wavelength)
 
-    scene = render_sequence(optics, dim, dtype, end, title, extra_artists)
+    scene = render_sequence(optics, dim, dtype, end, title, extra_artists, reverse)
 
     if controls is not None:
         scene["controls"] = controls

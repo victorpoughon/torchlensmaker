@@ -22,7 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.types import HomMatrix
 from torchlensmaker.core.dim import Dim
-from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.base_module import BaseModule, MultiForwardModule, multiforward
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 
@@ -43,7 +43,7 @@ from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.materials.get_material_model import get_material_model
 
 
-class LightSourceBase(BaseModule):
+class LightSourceBase(MultiForwardModule):
     def domain(self, dim: int) -> dict[str, list[float]]:
         raise NotImplementedError
 
@@ -51,11 +51,23 @@ class LightSourceBase(BaseModule):
     def dim(self) -> Dim:
         raise NotImplementedError
 
-    def forward(self, tf: HomMatrix) -> RayBundle:
+    @multiforward
+    def optical_prograde(self, tf: HomMatrix) -> RayBundle:
         raise NotImplementedError
 
-    def sequential(self, data: OpticalData) -> OpticalData:
-        rays = self(data.fk.direct)
+    @multiforward
+    def optical_retrograde(self, tf: HomMatrix) -> RayBundle:
+        rays = self.optical_prograde(tf)
+        return rays.replace(V=-rays.V)
+
+    @multiforward
+    def sequential_prograde(self, data: OpticalData) -> OpticalData:
+        rays = self.optical_prograde(data.fk.direct)
+        return data.replace(rays=rays)
+
+    @multiforward
+    def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+        rays = self.optical_retrograde(data.fk.direct)
         return data.replace(rays=rays)
 
 
@@ -89,7 +101,8 @@ class GenericLightSource(LightSourceBase):
         else:
             return self.geometry_3d.domain()
 
-    def forward(self, tf: HomMatrix) -> RayBundle:
+    @multiforward
+    def optical_prograde(self, tf: HomMatrix) -> RayBundle:
         dim, dtype, device = tf.shape[0] - 1, tf.dtype, tf.device
 
         if dim == 2:

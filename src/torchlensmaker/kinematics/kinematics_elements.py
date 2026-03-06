@@ -44,7 +44,7 @@ from torchlensmaker.core.base_module import MultiForwardModule, multiforward
 
 class KinematicElement(MultiForwardModule):
     @multiforward
-    def sequential(self, data: OpticalData) -> OpticalData:
+    def sequential_prograde(self, data: OpticalData) -> OpticalData:
         fk = self.kinematic_prograde(data.fk)
         return data.replace(fk=fk)
 
@@ -76,6 +76,11 @@ class Gap(KinematicElement):
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(x={self.x.item()})"
+    
+    @multiforward
+    def kinematic(self, fk: Tf, /, direction: ScalarTensor) -> Tf:
+        func = self.func2d if fk.pdim() == 2 else self.func3d
+        return func.apply(fk, self.x)
 
     @multiforward
     def kinematic_prograde(self, fk: Tf) -> Tf:

@@ -16,7 +16,7 @@
 
 import operator
 from itertools import chain, islice
-from typing import Type, Sequence, Self, TypeVar, Any
+from typing import Type, Sequence, Self, TypeVar, Any, Literal
 from collections.abc import Iterator, Iterable
 from collections import OrderedDict
 import torch.nn as nn
@@ -40,7 +40,7 @@ class SubChain(BaseModule):
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
-    
+
     def sequential(self, inputs: OpticalData) -> OpticalData:
         return self(inputs)
 
@@ -52,7 +52,7 @@ class SubChain(BaseModule):
 _V = TypeVar("_V")
 
 
-class Sequential(BaseModule):
+class Sequential(MultiForwardModule):
     def __init__(self, *args: BaseModule):
         super().__init__()
         if len(args) == 1 and isinstance(args[0], OrderedDict):
@@ -89,19 +89,17 @@ class Sequential(BaseModule):
     def __reversed__(self) -> Iterator[BaseModule]:
         return reversed(self._modules.values())
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    @multiforward
+    def sequential_prograde(self, data: OpticalData) -> OpticalData:
         for module in self:
-            data = module.sequential(data)
+            data = module.sequential_prograde(data)
         return data
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
-        return self(inputs)
-
-    # @multiforward
-    # def sequential_retrograde(self, data: OpticalData) -> OpticalData:
-    #     for module in reversed(self):
-    #         data = module.forward_retrograde(data)
-    #     return data
+    @multiforward
+    def sequential_retrograde(self, data: OpticalData) -> OpticalData:
+        for module in reversed(self):
+            data = module.sequential_retrograde(data)
+        return data
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
