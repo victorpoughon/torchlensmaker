@@ -23,7 +23,7 @@ import torch
 import onnxruntime
 
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
-    SphereByCurvatureSurfaceKernel,
+    SphereByCurvatureSurfaceKernel, SphereByCurvatureOuterExtentSurfaceKernel
 )
 from torchlensmaker.surfaces.surface_disk import (
     DiskSurfaceKernel,
@@ -52,6 +52,7 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC3D-1": SphereByCurvatureSurfaceKernel(3, 1, 1.0, 1e-3),
     "SphereC3D-6": SphereByCurvatureSurfaceKernel(3, 6, 0.9, 1e-6),
     "SphereC3D-12": SphereByCurvatureSurfaceKernel(3, 12, 0.9, 1e-6),
+    "SphereCOuterExtent": SphereByCurvatureOuterExtentSurfaceKernel(),
     "Parabola2D-1": ParabolaSurfaceKernel(2, 1, 1.0, 1e-3),
     "Parabola2D-6": ParabolaSurfaceKernel(2, 1, 1.0, 1e-3),
     "Parabola3D-1": ParabolaSurfaceKernel(3, 1, 1.0, 1e-3),

@@ -145,6 +145,27 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         )
 
 
+class SphereByCurvatureOuterExtentSurfaceKernel(FunctionalKernel):
+    inputs = {"r": ScalarTensor, "C": ScalarTensor}
+    params = {}
+    outputs = {"extent": ScalarTensor}
+
+    def apply(self, r: ScalarTensor, C: ScalarTensor) -> ScalarTensor:
+        extent, _ = spherical_sag_2d(r, C)
+        return extent
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor, ScalarTensor]:
+        return (
+            torch.tensor(10.0, dtype=dtype, device=device),
+            torch.tensor(0.5, dtype=dtype, device=device),
+        )
+
+    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
+
+
 class SphereByCurvature(SurfaceElement):
     """
     Spherical surface (2D or 3D) parameterized by lens diameter and curvature.
@@ -176,6 +197,7 @@ class SphereByCurvature(SurfaceElement):
         )
         self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
         self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
+        self.kernel_outer_extent = SphereByCurvatureOuterExtentSurfaceKernel()
 
     def clone(self, **overrides) -> Self:
         kwargs = dict(
@@ -207,8 +229,7 @@ class SphereByCurvature(SurfaceElement):
         )
 
     def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
-        extent, _ = spherical_sag_2d(r, self.C)
-        return extent
+        return self.kernel_outer_extent.apply(r, self.C)
 
     def render(self) -> Any:
         return {
