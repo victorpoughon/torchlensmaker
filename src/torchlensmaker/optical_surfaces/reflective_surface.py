@@ -57,10 +57,6 @@ class ReflectiveSurface(SequentialElement):
         kwargs = dict(surface=self.surface)
         return type(self)(**kwargs | overrides)
 
-    def reverse(self) -> Self:
-        # TODO make a copy, surface should be a module
-        return self
-
     def forward(self, data: OpticalData) -> OpticalData:
         rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk)
         rays_reflected = self.reflector(rays_propagated, normals)

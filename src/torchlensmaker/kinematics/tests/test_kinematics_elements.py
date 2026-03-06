@@ -43,7 +43,6 @@ from torchlensmaker.kinematics.kinematics_elements import (
 )
 
 
-
 def check_model_eval(model: nn.Module, in_tf: Tf) -> Any:
     "Evaluate a model forwards and run sanity checks"
 
@@ -175,7 +174,7 @@ def check_kinematic_element_3d(
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_3d(tf_out, dtype, device)
-    
+
     # Check that element can be cloned
     element.clone()
 
@@ -208,8 +207,6 @@ def test_elements_2d() -> None:
 
     for element in elements_2d:
         check_kinematic_element_2d(element, False, dtype, device)
-        if not isinstance(element, AbsolutePosition2D):
-            check_kinematic_element_2d(element.reverse(), False, dtype, device)
 
 
 def test_trainable_elements_2d() -> None:
@@ -237,8 +234,6 @@ def test_trainable_elements_2d() -> None:
     for element in elements_2d:
         print(list(element.named_parameters()))
         check_kinematic_element_2d(element, True, dtype, device)
-        if not isinstance(element, AbsolutePosition2D):
-            check_kinematic_element_2d(element.reverse(), True, dtype, device)
 
 
 def test_elements_3d() -> None:
@@ -303,8 +298,6 @@ def test_elements_3d() -> None:
 
     for element in elements_3d:
         check_kinematic_element_3d(element, False, dtype, device)
-        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
-            check_kinematic_element_3d(element.reverse(), False, dtype, device)
 
 
 def test_trainable_elements_3d() -> None:
@@ -379,8 +372,6 @@ def test_trainable_elements_3d() -> None:
 
     for element in elements_3d:
         check_kinematic_element_3d(element, True, dtype, device)
-        if not isinstance(element, (AbsolutePosition3D, Rotate3D)):
-            check_kinematic_element_3d(element.reverse(), True, dtype, device)
 
 
 def test_elements_mixed() -> None:
@@ -406,8 +397,6 @@ def test_elements_mixed() -> None:
         check_kinematic_element_2d(element, False, dtype, device)
         check_kinematic_element_3d(element, False, dtype, device)
 
-        # TODO reverse mixed
-
 
 def test_trainable_elements_mixed() -> None:
     dtype, device = torch.float64, torch.device("cpu")
@@ -431,8 +420,6 @@ def test_trainable_elements_mixed() -> None:
         check_kinematic_element_2d(element, True, dtype, device, allow_none_grad=True)
         check_kinematic_element_3d(element, True, dtype, device, allow_none_grad=True)
 
-        # TODO reverse mixed
-
 
 def test_elements_shared_parameter() -> None:
     """
@@ -444,7 +431,7 @@ def test_elements_shared_parameter() -> None:
             super().__init__()
             self.a = Gap(5.0, trainable=True)
             self.b = Gap(x=self.a.x)
-        
+
         def forward(self, tf):
             tf = self.a(tf)
             tf = self.b(tf)

@@ -79,9 +79,6 @@ class Gap(KinematicElement):
         joint = kernel_joint.apply(self.x)
         return kernel_fk.apply(fk, joint)
 
-    def reverse(self) -> Self:
-        return type(self)(-self.x.detach(), self.x.requires_grad)
-
 
 class Translate2D(KinematicElement):
     def __init__(
@@ -109,13 +106,6 @@ class Translate2D(KinematicElement):
         joint = self.kernel_joint.apply(self.x, self.y)
         return self.kernel_fk2d.apply(fk, joint)
 
-    def reverse(self) -> Self:
-        return type(self)(
-            -self.x.detach(),
-            -self.y.detach(),
-            (self.x.requires_grad, self.y.requires_grad),
-        )
-
 
 class TranslateVec2D(KinematicElement):
     def __init__(
@@ -138,9 +128,6 @@ class TranslateVec2D(KinematicElement):
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
         return self.kernel_fk2d.apply(fk, joint)
-
-    def reverse(self) -> Self:
-        return type(self)(-self.t.detach(), self.t.requires_grad)
 
 
 class Translate3D(KinematicElement):
@@ -176,14 +163,6 @@ class Translate3D(KinematicElement):
         joint = self.kernel_joint.apply(self.x, self.y, self.z)
         return self.kernel_fk3d.apply(fk, joint)
 
-    def reverse(self) -> Self:
-        return type(self)(
-            -self.x.detach(),
-            -self.y.detach(),
-            -self.z.detach(),
-            (self.x.requires_grad, self.y.requires_grad, self.z.requires_grad),
-        )
-
 
 class TranslateVec3D(KinematicElement):
     def __init__(
@@ -206,9 +185,6 @@ class TranslateVec3D(KinematicElement):
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
         return self.kernel_fk3d.apply(fk, joint)
-
-    def reverse(self) -> Self:
-        return type(self)(-self.t.detach(), self.t.requires_grad)
 
 
 class Rotate2D(KinematicElement):
@@ -235,9 +211,6 @@ class Rotate2D(KinematicElement):
         joint = self.kernel_joint.apply(self.theta)
         return self.kernel_fk2d.apply(fk, joint)
 
-    def reverse(self) -> Self:
-        return type(self)(-self.theta.detach(), self.theta.requires_grad)
-
 
 class AbsolutePosition2D(KinematicElement):
     def __init__(
@@ -262,9 +235,6 @@ class AbsolutePosition2D(KinematicElement):
 
     def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y)
-
-    def reverse(self) -> Self:
-        raise RuntimeError("AbsolutePosition2D kinematic element is not reversable")
 
 
 class AbsolutePosition3D(KinematicElement):
@@ -298,9 +268,6 @@ class AbsolutePosition3D(KinematicElement):
     def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y, self.z)
 
-    def reverse(self) -> Self:
-        raise RuntimeError("AbsolutePosition3D kinematic element is not reversable")
-
 
 class Rotate3D(KinematicElement):
     def __init__(
@@ -330,8 +297,6 @@ class Rotate3D(KinematicElement):
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.y, self.z)
         return self.kernel_fk3d.apply(fk, joint)
-
-    # TODO support reverse for 3D rotations
 
 
 class Rotate(KinematicElement):

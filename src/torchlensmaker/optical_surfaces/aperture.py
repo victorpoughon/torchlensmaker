@@ -44,7 +44,3 @@ class Aperture(SequentialElement):
             rays=rays_propagated,
             fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
         )
-
-    def reverse(self) -> Self:
-        # TODO make a copy, surface should be a module
-        return self

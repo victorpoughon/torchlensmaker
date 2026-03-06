@@ -31,8 +31,3 @@ class SequentialElement(BaseModule):
     def sequential(self, data: OpticalData) -> OpticalData:
         # default implementation just calls forward, can be overwritten
         return self(data)
-
-    def reverse(self) -> Self:
-        raise NotImplementedError(
-            f"reverse() method not implemented for type {type(self).__name__}"
-        )
