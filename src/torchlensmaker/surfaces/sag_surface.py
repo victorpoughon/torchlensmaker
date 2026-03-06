@@ -42,8 +42,6 @@ from .sag_functions import (
 from .sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
-    anchor_transforms_2d,
-    anchor_transforms_3d,
 )
 from .implicit_solver import implicit_surface_local_raytrace
 from .raytrace import raytrace
@@ -58,8 +56,6 @@ def sag_surface_2d(
     V: Batch2DTensor,
     tf_in: Tf,
     diameter: ScalarTensor,
-    anchors: Float[torch.Tensor, " 2"],
-    scale: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
 ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
     # Setup implicit function and domain function
@@ -79,15 +75,10 @@ def sag_surface_2d(
         damping=damping,
     )
 
-    # Compute anchor transforms from anchors and scale
-    extent0, _ = sag(anchors[0] * diameter / 2)
-    extent1, _ = sag(anchors[1] * diameter / 2)
-    tf_surface, tf_next = anchor_transforms_2d(extent0, extent1, scale, tf_in)
-
     # Perform raytrace
-    t, normals, valid = raytrace(P, V, tf_surface, local_solver)
+    t, normals, valid = raytrace(P, V, tf_in, local_solver)
 
-    return t, normals, valid, tf_surface, tf_next
+    return t, normals, valid
 
 
 def sag_surface_3d(
@@ -99,8 +90,6 @@ def sag_surface_3d(
     V: Batch3DTensor,
     tf_in: Tf,
     diameter: ScalarTensor,
-    anchors: Float[torch.Tensor, " 2"],
-    scale: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
 ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf, Tf]:
     # Setup implicit function and domain function
@@ -120,13 +109,7 @@ def sag_surface_3d(
         damping=damping,
     )
 
-    # Compute anchor transforms from anchors and scale
-    # In 3D, take Y=tau, Z=0 as the extent point, but this is arbitrary
-    extent0, _ = sag(anchors[0] * diameter / 2, torch.zeros_like(anchors[0]))
-    extent1, _ = sag(anchors[1] * diameter / 2, torch.zeros_like(anchors[0]))
-    tf_surface, tf_next = anchor_transforms_3d(extent0, extent1, scale, tf_in)
-
     # Perform raytrace
-    t, normals, valid = raytrace(P, V, tf_surface, local_solver)
+    t, normals, valid = raytrace(P, V, tf_in, local_solver)
 
-    return t, normals, valid, tf_surface, tf_next
+    return t, normals, valid

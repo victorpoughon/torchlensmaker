@@ -44,6 +44,7 @@ from .sag_functions import (
     spherical_sag_2d,
     spherical_sag_3d,
 )
+from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_surface import sag_surface_2d, sag_surface_3d
@@ -67,8 +68,6 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
     params = {
         "diameter": ScalarTensor,
         "C": ScalarTensor,
-        "anchors": Float[torch.Tensor, " 2"],
-        "scale": ScalarTensor,
         "normalize": Bool[torch.Tensor, ""],
     }
 
@@ -76,8 +75,6 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
     }
 
     def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
@@ -93,10 +90,8 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         tf_in: Tf,
         diameter: ScalarTensor,
         C: ScalarTensor,
-        anchors: Float[torch.Tensor, " 2"],
-        scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
         sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
         apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
@@ -109,8 +104,6 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
             V,
             tf_in,
             diameter,
-            anchors,
-            scale,
             normalize,
         )
 
@@ -139,8 +132,6 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor((0.0, 0.0), dtype=dtype, device=device),
-            torch.tensor(-1.0, dtype=dtype, device=device),
             torch.tensor(False, dtype=torch.bool, device=device),
         )
 
@@ -198,6 +189,8 @@ class SphereByCurvature(SurfaceElement):
         self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
         self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
         self.kernel_outer_extent = SphereByCurvatureOuterExtentSurfaceKernel()
+        self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
+        self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides) -> Self:
         kwargs = dict(
@@ -216,17 +209,28 @@ class SphereByCurvature(SurfaceElement):
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return func(
+        kernel_surface = self.func2d if tf.pdim() == 2 else self.func3d
+        kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
+
+        extent0 = self.kernel_outer_extent.apply(
+            self.anchors[0] * self.diameter / 2, self.C
+        )
+        extent1 = self.kernel_outer_extent.apply(
+            self.anchors[1] * self.diameter / 2, self.C
+        )
+
+        tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
+
+        t, normal, valid = kernel_surface.apply(
             P,
             V,
             tf,
             self.diameter,
             self.C,
-            self.anchors,
-            self.scale,
             self.normalize,
         )
+
+        return t, normal, valid, tf_surface, tf_next
 
     def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
         return self.kernel_outer_extent.apply(r, self.C)

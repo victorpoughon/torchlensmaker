@@ -37,7 +37,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-
+from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from .sag_functions import (
     conical_sag_2d,
     conical_sag_3d,
@@ -73,8 +73,6 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "C": ScalarTensor,
         "K": ScalarTensor,
         "alphas": Float[torch.Tensor, " N"],
-        "anchors": Float[torch.Tensor, " 2"],
-        "scale": ScalarTensor,
         "normalize": Bool[torch.Tensor, ""],
     }
 
@@ -82,8 +80,6 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
     }
 
     def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
@@ -101,10 +97,8 @@ class AsphereSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         K: ScalarTensor,
         alphas: Float[torch.Tensor, " N"],
-        anchors: Float[torch.Tensor, " 2"],
-        scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
         if self.dim == 2:
             sag_function = partial(
                 sag_sum_2d,
@@ -133,8 +127,6 @@ class AsphereSurfaceKernel(FunctionalKernel):
             V,
             tf_in,
             diameter,
-            anchors,
-            scale,
             normalize,
         )
 
@@ -166,10 +158,49 @@ class AsphereSurfaceKernel(FunctionalKernel):
             torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor(1.0, dtype=dtype, device=device),
             torch.tensor([0.1, 0.001, 0.002], dtype=dtype, device=device),
-            torch.tensor((0.0, 0.0), dtype=dtype, device=device),
-            torch.tensor(-1.0, dtype=dtype, device=device),
             torch.tensor(False, dtype=torch.bool, device=device),
         )
+
+
+class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
+    inputs = {
+        "r": ScalarTensor,
+        "C": ScalarTensor,
+        "K": ScalarTensor,
+        "alphas": Float[torch.Tensor, " N"],
+    }
+    params = {}
+    outputs = {"extent": ScalarTensor}
+
+    def apply(
+        self,
+        r: ScalarTensor,
+        C: ScalarTensor,
+        K: ScalarTensor,
+        alphas: Float[torch.Tensor, " N"],
+    ) -> ScalarTensor:
+        sag_function = partial(
+            sag_sum_2d,
+            sags=[
+                partial(conical_sag_2d, C=C, K=K),
+                partial(aspheric_sag_2d, coefficients=alphas),
+            ],
+        )
+        extent, _ = sag_function(r)
+        return extent
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor, ScalarTensor]:
+        return (
+            torch.tensor(10.0, dtype=dtype, device=device),
+            torch.tensor(0.5, dtype=dtype, device=device),
+            torch.tensor(0.5, dtype=dtype, device=device),
+            torch.tensor((0.5, 0.0, 0.0), dtype=dtype, device=device),
+        )
+
+    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
 
 
 class Asphere(SurfaceElement):
@@ -211,7 +242,10 @@ class Asphere(SurfaceElement):
         )
         self.func2d = AsphereSurfaceKernel(2, num_iter, damping, tol)
         self.func3d = AsphereSurfaceKernel(3, num_iter, damping, tol)
-    
+        self.kernel_outer_extent = AsphereOuterExtentSurfaceKernel()
+        self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
+        self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
+
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
             diameter=self.diameter,
@@ -231,8 +265,19 @@ class Asphere(SurfaceElement):
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return func(
+        kernel_surface = self.func2d if tf.pdim() == 2 else self.func3d
+        kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
+
+        extent0 = self.kernel_outer_extent.apply(
+            self.anchors[0] * self.diameter / 2, self.C, self.K, self.alphas
+        )
+        extent1 = self.kernel_outer_extent.apply(
+            self.anchors[1] * self.diameter / 2, self.C, self.K, self.alphas
+        )
+
+        tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
+
+        t, normal, valid = kernel_surface.apply(
             P,
             V,
             tf,
@@ -240,10 +285,13 @@ class Asphere(SurfaceElement):
             self.C,
             self.K,
             self.alphas,
-            self.anchors,
-            self.scale,
             self.normalize,
         )
+
+        return t, normal, valid, tf_surface, tf_next
+
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+        return self.kernel_outer_extent.apply(r, self.C, self.K, self.alphas)
 
     def render(self) -> Any:
         return {

@@ -32,18 +32,65 @@ from torchlensmaker.surfaces.sag_geometry import (
     anchor_transforms_2d,
     anchor_transforms_3d,
 )
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    hom_identity_2d,
+    hom_identity_3d,
+)
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+
+
+class SurfaceScaleAnchorKernel(FunctionalKernel):
+    """
+    Compute transforms that enable scaling and anchoring a surface
+
+    Inputs:
+        extent0: X value of the first anchor point
+        extent1: X value of the second anchor point
+        scale: scale factor that applies to the surface (1 or -1)
+    
+    Outputs:
+        tf_surface: transform that applies to the surface
+        tf_next: transform that applies to the next joint in the kinematic chain
+    """
+
+    inputs = {
+        "extent0": ScalarTensor,
+        "extent1": ScalarTensor,
+        "scale": ScalarTensor,
+        "tf": Tf,
+    }
+    params = {}
+    outputs = {"tf_surface": Tf, "tf_next": Tf}
+
+    def __init__(self, dim: int):
+        self.dim = dim
+
+    def apply(
+        self, extent0: ScalarTensor, extent1: ScalarTensor, scale: ScalarTensor, tf: Tf
+    ) -> tuple[Tf, Tf]:
+        anchor_function = (
+            anchor_transforms_2d if self.dim == 2 else anchor_transforms_3d
+        )
+        return anchor_function(extent0, extent1, scale, tf)
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor, ScalarTensor]:
+        tf_id = hom_identity_2d if self.dim == 2 else hom_identity_3d
+        return (
+            torch.tensor(0.0, dtype=dtype, device=device),
+            torch.tensor(1.0, dtype=dtype, device=device),
+            torch.tensor(1.0, dtype=dtype, device=device),
+            tf_id(dtype, device),
+        )
+
+    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
 
 
 class SurfaceAnchor(BaseModule):
     """
-    apply tf: entrance anchor + scale
-    eval surface
-    unapply tf: entrace anchor + scale
-    apply exit anchor
-
-    Surface must support
-        outer_extent
-        diameter
+    Apply anchor and scale to a wrapped surface element
     """
 
     def __init__(

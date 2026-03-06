@@ -31,7 +31,7 @@ from .surface_element import SurfaceElement
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-
+from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from .sag_functions import (
     conical_sag_3d,
     xypolynomial_sag_3d,
@@ -65,7 +65,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         "C": ScalarTensor,
         "K": ScalarTensor,
         "coefficients": Float[torch.Tensor, " P Q"],
-        "scale": ScalarTensor,
         "normalize": Bool[torch.Tensor, ""],
     }
 
@@ -73,8 +72,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
     }
 
     def __init__(self, num_iter: int, damping: float, tol: float):
@@ -91,9 +88,8 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         K: ScalarTensor,
         coefficients: Float[torch.Tensor, " P Q"],
-        scale: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
         # XYPolynomial is 3D only because it's freeform
         sag_function = partial(
             sag_sum_3d,
@@ -102,9 +98,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
                 partial(xypolynomial_sag_3d, coefficients=coefficients),
             ],
         )
-        
-        # XYPolynomial is 3D freeform so it doesn't support anchors
-        anchors = torch.zeros((2,), dtype=P.dtype, device=P.device)
 
         return sag_surface_3d(
             sag_function,
@@ -115,8 +108,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
             V,
             tf_in,
             diameter,
-            anchors,
-            scale,
             normalize,
         )
 
@@ -144,7 +135,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
             torch.tensor(
                 [[0.1, 0.001, 0.002], [0.1, 0.0, 0.0]], dtype=dtype, device=device
             ),
-            torch.tensor(-1.0, dtype=dtype, device=device),
             torch.tensor(False, dtype=torch.bool, device=device),
         )
 
@@ -166,7 +156,9 @@ class XYPolynomial(SurfaceElement):
         diameter: float | ScalarTensor,
         C: float | ScalarTensor | nn.Parameter,
         K: float | ScalarTensor | nn.Parameter,
-        coefficients: Sequence[Sequence[float]] | Float[torch.Tensor, "P Q"] | nn.Parameter,
+        coefficients: Sequence[Sequence[float]]
+        | Float[torch.Tensor, "P Q"]
+        | nn.Parameter,
         *,
         scale: float | ScalarTensor = 1.0,
         trainable: bool = True,
@@ -184,9 +176,9 @@ class XYPolynomial(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = XYPolynomialSurfaceKernel(num_iter, damping, tol)
         self.func3d = XYPolynomialSurfaceKernel(num_iter, damping, tol)
-    
+        self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
+
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
             diameter=self.diameter,
@@ -196,17 +188,23 @@ class XYPolynomial(SurfaceElement):
             scale=self.scale,
             trainable=self.C.requires_grad,
             normalize=self.normalize,
-            num_iter=self.func2d.num_iter,
-            damping=self.func2d.damping,
-            tol=self.func2d.tol,
+            num_iter=self.func3d.num_iter,
+            damping=self.func3d.damping,
+            tol=self.func3d.tol,
         )
         return type(self)(**kwargs | overrides)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return func(
+        # TODO raise nice error if 2D
+        kernel_surface = self.func3d
+        kernel_anchor = self.kernel_anchor3d
+
+        zero = torch.zeros((), dtype=P.dtype, device=P.device)
+        tf_surface, tf_next = kernel_anchor.apply(zero, zero, self.scale, tf)
+
+        t, normal, valid = kernel_surface.apply(
             P,
             V,
             tf,
@@ -214,9 +212,10 @@ class XYPolynomial(SurfaceElement):
             self.C,
             self.K,
             self.coefficients,
-            self.scale,
             self.normalize,
         )
+
+        return t, normal, valid, tf_surface, tf_next
 
     def render(self) -> Any:
         return {
