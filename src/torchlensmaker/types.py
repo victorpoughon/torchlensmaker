@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import TypeAlias, Self, Literal
 from jaxtyping import Float, Bool, Int64
 import torch
@@ -35,10 +36,43 @@ HomMatrix: TypeAlias = Float[torch.Tensor, "D D"]
 
 TIRMode: TypeAlias = Literal["absorb", "reflect"]
 
-# Geometric transform (2D or 3D) represented by a pair of homogeneous coordinate
-# matrices for the direct and inverse transforms
+
+class Direction(Enum):
+    """
+    Direction of propagation
+
+    The two possible directions are effectively forwards / backwards, but we use
+    the vocabulary prograde / retrograde instead, to avoid any confusion with
+    other terminology which already uses common terms:
+    
+      * forward / backwards (pytorch autograd)
+      * direct / inverse (geometric transforms)
+      * forward / inverse (kinematics)
+    
+    and we use an enum to avoid the "boolean argument" footgun.
+    """
+
+    PROGRADE = "prograde"
+    RETROGRADE = "retrograde"
+
+    def is_prograde(self) -> bool:
+        return self is self.PROGRADE
+
+    def is_retrograde(self) -> bool:
+        return self is self.RETROGRADE
+
+    def as_scale(self) -> float:
+        return 1.0 if self.is_prograde() else -1.0
+
+
 @dataclass
 class Tf:
+    """
+    Geometric transform (2D or 3D)
+     
+    Represented by a pair of homogeneous coordinate matrices for the direct and
+    inverse transforms.
+    """
     direct: HomMatrix
     inverse: HomMatrix
 
@@ -64,3 +98,9 @@ class Tf:
     def device(self) -> torch.device:
         assert self.direct.device == self.inverse.device
         return self.direct.device
+
+    def flip(self) -> Self:
+        return Tf(self.inverse, self.direct)
+
+    def flipif(self, flip: bool) -> Self:
+        return self.flip() if flip else self

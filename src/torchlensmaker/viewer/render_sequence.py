@@ -19,7 +19,7 @@ import torch.nn as nn
 
 from typing import Any, Optional, Dict
 
-
+from torchlensmaker.types import Direction
 from torchlensmaker.optical_data import default_input
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.elements.sequential import Sequential, SubChain
@@ -104,13 +104,15 @@ def render_sequence(
     end: Optional[float] = None,
     title: str = "",
     extra_artists: Dict[type, Artist] = {},
+    reverse: bool = False,
 ) -> Any:
     if dtype is None:
         dtype = torch.get_default_dtype()
 
     # Evaluate the model with deep_forward to keep all intermediate outputs
+    direction = Direction("prograde" if not reverse else "retrograde")
     with deep_forward(optics) as trace:
-        _ = optics(default_input(dim, dtype))
+        _ = optics(default_input(dim, dtype, direction))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables_domains = get_domain(optics, dim)
@@ -163,6 +165,7 @@ def show(
     pupil: Any | None = None,
     field: Any | None = None,
     wavelength: Any | None = None,
+    reverse: bool = False,
 ) -> None | Any:
     "Render an optical stack and show it with ipython display"
 
@@ -174,7 +177,7 @@ def show(
     elif dim == 3:
         set_sampling3d(optics, pupil, field, wavelength)
 
-    scene = render_sequence(optics, dim, dtype, end, title, extra_artists)
+    scene = render_sequence(optics, dim, dtype, end, title, extra_artists, reverse)
 
     if controls is not None:
         scene["controls"] = controls

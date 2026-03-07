@@ -29,6 +29,7 @@ from torchlensmaker.types import (
     Batch3DTensor,
     BatchNDTensor,
     HomMatrix,
+    Direction,
 )
 
 ######
@@ -118,7 +119,7 @@ from torchlensmaker.surfaces.surface_conic import Conic
 from torchlensmaker.surfaces.surface_asphere import Asphere
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
 from torchlensmaker.surfaces.surface_square import Square
-from torchlensmaker.surfaces.surface_anchor import SurfaceAnchor
+from torchlensmaker.surfaces.surface_anchor import KinematicSurface
 
 ##################
 # Optical elements

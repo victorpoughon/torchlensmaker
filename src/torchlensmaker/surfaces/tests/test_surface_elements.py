@@ -29,7 +29,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.types import BatchNDTensor, Tf
+from torchlensmaker.types import BatchNDTensor, Tf, Direction
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
 )
@@ -109,13 +109,14 @@ def check_surface_module_2d(
     P = torch.zeros((N, 2), dtype=dtype, device=device)
     V = torch.tensor([1.0, 0.0], dtype=dtype, device=device).expand_as(P)
     tfid = hom_identity_2d(dtype, device)
+    direction = Direction("prograde")
 
     if trainable:
         t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid), allow_none_grad
+            mod, (P, V, tfid, direction), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid, direction))
 
     # Check output is sane
     assert t.shape == (N,)
@@ -145,13 +146,14 @@ def check_surface_module_3d(
     P = torch.zeros((N, 3), dtype=dtype, device=device)
     V = torch.tensor([1.0, 0.0, 0.0], dtype=dtype, device=device).expand_as(P)
     tfid = hom_identity_3d(dtype, device)
+    direction = Direction("prograde")
 
     if trainable:
         t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid), allow_none_grad
+            mod, (P, V, tfid, direction), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid, direction))
 
     # Check output is sane
     assert t.shape == (N,)

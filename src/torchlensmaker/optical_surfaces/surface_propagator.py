@@ -18,7 +18,7 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import Tf, BatchNDTensor
+from torchlensmaker.types import Tf, BatchNDTensor, Direction
 from torchlensmaker.core.ray_bundle import RayBundle
 
 
@@ -31,10 +31,12 @@ class SurfacePropagator(nn.Module):
         super().__init__()
         self.surface = surface.clone()
 
-    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, BatchNDTensor, Tf]:
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[RayBundle, BatchNDTensor, Tf]:
         # Raytrace with the surface
         t, normals, valid_collision, fk_surface, fk_next = self.surface(
-            rays.P, rays.V, tf
+            rays.P, rays.V, tf, direction
         )
 
         # First step: propagate rays forward to their collision point

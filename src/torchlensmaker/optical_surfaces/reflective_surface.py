@@ -58,7 +58,7 @@ class ReflectiveSurface(SequentialElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk)
+        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk, data.direction)
         rays_reflected = self.reflector(rays_propagated, normals)
 
         return data.replace(rays=rays_reflected, fk=fk_next)

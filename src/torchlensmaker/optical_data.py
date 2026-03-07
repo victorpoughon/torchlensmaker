@@ -20,16 +20,16 @@ from dataclasses import dataclass, replace
 import torch
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.types import Tf
+from torchlensmaker.types import Tf, Direction
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 
 
 @dataclass
 class OpticalData:
-    # dim is 2 or 3
     dim: int
     dtype: torch.dtype
+    direction: Direction
 
     # Forward kinematic chain
     fk: Tf
@@ -48,6 +48,7 @@ class OpticalData:
 def default_input(
     dim: int,
     dtype: torch.dtype | None = None,
+    direction: Direction = Direction.PROGRADE,
 ) -> OpticalData:
     if dtype is None:
         dtype = torch.get_default_dtype()
@@ -69,6 +70,7 @@ def default_input(
     return OpticalData(
         dim=dim,
         dtype=dtype,
+        direction=direction,
         fk=tfid,
         rays=rays,
         loss=torch.tensor(0.0, dtype=dtype),

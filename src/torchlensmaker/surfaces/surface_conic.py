@@ -26,6 +26,7 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     Tf,
+    Direction,
 )
 
 from .surface_element import SurfaceElement
@@ -213,16 +214,23 @@ class Conic(SurfaceElement):
         return type(self)(**kwargs | overrides)
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         kernel_surface = self.func2d if tf.pdim() == 2 else self.func3d
         kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
+        # Retrograde direction just needs to swap anchors
+        anchors = (
+            self.anchors.unbind(-1)
+            if direction.is_prograde()
+            else self.anchors.flip(0).unbind(-1)
+        )
+
         extent0 = self.kernel_outer_extent.apply(
-            self.anchors[0] * self.diameter / 2, self.C, self.K
+            anchors[0] * self.diameter / 2, self.C, self.K
         )
         extent1 = self.kernel_outer_extent.apply(
-            self.anchors[1] * self.diameter / 2, self.C, self.K
+            anchors[1] * self.diameter / 2, self.C, self.K
         )
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)

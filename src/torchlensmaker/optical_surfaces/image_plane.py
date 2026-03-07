@@ -70,11 +70,13 @@ class ImagePlane(SequentialElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
+        # Collision detection
+        rays_propagated, _, _ = self.propagator(data.rays, data.fk, data.direction)
+
+        # check no rays special case after propagator
+        # so we can still render
         if data.rays.V.shape[0] == 0:
             return data
-
-        # Collision detection
-        rays_propagated, _, _ = self.propagator(data.rays, data.fk)
 
         # TODO 2D only for now
         if data.dim == 3:

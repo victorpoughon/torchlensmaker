@@ -26,6 +26,7 @@ from torchlensmaker.types import (
     BatchNDTensor,
     MaskTensor,
     Tf,
+    Direction,
 )
 from .surface_element import SurfaceElement
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
@@ -195,7 +196,7 @@ class XYPolynomial(SurfaceElement):
         return type(self)(**kwargs | overrides)
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         # TODO raise nice error if 2D
         kernel_surface = self.func3d

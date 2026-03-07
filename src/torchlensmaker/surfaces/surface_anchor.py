@@ -24,6 +24,7 @@ from torchlensmaker.types import (
     Tf,
     BatchNDTensor,
     MaskTensor,
+    Direction,
 )
 from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.core.base_module import BaseModule
@@ -47,7 +48,7 @@ class SurfaceScaleAnchorKernel(FunctionalKernel):
         extent0: X value of the first anchor point
         extent1: X value of the second anchor point
         scale: scale factor that applies to the surface (1 or -1)
-    
+
     Outputs:
         tf_surface: transform that applies to the surface
         tf_next: transform that applies to the next joint in the kinematic chain
@@ -88,7 +89,7 @@ class SurfaceScaleAnchorKernel(FunctionalKernel):
         return tuple()
 
 
-class SurfaceAnchor(BaseModule):
+class KinematicSurface(BaseModule):
     """
     Apply anchor and scale to a wrapped surface element
     """
@@ -103,6 +104,8 @@ class SurfaceAnchor(BaseModule):
         self.surface = surface.clone()
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
+        self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
+        self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(surface=self.surface, anchors=self.anchors, scale=self.scale)
@@ -112,16 +115,30 @@ class SurfaceAnchor(BaseModule):
         return self.surface.render()
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         dim = P.shape[-1]
 
-        extent0 = self.surface.outer_extent(self.anchors[0] * self.surface.diameter / 2)
-        extent1 = self.surface.outer_extent(self.anchors[1] * self.surface.diameter / 2)
+        kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
-        anchor_function = anchor_transforms_2d if dim == 2 else anchor_transforms_3d
-        tf_surface, tf_next = anchor_function(extent0, extent1, self.scale, tf)
+        # Retrograde direction just needs to swap anchors
+        anchors = (
+            self.anchors.unbind(-1)
+            if direction.is_prograde()
+            else self.anchors.flip(0).unbind(-1)
+        )
 
-        t, normals, valid, _, _ = self.surface(P, V, tf_surface)
+        extent0 = self.surface.outer_extent(anchors[0] * self.surface.diameter / 2)
+        extent1 = self.surface.outer_extent(anchors[1] * self.surface.diameter / 2)
+
+        tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
+
+        # TODO note that currently surface also takes a direction
+        # because surfaces also can implement anchors and scale.
+        # However we could remove direction arg to surface entirely if we only
+        # use kinematic surface and remove anchors/scale from surface completely, TLM-90 TLM-95
+        t, normals, valid, _, _ = self.surface(
+            P, V, tf_surface, direction
+        ) 
 
         return t, normals, valid, tf_surface, tf_next

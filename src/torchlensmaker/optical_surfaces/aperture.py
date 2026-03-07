@@ -38,7 +38,7 @@ class Aperture(SequentialElement):
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, _, fk_next = self.propagator(data.rays, data.fk)
+        rays_propagated, _, fk_next = self.propagator(data.rays, data.fk, data.direction)
 
         return data.replace(
             rays=rays_propagated,

@@ -28,6 +28,7 @@ from torchlensmaker.types import (
     MaskTensor,
     HomMatrix,
     Tf,
+    Direction,
 )
 from .surface_element import SurfaceElement
 from torchlensmaker.core.geometry import unit_vector
@@ -145,7 +146,7 @@ class Disk(SurfaceElement):
         return type(self)(**kwargs | overrides)
 
     def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
+        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         return func.apply(P, V, tf, self.diameter)

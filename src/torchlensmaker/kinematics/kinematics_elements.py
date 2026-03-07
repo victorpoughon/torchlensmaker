@@ -27,6 +27,7 @@ from torchlensmaker.types import (
     HomMatrix,
     ScalarTensor,
     Tf,
+    Direction,
 )
 from .kinematics_kernels import (
     Rotate2DKernel,
@@ -44,7 +45,7 @@ from torchlensmaker.elements.sequential_element import SequentialElement
 
 class KinematicElement(SequentialElement):
     def sequential(self, data: OpticalData) -> OpticalData:
-        fk = self(data.fk)
+        fk = self(data.fk, data.direction)
         return data.replace(fk=fk)
 
 
@@ -73,10 +74,14 @@ class Gap(KinematicElement):
     def __repr__(self) -> str:
         return f"{self._get_name()}(x={self.x.item()})"
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         kernel_joint = self.kernel_joint2d if fk.pdim() == 2 else self.kernel_joint3d
         kernel_fk = self.kernel_fk2d if fk.pdim() == 2 else self.kernel_fk3d
         joint = kernel_joint.apply(self.x)
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return kernel_fk.apply(fk, joint)
 
 
@@ -102,8 +107,12 @@ class Translate2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y)
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk2d.apply(fk, joint)
 
 
@@ -125,8 +134,12 @@ class TranslateVec2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk2d.apply(fk, joint)
 
 
@@ -159,8 +172,12 @@ class Translate3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y, self.z)
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk3d.apply(fk, joint)
 
 
@@ -182,8 +199,12 @@ class TranslateVec3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk3d.apply(fk, joint)
 
 
@@ -207,8 +228,12 @@ class Rotate2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(self.theta)
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk2d.apply(fk, joint)
 
 
@@ -233,7 +258,12 @@ class AbsolutePosition2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
+        if direction.is_retrograde():
+            raise RuntimeError(
+                "AbsolutePosition2D cannot be evaluated in reverse (retrograde) direction"
+            )
+
         return self.kernel_joint.apply(self.x, self.y)
 
 
@@ -265,7 +295,12 @@ class AbsolutePosition3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
+        if direction.is_retrograde():
+            raise RuntimeError(
+                "AbsolutePosition3D cannot be evaluated in reverse (retrograde) direction"
+            )
+
         return self.kernel_joint.apply(self.x, self.y, self.z)
 
 
@@ -294,8 +329,12 @@ class Rotate3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         joint = self.kernel_joint.apply(self.y, self.z)
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
         return self.kernel_fk3d.apply(fk, joint)
 
 
@@ -326,13 +365,18 @@ class Rotate(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         if fk.pdim() == 2:
             joint = self.kernel_joint2d.apply(self.z)
-            return self.kernel_fk2d.apply(fk, joint)
+            kernel_fk = self.kernel_fk2d
         else:
             joint = self.kernel_joint3d.apply(self.y, self.z)
-            return self.kernel_fk3d.apply(fk, joint)
+            kernel_fk = self.kernel_fk3d
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
+        return kernel_fk.apply(fk, joint)
 
 
 class Translate(KinematicElement):
@@ -370,10 +414,15 @@ class Translate(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf) -> Tf:
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
         if fk.pdim() == 2:
             joint = self.kernel_joint2d.apply(self.x, self.y)
-            return self.kernel_fk2d.apply(fk, joint)
+            kernel_fk = self.kernel_fk2d
         else:
             joint = self.kernel_joint3d.apply(self.x, self.y, self.z)
-            return self.kernel_fk3d.apply(fk, joint)
+            kernel_fk = self.kernel_fk3d
+
+        if direction.is_retrograde():
+            joint = joint.flip()
+
+        return kernel_fk.apply(fk, joint)

@@ -86,7 +86,8 @@ class Sequential(SequentialElement):
         return iter(self._modules.values())
 
     def forward(self, data: OpticalData) -> OpticalData:
-        for module in self:
+        iterand = iter(self) if data.direction.is_prograde() else reversed(self)
+        for module in iterand:
             data = module.sequential(data)
         return data
 
