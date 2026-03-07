@@ -119,11 +119,31 @@ def rear_principal_point(
     outputs = lens(inputs)
 
     # Compute intersection locus of input and output ray bundles
-    t = equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
+    t = equivalent_locus_2d(
+        inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V
+    )
     collision_points = inputs.rays.points_at(t[:, 0])
 
     # Fit a parabola to the locus surface to obtain vertex
     return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
+
+
+def focal_point_with_light_source(
+    lens: tlm.Lens, light_source: tlm.LightSourceBase
+) -> Float[torch.Tensor, ""]:
+    """
+    Compute focal point with a paraxial light source
+    """
+
+    # Evaluate the light source and the model to get output ray
+    inputs = light_source(tlm.default_input(dim=2))
+    outputs = lens(inputs)
+
+    assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)
+
+    # Compute output ray intersection with the optical axis
+    t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
+    return outputs.rays.P[:, 0] + t * outputs.rays.V[:, 0]
 
 
 def rear_focal_point(
@@ -137,7 +157,7 @@ def rear_focal_point(
     Args:
         lens: the tlm.Lens model
         wavelength: the wavelength to use
-        h: height of the paraxial ray, normalized to the lens diameter
+        h: height of the paraxial ray, normalized to the lens minimal diameter
 
     Returns:
         a scalar tensor that contains the X coordinate of the rear focal length
@@ -145,19 +165,46 @@ def rear_focal_point(
 
     # Get the lens minimal diameter and setup the light source
     mdiam = lens.minimal_diameter()
-
-    source = tlm.SubChain(
+    light_source = tlm.SubChain(
         tlm.Translate2D(y=h * mdiam),
-        tlm.RaySource(material="air", sampler_wavel_2d=tlm.ZeroSampler1D()),
+        tlm.RaySource(
+            material="air",
+            wavelength=wavelength,
+            sampler_wavel_2d=tlm.ZeroSampler1D(),
+        ),
     )
 
-    # Evaluate the light source and the model to get output ray
-    inputs = source(tlm.default_input(dim=2))
-    outputs = lens(inputs)
+    return focal_point_with_light_source(lens, light_source)
 
-    assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)
 
-    # Compute output ray intersection with the optical axis
-    t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
+def front_focal_point(
+    lens: tlm.Lens,
+    wavelength: float,
+    h: float,
+) -> Float[torch.Tensor, ""]:
+    """
+    Compute front focal length of a lens using a paraxial ray
 
-    return outputs.rays.P[:, 0] + t * outputs.rays.V[:, 0]
+    Args:
+        lens: the tlm.Lens model
+        wavelength: the wavelength to use
+        h: height of the paraxial ray, normalized to the lens minimal diameter
+
+    Returns:
+        a scalar tensor that contains the X coordinate of the front focal length
+    """
+
+    # Get the lens minimal diameter and setup the light source
+    mdiam = lens.minimal_diameter()
+    light_source = tlm.SubChain(
+        tlm.Translate2D(y=h * mdiam),
+        tlm.Reversed(
+            tlm.RaySource(
+                material="air",
+                wavelength=wavelength,
+                sampler_wavel_2d=tlm.ZeroSampler1D(),
+            )
+        ),
+    )
+
+    return focal_point_with_light_source(tlm.Reversed(lens), light_source)

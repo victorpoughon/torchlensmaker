@@ -134,6 +134,7 @@ from torchlensmaker.elements.sequential import (
     Sequential,
     SubChain,
     SequentialElement,
+    Reversed,
 )
 from torchlensmaker.light_sources.light_sources_elements import (
     RaySource,

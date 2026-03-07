@@ -109,3 +109,16 @@ class Sequential(SequentialElement):
         wavel: int | Sequence[float] | None = None,
     ) -> None:
         return set_sampling3d(self, pupil, field, wavel)
+
+
+class Reversed(SequentialElement):
+    def __init__(self, element: BaseModule):
+        super().__init__()
+        self.element = element
+    
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)(self.element)
+
+    def forward(self, data: OpticalData) -> OpticalData:
+        output = self.element.sequential(data.replace(direction=data.direction.flip()))
+        return output.replace(direction=output.direction.flip())

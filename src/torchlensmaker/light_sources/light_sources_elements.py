@@ -20,7 +20,7 @@ import torch.nn as nn
 from typing import Any, Self
 from jaxtyping import Float
 
-from torchlensmaker.types import HomMatrix
+from torchlensmaker.types import HomMatrix, Direction
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 
@@ -50,11 +50,11 @@ class LightSourceBase(SequentialElement):
     def dim(self) -> Dim:
         raise NotImplementedError
 
-    def forward(self, tf: HomMatrix) -> RayBundle:
+    def forward(self, tf: HomMatrix, direction: Direction) -> RayBundle:
         raise NotImplementedError
 
     def sequential(self, data: OpticalData) -> OpticalData:
-        rays = self(data.fk.direct)
+        rays = self(data.fk.direct, data.direction)
         return data.replace(rays=rays)
 
 
@@ -88,7 +88,7 @@ class GenericLightSource(LightSourceBase):
         else:
             return self.geometry_3d.domain()
 
-    def forward(self, tf: HomMatrix) -> RayBundle:
+    def forward(self, tf: HomMatrix, direction: Direction) -> RayBundle:
         dim, dtype, device = tf.shape[0] - 1, tf.dtype, tf.device
 
         if dim == 2:
@@ -121,6 +121,10 @@ class GenericLightSource(LightSourceBase):
 
         Nrays = P.shape[0]
         assert wavel_coords.shape == (Nrays,), wavel_coords.shape
+
+        # If direction is retrograde, flip rays traveling direction
+        if direction.is_retrograde():
+            V = -V
 
         # Compute refraction index with material model
         R = self.material(wavel_coords)

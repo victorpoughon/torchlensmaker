@@ -22,7 +22,7 @@ from typing import Any, Optional, Dict
 from torchlensmaker.types import Direction
 from torchlensmaker.optical_data import default_input
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
-from torchlensmaker.elements.sequential import Sequential, SubChain
+from torchlensmaker.elements.sequential import Sequential, SubChain, Reversed
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface, SurfacePropagator
 from torchlensmaker.optical_surfaces.aperture import Aperture
@@ -80,6 +80,7 @@ default_artists: Dict[type, list[Artist]] = {
     ReflectiveSurface: [ForwardArtist(lambda mod: mod.propagator)],
     Aperture: [ForwardArtist(lambda mod: mod.propagator)],
     ImagePlane: [ForwardArtist(lambda mod: mod.propagator)],
+    Reversed: [ForwardArtist(lambda mod: mod.element)],
     KinematicElement: [KinematicArtist()],
 }
 

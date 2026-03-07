@@ -44,11 +44,11 @@ class Direction(Enum):
     The two possible directions are effectively forwards / backwards, but we use
     the vocabulary prograde / retrograde instead, to avoid any confusion with
     other terminology which already uses common terms:
-    
+
       * forward / backwards (pytorch autograd)
       * direct / inverse (geometric transforms)
       * forward / inverse (kinematics)
-    
+
     and we use an enum to avoid the "boolean argument" footgun.
     """
 
@@ -64,15 +64,19 @@ class Direction(Enum):
     def as_scale(self) -> float:
         return 1.0 if self.is_prograde() else -1.0
 
+    def flip(self) -> Self:
+        return self.PROGRADE if self.is_retrograde() else self.RETROGRADE
+
 
 @dataclass
 class Tf:
     """
     Geometric transform (2D or 3D)
-     
+
     Represented by a pair of homogeneous coordinate matrices for the direct and
     inverse transforms.
     """
+
     direct: HomMatrix
     inverse: HomMatrix
 
