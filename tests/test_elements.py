@@ -24,11 +24,11 @@ def test_elements1():
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), material="BK7"
+            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), materials=("air", "BK7")
         ),
         tlm.Gap(3.419),
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), material="air"
+            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), materials=("BK7", "air")
         ),
         tlm.Gap(97.5088),
         tlm.ImagePlane(50),
@@ -49,17 +49,17 @@ def test_elements2():
 
     optics = tlm.Sequential(
         tlm.Rotate2D(20),
-        tlm.RaySource(material="air", wavelength=(400, 800)),
+        tlm.RaySource(wavelength=(400, 800)),
         tlm.Gap(10),
         tlm.Rotate2D(-20),
         tlm.SubChain(
             tlm.Rotate2D(-A),
-            tlm.RefractiveSurface(tlm.Disk(S), material="K5"),
+            tlm.RefractiveSurface(tlm.Disk(S), materials=("air", "K5")),
         ),
         tlm.Gap(R),
         tlm.SubChain(
             tlm.Rotate2D(A),
-            tlm.RefractiveSurface(tlm.Disk(S), material="air"),
+            tlm.RefractiveSurface(tlm.Disk(S), materials=("K5", "air")),
         ),
     )
 
@@ -87,7 +87,7 @@ def test_rainbow():
         # Move the droplet of water some distance away from the source
         tlm.Gap(50),
         # First interface: half sphere (pointing left), refractive air to water
-        tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 1)), material="water"),
+        tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 1)), materials=("air", "water")),
         # Second interface: half sphere (pointing right), reflective
         tlm.SubChain(
             tlm.Rotate((-180, 0)),
@@ -96,7 +96,7 @@ def test_rainbow():
         # Third interface: half sphere (pointing down), refractive water to air
         tlm.SubChain(
             tlm.Rotate((60, 0)),
-            tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 0)), material="air"),
+            tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 0)), materials=("water", "air")),
         ),
     )
 
@@ -131,11 +131,11 @@ def test_elements3d():
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), material="BK7"
+            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), materials=("air", "BK7")
         ),
         tlm.Gap(3.419),
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), material="air"
+            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), materials=("BK7", "air")
         ),
         tlm.Gap(97.5088),
         tlm.ImagePlane(50),
@@ -193,14 +193,14 @@ def test_nolens():
     optics = tlm.Sequential(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
         tlm.Gap(10),
-        tlm.RefractiveSurface(surface.clone(anchors=(0, 1)), material="water"),
+        tlm.RefractiveSurface(surface.clone(anchors=(0, 1)), materials=("air", "water")),
         tlm.Gap(2),
         tlm.RefractiveSurface(
             surface.clone(
                 anchors=(0, 1),
                 scale=-1,
             ),
-            material="water",
+            materials=("water", "air"),
         ),
         tlm.Gap(50),
         tlm.FocalPoint(),
@@ -216,13 +216,13 @@ def test_surface_reuse() -> None:
     optics = tlm.Sequential(
         # tlm.PointSourceAtInfinity(beam_diameter=18.5),
         tlm.Gap(10),
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
         tlm.Gap(2),
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
         tlm.Gap(1),
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
         tlm.Gap(1),
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
     )
 
     tlm.show(optics, dim=2)
@@ -236,9 +236,9 @@ def test_elements_reuse() -> None:
     gap = tlm.Gap(10)
 
     manual_lens = tlm.Sequential(
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
         tlm.Gap(2),
-        tlm.RefractiveSurface(surface, material="water"),
+        tlm.RefractiveSurface(surface, materials=("air", "water")),
     )
 
     optics = tlm.Sequential(

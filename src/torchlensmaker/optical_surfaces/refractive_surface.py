@@ -19,11 +19,12 @@ import torch
 import torch.nn as nn
 
 from typing import Self, Any
-from torchlensmaker.types import TIRMode, Tf, BatchNDTensor
+from torchlensmaker.types import TIRMode, BatchNDTensor, Direction
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.physics.physics_elements import RefractiveInterface
 from torchlensmaker.materials.get_material_model import (
     MaterialModel,
@@ -33,25 +34,34 @@ from torchlensmaker.materials.get_material_model import (
 from .surface_propagator import SurfacePropagator
 
 
-class SurfaceRefractor(nn.Module):
+class SurfaceRefractor(BaseModule):
     """
     Implements refraction at a surface boundary to reorient a ray bundle
     """
 
     def __init__(
         self,
-        material: str | MaterialModel,
+        materials: tuple[str | MaterialModel, str | MaterialModel],
         tir_mode: TIRMode = "absorb",
     ):
         super().__init__()
-        self.material = get_material_model(material).clone()
+        self.materials = (
+            get_material_model(materials[0]).clone(),
+            get_material_model(materials[1]).clone(),
+        )
         self.tir_mode = tir_mode
         self.refractive_interface = RefractiveInterface()
 
-    def forward(self, rays: RayBundle, normals: BatchNDTensor) -> RayBundle:
+    def forward(
+        self, rays: RayBundle, normals: BatchNDTensor, direction: Direction
+    ) -> RayBundle:
         # Compute indices of refraction
-        n1 = rays.index
-        n2 = self.material(rays.wavel)
+        n1 = self.materials[0](rays.wavel)
+        n2 = self.materials[1](rays.wavel)
+
+        if direction.is_retrograde():
+            n1, n2 = n2, n1
+
         assert n1.shape == n2.shape == (rays.batch_size)
 
         # Snell's law happens here
@@ -63,28 +73,27 @@ class SurfaceRefractor(nn.Module):
             new_rays = rays.reorient_absorb(refracted, valid_refraction)
             n2 = n2[valid_refraction]
 
-        # Also apply the new index of refraction to the new bundle
-        return new_rays.replace(index=n2)
+        return new_rays
 
 
 class RefractiveSurface(SequentialElement):
     def __init__(
         self,
         surface: SurfaceElement,
-        material: str | MaterialModel,
+        materials: tuple[str | MaterialModel, str | MaterialModel],
         tir_mode: TIRMode = "absorb",
     ):
         super().__init__()
         self.propagator = SurfacePropagator(surface)
-        self.refractor = SurfaceRefractor(material, tir_mode)
+        self.refractor = SurfaceRefractor(materials, tir_mode)
 
     @property
     def surface(self) -> SurfaceElement:
         return self.propagator.surface
 
     @property
-    def material(self) -> MaterialModel:
-        return self.refractor.material
+    def materials(self) -> MaterialModel:
+        return self.refractor.materials
 
     @property
     def tir_mode(self) -> TIRMode:
@@ -93,13 +102,15 @@ class RefractiveSurface(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
             surface=self.surface,
-            material=self.material,
+            materials=self.materials,
             tir_mode=self.refractor.tir_mode,
         )
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk, data.direction)
-        rays_refracted = self.refractor(rays_propagated, normals)
+        rays_propagated, normals, fk_next = self.propagator(
+            data.rays, data.fk, data.direction
+        )
+        rays_refracted = self.refractor(rays_propagated, normals, data.direction)
 
         return data.replace(rays=rays_refracted, fk=fk_next)

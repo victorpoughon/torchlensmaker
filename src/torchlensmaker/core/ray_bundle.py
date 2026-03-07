@@ -32,7 +32,6 @@ class RayBundle(TensorDict):
         "pupil",
         "field",
         "wavel",
-        "index",
         "pupil_idx",
         "field_idx",
         "wavel_idx",
@@ -78,11 +77,6 @@ class RayBundle(TensorDict):
     def wavel(self) -> BatchTensor:
         "Wavelength (in nanometers)"
         return self["wavel"]
-
-    @property
-    def index(self) -> BatchTensor:
-        "Index of refraction in the current medium"
-        return self["index"]
 
     @property
     def pupil_idx(self) -> IndexTensor:

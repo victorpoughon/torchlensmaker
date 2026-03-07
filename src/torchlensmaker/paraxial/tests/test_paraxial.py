@@ -21,18 +21,20 @@ import torchlensmaker as tlm
 
 
 def test_paraxial1() -> None:
+    mat1 = tlm.NonDispersiveMaterial(1.517)
+    mat2 = tlm.NonDispersiveMaterial(1.649)
     doublet = tlm.Lens(
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(4.0, C=0.135327),
-            material=tlm.NonDispersiveMaterial(1.517),
+            tlm.SphereByCurvature(4.0, C=0.135327), materials=("air", mat1)
         ),
         tlm.Gap(1.05),
         tlm.RefractiveSurface(
-            tlm.SphereByCurvature(3.8, C=-0.19311),
-            material=tlm.NonDispersiveMaterial(1.649),
+            tlm.SphereByCurvature(3.8, C=-0.19311), materials=(mat1, mat2)
         ),
         tlm.Gap(0.4),
-        tlm.RefractiveSurface(tlm.SphereByCurvature(4.0, C=-0.06164), material="air"),
+        tlm.RefractiveSurface(
+            tlm.SphereByCurvature(4.0, C=-0.06164), materials=(mat2, "air")
+        ),
     )
 
     # Paraxial points

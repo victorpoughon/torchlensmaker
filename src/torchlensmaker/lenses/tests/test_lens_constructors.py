@@ -40,7 +40,7 @@ def test_cemented() -> None:
         gaps=[
             tlm.InnerGap(1.0),
         ],
-        materials=["BK7", "air"],
+        materials=["vacuum", "BK7", "air"],
     )
 
     check_lens(lens1)
@@ -48,10 +48,43 @@ def test_cemented() -> None:
 
 def test_singlet() -> None:
     lens1 = tlm.lenses.singlet(
-        tlm.SphereByCurvature(diameter=30, C=1/55),
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
         tlm.InnerGap(1.0),
-        tlm.SphereByCurvature(diameter=30, C=1/55),
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
         material="BK7",
+    )
+
+    check_lens(lens1)
+
+
+def test_semiplanar_rear() -> None:
+    lens1 = tlm.lenses.semiplanar_rear(
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
+        tlm.InnerGap(1.0),
+        material="BK7",
+    )
+
+    check_lens(lens1)
+
+
+def test_semiplanar_front() -> None:
+    lens1 = tlm.lenses.semiplanar_front(
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
+        tlm.InnerGap(1.0),
+        material="BK7",
+    )
+
+    check_lens(lens1)
+
+
+def test_doublet() -> None:
+    lens1 = tlm.lenses.doublet(
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
+        tlm.InnerGap(1.0),
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
+        tlm.OuterGap(1.0),
+        tlm.SphereByCurvature(diameter=30, C=1 / 55),
+        materials=("BK7", "water"),
     )
 
     check_lens(lens1)

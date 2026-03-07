@@ -168,7 +168,6 @@ def rear_focal_point(
     light_source = tlm.SubChain(
         tlm.Translate2D(y=h * mdiam),
         tlm.RaySource(
-            material="air",
             wavelength=wavelength,
             sampler_wavel_2d=tlm.ZeroSampler1D(),
         ),
@@ -200,7 +199,6 @@ def front_focal_point(
         tlm.Translate2D(y=h * mdiam),
         tlm.Reversed(
             tlm.RaySource(
-                material="air",
                 wavelength=wavelength,
                 sampler_wavel_2d=tlm.ZeroSampler1D(),
             )

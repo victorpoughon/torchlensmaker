@@ -61,7 +61,6 @@ def default_input(
         pupil=torch.empty((0, dim), dtype=dtype),
         field=torch.empty((0, dim), dtype=dtype),
         wavel=torch.empty((0,), dtype=dtype),
-        index=torch.empty((0,), dtype=dtype),
         pupil_idx=torch.empty((0,), dtype=torch.int64),
         field_idx=torch.empty((0,), dtype=torch.int64),
         wavel_idx=torch.empty((0,), dtype=torch.int64),

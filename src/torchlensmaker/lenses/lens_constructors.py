@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Optional, Any, Literal
+from typing import Sequence
 import torch
 import torch.nn as nn
 
@@ -40,7 +40,7 @@ def cemented(
 
     if len(surfaces) < 2:
         raise RuntimeError(
-            f"cemented() expects at least 2 surfaces, got {len(surfaces)}"
+            f"cemented() expects at least 2 surfaces, got {len(surfaces)}."
         )
 
     if len(surfaces) - 1 != len(gaps):
@@ -48,9 +48,9 @@ def cemented(
             f"cemented() expects N-1 gaps for N surfaces, got {len(gaps)} gaps and {len(surfaces)} surfaces"
         )
 
-    if len(surfaces) != len(materials):
+    if len(surfaces) + 1 != len(materials):
         raise RuntimeError(
-            f"cemented() expects N materials for N surfaces, got f{len(materials)} materials and {len(surfaces)}"
+            f"cemented() expects N+1 materials for N surfaces, got {len(materials)} materials and {len(surfaces)} surfaces"
         )
 
     # Process position gaps into surface anchors by adding 'origin' at start and end
@@ -59,19 +59,22 @@ def cemented(
     flat_with_origin = [0, *flat, 0]
     all_anchors = list(zip(flat_with_origin[::2], flat_with_origin[1::2]))
 
+    # Process materials into material pairs
+    all_materials = list(zip(materials, materials[1:]))
+
     # Add a dummy gap for the loop iteration
     gaps.append(tlm.InnerGap(0))
 
-    assert len(all_anchors) == len(materials) == len(surfaces) == len(gaps)
+    assert len(all_anchors) == len(all_materials) == len(surfaces) == len(gaps)
 
     sequence: list[nn.Module] = []
-    for i, (surface, anchors, gap, material) in enumerate(
-        zip(surfaces, all_anchors, gaps, materials)
+    for i, (surface, anchors, gap, materials_pair) in enumerate(
+        zip(surfaces, all_anchors, gaps, all_materials)
     ):
         sequence.append(
             tlm.RefractiveSurface(
                 surface.clone(anchors=anchors),
-                material=material,
+                materials=materials_pair,
             )
         )
         if i != len(surfaces) - 1:
@@ -85,6 +88,7 @@ def singlet(
     gap: tlm.PositionGap,
     surface2: tlm.SurfaceElement,
     material: tlm.MaterialModel | str,
+    entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
 ) -> tlm.Lens:
     """
@@ -95,13 +99,16 @@ def singlet(
         gap: position gap between the surfaces
         surface2: Second surface
         material: material of the lens
+        entry_material (optional): the material before the lens (default "air")
         exit_material (optional): the material after the lens (default "air")
 
     Returns:
         A lens element
     """
     return cemented(
-        surfaces=[surface1, surface2], gaps=[gap], materials=[material, exit_material]
+        surfaces=[surface1, surface2],
+        gaps=[gap],
+        materials=[entry_material, material, exit_material],
     )
 
 
@@ -109,6 +116,7 @@ def symmetric_singlet(
     surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
+    entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
 ) -> tlm.Lens:
     """
@@ -118,6 +126,7 @@ def symmetric_singlet(
         surface: Lens surface
         gap: position gap between the surfaces
         material: material of the lens
+        entry_material (optional): the material before the lens (default "air")
         exit_material (optional): the material after the lens (default "air")
 
     Returns:
@@ -128,7 +137,7 @@ def symmetric_singlet(
     return tlm.Lens(
         tlm.RefractiveSurface(
             surface.clone(anchors=(0, gap_anchors[0])),
-            material=material,
+            materials=(entry_material, material),
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
@@ -136,7 +145,7 @@ def symmetric_singlet(
                 anchors=(gap_anchors[1], 0),
                 scale=-1,
             ),
-            material=exit_material,
+            materials=(material, exit_material),
         ),
     )
 
@@ -145,6 +154,7 @@ def semiplanar_rear(
     surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
+    entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
     scale: float = 1.0,
 ) -> tlm.Lens:
@@ -166,12 +176,12 @@ def semiplanar_rear(
     return tlm.Lens(
         tlm.RefractiveSurface(
             surface.clone(anchors=(0, gap_anchors[0]), scale=scale),
-            material=material,
+            materials=(entry_material, material),
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
             tlm.Disk(surface.diameter),
-            material=exit_material,
+            materials=(material, exit_material),
         ),
     )
 
@@ -180,6 +190,7 @@ def semiplanar_front(
     surface: tlm.SurfaceElement,
     gap: tlm.PositionGap,
     material: tlm.MaterialModel | str,
+    entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
     scale: float = 1.0,
 ) -> tlm.Lens:
@@ -199,11 +210,13 @@ def semiplanar_front(
     gap_anchors = tlm.position_gap_to_anchors(gap)
 
     return tlm.Lens(
-        tlm.RefractiveSurface(tlm.Disk(surface.diameter), material=material),
+        tlm.RefractiveSurface(
+            tlm.Disk(surface.diameter), materials=(entry_material, material)
+        ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
             surface.clone(anchors=(gap_anchors[1], 0), scale=scale),
-            material=exit_material,
+            materials=(material, exit_material),
         ),
     )
 
@@ -214,7 +227,7 @@ def doublet(
     surface2: tlm.SurfaceElement,
     gap2: tlm.PositionGap,
     surface3: tlm.SurfaceElement,
-    materials: list[tlm.MaterialModel | str],
+    materials: Sequence[tlm.MaterialModel | str],
 ) -> tlm.Lens:
     """
     Utility constructor for a doublet lens with three independent surfaces
@@ -226,17 +239,17 @@ def doublet(
         gap2: second position gap
         surface3: Third surface
         materials:
-            list of two or three materials of the lens. The third material indicates
-            the exit material, defaults to "air".
+            list of two or four materials of the lens. The first and last
+            materials indicates the exit material, defaults to "air".
 
     Returns:
         A lens element
     """
-    if len(materials) not in (2, 3):
-        raise RuntimeError(f"doublet() expects 2 or 3 materials, got {len(materials)}")
+    if len(materials) not in (2, 4):
+        raise RuntimeError(f"doublet() expects 2 or 4 materials, got {len(materials)}")
 
     if len(materials) == 2:
-        materials.append("air")
+        materials = ["air", *materials, "air"]
 
     return cemented(
         surfaces=[surface1, surface2, surface3],

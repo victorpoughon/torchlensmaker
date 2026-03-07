@@ -39,8 +39,6 @@ from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectGeometry3D,
     ObjectAtInfinityGeometry3D,
 )
-from torchlensmaker.materials.material_elements import MaterialModel
-from torchlensmaker.materials.get_material_model import get_material_model
 
 
 class LightSourceBase(SequentialElement):
@@ -67,7 +65,6 @@ class GenericLightSource(LightSourceBase):
         sampler_field_3d: nn.Module,
         sampler_wavel_2d: nn.Module,
         sampler_wavel_3d: nn.Module,
-        material: nn.Module,
         geometry_2d: nn.Module,
         geometry_3d: nn.Module,
     ):
@@ -78,7 +75,6 @@ class GenericLightSource(LightSourceBase):
         self.sampler_pupil_3d = sampler_pupil_3d
         self.sampler_field_3d = sampler_field_3d
         self.sampler_wavel_3d = sampler_wavel_3d
-        self.material = material
         self.geometry_2d = geometry_2d
         self.geometry_3d = geometry_3d
 
@@ -126,16 +122,12 @@ class GenericLightSource(LightSourceBase):
         if direction.is_retrograde():
             V = -V
 
-        # Compute refraction index with material model
-        R = self.material(wavel_coords)
-
         return RayBundle.create(
             P=P,
             V=V,
             pupil=pupil_coords,
             field=field_coords,
             wavel=wavel_coords,
-            index=R,
             pupil_idx=pupil_idx,
             field_idx=field_idx,
             wavel_idx=wavel_idx,
@@ -147,7 +139,6 @@ class Object(GenericLightSource):
         self,
         beam_angular_size: Float[torch.Tensor, ""] | float,
         object_diameter: Float[torch.Tensor, ""] | float,
-        material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_pupil_2d: nn.Module = LinspaceSampler1D(5),
         sampler_field_2d: nn.Module = LinspaceSampler1D(5),
@@ -163,7 +154,6 @@ class Object(GenericLightSource):
             sampler_field_3d=sampler_field_3d,
             sampler_wavel_2d=sampler_wavel_2d,
             sampler_wavel_3d=sampler_wavel_3d,
-            material=get_material_model(material),
             geometry_2d=ObjectGeometry2D(
                 beam_angular_size, object_diameter, wavelength
             ),
@@ -176,7 +166,6 @@ class Object(GenericLightSource):
         kwargs = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
             object_diameter=self.geometry_2d.object_diameter,
-            material=self.material,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
@@ -198,7 +187,6 @@ class ObjectAtInfinity(GenericLightSource):
         self,
         beam_diameter: Float[torch.Tensor, ""] | float,
         angular_size: Float[torch.Tensor, ""] | float,
-        material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_pupil_2d: nn.Module = LinspaceSampler1D(5),
         sampler_field_2d: nn.Module = LinspaceSampler1D(5),
@@ -214,7 +202,6 @@ class ObjectAtInfinity(GenericLightSource):
             sampler_pupil_3d=sampler_pupil_3d,
             sampler_field_3d=sampler_field_3d,
             sampler_wavel_3d=sampler_wavel_3d,
-            material=get_material_model(material),
             geometry_2d=ObjectAtInfinityGeometry2D(
                 beam_diameter, angular_size, wavelength
             ),
@@ -227,7 +214,6 @@ class ObjectAtInfinity(GenericLightSource):
         kwargs = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
             angular_size=self.geometry_2d.angular_size,
-            material=self.material,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
@@ -248,7 +234,6 @@ class PointSource(GenericLightSource):
     def __init__(
         self,
         beam_angular_size: Float[torch.Tensor, ""] | float,
-        material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_pupil_2d: nn.Module = LinspaceSampler1D(5),
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
@@ -262,7 +247,6 @@ class PointSource(GenericLightSource):
             sampler_pupil_3d=sampler_pupil_3d,
             sampler_field_3d=ZeroSampler2D(),
             sampler_wavel_3d=sampler_wavel_3d,
-            material=get_material_model(material),
             geometry_2d=ObjectGeometry2D(
                 beam_angular_size=beam_angular_size,
                 object_diameter=0,
@@ -278,7 +262,6 @@ class PointSource(GenericLightSource):
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
-            material=self.material,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
@@ -297,7 +280,6 @@ class PointSourceAtInfinity(GenericLightSource):
     def __init__(
         self,
         beam_diameter: Float[torch.Tensor, ""] | float,
-        material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_pupil_2d: nn.Module = LinspaceSampler1D(5),
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
@@ -311,7 +293,6 @@ class PointSourceAtInfinity(GenericLightSource):
             sampler_pupil_3d=sampler_pupil_3d,
             sampler_field_3d=ZeroSampler2D(),
             sampler_wavel_3d=sampler_wavel_3d,
-            material=get_material_model(material),
             geometry_2d=ObjectAtInfinityGeometry2D(
                 beam_diameter=beam_diameter,
                 angular_size=0,
@@ -327,7 +308,6 @@ class PointSourceAtInfinity(GenericLightSource):
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
-            material=self.material,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
@@ -345,7 +325,6 @@ class PointSourceAtInfinity(GenericLightSource):
 class RaySource(GenericLightSource):
     def __init__(
         self,
-        material: str | MaterialModel = "air",
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
@@ -357,7 +336,6 @@ class RaySource(GenericLightSource):
             sampler_pupil_3d=ZeroSampler2D(),
             sampler_field_3d=ZeroSampler2D(),
             sampler_wavel_3d=sampler_wavel_3d,
-            material=get_material_model(material),
             geometry_2d=ObjectAtInfinityGeometry2D(
                 beam_diameter=0,
                 angular_size=0,
@@ -372,7 +350,6 @@ class RaySource(GenericLightSource):
 
     def clone(self, **overrides: Any) -> Self:
         kwargs = dict(
-            material=self.material,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
