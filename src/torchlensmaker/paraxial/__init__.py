@@ -17,15 +17,17 @@
 # ruff: noqa: F401
 
 from .paraxial import (
+    equivalent_locus_2d,
     rear_principal_point,
     rear_focal_point,
+    front_principal_point,
     front_focal_point,
-    equivalent_locus_2d,
 )
 
 __all__ = [
+    "equivalent_locus_2d",
     "rear_principal_point",
     "rear_focal_point",
+    "front_principal_point",
     "front_focal_point",
-    "equivalent_locus_2d",
 ]

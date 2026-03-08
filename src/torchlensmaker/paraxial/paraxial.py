@@ -77,6 +77,23 @@ def fit_parabola_vertex_2d(
     return num / denom
 
 
+def principal_point_with_light_source(
+    lens: tlm.Lens, light_source: tlm.LightSourceBase
+) -> Float[torch.Tensor, ""]:
+    # Evaluate the light source and the model to get output rays
+    inputs = light_source.sequential(tlm.default_input(dim=2))
+    outputs = lens(inputs)
+
+    # Compute intersection locus of input and output ray bundles
+    t = equivalent_locus_2d(
+        inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V
+    )
+    collision_points = inputs.rays.points_at(t[:, 0])
+
+    # Fit a parabola to the locus surface to obtain vertex
+    return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
+
+
 def rear_principal_point(
     lens: tlm.Lens,
     wavelength: float,
@@ -114,18 +131,47 @@ def rear_principal_point(
         wavelength=wavelength,
     )
 
-    # Evaluate the light source and the model to get output rays
-    inputs = source.sequential(tlm.default_input(dim=2))
-    outputs = lens(inputs)
+    return principal_point_with_light_source(lens, source)
 
-    # Compute intersection locus of input and output ray bundles
-    t = equivalent_locus_2d(
-        inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V
+
+def front_principal_point(
+    lens: tlm.Lens,
+    wavelength: float,
+    alpha: float = 0.05,
+    beta: float = 0.01,
+    pupil_samples=30,
+) -> Float[torch.Tensor, ""]:
+    """
+    Front principal point of a lens
+
+    Compute the front principal point of a lens by fitting a parabolic model to
+    the equivalent refracting locus.
+
+    Args:
+        lens: the tlm.Lens model
+        wavelength: the wavelength to use
+        alpha: alpha * D is the diameter of the light source used to compute the principal plane
+               where D is the minimal diameter of the lens
+        beta:  beta * D is the diameter of the reverse aperture used to block
+               rays too close to the optical axis
+        pupil_samples: number of samples
+
+    Returns:
+        a scalar tensor that contains the X coordinate of the front principal plane
+    """
+
+    # TODO implement beta
+
+    # Get the lens minimal diameter and setup the light source
+    mdiam = lens.minimal_diameter()
+    source = tlm.PointSourceAtInfinity(
+        alpha * mdiam,
+        sampler_pupil_2d=tlm.LinspaceSampler1D(pupil_samples),
+        sampler_wavel_2d=tlm.ZeroSampler1D(),
+        wavelength=wavelength,
     )
-    collision_points = inputs.rays.points_at(t[:, 0])
 
-    # Fit a parabola to the locus surface to obtain vertex
-    return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
+    return principal_point_with_light_source(tlm.Reversed(lens), tlm.Reversed(source))
 
 
 def focal_point_with_light_source(

@@ -37,14 +37,25 @@ def test_paraxial1() -> None:
         ),
     )
 
-    # Paraxial points
-    principal_point = tlm.paraxial.rear_principal_point(doublet, wavelength=550)
-    focal_point = tlm.paraxial.rear_focal_point(doublet, wavelength=550, h=0.01)
-    focal_length = focal_point - principal_point
-
+    # Lens stuff
     print("Lens minimal diameter:", doublet.minimal_diameter().detach().item())
     print("Lens inner thickness:", doublet.inner_thickness().detach().item())
     print("Lens outer thickness:", doublet.outer_thickness().detach().item())
-    print("Lens rear principal point:", principal_point.detach().item())
-    print("Lens rear focal point:", focal_point.detach().item())
-    print("Lens focal length:", focal_length.detach().item())
+
+    # Rear Paraxial points
+    rear_principal_point = tlm.paraxial.rear_principal_point(doublet, wavelength=550)
+    rear_focal_point = tlm.paraxial.rear_focal_point(doublet, wavelength=550, h=0.01)
+    rear_focal_length = rear_focal_point - rear_principal_point
+
+    print("Lens rear principal point:", rear_principal_point.detach().item())
+    print("Lens rear focal point:", rear_focal_point.detach().item())
+    print("Lens rear focal length:", rear_focal_length.detach().item())
+
+    # Front paraxial points
+    front_principal_point = tlm.paraxial.front_principal_point(doublet, wavelength=550)
+    front_focal_point = tlm.paraxial.front_focal_point(doublet, wavelength=550, h=0.01)
+    front_focal_length = front_focal_point - front_principal_point
+
+    print("Lens front principal point:", front_principal_point.detach().item())
+    print("Lens front focal point:", front_focal_point.detach().item())
+    print("Lens front focal length:", front_focal_length.detach().item())
