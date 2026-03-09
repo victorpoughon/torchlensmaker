@@ -49,7 +49,9 @@ def hom_matrix(M: Float[torch.Tensor, "D D"]) -> HomMatrix:
     return hom_matrix_2d(M) if M.shape[0] == 2 else hom_matrix_3d(M)
 
 
-def hom_identity_2d(dtype: torch.dtype, device: torch.device) -> Tf:
+def hom_identity_2d(
+    dtype: torch.dtype | None = None, device: torch.device | None = None
+) -> Tf:
     "Identity 2D homogeneous transform matrices"
     return Tf(
         torch.eye(3, dtype=dtype, device=device),
@@ -57,7 +59,9 @@ def hom_identity_2d(dtype: torch.dtype, device: torch.device) -> Tf:
     )
 
 
-def hom_identity_3d(dtype: torch.dtype, device: torch.device) -> Tf:
+def hom_identity_3d(
+    dtype: torch.dtype | None = None, device: torch.device | None = None
+) -> Tf:
     "Identity 3D homogeneous transform matrices"
     return Tf(
         torch.eye(4, dtype=dtype, device=device),
@@ -65,7 +69,9 @@ def hom_identity_3d(dtype: torch.dtype, device: torch.device) -> Tf:
     )
 
 
-def hom_identity(dim: int, dtype: torch.dtype, device: torch.device) -> Tf:
+def hom_identity(
+    dim: int, dtype: torch.dtype | None = None, device: torch.device | None = None
+) -> Tf:
     "Identity homogeneous transform matrices in 2D or 3D"
     return (
         hom_identity_2d(dtype, device) if dim == 2 else hom_identity_3d(dtype, device)
