@@ -2,22 +2,10 @@ version = 1
 revision = 3
 requires-python = ">=3.11"
 resolution-markers = [
-    "python_full_version >= '3.13' and extra != 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128'",
-    "python_full_version == '3.12.*' and extra != 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128'",
-    "python_full_version < '3.12' and extra != 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128'",
-    "python_full_version >= '3.13' and sys_platform != 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version == '3.12.*' and sys_platform != 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version < '3.12' and sys_platform != 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version >= '3.13' and sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version == '3.12.*' and sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version < '3.12' and sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version >= '3.12' and extra != 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
-    "python_full_version < '3.12' and extra != 'extra-14-torchlensmaker-cpu' and extra != 'extra-14-torchlensmaker-cu128'",
+    "python_full_version >= '3.13'",
+    "python_full_version == '3.12.*'",
+    "python_full_version < '3.12'",
 ]
-conflicts = [[
-    { package = "torchlensmaker", extra = "cpu" },
-    { package = "torchlensmaker", extra = "cu128" },
-]]
 
 [manifest]
 excludes = ["torch"]
@@ -29,7 +17,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
     { name = "sniffio" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a3/73/199a98fc2dae33535d6b8e8e6ec01f8c1d76c9adb096c6b7d64823038cde/anyio-4.8.0.tar.gz", hash = "sha256:1d9fe889df5212298c0c0723fa20479d1b94883a2df44bd3897aa91083316f7a", size = 181126, upload-time = "2025-01-05T13:13:11.095Z" }
 wheels = [
@@ -525,7 +513,7 @@ name = "humanfriendly"
 version = "10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pyreadline3", marker = "sys_platform == 'win32' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "pyreadline3", marker = "sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/cc/3f/2c29224acb2e2df4d2046e4c73ee2662023c58ff5b113c4c1adac0886c43/humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc", size = 360702, upload-time = "2021-09-17T21:40:43.31Z" }
 wheels = [
@@ -567,7 +555,7 @@ name = "ipykernel"
 version = "6.29.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "appnope", marker = "sys_platform == 'darwin' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "appnope", marker = "sys_platform == 'darwin'" },
     { name = "comm" },
     { name = "debugpy" },
     { name = "ipython" },
@@ -591,16 +579,16 @@ name = "ipython"
 version = "8.31.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "decorator" },
     { name = "jedi" },
     { name = "matplotlib-inline" },
-    { name = "pexpect", marker = "(sys_platform != 'emscripten' and sys_platform != 'win32') or (sys_platform == 'emscripten' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128') or (sys_platform == 'win32' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "pexpect", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
     { name = "prompt-toolkit" },
     { name = "pygments" },
     { name = "stack-data" },
     { name = "traitlets" },
-    { name = "typing-extensions", marker = "python_full_version < '3.12' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.12'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/01/35/6f90fdddff7a08b7b715fccbd2427b5212c9525cd043d26fdc45bee0708d/ipython-8.31.0.tar.gz", hash = "sha256:b6a2274606bec6166405ff05e54932ed6e5cfecaca1fc05f2cacde7bb074d70b", size = 5501011, upload-time = "2024-12-20T12:34:22.61Z" }
 wheels = [
@@ -734,7 +722,7 @@ version = "5.7.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "platformdirs" },
-    { name = "pywin32", marker = "(platform_python_implementation != 'PyPy' and sys_platform == 'win32') or (platform_python_implementation == 'PyPy' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128') or (sys_platform != 'win32' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "pywin32", marker = "platform_python_implementation != 'PyPy' and sys_platform == 'win32'" },
     { name = "traitlets" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/00/11/b56381fa6c3f4cc5d2cf54a7dbf98ad9aa0b339ef7a601d6053538b079a7/jupyter_core-5.7.2.tar.gz", hash = "sha256:aa5f8d32bbf6b431ac830496da7392035d6f61b4f54872f15c4bd2a9c3f536d9", size = 87629, upload-time = "2024-03-12T12:37:35.652Z" }
@@ -789,7 +777,7 @@ dependencies = [
     { name = "overrides" },
     { name = "packaging" },
     { name = "prometheus-client" },
-    { name = "pywinpty", marker = "(os_name == 'nt' and sys_platform != 'darwin') or (os_name == 'nt' and extra != 'extra-14-torchlensmaker-cpu') or (os_name != 'nt' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128') or (sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "pywinpty", marker = "os_name == 'nt'" },
     { name = "pyzmq" },
     { name = "send2trash" },
     { name = "terminado" },
@@ -807,7 +795,7 @@ name = "jupyter-server-terminals"
 version = "0.5.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "pywinpty", marker = "(os_name == 'nt' and sys_platform != 'darwin') or (os_name == 'nt' and extra != 'extra-14-torchlensmaker-cpu') or (os_name != 'nt' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128') or (sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "pywinpty", marker = "os_name == 'nt'" },
     { name = "terminado" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fc/d5/562469734f476159e99a55426d697cbf8e7eb5efe89fb0e0b4f83a3d3459/jupyter_server_terminals-0.5.3.tar.gz", hash = "sha256:5ae0295167220e9ace0edcfdb212afd2b01ee8d179fe6f23c899590e9b8a5269", size = 31430, upload-time = "2024-03-12T14:37:03.049Z" }
@@ -1652,7 +1640,7 @@ name = "pytest"
 version = "8.3.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "colorama", marker = "sys_platform == 'win32' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "colorama", marker = "sys_platform == 'win32'" },
     { name = "iniconfig" },
     { name = "packaging" },
     { name = "pluggy" },
@@ -1759,7 +1747,7 @@ name = "pyzmq"
 version = "26.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "cffi", marker = "implementation_name == 'pypy' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "cffi", marker = "implementation_name == 'pypy'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/fd/05/bed626b9f7bb2322cdbbf7b4bd8f54b1b617b0d2ab2d3547d6e39428a48e/pyzmq-26.2.0.tar.gz", hash = "sha256:070672c258581c8e4f640b5159297580a9974b026043bd4ab0470be9ed324f1f", size = 271975, upload-time = "2024-08-22T09:02:03.351Z" }
 wheels = [
@@ -1817,7 +1805,7 @@ source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "attrs" },
     { name = "rpds-py" },
-    { name = "typing-extensions", marker = "python_full_version < '3.13' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/27/32/fd98246df7a0f309b58cae68b10b6b219ef2eb66747f00dfb34422687087/referencing-0.36.1.tar.gz", hash = "sha256:ca2e6492769e3602957e9b831b94211599d2aade9477f5d44110d2530cf9aade", size = 74661, upload-time = "2025-01-17T02:22:05.463Z" }
 wheels = [
@@ -2024,7 +2012,7 @@ dependencies = [
     { name = "cloudpickle" },
     { name = "importlib-metadata" },
     { name = "numpy" },
-    { name = "orjson", marker = "python_full_version < '3.13' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "orjson", marker = "python_full_version < '3.13'" },
     { name = "packaging" },
     { name = "pyvers" },
 ]
@@ -2060,8 +2048,8 @@ name = "terminado"
 version = "0.18.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "os_name != 'nt' or (extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
-    { name = "pywinpty", marker = "(os_name == 'nt' and sys_platform != 'darwin') or (os_name == 'nt' and extra != 'extra-14-torchlensmaker-cpu') or (os_name != 'nt' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128') or (sys_platform == 'darwin' and extra == 'extra-14-torchlensmaker-cpu' and extra == 'extra-14-torchlensmaker-cu128')" },
+    { name = "ptyprocess", marker = "os_name != 'nt'" },
+    { name = "pywinpty", marker = "os_name == 'nt'" },
     { name = "tornado" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/8a/11/965c6fd8e5cc254f1fe142d547387da17a8ebfd75a3455f637c663fb38a0/terminado-0.18.1.tar.gz", hash = "sha256:de09f2c4b85de4765f7714688fff57d3e75bad1f909b589fde880460c753fd2e", size = 32701, upload-time = "2024-03-12T14:34:39.026Z" }
@@ -2093,16 +2081,12 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
-cpu = [
-    { name = "onnx" },
-    { name = "onnxscript" },
-]
-cu128 = [
-    { name = "onnx" },
-    { name = "onnxscript" },
-]
 dev = [
     { name = "ruff" },
+]
+onnx = [
+    { name = "onnx" },
+    { name = "onnxscript" },
 ]
 test = [
     { name = "nbmake" },
@@ -2120,18 +2104,14 @@ requires-dist = [
     { name = "nbmake", marker = "extra == 'test'", specifier = "~=1.5.4" },
     { name = "nbstripout-fast", marker = "extra == 'test'" },
     { name = "notebook", marker = "extra == 'test'", specifier = ">=7" },
-    { name = "onnx", marker = "extra == 'cpu'", specifier = ">=1.20.0" },
-    { name = "onnx", marker = "extra == 'cu128'", specifier = ">=1.20.0" },
+    { name = "onnx", marker = "extra == 'onnx'", specifier = ">=1.20.0" },
     { name = "onnxruntime", marker = "extra == 'test'", specifier = ">=1.23.2" },
-    { name = "onnxscript", marker = "extra == 'cpu'", specifier = ">=0.5.7" },
-    { name = "onnxscript", marker = "extra == 'cu128'", specifier = ">=0.5.7" },
+    { name = "onnxscript", marker = "extra == 'onnx'", specifier = ">=0.5.7" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.3,<9.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.11.2" },
     { name = "tensordict", specifier = ">=0.11.0" },
-    { name = "torch", marker = "extra == 'cpu'", specifier = ">=2.9.1", index = "https://download.pytorch.org/whl/cpu", conflict = { package = "torchlensmaker", extra = "cpu" } },
-    { name = "torch", marker = "extra == 'cu128'", specifier = ">=2.9.1", index = "https://download.pytorch.org/whl/cu128", conflict = { package = "torchlensmaker", extra = "cu128" } },
 ]
-provides-extras = ["test", "dev", "cpu", "cu128"]
+provides-extras = ["test", "dev", "onnx"]
 
 [[package]]
 name = "tornado"
