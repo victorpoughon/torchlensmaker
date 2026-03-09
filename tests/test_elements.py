@@ -197,6 +197,9 @@ def test_cooke(dtype: torch.dtype, device: torch.device):
 
     optics.set_sampling3d(pupil=100, wavel=4)
     tlm.show3d(optics)
+
+    tlm.optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), 10)
+    
     # f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
 
 
