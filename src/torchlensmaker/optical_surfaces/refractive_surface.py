@@ -63,6 +63,7 @@ class SurfaceRefractor(BaseModule):
             n1, n2 = n2, n1
 
         assert n1.shape == n2.shape == (rays.batch_size)
+        assert n1.device == n2.device
 
         # Snell's law happens here
         refracted, valid_refraction = self.refractive_interface(rays.V, normals, n1, n2)

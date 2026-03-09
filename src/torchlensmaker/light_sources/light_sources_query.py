@@ -70,7 +70,7 @@ def set_sampling2d(
         source.sampler_field_2d = init_sampler1d(field)
 
     if wavel:
-        source.sampler_wavelength_2d = init_sampler1d(wavel)
+        source.sampler_wavel_2d = init_sampler1d(wavel)
 
 
 def init_sampler2d(value: int | Sequence[float]) -> nn.Module:
@@ -110,4 +110,4 @@ def set_sampling3d(
         source.sampler_field_3d = init_sampler2d(field)
 
     if wavel:
-        source.sampler_wavelength_3d = init_sampler1d(wavel)
+        source.sampler_wavel_3d = init_sampler1d(wavel)

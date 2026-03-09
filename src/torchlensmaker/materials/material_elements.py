@@ -20,7 +20,7 @@ from typing import Self
 from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.core.tensor_manip import init_param
 
 from .material_kernels import (
     NonDispersiveMaterialKernel,
@@ -41,9 +41,13 @@ class MaterialModel(BaseModule):
 
 
 class NonDispersiveMaterial(MaterialModel):
-    def __init__(self, n: Float[torch.Tensor, ""] | float):
+    def __init__(
+        self,
+        n: Float[torch.Tensor, ""] | float,
+        trainable: bool = False,
+    ):
         super().__init__()
-        self.n = to_tensor(n)
+        self.n = init_param(self, "n", n, trainable)
         self.kernel = NonDispersiveMaterialKernel()
 
     def clone(self, **overrides) -> Self:
@@ -66,12 +70,13 @@ class CauchyMaterial(MaterialModel):
         B: Float[torch.Tensor, ""] | float,
         C: Float[torch.Tensor, ""] | float = 0.0,
         D: Float[torch.Tensor, ""] | float = 0.0,
+        trainable: bool = False,
     ):
         super().__init__()
-        self.A = to_tensor(A)
-        self.B = to_tensor(B)
-        self.C = to_tensor(C)
-        self.D = to_tensor(D)
+        self.A = init_param(self, "A", A, trainable)
+        self.B = init_param(self, "B", B, trainable)
+        self.C = init_param(self, "C", C, trainable)
+        self.D = init_param(self, "D", D, trainable)
         self.kernel = CauchyMaterialKernel()
 
     def clone(self, **overrides) -> Self:
@@ -98,14 +103,15 @@ class SellmeierMaterial(MaterialModel):
         C1: Float[torch.Tensor, ""] | float,
         C2: Float[torch.Tensor, ""] | float,
         C3: Float[torch.Tensor, ""] | float,
+        trainable: bool = False,
     ):
         super().__init__()
-        self.B1 = to_tensor(B1)
-        self.B2 = to_tensor(B2)
-        self.B3 = to_tensor(B3)
-        self.C1 = to_tensor(C1)
-        self.C2 = to_tensor(C2)
-        self.C3 = to_tensor(C3)
+        self.B1 = init_param(self, "B1", B1, trainable)
+        self.B2 = init_param(self, "B2", B2, trainable)
+        self.B3 = init_param(self, "B3", B3, trainable)
+        self.C1 = init_param(self, "C1", C1, trainable)
+        self.C2 = init_param(self, "C2", C2, trainable)
+        self.C3 = init_param(self, "C3", C3, trainable)
         self.kernel = SellmeierMaterialKernel()
 
     def clone(self, **overrides) -> Self:
