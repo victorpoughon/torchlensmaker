@@ -175,11 +175,7 @@ def check_kinematic_element_3d(
     element.clone()
 
 
-def test_elements_2d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
     T = nn.Parameter(torch.tensor([5.0, 2.0]))
 
     elements_2d = nn.ModuleList(
@@ -218,11 +214,7 @@ def test_elements_2d() -> None:
         # )
 
 
-def test_trainable_elements_2d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_trainable_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
     T = nn.Parameter(torch.tensor([5.0, 2.0]))
 
     elements_2d = nn.ModuleList(
@@ -257,11 +249,7 @@ def test_trainable_elements_2d() -> None:
         # )
 
 
-def test_elements_3d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
     T3d = torch.tensor([5.0, 2.0, -15.0])
 
     elements_3d = nn.ModuleList(
@@ -334,10 +322,7 @@ def test_elements_3d() -> None:
         # )
 
 
-def test_trainable_elements_3d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
+def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
 
     T3d = torch.tensor([5.0, 2.0, -15.0])
 
@@ -421,11 +406,7 @@ def test_trainable_elements_3d() -> None:
         # )
 
 
-def test_elements_mixed() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
     elements_mixed = nn.ModuleList(
         [
             Gap(5.0),
@@ -471,11 +452,7 @@ def test_elements_mixed() -> None:
         # )
 
 
-def test_trainable_elements_mixed() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_trainable_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
     elements_mixed = nn.ModuleList(
         [
             Gap(5.0, trainable=True),
@@ -524,7 +501,7 @@ def test_trainable_elements_mixed() -> None:
         # )
 
 
-def test_elements_shared_parameter() -> None:
+def test_elements_shared_parameter(dtype: torch.dtype, device: torch.device) -> None:
     """
     Test sharing parameters between elements
     """

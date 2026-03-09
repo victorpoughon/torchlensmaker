@@ -51,37 +51,26 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_vectors,
 )
 
-torch.set_default_dtype(torch.float64)
-torch.set_default_device(torch.device("cpu"))
 
-
-def test_hom_matrix() -> None:
-    id2 = torch.eye(
-        2, dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+def test_hom_matrix(dtype: torch.dtype, device: torch.device) -> None:
+    id2 = torch.eye(2)
     hom_id2 = hom_matrix(id2)
-    assert torch.allclose(hom_id2, torch.eye(3, dtype=id2.dtype, device=id2.device))
+    assert torch.allclose(hom_id2, torch.eye(3))
 
-    id3 = torch.eye(
-        3, dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+    id3 = torch.eye(3)
     hom_id3 = hom_matrix(id3)
-    assert torch.allclose(hom_id3, torch.eye(4, dtype=id2.dtype, device=id2.device))
+    assert torch.allclose(hom_id3, torch.eye(4))
 
 
 def transforms_2d() -> list[Tf]:
-    base = hom_identity_2d(
-        dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+    base = hom_identity_2d()
     t1 = hom_translate_2d(torch.tensor([1.0, 2.0]))
     t2 = hom_rotate_2d(torch.tensor(0.5))
     t3 = kinematic_chain_append_2d(base, t1)
     t4 = kinematic_chain_append_2d(t3, t2)
     t5 = kinematic_chain_append_2d(t4, t4)
     t6 = kinematic_chain_extend_2d(base, [t1, t2, t3])
-    t7 = hom_identity_2d(
-        dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+    t7 = hom_identity_2d()
     t8 = hom_compose_2d([t1, t2, t3])
     t9 = hom_translate_2d(torch.tensor([0.5, 1.2]))
     t10 = hom_scale_2d(torch.tensor(1.0))
@@ -90,7 +79,9 @@ def transforms_2d() -> list[Tf]:
     return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
 
-def test_transform_functions_2d() -> None:
+def test_transform_functions_2d(dtype: torch.dtype, device: torch.device) -> None:
+    rtol, atol = {torch.float32: (1e-3, 1e-4), torch.float64: (1e-5, 1e-8)}[dtype]
+
     # Any number of batch dimensions
     test_points = [
         torch.rand((2,)),
@@ -133,27 +124,38 @@ def test_transform_functions_2d() -> None:
             assert out_vectors_inv.device == vectors.device
 
             # Roundtrip
-            assert torch.allclose(points, transform_points(tf.direct, out_points_inv))
-            assert torch.allclose(points, transform_points(tf.inverse, out_points))
             assert torch.allclose(
-                vectors, transform_vectors(tf.direct, out_vectors_inv)
+                points,
+                transform_points(tf.direct, out_points_inv),
+                rtol=rtol,
+                atol=atol,
             )
-            assert torch.allclose(vectors, transform_vectors(tf.inverse, out_vectors))
+            assert torch.allclose(
+                points, transform_points(tf.inverse, out_points), rtol=rtol, atol=atol
+            )
+            assert torch.allclose(
+                vectors,
+                transform_vectors(tf.direct, out_vectors_inv),
+                rtol=rtol,
+                atol=atol,
+            )
+            assert torch.allclose(
+                vectors,
+                transform_vectors(tf.inverse, out_vectors),
+                rtol=rtol,
+                atol=atol,
+            )
 
 
 def transforms_3d() -> list[Tf]:
-    base = hom_identity_3d(
-        dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+    base = hom_identity_3d()
     t1 = hom_translate_3d(torch.tensor([1.0, 2.0, 3.0]))
     t2 = hom_rotate_3d(torch.tensor(0.5), torch.tensor(0.6))
     t3 = kinematic_chain_append_3d(base, t1)
     t4 = kinematic_chain_append_3d(t3, t2)
     t5 = kinematic_chain_append_3d(t4, t4)
     t6 = kinematic_chain_extend_3d(base, [t1, t2, t3])
-    t7 = hom_identity_3d(
-        dtype=torch.get_default_dtype(), device=torch.get_default_device()
-    )
+    t7 = hom_identity_3d()
     t8 = hom_compose_3d([t1, t2, t3])
     t9 = hom_translate_3d(torch.tensor([1.0, 2.0, -3.0]))
     t10 = hom_scale_3d(torch.tensor(1.0))
@@ -162,7 +164,10 @@ def transforms_3d() -> list[Tf]:
     return [base, t1, t2, t3, t4, t5, t6, t7, t8, t9, t10, t11]
 
 
-def test_transform_functions_3d() -> None:
+def test_transform_functions_3d(dtype: torch.dtype, device: torch.device) -> None:
+
+    rtol, atol = {torch.float32: (1e-3, 1e-4), torch.float64: (1e-5, 1e-8)}[dtype]
+
     # Any number of batch dimensions
     test_points = [
         torch.rand((3,)),
@@ -207,13 +212,28 @@ def test_transform_functions_3d() -> None:
             out_rays_points, out_rays_vectors = transform_rays(
                 tf.direct, points, vectors
             )
-            assert torch.allclose(out_rays_points, out_points)
-            assert torch.allclose(out_rays_vectors, out_vectors)
+            assert torch.allclose(out_rays_points, out_points, rtol=rtol, atol=atol)
+            assert torch.allclose(out_rays_vectors, out_vectors, rtol=rtol, atol=atol)
 
             # Roundtrip
-            assert torch.allclose(points, transform_points(tf.direct, out_points_inv))
-            assert torch.allclose(points, transform_points(tf.inverse, out_points))
             assert torch.allclose(
-                vectors, transform_vectors(tf.direct, out_vectors_inv)
+                points,
+                transform_points(tf.direct, out_points_inv),
+                rtol=rtol,
+                atol=atol,
             )
-            assert torch.allclose(vectors, transform_vectors(tf.inverse, out_vectors))
+            assert torch.allclose(
+                points, transform_points(tf.inverse, out_points), rtol=rtol, atol=atol
+            )
+            assert torch.allclose(
+                vectors,
+                transform_vectors(tf.direct, out_vectors_inv),
+                rtol=rtol,
+                atol=atol,
+            )
+            assert torch.allclose(
+                vectors,
+                transform_vectors(tf.inverse, out_vectors),
+                rtol=rtol,
+                atol=atol,
+            )
