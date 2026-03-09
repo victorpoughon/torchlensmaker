@@ -3,76 +3,119 @@ import torch.nn as nn
 import torchlensmaker as tlm
 
 
-def test_elements0():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
-
-    optics = tlm.Sequential(
-        tlm.Gap(15),
-    )
-
-    optics.set_sampling2d(pupil=10, field=5, wavel=1)
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+def test_show_dtype_device(dtype: torch.dtype, device: torch.device):
+    print("device", device)
+    print("dtype", dtype)
+    print("torch.cuda.is_available():", torch.cuda.is_available())
+    print("torch.cuda.device_count():", torch.cuda.device_count())
 
 
-def test_elements1():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
+def assert_ray_bundle_dtype(rays: tlm.RayBundle, expected_dtype: torch.dtype) -> None:
+    assert rays["P"].dtype == expected_dtype
+    assert rays["V"].dtype == expected_dtype
+    assert rays["pupil"].dtype == expected_dtype
+    assert rays["field"].dtype == expected_dtype
+    assert rays["wavel"].dtype == expected_dtype
+    assert rays["pupil_idx"].dtype == torch.int64
+    assert rays["field_idx"].dtype == torch.int64
+    assert rays["wavel_idx"].dtype == torch.int64
 
-    optics = tlm.Sequential(
-        tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
-        tlm.Gap(15),
-        tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), materials=("air", "BK7")
+
+def assert_ray_bundle_device(rays: tlm.RayBundle, expected_device: torch.dtype) -> None:
+    assert rays["P"].device == expected_device
+    assert rays["V"].device == expected_device
+    assert rays["pupil"].device == expected_device
+    assert rays["field"].device == expected_device
+    assert rays["wavel"].device == expected_device
+    assert rays["pupil_idx"].device == expected_device
+    assert rays["field_idx"].device == expected_device
+    assert rays["wavel_idx"].device == expected_device
+
+
+def check_sample_and_render_2d(
+    optics: tlm.BaseModule, expected_dtype: torch.dtype, expected_device: torch.device
+) -> None:
+    # Sample and render in 2D
+    optics.set_sampling2d(pupil=10, field=5, wavel=2)
+    outputs_2d = optics(tlm.default_input(dim=2))
+    _ = tlm.render_sequence(optics, dim=2)
+
+    # Check dtype, device
+    assert_ray_bundle_dtype(outputs_2d.rays, expected_dtype)
+    assert_ray_bundle_device(outputs_2d.rays, expected_device)
+
+
+def check_sample_and_render_3d(
+    optics: tlm.BaseModule, expected_dtype: torch.device, expected_device: torch.device
+) -> None:
+    # Sample and render in 3D
+    optics.set_sampling3d(pupil=10, field=5, wavel=2)
+    outputs_3d = optics(tlm.default_input(dim=3))
+    _ = tlm.render_sequence(optics, dim=3)
+
+    # Check dtype, device
+    assert_ray_bundle_dtype(outputs_3d.rays, expected_dtype)
+    assert_ray_bundle_device(outputs_3d.rays, expected_device)
+
+
+def test_basic_sequential_models(dtype: torch.dtype, device: torch.device):
+    """
+    Run simple checks for dtype and device correctness on basic sequential systems
+    that are expected to work in both 2D and 3D.
+
+    More complex models should go into their own test functions.
+    """
+
+    sequential_test_models = [
+        tlm.Sequential(),
+        tlm.Sequential(
+            tlm.Gap(15),
         ),
-        tlm.Gap(3.419),
-        tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), materials=("BK7", "air")
+        tlm.Sequential(
+            tlm.ObjectAtInfinity(
+                beam_diameter=10, angular_size=20, wavelength=(400, 800)
+            ),
+            tlm.Gap(15),
+            tlm.RefractiveSurface(
+                tlm.SphereByCurvature(diameter=25, C=1 / -45.759),
+                materials=("air", "BK7"),
+            ),
+            tlm.Gap(3.419),
+            tlm.RefractiveSurface(
+                tlm.SphereByCurvature(diameter=25, C=1 / -24.887),
+                materials=("BK7", "air"),
+            ),
+            tlm.Gap(97.5088),
+            tlm.ImagePlane(50),
         ),
-        tlm.Gap(97.5088),
-        tlm.ImagePlane(50),
-    )
-
-    optics.set_sampling2d(pupil=10, field=5, wavel=10)
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
-
-
-def test_elements2():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
-
-    S = 5
-    R = S / 2
-    A = 30
-
-    optics = tlm.Sequential(
-        tlm.Rotate2D(20),
-        tlm.RaySource(wavelength=(400, 800)),
-        tlm.Gap(10),
-        tlm.Rotate2D(-20),
-        tlm.SubChain(
-            tlm.Rotate2D(-A),
-            tlm.RefractiveSurface(tlm.Disk(S), materials=("air", "K5")),
+        tlm.Sequential(
+            tlm.Gap(-100),
+            tlm.PointSourceAtInfinity(beam_diameter=30),
+            tlm.Gap(100),
+            tlm.ReflectiveSurface(tlm.Parabola(35.0, A=-0.0001, trainable=True)),
+            tlm.Gap(-80),
+            tlm.ReflectiveSurface(
+                tlm.SphereByCurvature(35.0, C=1 / 450.0, trainable=True)
+            ),
+            tlm.Gap(100),
+            tlm.FocalPoint(),
         ),
-        tlm.Gap(R),
-        tlm.SubChain(
-            tlm.Rotate2D(A),
-            tlm.RefractiveSurface(tlm.Disk(S), materials=("K5", "air")),
-        ),
-    )
+    ]
 
-    optics.to(dtype=torch.float64)
+    for model in sequential_test_models:
+        # Can evaluate forward and render
+        check_sample_and_render_2d(model, dtype, device)
+        check_sample_and_render_3d(model, dtype, device)
 
-    optics.set_sampling2d(wavel=10)
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+        # Can convert to another dtype or device
+        model.to(dtype=torch.float32)
+        model.to(dtype=torch.float64)
+        model.to(device=torch.device("cpu"))
+        if torch.cuda.is_available():
+            model.to(device=torch.device("cuda:0"))
 
 
-def test_rainbow():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
+def test_rainbow(dtype: torch.dtype, device: torch.device):
 
     # Use half spheres to model interface boundaries
     radius = 5
@@ -87,7 +130,9 @@ def test_rainbow():
         # Move the droplet of water some distance away from the source
         tlm.Gap(50),
         # First interface: half sphere (pointing left), refractive air to water
-        tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 1)), materials=("air", "water")),
+        tlm.RefractiveSurface(
+            halfsphere.clone(anchors=(1, 1)), materials=("air", "water")
+        ),
         # Second interface: half sphere (pointing right), reflective
         tlm.SubChain(
             tlm.Rotate((-180, 0)),
@@ -96,59 +141,27 @@ def test_rainbow():
         # Third interface: half sphere (pointing down), refractive water to air
         tlm.SubChain(
             tlm.Rotate((60, 0)),
-            tlm.RefractiveSurface(halfsphere.clone(anchors=(1, 0)), materials=("water", "air")),
+            tlm.RefractiveSurface(
+                halfsphere.clone(anchors=(1, 0)), materials=("water", "air")
+            ),
         ),
     )
 
-    optics.to(dtype=torch.float64)
-
-    optics.set_sampling2d(pupil=3, field=2, wavel=3)
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+    check_sample_and_render_2d(optics, dtype, device)
+    check_sample_and_render_3d(optics, dtype, device)
 
 
-def test_elements3():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
-
+def test_elements3(dtype: torch.dtype, device: torch.device):
     optics = tlm.Sequential(
         tlm.Translate(y=5.001),
         tlm.ObjectAtInfinity(10, 0.5),
     )
 
-    optics.to(dtype=torch.float64)
-
-    optics.set_sampling2d(pupil=10, field=5, wavel=10)
-    output = optics(tlm.default_input(dim=2, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+    check_sample_and_render_2d(optics, dtype, device)
+    check_sample_and_render_3d(optics, dtype, device)
 
 
-def test_elements3d():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
-
-    optics = tlm.Sequential(
-        tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
-        tlm.Gap(15),
-        tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -45.759), materials=("air", "BK7")
-        ),
-        tlm.Gap(3.419),
-        tlm.RefractiveSurface(
-            tlm.SphereByCurvature(diameter=25, C=1 / -24.887), materials=("BK7", "air")
-        ),
-        tlm.Gap(97.5088),
-        tlm.ImagePlane(50),
-    )
-
-    optics.to(dtype=torch.float64)
-
-    optics.set_sampling2d(pupil=10, field=5, wavel=10)
-    output = optics(tlm.default_input(dim=3, dtype=torch.float64))
-    scene = tlm.render_sequence(optics, dim=3, dtype=torch.float64)
-
-
-def test_cooke():
+def test_cooke(dtype: torch.dtype, device: torch.device):
     d1, d2 = 30, 25
 
     r1 = tlm.SphereByCurvature(d1, 1 / 26.4)
@@ -187,13 +200,15 @@ def test_cooke():
     # f, _ = tlm.spot_diagram(optics, sampling=sampling, row="object", figsize=(12, 12))
 
 
-def test_nolens():
+def test_nolens(dtype: torch.dtype, device: torch.device):
     surface = tlm.Parabola(diameter=15, A=tlm.parameter(0.02))  # y = a*x^2
 
     optics = tlm.Sequential(
         tlm.PointSourceAtInfinity(beam_diameter=18.5),
         tlm.Gap(10),
-        tlm.RefractiveSurface(surface.clone(anchors=(0, 1)), materials=("air", "water")),
+        tlm.RefractiveSurface(
+            surface.clone(anchors=(0, 1)), materials=("air", "water")
+        ),
         tlm.Gap(2),
         tlm.RefractiveSurface(
             surface.clone(
@@ -210,7 +225,7 @@ def test_nolens():
     tlm.show(optics, dim=3)
 
 
-def test_surface_reuse() -> None:
+def test_surface_reuse(dtype: torch.dtype, device: torch.device) -> None:
     surface = tlm.Parabola(diameter=15, A=-0.05)
 
     optics = tlm.Sequential(
@@ -229,7 +244,7 @@ def test_surface_reuse() -> None:
     tlm.show(optics, dim=3)
 
 
-def test_elements_reuse() -> None:
+def test_elements_reuse(dtype: torch.dtype, device: torch.device) -> None:
     surface = tlm.SphereByCurvature(10, 1 / 50)
     material = tlm.NonDispersiveMaterial(1.5108)
     lens = tlm.lenses.symmetric_singlet(surface, tlm.InnerGap(5.9), material=material)

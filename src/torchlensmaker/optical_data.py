@@ -48,12 +48,15 @@ class OpticalData:
 def default_input(
     dim: int,
     dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
     direction: Direction = Direction.PROGRADE,
 ) -> OpticalData:
     if dtype is None:
         dtype = torch.get_default_dtype()
+    if device is None:
+        device = torch.get_default_device()
 
-    tfid = hom_identity(dim, dtype, torch.device("cpu"))  # TODO device support
+    tfid = hom_identity(dim, dtype, device)
 
     rays = RayBundle.create(
         P=torch.empty((0, dim), dtype=dtype),
