@@ -41,56 +41,29 @@ kernels_library: Dict[str, FunctionalKernel] = {
 }
 
 
-def test_source_type_kernel_inputs_and_params_float32() -> None:
-    dtype = torch.float32
-    device = torch.device("cpu")
-
+def test_kinematics_kernels_inputs_and_params(
+    dtype: torch.dtype, device: torch.device
+) -> None:
     # Export, load, compare eval on example inputs
     for name, kernel in kernels_library.items():
         check_kernels_example_inputs_and_params(name, kernel, dtype, device)
 
 
-def test_source_type_kernel_inputs_and_params_float64() -> None:
-    dtype = torch.float64
-    device = torch.device("cpu")
-
-    # Export, load, compare eval on example inputs
-    for name, kernel in kernels_library.items():
-        check_kernels_example_inputs_and_params(name, kernel, dtype, device)
-
-
-def test_source_type_kernel_eval_float32() -> None:
-    dtype = torch.float32
-    device = torch.device("cpu")
-
+def test_kinematics_kernels_eval(dtype: torch.dtype, device: torch.device) -> None:
     # Export, load, compare eval on example inputs
     for name, kernel in kernels_library.items():
         check_kernels_eval(name, kernel, dtype, device)
 
 
-def test_source_type_kernel_eval_float64() -> None:
-    dtype = torch.float64
-    device = torch.device("cpu")
+def test_kinematics_kernels_export_onnx(
+    dtype: torch.dtype, device: torch.device, tmp_path: Path
+) -> None:
 
-    # Export, load, compare eval on example inputs
-    for name, kernel in kernels_library.items():
-        check_kernels_eval(name, kernel, dtype, device)
-
-
-def test_source_type_kernel_export_onnx_float32(tmp_path: Path) -> None:
-    dtype = torch.float32
-    device = torch.device("cpu")
+    # Note this test only works in float32 as of Jan 2026
+    # because onnxruntime cpu doesn't seem to support cos() in float64...
+    if dtype == torch.float64:
+        return
 
     # Export, load, compare eval on example inputs
     for name, kernel in kernels_library.items():
         check_kernels_export_onnx(name, kernel, tmp_path, dtype, device)
-
-
-# cos missing
-# def test_source_type_kernel_export_onnx_float64(tmp_path: Path) -> None:
-#     dtype = torch.float64
-#     device = torch.device("cpu")
-
-#     # Export, load, compare eval on example inputs
-#     for name, kernel in kernels_library.items():
-#         check_kernels_export_onnx(name, kernel, tmp_path, dtype, device)

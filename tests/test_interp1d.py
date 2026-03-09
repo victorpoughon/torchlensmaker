@@ -24,6 +24,6 @@ def test_equals_numpy() -> None:
     newX = torch.tensor([7.0, 12.0, 0.0, 20.0])
 
     newY = interp1d(X, Y, newX)
-    newY_numpy = np.interp(newX, X, Y)
+    newY_numpy = np.interp(newX.cpu().numpy(), X.cpu().numpy(), Y.cpu().numpy())
 
-    assert np.allclose(newY_numpy, newY.numpy())
+    assert np.allclose(newY_numpy, newY.cpu().numpy())

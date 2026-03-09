@@ -116,7 +116,9 @@ def check_surface_module_2d(
             mod, (P, V, tfid, direction), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid, direction))
+        t, normals, valid, tf_surface, tf_next = check_model_eval(
+            mod, (P, V, tfid, direction)
+        )
 
     # Check output is sane
     assert t.shape == (N,)
@@ -133,6 +135,7 @@ def check_surface_module_2d(
 
     # Check that surface can be cloned
     mod.clone()
+
 
 def check_surface_module_3d(
     mod: nn.Module,
@@ -153,7 +156,9 @@ def check_surface_module_3d(
             mod, (P, V, tfid, direction), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid, direction))
+        t, normals, valid, tf_surface, tf_next = check_model_eval(
+            mod, (P, V, tfid, direction)
+        )
 
     # Check output is sane
     assert t.shape == (N,)
@@ -172,11 +177,7 @@ def check_surface_module_3d(
     mod.clone()
 
 
-def test_sag_surfaces_modules_2d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> None:
     surfaces_2d = [
         Disk(10.0),
         SphereByCurvature(10.0, C=0.0),
@@ -196,11 +197,7 @@ def test_sag_surfaces_modules_2d() -> None:
         check_surface_module_2d(module, False, dtype, device)
 
 
-def test_sag_surfaces_modules_3d() -> None:
-    dtype, device = torch.float64, torch.device("cpu")
-    torch.set_default_dtype(dtype)
-    torch.set_default_device(device)
-
+def test_sag_surfaces_modules_3d(dtype: torch.dtype, device: torch.device) -> None:
     surfaces_3d = [
         Disk(10.0),
         SphereByCurvature(10, 0.05),

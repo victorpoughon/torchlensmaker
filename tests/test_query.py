@@ -3,10 +3,7 @@ import torch.nn as nn
 import torchlensmaker as tlm
 
 
-def test_query0():
-    torch.set_default_dtype(torch.float64)
-    torch.set_default_device(torch.device("cpu"))
-
+def test_query0(dtype: torch.dtype, device: torch.device):
     optics = tlm.Sequential(
         tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
         tlm.Gap(15),
@@ -18,9 +15,9 @@ def test_query0():
     )
 
     optics.set_sampling2d(pupil=10, field=5, wavel=3)
-    outputs = optics(tlm.default_input(dim=2, dtype=torch.float64))
+    outputs = optics(tlm.default_input(dim=2))
 
-    scene = tlm.render_sequence(optics, dim=2, dtype=torch.float64)
+    scene = tlm.render_sequence(optics, dim=2)
     
     tlm.show2d(optics)
     
