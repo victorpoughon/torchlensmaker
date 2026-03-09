@@ -47,6 +47,8 @@ from torchlensmaker.core.geometry import (
     unit3d_rot,
 )
 from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.core.base_module import BaseModule
 
 ############
 # Kinematics
