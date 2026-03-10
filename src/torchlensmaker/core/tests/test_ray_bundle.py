@@ -26,15 +26,9 @@ def test_ray_bundle() -> None:
         pupil=torch.tensor([[0.0]]),
         field=torch.tensor([[0.0]]),
         wavel=torch.tensor([500.0]),
-        index=torch.tensor([1.5]),
         pupil_idx=torch.tensor([[0]], dtype=torch.int64),
         field_idx=torch.tensor([[0]], dtype=torch.int64),
         wavel_idx=torch.tensor([0], dtype=torch.int64),
     )
 
-    # Add extra dim
-    rays.set("mecha_1", torch.tensor([[0.0]]))
-    rays["mecha_1_index"] = torch.tensor([0], dtype=torch.int64)
-
     print(rays)
-    print(rays.keys())

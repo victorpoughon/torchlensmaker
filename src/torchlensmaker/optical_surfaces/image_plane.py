@@ -18,8 +18,9 @@ import torch
 import torch.nn as nn
 
 from typing import Sequence, Optional, TypeAlias, Literal, Self, Any
-from torchlensmaker.types import BatchTensor, ScalarTensor
+from torchlensmaker.types import BatchTensor, ScalarTensor, Tf, Direction, BatchNDTensor
 from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.surfaces.surface_disk import Disk
 
 from torchlensmaker.optical_data import OpticalData
@@ -69,18 +70,30 @@ class ImagePlane(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    def sequential(self, data: OpticalData) -> OpticalData:
+        # In sequential mode, image plane is transparent to rays
+        # We compute its outputs but forward the rays bundle unchanged
+        _, _ = self(data.rays, data.fk, data.direction)
+        return data
+
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[BatchNDTensor, ScalarTensor]:
         # Collision detection
-        rays_propagated, _, _ = self.propagator(data.rays, data.fk, data.direction)
+        rays_propagated, _, _ = self.propagator(rays, tf, direction)
 
         # check no rays special case after propagator
         # so we can still render
-        if data.rays.V.shape[0] == 0:
-            return data
+        if rays.V.shape[0] == 0:
+            rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
+            loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
+            return rays_image, loss
 
         # TODO 2D only for now
-        if data.dim == 3:
-            return data
+        if rays.V.shape[-1] == 3:
+            rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
+            loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
+            return rays_image, loss
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
@@ -103,10 +116,4 @@ class ImagePlane(SequentialElement):
         else:
             loss = torch.sum(torch.pow(res, 2))
 
-        # Note: image plane is transparent to rays,
-        # we only add information to the rays (the image plane coordinates)
-
-        return data.replace(
-            rays=data.rays.replace(image=rays_image),
-            loss=loss,
-        )
+        return rays_image, loss

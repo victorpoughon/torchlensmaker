@@ -14,84 +14,91 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Self
+from typing import Self, Any
+from dataclasses import dataclass, replace
 import torch
-from tensordict import TensorDict
-from torchlensmaker.types import BatchNDTensor, BatchTensor, IndexTensor, MaskTensor
+from torchlensmaker.types import (
+    BatchNDTensor,
+    BatchTensor,
+    IndexTensor,
+    MaskTensor,
+)
 
 
-class RayBundle(TensorDict):
+@dataclass
+class RayBundle:
     """
     A bundle of parametric light rays in either 2D or 3D
     All rays are in the same medium.
     """
 
-    _required_keys = [
-        "P",
-        "V",
-        "pupil",
-        "field",
-        "wavel",
-        "pupil_idx",
-        "field_idx",
-        "wavel_idx",
-    ]
+    P: BatchNDTensor
+    V: BatchNDTensor
+    pupil: BatchNDTensor
+    field: BatchNDTensor
+    wavel: BatchTensor
+    pupil_idx: IndexTensor
+    field_idx: IndexTensor
+    wavel_idx: IndexTensor
 
     @classmethod
-    def create(cls, **kwargs) -> Self:
-        missing_keys = [key for key in cls._required_keys if key not in kwargs]
-        assert len(missing_keys) == 0, (
-            f"RayBundle.create(): required keys missing: {missing_keys}"
+    def create(
+        cls,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
+        pupil: BatchNDTensor,
+        field: BatchNDTensor,
+        wavel: BatchTensor,
+        pupil_idx: IndexTensor,
+        field_idx: IndexTensor,
+        wavel_idx: IndexTensor,
+    ) -> Self:
+        float_dtype = P.dtype
+        assert float_dtype == V.dtype
+        assert float_dtype == pupil.dtype
+        assert float_dtype == field.dtype
+        assert float_dtype == wavel.dtype
+        assert pupil_idx.dtype == torch.int64
+        assert field_idx.dtype == torch.int64
+        assert wavel_idx.dtype == torch.int64
+
+        device = P.device
+        assert device == V.device
+        assert device == pupil.device
+        assert device == field.device
+        assert device == wavel.device
+        assert device == pupil_idx.device
+        assert device == field_idx.device
+        assert device == wavel_idx.device
+
+        return cls(P, V, pupil, field, wavel, pupil_idx, field_idx, wavel_idx)
+    
+    @property
+    def dtype(self) -> torch.dtype:
+        return self.P.dtype
+    
+    @property
+    def device(self) -> torch.device:
+        return self.P.device
+
+    @property
+    def batch_size(self) -> torch.Size:
+        return self.P.shape[:-1]
+
+    def replace(self, /, **changes: Any) -> Self:
+        return replace(self, **changes)
+
+    def mask(self, valid: MaskTensor) -> Self:
+        return type(self)(
+            P=self.P[valid],
+            V=self.V[valid],
+            pupil=self.pupil[valid],
+            field=self.field[valid],
+            wavel=self.wavel[valid],
+            pupil_idx=self.pupil_idx[valid],
+            field_idx=self.field_idx[valid],
+            wavel_idx=self.wavel_idx[valid],
         )
-
-        batch_size = kwargs["P"].shape[0]
-        self = cls(**kwargs, batch_size=batch_size)
-
-        assert self.pupil_idx.dtype == torch.int64
-        assert self.field_idx.dtype == torch.int64
-        assert self.wavel_idx.dtype == torch.int64
-
-        return self
-
-    @property
-    def P(self) -> BatchNDTensor:
-        "Rays origins"
-        return self["P"]
-
-    @property
-    def V(self) -> BatchNDTensor:
-        "Rays directions (unit vectors)"
-        return self["V"]
-
-    @property
-    def pupil(self) -> BatchNDTensor:
-        "Pupil coordinates (in length units)"
-        return self["pupil"]
-
-    @property
-    def field(self) -> BatchNDTensor:
-        "Field coordinates (in length units)"
-        return self["field"]
-
-    @property
-    def wavel(self) -> BatchTensor:
-        "Wavelength (in nanometers)"
-        return self["wavel"]
-
-    @property
-    def pupil_idx(self) -> IndexTensor:
-        "Index of the rays in the pupil sampling dimension"
-        return self["pupil_idx"]
-
-    @property
-    def field_idx(self) -> IndexTensor:
-        "Index of the rays in the field sampling dimension"
-        return self["field_idx"]
-
-    @property
-    def wavel_idx(self) -> IndexTensor:
-        "Index of the rays in the wavelength sampling dimension"
-        return self["wavel_idx"]
 
     def points_at(self, t: BatchTensor) -> BatchNDTensor:
         "Points on rays at parametric distance t"
@@ -100,7 +107,7 @@ class RayBundle(TensorDict):
     def propagate_absorb(self, t: BatchTensor, valid: MaskTensor) -> Self:
         "Propagate rays by distance t, removing non valid rays"
         collision_points = self.points_at(t)
-        return self[valid].replace(P=collision_points[valid])
+        return self.mask(valid).replace(P=collision_points[valid])
 
     def reorient(self, V: BatchNDTensor) -> Self:
         "Reorient rays to a new direction"
@@ -108,4 +115,4 @@ class RayBundle(TensorDict):
 
     def reorient_absorb(self, V: BatchNDTensor, valid: MaskTensor) -> Self:
         "Reorient rays to a new direction, removing non valid rays"
-        return self[valid].replace(V=V[valid])
+        return self.mask(valid).replace(V=V[valid])

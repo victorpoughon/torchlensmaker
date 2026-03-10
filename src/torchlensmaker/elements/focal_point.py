@@ -19,10 +19,10 @@ import torch
 from typing import Any, Self
 from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.types import Tf, Direction, BatchNDTensor, ScalarTensor
 
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-
-Tensor = torch.Tensor
 
 
 class FocalPoint(SequentialElement):
@@ -32,15 +32,21 @@ class FocalPoint(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        dim = inputs.dim
-        N = inputs.rays.P.shape[0]
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        _, _ = self(inputs.rays, inputs.fk, inputs.direction)
+        return inputs
 
-        X = hom_target(inputs.fk.direct)
-        P = inputs.rays.P
-        V = inputs.rays.V
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[BatchNDTensor, ScalarTensor]:
+        dim = rays.P.shape[-1]
+        N = rays.P.shape[0]
 
-        # Compute ray-point squared distance distance
+        X = hom_target(tf.direct)
+        P = rays.P
+        V = rays.V
+
+        # Compute ray-point squared distance
 
         # If 2D, pad to 3D with zeros
         if dim == 2:
@@ -55,4 +61,5 @@ class FocalPoint(SequentialElement):
 
         loss = distance.sum() / N
 
-        return inputs.replace(loss=inputs.loss + loss)
+        rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
+        return rays_image, loss

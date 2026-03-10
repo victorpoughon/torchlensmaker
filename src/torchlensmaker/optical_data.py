@@ -37,10 +37,6 @@ class OpticalData:
     # Rays and associated variables
     rays: RayBundle
 
-    # Loss accumulator
-    # Tensor of dim 0
-    loss: torch.Tensor
-
     def replace(self, /, **changes: Any) -> "OpticalData":
         return replace(self, **changes)
 
@@ -75,5 +71,4 @@ def default_input(
         direction=direction,
         fk=tfid,
         rays=rays,
-        loss=torch.tensor(0.0, dtype=dtype),
     )

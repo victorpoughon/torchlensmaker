@@ -27,25 +27,25 @@ def test_show_dtype_device(dtype: torch.dtype, device: torch.device):
 
 
 def assert_ray_bundle_dtype(rays: tlm.RayBundle, expected_dtype: torch.dtype) -> None:
-    assert rays["P"].dtype == expected_dtype
-    assert rays["V"].dtype == expected_dtype
-    assert rays["pupil"].dtype == expected_dtype
-    assert rays["field"].dtype == expected_dtype
-    assert rays["wavel"].dtype == expected_dtype
-    assert rays["pupil_idx"].dtype == torch.int64
-    assert rays["field_idx"].dtype == torch.int64
-    assert rays["wavel_idx"].dtype == torch.int64
+    assert rays.P.dtype == expected_dtype
+    assert rays.V.dtype == expected_dtype
+    assert rays.pupil.dtype == expected_dtype
+    assert rays.field.dtype == expected_dtype
+    assert rays.wavel.dtype == expected_dtype
+    assert rays.pupil_idx.dtype == torch.int64
+    assert rays.field_idx.dtype == torch.int64
+    assert rays.wavel_idx.dtype == torch.int64
 
 
 def assert_ray_bundle_device(rays: tlm.RayBundle, expected_device: torch.dtype) -> None:
-    assert rays["P"].device == expected_device
-    assert rays["V"].device == expected_device
-    assert rays["pupil"].device == expected_device
-    assert rays["field"].device == expected_device
-    assert rays["wavel"].device == expected_device
-    assert rays["pupil_idx"].device == expected_device
-    assert rays["field_idx"].device == expected_device
-    assert rays["wavel_idx"].device == expected_device
+    assert rays.P.device == expected_device
+    assert rays.V.device == expected_device
+    assert rays.pupil.device == expected_device
+    assert rays.field.device == expected_device
+    assert rays.wavel.device == expected_device
+    assert rays.pupil_idx.device == expected_device
+    assert rays.field_idx.device == expected_device
+    assert rays.wavel_idx.device == expected_device
 
 
 def check_sample_and_render_2d(

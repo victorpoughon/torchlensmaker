@@ -41,6 +41,18 @@ def _normalize_dtype(dtype_str: str) -> torch.dtype:
     raise ValueError(f"Unsupported dtype: {dtype_str}")
 
 
+class ImagingModel(torch.nn.Module):
+    def __init__(self, optics, image_plane):
+        super().__init__()
+        self.optics = optics
+        self.image_plane = image_plane
+
+    def forward(self, data):
+        outputs = self.optics(data)
+        _, loss = self.image_plane(outputs.rays, outputs.fk, outputs.direction)
+        return loss
+
+
 def optimize(
     optics: tlm.BaseModule,
     optimizer: torch.optim.Optimizer,
@@ -54,12 +66,30 @@ def optimize(
 
     default_input = tlm.default_input(dim, dtype)
 
+    # We assume the last element is imageplane
+    source, core, image_plane = optics[0], optics[1:-1], optics[-1]
+    model = ImagingModel(core, image_plane)
+    
+    input_rays = source.sequential(default_input)
+
+    print("Compiling model")
+    model = torch.compile(model)
+
+    print("Warm up forward")
+    model.zero_grad()
+    loss = model(input_rays)
+
+    print("Warm up backwards")
+    loss.backward()
+
+    print("Start of optimization loop")
+    start_time = time.time()
+
     for i in range(num_iter):
         optimizer.zero_grad()
 
         # Evaluate the model
-        outputs = optics(default_input)
-        loss = outputs.loss
+        loss = model(input_rays)
 
         if not loss.requires_grad:
             raise RuntimeError(
@@ -71,6 +101,11 @@ def optimize(
 
         iter_str = f"[{i + 1:>3}/{num_iter}]"
         print(f"{iter_str}")
+
+    end_time = time.time()
+    duration = end_time - start_time
+    print(f"Optimization loop done in {duration:.2f}s")
+
 
 
 def benchmark(N: int, num_iter: int, dtype: torch.dtype, device: torch.device) -> None:
@@ -113,16 +148,9 @@ def benchmark(N: int, num_iter: int, dtype: torch.dtype, device: torch.device) -
 
     optics.set_sampling2d(pupil=sq3, field=sq3, wavel=sq3)
 
-    start_time = time.time()
-
     optimize(
         optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), dim=2, num_iter=num_iter
     )
-
-    end_time = time.time()
-    duration = end_time - start_time
-
-    print(f"Done in {duration:.2f}s")
 
 
 def main():

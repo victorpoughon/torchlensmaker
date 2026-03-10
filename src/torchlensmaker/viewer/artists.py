@@ -106,30 +106,30 @@ class SurfacePropagatorArtist(Artist):
 
 class FocalPointArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        inputs = collective.input_tree[module]
+        input_rays, input_fk, input_direction = collective.input_tree[module]
 
         # Render module
-        target = hom_target(inputs.fk.direct).unsqueeze(0)
+        target = hom_target(input_fk.direct).unsqueeze(0)
         rendered_module = [tlmviewer.render_points(target, "red")]
 
         # Render rays
         # Distance from ray origin P to target
-        target = hom_target(inputs.fk.direct)
-        dist = torch.linalg.vector_norm(inputs.rays.P - target, dim=1)
+        target = hom_target(input_fk.direct)
+        dist = torch.linalg.vector_norm(input_rays.P - target, dim=1)
 
         # Always draw rays in their positive t direction
         t = torch.abs(dist)
         rendered_rays = tlmviewer.render_rays_length(
-            inputs.rays.P,
-            inputs.rays.V,
+            input_rays.P,
+            input_rays.V,
             t,
             layer=tlmviewer.LAYER_VALID_RAYS,
-            variables=ray_variables_dict(inputs.rays),
+            variables=ray_variables_dict(input_rays),
             domain=collective.ray_variables_domains,
             default_color=tlmviewer.color_valid,
         )
 
-        rendered_joints = tlmviewer.render_joint(inputs.fk.direct)
+        rendered_joints = tlmviewer.render_joint(input_fk.direct)
         return rendered_module + rendered_rays + rendered_joints
 
 

@@ -61,6 +61,19 @@ class OptimizationRecord:
         print()
 
 
+
+class ImagingModel(nn.Module):
+    def __init__(self, optics, image_plane):
+        super().__init__()
+        self.optics = optics
+        self.image_plane = image_plane
+
+    def forward(self, data: tlm.OpticalData) -> tlm.ScalarTensor:
+        outputs = self.optics(data)
+        _, loss = self.image_plane(outputs.rays, outputs.fk, outputs.direction)
+        return loss
+
+
 def optimize(
     optics: nn.Module,
     optimizer: optim.Optimizer,
@@ -79,7 +92,13 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
+
+    # We assume the last element is the loss element
+    source, core, image_plane = optics[0], optics[1:-1], optics[-1]
+    model = ImagingModel(core, image_plane)
+    
     default_input = tlm.default_input(dim, dtype)
+    input_rays = source.sequential(default_input)
 
     show_every = math.ceil(num_iter / nshow)
 
@@ -87,8 +106,7 @@ def optimize(
         optimizer.zero_grad()
 
         # Evaluate the model
-        outputs = optics(default_input)
-        loss = outputs.loss
+        loss = model(input_rays)
 
         # Add regularization function term
         if regularization is not None:
@@ -121,8 +139,7 @@ def optimize(
 
         if i % show_every == 0 or i == num_iter - 1:
             iter_str = f"[{i + 1:>3}/{num_iter}]"
-            num_rays = tuple(outputs.rays.batch_size)
-            L_str = f"L= {loss.item():>6.5f} | grad norm= {torch.linalg.norm(grad):5>.4f} | output size= {num_rays}"
+            L_str = f"L= {loss.item():>6.5f} | grad norm= {torch.linalg.norm(grad):5>.4f}"
             print(f"{iter_str} {L_str}")
 
     return OptimizationRecord(num_iter, parameters_record, loss_record, optics)
