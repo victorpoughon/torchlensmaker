@@ -57,6 +57,7 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_points,
     transform_vectors,
+    hom_target,
     hom_identity,
     hom_identity_2d,
     hom_identity_3d,
