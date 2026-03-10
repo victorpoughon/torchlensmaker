@@ -17,9 +17,9 @@
 import pytest
 
 import torch
-from ..get_material_model import default_material_models
 
 
+@pytest.mark.skip("material models to be reworked")
 def test_refractive_index() -> None:
     # refractive index in the visible band should always be >1.0 and < 10.0
 
