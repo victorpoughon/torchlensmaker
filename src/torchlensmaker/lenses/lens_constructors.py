@@ -14,6 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from jaxtyping import Float
 from typing import Sequence
 import torch
 import torch.nn as nn
@@ -25,6 +26,7 @@ def cemented(
     surfaces: list[tlm.SurfaceElement],
     gaps: list[tlm.PositionGap],
     materials=list[tlm.MaterialModel | str],
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a cemented lens with N independent surfaces
@@ -33,6 +35,7 @@ def cemented(
         surfaces: list of surfaces
         gaps: list of position gaps
         materials: list of material, including the exit material
+        anchors: lens anchors
 
     Returns:
         A lens element
@@ -54,9 +57,9 @@ def cemented(
         )
 
     # Process position gaps into surface anchors by adding 'origin' at start and end
-    pgap_anchors = map(tlm.position_gap_to_anchors, gaps)
+    pgap_anchors = [tlm.position_gap_to_anchors(pg) for pg in gaps]
     flat = [s for a, b in pgap_anchors for s in (a, b)]
-    flat_with_origin = [0, *flat, 0]
+    flat_with_origin = [anchors[0], *flat, anchors[1]]
     all_anchors = list(zip(flat_with_origin[::2], flat_with_origin[1::2]))
 
     # Process materials into material pairs
@@ -90,6 +93,7 @@ def singlet(
     material: tlm.MaterialModel | str,
     entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a singlet lens with two independent surfaces
@@ -109,6 +113,7 @@ def singlet(
         surfaces=[surface1, surface2],
         gaps=[gap],
         materials=[entry_material, material, exit_material],
+        anchors=anchors,
     )
 
 
@@ -118,6 +123,7 @@ def symmetric_singlet(
     material: tlm.MaterialModel | str,
     entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a symmatric singlet lens with two mirrored surfaces
@@ -136,13 +142,13 @@ def symmetric_singlet(
 
     return tlm.Lens(
         tlm.RefractiveSurface(
-            surface.clone(anchors=(0, gap_anchors[0])),
+            surface.clone(anchors=(anchors[0], gap_anchors[0])),
             materials=(entry_material, material),
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
             surface.clone(
-                anchors=(gap_anchors[1], 0),
+                anchors=(gap_anchors[1], anchors[1]),
                 scale=-1,
             ),
             materials=(material, exit_material),
@@ -157,6 +163,7 @@ def semiplanar_rear(
     entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
     scale: float = 1.0,
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a semiplanar singlet lens with a surface at the
@@ -175,7 +182,7 @@ def semiplanar_rear(
 
     return tlm.Lens(
         tlm.RefractiveSurface(
-            surface.clone(anchors=(0, gap_anchors[0]), scale=scale),
+            surface.clone(anchors=(anchors[0], gap_anchors[0]), scale=scale),
             materials=(entry_material, material),
         ),
         tlm.Gap(gap.gap),
@@ -193,6 +200,7 @@ def semiplanar_front(
     entry_material: tlm.MaterialModel | str = "air",
     exit_material: tlm.MaterialModel | str = "air",
     scale: float = 1.0,
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a semiplanar singlet lens with a plane at the front
@@ -215,7 +223,7 @@ def semiplanar_front(
         ),
         tlm.Gap(gap.gap),
         tlm.RefractiveSurface(
-            surface.clone(anchors=(gap_anchors[1], 0), scale=scale),
+            surface.clone(anchors=(gap_anchors[1], anchors[1]), scale=scale),
             materials=(material, exit_material),
         ),
     )
@@ -228,6 +236,7 @@ def doublet(
     gap2: tlm.PositionGap,
     surface3: tlm.SurfaceElement,
     materials: Sequence[tlm.MaterialModel | str],
+    anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """
     Utility constructor for a doublet lens with three independent surfaces
@@ -255,4 +264,5 @@ def doublet(
         surfaces=[surface1, surface2, surface3],
         gaps=[gap1, gap2],
         materials=materials,
+        anchors=anchors,
     )
