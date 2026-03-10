@@ -135,24 +135,37 @@ class ParabolaSurfaceKernel(FunctionalKernel):
 
 
 class ParabolaOuterExtentSurfaceKernel(FunctionalKernel):
-    inputs = {"r": ScalarTensor, "A": ScalarTensor}
-    params = {}
+    inputs = {"anchor": ScalarTensor}
+    params = {
+        "diameter": ScalarTensor,
+        "A": ScalarTensor,
+        "normalize": Bool[torch.Tensor, ""],
+    }
     outputs = {"extent": ScalarTensor}
 
-    def apply(self, r: ScalarTensor, A: ScalarTensor) -> ScalarTensor:
-        extent, _ = parabolic_sag_2d(r, A)
+    def apply(
+        self,
+        anchor: ScalarTensor,
+        diameter: ScalarTensor,
+        A: ScalarTensor,
+        normalize: Bool[torch.Tensor, ""],
+    ) -> ScalarTensor:
+        extent_unnormalized = parabolic_sag_2d(anchor * diameter / 2, A)[0]
+        extent_normalized = diameter / 2 * parabolic_sag_2d(anchor, A)[0]
+        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
-    def example_inputs(
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return (torch.tensor(1.0, dtype=dtype, device=device),)
+
+    def example_params(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[ScalarTensor, ScalarTensor]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),
+            torch.tensor(True, dtype=torch.bool, device=device),
         )
-
-    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
-        return tuple()
 
 
 class Parabola(SurfaceElement):
@@ -217,8 +230,8 @@ class Parabola(SurfaceElement):
             else self.anchors.flip(0).unbind(-1)
         )
 
-        extent0 = self.kernel_outer_extent.apply(anchors[0] * self.diameter / 2, self.A)
-        extent1 = self.kernel_outer_extent.apply(anchors[1] * self.diameter / 2, self.A)
+        extent0 = self.outer_extent(anchors[0])
+        extent1 = self.outer_extent(anchors[1])
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
@@ -233,8 +246,10 @@ class Parabola(SurfaceElement):
 
         return t, normal, valid, tf_surface, tf_next
 
-    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
-        return self.kernel_outer_extent.apply(r, self.A)
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor | None:
+        return self.kernel_outer_extent.apply(
+            anchor, self.diameter, self.A, self.normalize
+        )
 
     def render(self) -> Any:
         return {

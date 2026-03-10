@@ -164,21 +164,24 @@ class AsphereSurfaceKernel(FunctionalKernel):
 
 
 class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
-    inputs = {
-        "r": ScalarTensor,
+    inputs = {"anchor": ScalarTensor}
+    params = {
+        "diameter": ScalarTensor,
         "C": ScalarTensor,
         "K": ScalarTensor,
-        "alphas": Float[torch.Tensor, " N"],
+        "alphas": ScalarTensor,
+        "normalize": Bool[torch.Tensor, ""],
     }
-    params = {}
     outputs = {"extent": ScalarTensor}
 
     def apply(
         self,
-        r: ScalarTensor,
+        anchor: ScalarTensor,
+        diameter: ScalarTensor,
         C: ScalarTensor,
         K: ScalarTensor,
         alphas: Float[torch.Tensor, " N"],
+        normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
         sag_function = partial(
             sag_sum_2d,
@@ -187,10 +190,15 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
                 partial(aspheric_sag_2d, coefficients=alphas),
             ],
         )
-        extent, _ = sag_function(r)
+        extent_unnormalized = sag_function(anchor * diameter / 2)[0]
+        extent_normalized = diameter / 2 * sag_function(anchor)[0]
+        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
-    def example_inputs(
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return (torch.tensor(1.0, dtype=dtype, device=device),)
+
+    def example_params(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[ScalarTensor, ScalarTensor]:
         return (
@@ -198,10 +206,8 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
             torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor((0.5, 0.0, 0.0), dtype=dtype, device=device),
+            torch.tensor(True, dtype=torch.bool, device=device),
         )
-
-    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
-        return tuple()
 
 
 class Asphere(SurfaceElement):
@@ -276,12 +282,8 @@ class Asphere(SurfaceElement):
             else self.anchors.flip(0).unbind(-1)
         )
 
-        extent0 = self.kernel_outer_extent.apply(
-            anchors[0] * self.diameter / 2, self.C, self.K, self.alphas
-        )
-        extent1 = self.kernel_outer_extent.apply(
-            anchors[1] * self.diameter / 2, self.C, self.K, self.alphas
-        )
+        extent0 = self.outer_extent(anchors[0])
+        extent1 = self.outer_extent(anchors[1])
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
@@ -298,8 +300,10 @@ class Asphere(SurfaceElement):
 
         return t, normal, valid, tf_surface, tf_next
 
-    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
-        return self.kernel_outer_extent.apply(r, self.C, self.K, self.alphas)
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor | None:
+        return self.kernel_outer_extent.apply(
+            anchor, self.diameter, self.C, self.K, self.alphas, self.normalize
+        )
 
     def render(self) -> Any:
         return {

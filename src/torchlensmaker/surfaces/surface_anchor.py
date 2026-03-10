@@ -128,8 +128,8 @@ class KinematicSurface(BaseModule):
             else self.anchors.flip(0).unbind(-1)
         )
 
-        extent0 = self.surface.outer_extent(anchors[0] * self.surface.diameter / 2)
-        extent1 = self.surface.outer_extent(anchors[1] * self.surface.diameter / 2)
+        extent0 = self.surface.outer_extent(anchors[0])
+        extent1 = self.surface.outer_extent(anchors[1])
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
