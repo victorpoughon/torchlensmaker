@@ -290,7 +290,7 @@ class Asphere(SurfaceElement):
         t, normal, valid = kernel_surface.apply(
             P,
             V,
-            tf,
+            tf_surface,
             self.diameter,
             self.C,
             self.K,
