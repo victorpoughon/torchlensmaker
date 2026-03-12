@@ -87,7 +87,7 @@ Looking at the spot diagram, we can see that rays are not focused at all. We can
 ```python
 import torch.optim as optim
 
-optics.set_sampling2d(pupil=5, field=10, wavelength=3)
+optics.set_sampling2d(pupil=5, field=10, wavel=3)
 tlm.optimize(optics,
              dim=2,
              optimizer = optim.Adam(optics.parameters(), lr=1e-1),
@@ -98,24 +98,24 @@ tlm.optimize(optics,
 print("Final parameter value:", focal_gap.x.item())
 ```
 
-    [  1/50] L= 8.62362 | grad norm= 41.41918182373047
-    [  4/50] L= 3.72261 | grad norm= 22.05714225769043
-    [  7/50] L= 2.73191 | grad norm= 15.360520362854004
-    [ 10/50] L= 2.34044 | grad norm= 11.759037017822266
-    [ 13/50] L= 2.65259 | grad norm= 14.827535629272461
-    [ 16/50] L= 1.78272 | grad norm= 1.9360257387161255
-    [ 19/50] L= 2.30073 | grad norm= 11.74817180633545
-    [ 22/50] L= 1.80700 | grad norm= 4.098475933074951
-    [ 25/50] L= 1.91280 | grad norm= 6.850599765777588
-    [ 28/50] L= 1.85311 | grad norm= 5.96938943862915
-    [ 31/50] L= 1.72584 | grad norm= 2.7381818294525146
-    [ 34/50] L= 1.79855 | grad norm= 5.431471347808838
-    [ 37/50] L= 1.66626 | grad norm= 0.5663701295852661
-    [ 40/50] L= 1.71702 | grad norm= 4.116581916809082
-    [ 43/50] L= 1.63741 | grad norm= 1.0191744565963745
-    [ 46/50] L= 1.65062 | grad norm= 2.8752262592315674
-    [ 49/50] L= 1.60761 | grad norm= 1.2536779642105103
-    [ 50/50] L= 1.59686 | grad norm= 0.5003327131271362
+    [  1/50] L= 8.62343 | grad norm= 41.4187
+    [  4/50] L= 3.72262 | grad norm= 22.0571
+    [  7/50] L= 2.73193 | grad norm= 15.3608
+    [ 10/50] L= 2.34053 | grad norm= 11.7596
+    [ 13/50] L= 2.65256 | grad norm= 14.8277
+    [ 16/50] L= 1.78277 | grad norm= 1.9357
+    [ 19/50] L= 2.30070 | grad norm= 11.7482
+    [ 22/50] L= 1.80703 | grad norm= 4.0979
+    [ 25/50] L= 1.91281 | grad norm= 6.8505
+    [ 28/50] L= 1.85314 | grad norm= 5.9687
+    [ 31/50] L= 1.72583 | grad norm= 2.7381
+    [ 34/50] L= 1.79855 | grad norm= 5.4317
+    [ 37/50] L= 1.66621 | grad norm= 0.5663
+    [ 40/50] L= 1.71704 | grad norm= 4.1166
+    [ 43/50] L= 1.63740 | grad norm= 1.0189
+    [ 46/50] L= 1.65059 | grad norm= 2.8755
+    [ 49/50] L= 1.60760 | grad norm= 1.2539
+    [ 50/50] L= 1.59692 | grad norm= 0.5003
 
 
 
@@ -124,7 +124,7 @@ print("Final parameter value:", focal_gap.x.item())
     
 
 
-    Final parameter value: 84.44950866699219
+    Final parameter value: 84.44952392578125
 
 
 

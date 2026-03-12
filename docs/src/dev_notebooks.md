@@ -1,4 +1,4 @@
-# Dev notebooks
+# Test notebooks
 
 This is an automatically generated list of internal dev notebooks. They are
 intended for development, testing or debugging and not really for

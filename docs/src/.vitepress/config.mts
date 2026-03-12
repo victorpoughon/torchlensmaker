@@ -109,7 +109,7 @@ export default defineConfig({
               text: "Variable Lens Sequence",
               link: "/examples/variable_lens_sequence",
             },
-            { text: "Test notebooks", link: "/test_notebooks" },
+            { text: "Dev notebooks", link: "/dev_notebooks" },
           ],
         },
       ],

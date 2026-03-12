@@ -7,13 +7,18 @@ import torchlensmaker as tlm
 optics = tlm.Sequential(
     tlm.ObjectAtInfinity(beam_diameter=10, angular_size=20, wavelength=(400, 800)),
     tlm.Gap(15),
-    tlm.RefractiveSurface(tlm.SphereByRadius(diameter=25, R=-45.759), material="BK7"),
+    tlm.RefractiveSurface(
+        tlm.SphereByRadius(diameter=25, R=-45.759), materials=("air", "BK7")
+    ),
     tlm.Gap(3.419),
-    tlm.RefractiveSurface(tlm.SphereByRadius(diameter=25, R=-24.887), material="air"),
+    tlm.RefractiveSurface(
+        tlm.SphereByRadius(diameter=25, R=-24.887), materials=("BK7", "air")
+    ),
     tlm.Gap(97.5088),
     tlm.ImagePlane(50),
 )
 
+optics.set_sampling2d(wavel=100)
 tlm.show2d(optics, title="Landscape Lens")
 ```
 
