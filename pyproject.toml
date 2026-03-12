@@ -2,7 +2,7 @@
 name = "torchlensmaker"
 version = "0.0.13"
 authors = [{ name = "Victor Poughon", email = "victor.poughon@gmail.com" }]
-description = "Differentiable geometric optics in PyTorch. Design optical systems with optimization."
+description = "Differentiable geometric optics in PyTorch. Design optical systems with modern GPU optimization."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"
