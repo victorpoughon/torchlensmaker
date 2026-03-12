@@ -75,7 +75,7 @@ uv run jupyter nbconvert --execute --to notebook test_notebooks/demo_dispersion.
 
 # Run test notebooks / examples
 uv run pytest --nbmake test_notebooks/*.ipynb
-uv run pytest --nbmake docs/src/examples/*.ipynb
+uv run pytest --nbmake examples/*.ipynb
 
 # Run test notebooks in src
 find src/ -type f -not -path '*/.*' -name "*.ipynb" | xargs uv run --no-sync pytest --nbmake
@@ -90,5 +90,5 @@ uv run pytest -rP
 uv run pytest --basetemp tmp/
 
 # Run unit tests with coverage report
-uv run pytest --cov-report=term-missing  --cov=src/torchlensmaker/new_kinematics/ src/torchlensmaker/new_kinematics/tests/
+uv run pytest --cov-report=term-missing  --cov=src/torchlensmaker/kinematics/ src/torchlensmaker/kinematics/tests/
 ```
