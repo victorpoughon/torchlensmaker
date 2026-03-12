@@ -45,10 +45,8 @@ class SurfaceRefractor(BaseModule):
         tir_mode: TIRMode = "absorb",
     ):
         super().__init__()
-        self.materials = (
-            get_material_model(materials[0]).clone(),
-            get_material_model(materials[1]).clone(),
-        )
+        self.material_in = get_material_model(materials[0]).clone()
+        self.material_out = get_material_model(materials[1]).clone()
         self.tir_mode = tir_mode
         self.refractive_interface = RefractiveInterface()
 
@@ -56,8 +54,8 @@ class SurfaceRefractor(BaseModule):
         self, rays: RayBundle, normals: BatchNDTensor, direction: Direction
     ) -> RayBundle:
         # Compute indices of refraction
-        n1 = self.materials[0](rays.wavel)
-        n2 = self.materials[1](rays.wavel)
+        n1 = self.material_in(rays.wavel)
+        n2 = self.material_out(rays.wavel)
 
         if direction.is_retrograde():
             n1, n2 = n2, n1
@@ -93,8 +91,8 @@ class RefractiveSurface(SequentialElement):
         return self.propagator.surface
 
     @property
-    def materials(self) -> MaterialModel:
-        return self.refractor.materials
+    def materials(self) -> tuple[MaterialModel, MaterialModel]:
+        return (self.refractor.material_in, self.refractor.material_out)
 
     @property
     def tir_mode(self) -> TIRMode:

@@ -103,18 +103,19 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         IndexTensor,
         IndexTensor,
     ]:
+        device = tf.device
         # angular coordinates are the angular samples over the angular domain
         angular_coords = angular_samples * angular_diameter / 2
-        angular_idx = torch.arange(angular_samples.size(0))
+        angular_idx = torch.arange(angular_samples.size(0), device=device)
 
         # spatial coordinates are the spatial samples over the spatial domain
         spatial_coords = spatial_samples * spatial_diameter / 2
-        spatial_idx = torch.arange(spatial_samples.size(0))
+        spatial_idx = torch.arange(spatial_samples.size(0), device=device)
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
-        wavel_idx = torch.arange(wavelength_samples.size(0))
+        wavel_idx = torch.arange(wavelength_samples.size(0), device=device)
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
         angular_coords_full, spatial_coords_full, wavel_coords_full = meshgrid_flat(
@@ -229,18 +230,19 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         IndexTensor,
         IndexTensor,
     ]:
+        device = tf.device
         # pupil coordinates are the pupil samples over the beam angular size
         angular_coords = angular_samples * angular_diameter / 2
-        angular_idx = torch.arange(angular_samples.size(0))
+        angular_idx = torch.arange(angular_samples.size(0), device=device)
 
         # field coordinates are the field samples over the object diameter
         spatial_coords = spatial_samples * spatial_diameter / 2
-        spatial_idx = torch.arange(spatial_samples.size(0))
+        spatial_idx = torch.arange(spatial_samples.size(0), device=device)
 
         # wavelength coordinates are scaled over the wavelength domain
         bandwith = wavelength_upper - wavelength_lower
         wavel_coords = wavelength_lower + bandwith * (wavelength_samples + 1) / 2
-        wavel_idx = torch.arange(wavelength_samples.size(0))
+        wavel_idx = torch.arange(wavelength_samples.size(0), device=device)
 
         # Generate all possible combinations of ray coordinates with a triple meshgrid
         angular_coords_full, spatial_coords_full, wavel_coords_full = meshgrid2d_flat3(

@@ -27,7 +27,7 @@ def disk_sampling(
     "Samples 2D points on a disk"
 
     y = torch.linspace(0, 1, Nrho, dtype=dtype, device=device).to(dtype=dtype)
-    x = (torch.arange(Ntheta) / Ntheta.to(dtype=dtype)).to(dtype=dtype)
+    x = (torch.arange(Ntheta, device=device) / Ntheta.to(dtype=dtype)).to(dtype=dtype)
     xx, yy = torch.meshgrid((x, y), indexing="ij")
 
     rho = torch.sqrt(yy)
