@@ -1,5 +1,5 @@
 {
-  "version": "0.0.13",
+  "version": "0.0.14",
   "devDependencies": {
     "feed": "^5.1.0",
     "markdown-it-mathjax3": "^4.3.2",

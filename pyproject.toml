@@ -1,6 +1,6 @@
 [project]
 name = "torchlensmaker"
-version = "0.0.13"
+version = "0.0.14"
 authors = [{ name = "Victor Poughon", email = "victor.poughon@gmail.com" }]
 description = "Differentiable geometric optics in PyTorch. Design optical systems with modern GPU optimization."
 readme = "README.md"
