@@ -20,7 +20,6 @@ documentation. But you're welcome to look around 😊
 * [dev_notebooks/material_models.md](dev_notebooks/material_models.md)
 * [dev_notebooks/new_lenses.md](dev_notebooks/new_lenses.md)
 * [dev_notebooks/new_rendering.md](dev_notebooks/new_rendering.md)
-* [dev_notebooks/paraxial_focal_length.md](dev_notebooks/paraxial_focal_length.md)
 * [dev_notebooks/pinhole_camera.md](dev_notebooks/pinhole_camera.md)
 * [dev_notebooks/regularization_equal_thickness.md](dev_notebooks/regularization_equal_thickness.md)
 * [dev_notebooks/side_quest.md](dev_notebooks/side_quest.md)

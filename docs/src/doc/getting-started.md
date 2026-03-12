@@ -14,7 +14,7 @@ In general, the workflow to design an optical system is:
 ## Using Jupyter Notebooks
 
 Jupyter notebooks are the prefered way to use Torch Lens Maker. After
-[installation](/installation), You should be able to run this code in a jupyter
+[installation](/doc/installation), You should be able to run this code in a jupyter
 environment, and see a biconvex spherical lens:
 
 

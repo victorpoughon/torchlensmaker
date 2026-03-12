@@ -4,16 +4,16 @@ Torch Lens Maker is designed to support many surfaces, and be easily extensible 
 
 **Axially symmetric surfaces:**
 
-* [Disk](/modeling/surfaces#disk): A circular planar surface
-* [SphereByRadius](/modeling/surfaces#spherebyradius): Spherical arc parameterized by radius of curvature `R`
-* [SphereByCurvature](/modeling/surfaces#spherer): Spherical arc parameterized by curvature $C = 1/R$
-* [Parabola](/modeling/surfaces#parabola): Parabolic arc parameterized by parabolic coefficient $A$.
-* [Conic](/modeling/surfaces#conic): Arc of a conic, parameterized by curvature $C$ and conic constant $K$.
-* [Asphere](/modeling/surfaces#asphere): Asphere parameterized by a conic model + asperic coefficient vector.
+* [Disk](#disk): A circular planar surface
+* [SphereByRadius](#spherebyradius): Spherical arc parameterized by radius of curvature `R`
+* [SphereByCurvature](#spherebycurvature): Spherical arc parameterized by curvature $C = 1/R$
+* [Parabola](#parabola): Parabolic arc parameterized by parabolic coefficient $A$.
+* [Conic](#conic): Arc of a conic, parameterized by curvature $C$ and conic constant $K$.
+* [Asphere](#asphere): Asphere parameterized by a conic model + asperic coefficient vector.
 
 **Freeform surfaces:**
 
-* [XYPolynomial](/modeling/surfaces#xypolynomial): XY Polynomial model, parameterized as a conic + coefficient matrix.
+* [XYPolynomial](#xypolynomial): XY Polynomial model, parameterized as a conic + coefficient matrix.
 
 ::: warning Work in progress
 More surface types coming soon, hopefully 😁 I also want to document how to add custom surfaces easily, as a lot of work as gone into that while designing the library. Basically any sag function $x = g(r)$ can be added, or even any implicit surface described by $F(x,y,z) = 0$, not necessarily axially symmetric.

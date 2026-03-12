@@ -2,11 +2,11 @@
 
 Currently supported light sources:
 
-* [RaySource](/modeling/light_sources#raysource): A single light ray. (Sampling dimensions: `wavel`)
-* [PointSource](/modeling/light_sources#pointsource): A point source. (Sampling dimensions: `pupil, wavel`)
-* [PointSourceAtInfinity](/modeling/light_sources#pointsourceatinfinity): A point source at infinity. (Sampling dimensions: `pupil, wavel`)
-* [Object](/modeling/light_sources#object): A circular object on the kinematic chain. (Sampling dimensions: `pupil, field, wavel`)
-* [ObjectAtInfinity](/modeling/light_sources#objectatinfinity): A circular object at infinity. (Sampling dimensions: `pupil, field, wavel`)
+* [RaySource](#raysource): A single light ray. (Sampling dimensions: `wavel`)
+* [PointSource](#pointsource): A point source. (Sampling dimensions: `pupil, wavel`)
+* [PointSourceAtInfinity](#pointsourceatinfinity): A point source at infinity. (Sampling dimensions: `pupil, wavel`)
+* [Object](#object): A circular object on the kinematic chain. (Sampling dimensions: `pupil, field, wavel`)
+* [ObjectAtInfinity](#objectatinfinity): A circular object at infinity. (Sampling dimensions: `pupil, field, wavel`)
 
 
 ## RaySource
