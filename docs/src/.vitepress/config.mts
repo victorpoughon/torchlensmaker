@@ -100,6 +100,10 @@ export default defineConfig({
               text: "Variable Lens Sequence",
               link: "/examples/variable_lens_sequence",
             },
+            {
+              text: "Focal length",
+              link: "/examples/paraxial_focal_length",
+            },
             { text: "Dev notebooks", link: "/dev_notebooks" },
           ],
         },
