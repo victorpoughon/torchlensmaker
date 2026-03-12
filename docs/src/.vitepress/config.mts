@@ -71,15 +71,6 @@ export default defineConfig({
             { text: "Sampling", link: "/doc/modeling/sampling" },
           ],
         },
-        {
-          text: "Advanced Topics",
-          items: [
-            {
-              text: "Collision detection",
-              link: "/doc/advanced/collision_detection",
-            },
-          ],
-        },
       ],
 
       "/examples/": [
