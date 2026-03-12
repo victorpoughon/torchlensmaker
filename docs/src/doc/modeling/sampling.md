@@ -11,44 +11,21 @@ Sampled rays can follow a particular distribution, like wavelength can be
 between 400 and 600nm only, angular distribution can be restricted to &plusmn;10°,
 and so on. But those distributions are continuous, and samples are a discrete realization.
 
-* `base` dimension: This dimension is always present unless we simulate a single ray. It's the dimension along which we sample when all other variables are fixed.
+* `pupil` dimension: Dimension along which we sample when all other variables are fixed.
+  * If the light source is at finite distance, the pupil dimension is angular along the angular size of the emitted light beam.
+  * If the light source is at infinity, the pupil dimension is linear along the diameter of the emitted light beam.
 
-* `object` dimension: This dimension is present if the light source represents an object with a size. The coordinate of a ray along the `object` dimension is the coordinate of its origin point on the light source.
+* `field` dimension: Dimension that represents the object size. The coordinate of a ray along the `field` dimension is the coordinate of its origin point on the light source.
+  * If the light source is at finite distance, the field dimension is linear along the object size.
+  * If the light source is at infinity, the field dimension is angular along the object apparent angular size.
 
-* `wavelength` dimension: This dimension is present if rays contain wavelength information. 
+* `wavel` dimension: This dimension represents wavelength.
 
-## The sampling dictionary
+## Sampling configuration
 
-Sampling configuration is defined with a dictionary. By default, an integer value refers to dense uniform sampling, and a list of numbers refers to exact sampling at those values:
-
-
-```python
-# This sampling configuration will produce a total of 150 rays
-sampling = {"base": 10, "object": 5, "wavelength": [600, 650, 700]}
-```
-
-For more advanced sampling configuration, use a sampling function directly:
-
+Sampling configuration is defined by parameters of the [light source](./light_sources) element and is specific to 2D or 3D. You can also use `set_sampling2d` and `set_sampling3d` utility functions directly:
 
 ```python
-import torchlensmaker as tlm
-
-# This sampling configuration will produce a total of 150 rays
-sampling = {"base": 10, "object": tlm.random_normal(5, std=2.0), "wavelength": 3}
+optics.set_sampling2d(wavel=10)
+optics.set_sampling3d(pupil=10, field=150)
 ```
-
-## `dense`
-
-Uniformly spaced samples over the domain. In 2D, it is essentially `torch.linspace`. In 3D, it is [uniform disk sampling](https://victorpoughon.fr/non-random-uniform-disk-sampling/).
-
-## `random_uniform`
-
-Uniform random distribution
-
-## `random_normal`
-
-Normal distribution
-
-## `exact`
-
-Exact sampling at the provided list of values

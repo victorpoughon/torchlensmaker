@@ -14,16 +14,16 @@ In general, the workflow to design an optical system is:
 ## Using Jupyter Notebooks
 
 Jupyter notebooks are the prefered way to use Torch Lens Maker. After
-[installation](/doc/installation), You should be able to run this code in a jupyter
+[installation](/installation), You should be able to run this code in a jupyter
 environment, and see a biconvex spherical lens:
 
 
 ```python
 import torchlensmaker as tlm
 
-surface = tlm.Sphere(50, 60)
-optics = tlm.BiLens(surface, material="BK7", outer_thickness=2.0)
-tlm.show(optics)
+surface = tlm.SphereByRadius(diameter=50, R=60)
+optics = tlm.lenses.symmetric_singlet(surface, tlm.OuterGap(0.2), material="BK7")
+tlm.show3d(optics)
 ```
 
 
@@ -36,12 +36,11 @@ Jupyter is not a hard requirement. Code can also be run standalone and produce a
 JSON formatted dscription of a system, that can be read by tlmviewer in static
 HTML:
 
-
 ```python
 import torchlensmaker as tlm
 
-surface = tlm.Sphere(50, 30)
-optics = tlm.BiLens(surface, material="BK7", outer_thickness=2.0)
+surface = tlm.SphereByRadius(diameter=50, R=60)
+optics = tlm.lenses.symmetric_singlet(surface, tlm.OuterGap(0.2), material="BK7")
 tlm.export_json(optics, "lens.json")
 ```
 
