@@ -1,6 +1,8 @@
-import torch
-from torchlensmaker.core.tensor_manip import cartesian_prod2d
 import itertools
+
+import torch
+
+from torchlensmaker.core.tensor_manip import cartesian_prod2d
 
 
 def test_shapes() -> None:

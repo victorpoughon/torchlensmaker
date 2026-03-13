@@ -16,6 +16,7 @@
 
 import torch
 import torch.nn as nn
+
 import torchlensmaker as tlm
 
 
@@ -132,7 +133,6 @@ def test_basic_sequential_models(dtype: torch.dtype, device: torch.device):
 
 
 def test_rainbow(dtype: torch.dtype, device: torch.device):
-
     # Use half spheres to model interface boundaries
     radius = 5
     halfsphere = tlm.SphereByRadius(diameter=2 * radius, R=radius)

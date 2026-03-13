@@ -14,10 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import time
-import math
 import argparse
+import math
+import time
+
 import torch
+
 import torchlensmaker as tlm
 
 
@@ -69,7 +71,7 @@ def optimize(
     # We assume the last element is imageplane
     source, core, image_plane = optics[0], optics[1:-1], optics[-1]
     model = ImagingModel(core, image_plane)
-    
+
     input_rays = source.sequential(default_input)
 
     print("Compiling model")
@@ -105,7 +107,6 @@ def optimize(
     end_time = time.time()
     duration = end_time - start_time
     print(f"Optimization loop done in {duration:.2f}s")
-
 
 
 def benchmark(N: int, num_iter: int, dtype: torch.dtype, device: torch.device) -> None:
