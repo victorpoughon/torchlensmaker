@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from jaxtyping import Float
 from typing import Sequence
+
 import torch
 import torch.nn as nn
+from jaxtyping import Float
 
 import torchlensmaker as tlm
 

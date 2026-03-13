@@ -14,9 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Self, Any
 from dataclasses import dataclass, replace
+from typing import Any, Self
+
 import torch
+
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

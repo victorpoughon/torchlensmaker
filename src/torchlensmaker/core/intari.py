@@ -2,7 +2,6 @@ import torch
 
 from torchlensmaker.core.tensor_manip import is_integral
 
-
 """
 intari: Interval arithmetic
 

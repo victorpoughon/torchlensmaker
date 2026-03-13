@@ -14,13 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-import torch.nn as nn
-
-from itertools import chain
 from dataclasses import dataclass
+from itertools import chain
 from typing import Any, Dict, Optional, TypeAlias
 
+import torch
+import torch.nn as nn
 
 from torchlensmaker.optical_data import OpticalData
 

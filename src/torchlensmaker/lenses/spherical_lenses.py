@@ -15,8 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from jaxtyping import Float
 import torch
+from jaxtyping import Float
+
 import torchlensmaker as tlm
 
 

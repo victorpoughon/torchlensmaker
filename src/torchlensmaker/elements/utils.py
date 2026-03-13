@@ -15,8 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Type
+
 import torch
 import torch.nn as nn
+
 from torchlensmaker.optical_data import OpticalData
 
 

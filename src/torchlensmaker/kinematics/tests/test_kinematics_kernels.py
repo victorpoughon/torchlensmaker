@@ -14,34 +14,30 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict
-from pathlib import Path
 from itertools import chain
+from pathlib import Path
+from typing import Dict
 
-import pytest
-
-import torch
 import onnxruntime
+import pytest
+import torch
 
+from torchlensmaker.core.functional_kernel import FunctionalKernel, export_onnx
 from torchlensmaker.kinematics.kinematics_kernels import (
     Gap2DKernel,
     Gap3DKernel,
-    Translate2DKernel,
-    Translate3DKernel,
-    Rotate2DKernel,
-    Rotate3DKernel,
     KinematicChainAppend2DKernel,
     KinematicChainAppend3DKernel,
+    Rotate2DKernel,
+    Rotate3DKernel,
+    Translate2DKernel,
+    Translate3DKernel,
 )
-
-from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
-
 from torchlensmaker.testing.test_functional_kernels_testing import (
-    check_kernels_example_inputs_and_params,
     check_kernels_eval,
+    check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
 )
-
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "Gap2D": Gap2DKernel(),

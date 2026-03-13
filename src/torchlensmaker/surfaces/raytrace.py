@@ -15,21 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import Callable, TypeAlias
-from jaxtyping import Float, Bool
-import torch
 
-from torchlensmaker.types import (
-    BatchTensor,
-    BatchNDTensor,
-    MaskTensor,
-    Tf,
-)
+import torch
+from jaxtyping import Bool, Float
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_rays,
     transform_vectors,
 )
-
+from torchlensmaker.types import (
+    BatchNDTensor,
+    BatchTensor,
+    MaskTensor,
+    Tf,
+)
 
 # (P, V) -> t, local_normals, valid
 LocalSolver: TypeAlias = Callable[

@@ -15,31 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import pytest
 from typing import Any
 
+import pytest
 import torch
 import torch.nn as nn
-
-from torchlensmaker.types import Tf
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_compose_2d,
     hom_compose_3d,
+    hom_identity,
     hom_identity_2d,
     hom_identity_3d,
-    hom_identity,
+    hom_matrix,
     hom_matrix_2d,
     hom_matrix_3d,
-    hom_matrix,
+    hom_rotate_2d,
+    hom_rotate_3d,
     hom_scale,
     hom_scale_2d,
     hom_scale_3d,
-    hom_rotate_2d,
-    hom_rotate_3d,
+    hom_translate,
     hom_translate_2d,
     hom_translate_3d,
-    hom_translate,
     kinematic_chain_append,
     kinematic_chain_append_2d,
     kinematic_chain_append_3d,
@@ -50,6 +48,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_rays,
     transform_vectors,
 )
+from torchlensmaker.types import Tf
 
 
 def test_hom_matrix(dtype: torch.dtype, device: torch.device) -> None:

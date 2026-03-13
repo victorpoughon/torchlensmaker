@@ -14,9 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Optional, Sequence
+
 import torch
 import torch.nn as nn
-from typing import Optional, Sequence, Any
 
 Tensor = torch.Tensor
 

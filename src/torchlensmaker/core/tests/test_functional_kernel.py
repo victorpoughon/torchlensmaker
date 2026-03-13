@@ -16,17 +16,17 @@
 
 
 import pytest
-
 import torch
+
 from torchlensmaker.core.functional_kernel import (
     kernel_flat_io,
     kernel_flat_names,
 )
-from torchlensmaker.types import Tf
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.types import Tf
 
 
 def assert_equal_tensors_of_tuples(

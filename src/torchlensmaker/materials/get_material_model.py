@@ -15,9 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from copy import copy
+
 import torch
 
-from .material_elements import MaterialModel, NonDispersiveMaterial, CauchyMaterial
+from .material_elements import CauchyMaterial, MaterialModel, NonDispersiveMaterial
 
 
 def get_material_model(material: str | MaterialModel) -> MaterialModel:

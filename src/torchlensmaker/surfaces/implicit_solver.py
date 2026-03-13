@@ -14,19 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import TypeAlias, Callable
-from jaxtyping import Float, Int, Bool
+from typing import Callable, TypeAlias
+
 import torch
+from jaxtyping import Bool, Float, Int
+from torch._higher_order_ops import while_loop
 
 from torchlensmaker.types import (
-    BatchTensor,
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
+    BatchTensor,
     MaskTensor,
 )
-
-from torch._higher_order_ops import while_loop
 
 # x, r -> F(x, r), F_grad(x, r)
 ImplicitFunction2D: TypeAlias = Callable[

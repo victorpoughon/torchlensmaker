@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-import torchlensmaker as tlm
+from typing import Optional
 
 import matplotlib.pyplot as plt
+import torch
 
-from typing import Optional
+import torchlensmaker as tlm
 
 
 def plot_material_models(

@@ -14,19 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-import torch.nn as nn
-import torchlensmaker as tlm
-
+from typing import Any, Dict, Optional
 
 import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
 
-from typing import Dict, Any, Optional
-
+import torchlensmaker as tlm
 from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
-    default_colormap,
     color_rays,
+    default_colormap,
 )
 
 color_valid = "#ffa724"

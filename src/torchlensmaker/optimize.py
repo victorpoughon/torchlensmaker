@@ -14,18 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
+from dataclasses import dataclass
+from typing import Any, Callable, Optional, TypeAlias
+
+import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torch.optim
 
-import math
-from dataclasses import dataclass
-
-import matplotlib.pyplot as plt
-
 import torchlensmaker as tlm
-
-from typing import Any, Callable, Optional, TypeAlias
 
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]

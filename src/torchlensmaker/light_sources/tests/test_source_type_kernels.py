@@ -15,23 +15,20 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Dict
 from pathlib import Path
+from typing import Dict
 
 import pytest
-
 import torch
 
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.light_sources.source_geometry_kernels import (
     ObjectGeometry2DKernel,
     ObjectGeometry3DKernel,
 )
-
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-
 from torchlensmaker.testing.test_functional_kernels_testing import (
-    check_kernels_example_inputs_and_params,
     check_kernels_eval,
+    check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
 )
 

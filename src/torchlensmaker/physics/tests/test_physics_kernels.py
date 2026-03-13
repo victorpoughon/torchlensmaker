@@ -15,28 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Dict
-from pathlib import Path
 from itertools import chain
+from pathlib import Path
+from typing import Dict
 
-import pytest
-
-import torch
 import onnxruntime
+import pytest
+import torch
 
+from torchlensmaker.core.functional_kernel import FunctionalKernel, export_onnx
 from torchlensmaker.physics.physics_kernels import (
     ReflectionKernel,
     RefractionKernel,
 )
-
-from torchlensmaker.core.functional_kernel import export_onnx, FunctionalKernel
-
 from torchlensmaker.testing.test_functional_kernels_testing import (
-    check_kernels_example_inputs_and_params,
     check_kernels_eval,
+    check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
 )
-
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "Reflection": ReflectionKernel(),

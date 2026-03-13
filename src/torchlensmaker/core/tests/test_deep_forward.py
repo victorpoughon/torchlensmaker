@@ -19,11 +19,10 @@ import pytest
 import torch
 import torch.nn as nn
 
+from torchlensmaker.core.base_module import MultiForwardModule, multiforward
 from torchlensmaker.core.deep_forward import (
     deep_forward,
 )
-
-from torchlensmaker.core.base_module import MultiForwardModule, multiforward
 
 
 def test_deep_forward() -> None:

@@ -14,15 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import itertools
+
+import pytest
 import torch
 from torch.nn.functional import normalize
 
-from torchlensmaker.physics.physics import refraction, reflection
+from torchlensmaker.physics.physics import reflection, refraction
 from torchlensmaker.types import Batch2DTensor
-
-import itertools
-import pytest
-
 
 # TODO test refraction in 3D
 

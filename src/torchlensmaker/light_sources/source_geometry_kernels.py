@@ -14,30 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import TypeAlias, Sequence
-from jaxtyping import Float, Int
-import torch
+from typing import Sequence, TypeAlias
 
+import torch
+from jaxtyping import Float, Int
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.core.geometry import rotate_x_zy
+from torchlensmaker.core.tensor_manip import (
+    meshgrid2d_flat3,
+    meshgrid_flat,
+)
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    hom_identity_2d,
+    hom_identity_3d,
+    transform_rays,
+)
 from torchlensmaker.types import (
-    BatchTensor,
     Batch2DTensor,
     Batch3DTensor,
-    ScalarTensor,
+    BatchTensor,
     HomMatrix,
     IndexTensor,
-)
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-
-from torchlensmaker.core.tensor_manip import (
-    meshgrid_flat,
-    meshgrid2d_flat3,
-)
-
-from torchlensmaker.core.geometry import rotate_x_zy
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    transform_rays,
-    hom_identity_3d,
-    hom_identity_2d,
+    ScalarTensor,
 )
 
 

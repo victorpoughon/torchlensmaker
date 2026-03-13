@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import TypeAlias
+
 import torch
 
 from torchlensmaker.core.rot2d import rot2d
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
-
-from typing import TypeAlias
 
 Tensor: TypeAlias = torch.Tensor
 

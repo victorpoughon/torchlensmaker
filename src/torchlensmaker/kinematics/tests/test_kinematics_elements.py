@@ -15,32 +15,30 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import pytest
 from typing import Any
 
+import pytest
 import torch
 import torch.nn as nn
-
-from torchlensmaker.types import HomMatrix, Tf, Direction
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-
 from torchlensmaker.kinematics.kinematics_elements import (
-    Translate2D,
-    TranslateVec2D,
-    Translate3D,
-    TranslateVec3D,
-    Rotate2D,
-    Rotate3D,
-    AbsolutePosition3D,
     AbsolutePosition2D,
+    AbsolutePosition3D,
     Gap,
     Rotate,
+    Rotate2D,
+    Rotate3D,
     Translate,
+    Translate2D,
+    Translate3D,
+    TranslateVec2D,
+    TranslateVec3D,
 )
+from torchlensmaker.types import Direction, HomMatrix, Tf
 
 
 def check_model_eval(model: nn.Module, inputs: tuple[Tf, Direction]) -> Any:

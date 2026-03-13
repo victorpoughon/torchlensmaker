@@ -14,9 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
 from functools import partial
 
+import pytest
 import torch
 
 from torchlensmaker.surfaces.sag_functions import (
@@ -26,11 +26,11 @@ from torchlensmaker.surfaces.sag_functions import (
     conical_sag_3d,
     parabolic_sag_2d,
     parabolic_sag_3d,
+    sag_sum_2d,
+    sag_sum_3d,
     spherical_sag_2d,
     spherical_sag_3d,
     xypolynomial_sag_3d,
-    sag_sum_2d,
-    sag_sum_3d,
 )
 
 

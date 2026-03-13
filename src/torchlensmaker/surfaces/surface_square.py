@@ -16,31 +16,32 @@
 
 import math
 from functools import partial
-import torch
-import torch.nn as nn
 from typing import Any, cast
 
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
-    BatchNDTensor,
-    MaskTensor,
-    HomMatrix,
-    Tf,
-)
-from .surface_element import SurfaceElement
+import torch
+import torch.nn as nn
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import unit_vector
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.types import (
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+    BatchTensor,
+    HomMatrix,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
+)
 
-from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-from .raytrace import raytrace
 from .kernels_utils import example_rays_2d, example_rays_3d
+from .raytrace import raytrace
+from .surface_element import SurfaceElement
 
 
 def intersection_square_3d(

@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from dataclasses import astuple, fields, is_dataclass
+from typing import Any, Type, TypeAlias, cast
+
 import torch
 import torch.nn as nn
 from torch.onnx import ONNXProgram
 
-from dataclasses import is_dataclass, fields, astuple
 from torchlensmaker.types import Tf
-from typing import Type, Any, cast, TypeAlias
 
 KernelIOType: TypeAlias = torch.Tensor | Tf
 

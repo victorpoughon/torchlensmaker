@@ -18,10 +18,10 @@
 
 from .paraxial import (
     equivalent_locus_2d,
-    rear_principal_point,
-    rear_focal_point,
-    front_principal_point,
     front_focal_point,
+    front_principal_point,
+    rear_focal_point,
+    rear_principal_point,
 )
 
 __all__ = [

@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass, field
+from typing import Any, Callable, Self
+
 import torch
 import torch.nn as nn
-
-from typing import Any, Self, Callable
-from dataclasses import dataclass, field
 
 from torchlensmaker.core.base_module import MultiForwardModule
 

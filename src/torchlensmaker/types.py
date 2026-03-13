@@ -16,10 +16,10 @@
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TypeAlias, Self, Literal
-from jaxtyping import Float, Bool, Int64
-import torch
+from typing import Literal, Self, TypeAlias
 
+import torch
+from jaxtyping import Bool, Float, Int64
 
 # Tensors of various types and shapes
 ScalarTensor: TypeAlias = Float[torch.Tensor, ""]

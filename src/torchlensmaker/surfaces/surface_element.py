@@ -14,17 +14,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any
+from typing import Any, Self
+
 import torch.nn as nn
-from typing import Self
+
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.types import (
-    Tf,
-    BatchTensor,
     BatchNDTensor,
+    BatchTensor,
     MaskTensor,
     ScalarTensor,
+    Tf,
 )
-from torchlensmaker.core.base_module import BaseModule
 
 
 class SurfaceElement(BaseModule):

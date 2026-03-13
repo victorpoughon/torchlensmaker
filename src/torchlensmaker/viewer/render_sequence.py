@@ -14,45 +14,44 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+from typing import Any, Dict, Optional
+
 import torch
 import torch.nn as nn
 
-from typing import Any, Optional, Dict
-
-from torchlensmaker.types import Direction
-from torchlensmaker.optical_data import default_input
-from torchlensmaker.kinematics.kinematics_elements import KinematicElement
-from torchlensmaker.elements.sequential import Sequential, SubChain, Reversed
-from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
-from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface, SurfacePropagator
-from torchlensmaker.optical_surfaces.aperture import Aperture
-from torchlensmaker.elements.focal_point import FocalPoint
-from torchlensmaker.optical_surfaces.image_plane import ImagePlane
-
-from torchlensmaker.lens.lens import Lens
-
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.deep_forward import deep_forward
+from torchlensmaker.elements.focal_point import FocalPoint
+from torchlensmaker.elements.sequential import Reversed, Sequential, SubChain
+from torchlensmaker.elements.utils import get_elements_by_type
+from torchlensmaker.kinematics.kinematics_elements import KinematicElement
+from torchlensmaker.lens.lens import Lens
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.elements.utils import get_elements_by_type
+from torchlensmaker.optical_data import default_input
+from torchlensmaker.optical_surfaces.aperture import Aperture
+from torchlensmaker.optical_surfaces.image_plane import ImagePlane
+from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
+from torchlensmaker.optical_surfaces.refractive_surface import (
+    RefractiveSurface,
+    SurfacePropagator,
+)
+from torchlensmaker.types import Direction
 
-from .rendering import Collective
 from . import tlmviewer
-from .rendering import Artist
 from .artists import (
-    SequentialArtist,
+    FocalPointArtist,
     ForwardArtist,
     KinematicArtist,
+    SequentialArtist,
     SurfacePropagatorArtist,
-    FocalPointArtist,
     ray_variables_dict,
 )
-
-import json
+from .rendering import Artist, Collective
 
 Tensor = torch.Tensor
 

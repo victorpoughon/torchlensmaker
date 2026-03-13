@@ -16,11 +16,10 @@
 
 import torch
 import torch.nn as nn
-
 from jaxtyping import Float
 
-from torchlensmaker.types import ScalarTensor, HomMatrix, IndexTensor
 from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.types import HomMatrix, IndexTensor, ScalarTensor
 
 from .source_geometry_kernels import (
     ObjectGeometry2DKernel,

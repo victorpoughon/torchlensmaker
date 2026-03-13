@@ -15,8 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
-
 import torch
+
 import torchlensmaker as tlm
 
 

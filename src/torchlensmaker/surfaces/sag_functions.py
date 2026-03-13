@@ -15,12 +15,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import TypeAlias, Any, Sequence, Callable
-from jaxtyping import Float
+from typing import Any, Callable, Sequence, TypeAlias
+
 import torch
+from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import bbroad
-from .implicit_solver import ImplicitFunction2D, ImplicitFunction3D
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -28,6 +28,8 @@ from torchlensmaker.types import (
     BatchTensor,
     ScalarTensor,
 )
+
+from .implicit_solver import ImplicitFunction2D, ImplicitFunction3D
 
 # r -> g(r), g_grad(r)
 SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]

@@ -14,16 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
+from dataclasses import dataclass
+from typing import TypeAlias
+
 import torch
 import torch.nn as nn
 
 from torchlensmaker.core.geometry import rotated_unit_vector
-from torchlensmaker.surfaces.local_surface import LocalSurface
 from torchlensmaker.core.rot2d import perpendicular2d, rot2d
-import math
-
-from typing import TypeAlias
-from dataclasses import dataclass
+from torchlensmaker.surfaces.local_surface import LocalSurface
 
 Tensor: TypeAlias = torch.Tensor
 

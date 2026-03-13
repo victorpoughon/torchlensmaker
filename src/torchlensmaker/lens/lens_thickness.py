@@ -15,21 +15,21 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import TYPE_CHECKING
 from itertools import islice
-from jaxtyping import Float
+from typing import TYPE_CHECKING
+
 import torch
 import torch.nn as nn
+from jaxtyping import Float
 
-
+from torchlensmaker.core.deep_forward import deep_forward
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_translate_2d,
     kinematic_chain_append,
     transform_points,
 )
-from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_data import default_input
-from torchlensmaker.core.deep_forward import deep_forward
+from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 
 if TYPE_CHECKING:
     from .lens import Lens

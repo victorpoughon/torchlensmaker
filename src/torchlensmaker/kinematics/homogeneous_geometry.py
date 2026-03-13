@@ -21,11 +21,10 @@ import torch
 from jaxtyping import Float
 
 from torchlensmaker.core.rot3d import euler_angles_to_matrix
-
 from torchlensmaker.types import (
+    BatchNDTensor,
     HomMatrix,
     Tf,
-    BatchNDTensor,
 )
 
 

@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import matplotlib.pyplot as plt
 import torch
 
-
 import torchlensmaker as tlm
-
-import matplotlib.pyplot as plt
 
 
 def dataset_view(surface, P, V, rays_length=100):

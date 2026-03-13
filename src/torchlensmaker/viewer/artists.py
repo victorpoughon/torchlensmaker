@@ -14,25 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Callable, Optional
+
 import torch
 import torch.nn as nn
 
-from typing import Any, Callable, Optional
-
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    kinematic_chain_append,
-    transform_points,
-    hom_target,
-)
 from torchlensmaker.core.tensor_manip import (
     filter_optional_mask,
 )
+from torchlensmaker.kinematics.homogeneous_geometry import (
+    hom_target,
+    kinematic_chain_append,
+    transform_points,
+)
 
 from . import tlmviewer
-
-from .rendering import Collective
-from .rendering import Artist
+from .rendering import Artist, Collective
 
 Tensor = torch.Tensor
 

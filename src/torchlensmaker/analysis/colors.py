@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
-import matplotlib as mpl
-
 from typing import TypeAlias
+
+import matplotlib as mpl
+import torch
 
 from torchlensmaker.optical_data import OpticalData
 

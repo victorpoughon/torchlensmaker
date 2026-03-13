@@ -15,25 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from jaxtyping import Float
 import torch
-
-from torchlensmaker.types import (
-    BatchTensor,
-    ScalarTensor,
-    Batch2DTensor,
-    Batch3DTensor,
-    MaskTensor,
-    Tf,
-)
+from jaxtyping import Float
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_scale_2d,
-    hom_translate_2d,
-    kinematic_chain_extend_2d,
     hom_scale_3d,
+    hom_translate_2d,
     hom_translate_3d,
+    kinematic_chain_extend_2d,
     kinematic_chain_extend_3d,
+)
+from torchlensmaker.types import (
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchTensor,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
 )
 
 

@@ -14,37 +14,33 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict
 from pathlib import Path
+from typing import Dict
 
-import pytest
-
-import torch
 import onnxruntime
+import pytest
+import torch
 
-from torchlensmaker.surfaces.surface_sphere_by_curvature import (
-    SphereByCurvatureSurfaceKernel,
-    SphereByCurvatureOuterExtentSurfaceKernel,
-)
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.surfaces.surface_asphere import AsphereSurfaceKernel
+from torchlensmaker.surfaces.surface_conic import ConicSurfaceKernel
 from torchlensmaker.surfaces.surface_disk import (
     DiskSurfaceKernel,
 )
 from torchlensmaker.surfaces.surface_parabola import ParabolaSurfaceKernel
+from torchlensmaker.surfaces.surface_sphere_by_curvature import (
+    SphereByCurvatureOuterExtentSurfaceKernel,
+    SphereByCurvatureSurfaceKernel,
+)
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
-from torchlensmaker.surfaces.surface_conic import ConicSurfaceKernel
-from torchlensmaker.surfaces.surface_asphere import AsphereSurfaceKernel
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
-
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-
 from torchlensmaker.testing.test_functional_kernels_testing import (
-    check_kernels_example_inputs_and_params,
     check_kernels_eval,
+    check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
 )
-
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC2D-1": SphereByCurvatureSurfaceKernel(2, 1, 0.9, 1e-3),

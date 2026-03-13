@@ -15,11 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from jaxtyping import Float
 import torch
+from jaxtyping import Float
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.types import ScalarTensor, BatchTensor
+from torchlensmaker.types import BatchTensor, ScalarTensor
 
 
 class NonDispersiveMaterialKernel(FunctionalKernel):

@@ -18,11 +18,11 @@
 
 from .lens_constructors import (
     cemented,
-    singlet,
     doublet,
-    symmetric_singlet,
     semiplanar_front,
     semiplanar_rear,
+    singlet,
+    symmetric_singlet,
 )
 from .spherical_lenses import spherical_biconvex
 

@@ -15,13 +15,14 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from typing import TypeAlias
-from jaxtyping import Float, Int
+
 import torch
+from jaxtyping import Float, Int
+
 from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.types import Batch2DTensor, BatchTensor
 
 from .sampling import disk_sampling
-
-from torchlensmaker.types import BatchTensor, Batch2DTensor
 
 
 class ZeroSampling1DKernel(FunctionalKernel):

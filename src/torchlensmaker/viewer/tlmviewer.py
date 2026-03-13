@@ -14,27 +14,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from IPython.display import display, HTML
+import json
+import os.path
 import string
 import uuid
-import os.path
-import json
-import torch
-
 import warnings
-from pathlib import Path
-
 from importlib.metadata import version
-
+from pathlib import Path
 from typing import Any, Optional
 
-from torchlensmaker.surfaces.surface_element import SurfaceElement
+import torch
+from IPython.display import HTML, display
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     HomMatrix,
     hom_identity,
     transform_points,
 )
+from torchlensmaker.surfaces.surface_element import SurfaceElement
 
 # Color theme
 color_valid = "#ffa724"

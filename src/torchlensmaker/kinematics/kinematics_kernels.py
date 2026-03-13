@@ -16,22 +16,22 @@
 
 import torch
 
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.types import (
     ScalarTensor,
     Tf,
 )
 
 from .homogeneous_geometry import (
+    hom_identity_2d,
+    hom_identity_3d,
     hom_rotate_2d,
     hom_rotate_3d,
     hom_translate_2d,
     hom_translate_3d,
-    hom_identity_2d,
-    hom_identity_3d,
     kinematic_chain_append_2d,
     kinematic_chain_append_3d,
 )
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 
 
 class Gap2DKernel(FunctionalKernel):

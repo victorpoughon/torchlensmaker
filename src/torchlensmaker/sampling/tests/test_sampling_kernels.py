@@ -14,28 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Dict
 from pathlib import Path
+from typing import Dict
 
 import pytest
-
 import torch
 
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.sampling.sampling_kernels import (
-    ZeroSampling1DKernel,
-    ZeroSampling2DKernel,
-    LinspaceSampling1DKernel,
-    LinspaceSampling2DKernel,
     DiskSampling2DKernel,
     ExactSampling1DKernel,
     ExactSampling2DKernel,
+    LinspaceSampling1DKernel,
+    LinspaceSampling2DKernel,
+    ZeroSampling1DKernel,
+    ZeroSampling2DKernel,
 )
-
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-
 from torchlensmaker.testing.test_functional_kernels_testing import (
-    check_kernels_example_inputs_and_params,
     check_kernels_eval,
+    check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
 )
 

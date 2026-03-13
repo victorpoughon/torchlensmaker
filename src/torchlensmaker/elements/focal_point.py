@@ -14,15 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Self
+
 import torch
 
-from typing import Any, Self
-from torchlensmaker.elements.sequential import SequentialElement
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.types import Tf, Direction, BatchNDTensor, ScalarTensor
-
+from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
+from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.types import BatchNDTensor, Direction, ScalarTensor, Tf
 
 
 class FocalPoint(SequentialElement):

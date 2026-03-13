@@ -15,24 +15,29 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import TypeAlias, Any, Sequence, Callable
-from jaxtyping import Float, Bool
 from functools import partial
+from typing import Any, Callable, Sequence, TypeAlias
+
 import torch
+from jaxtyping import Bool, Float
 
 from torchlensmaker.core.tensor_manip import bbroad
-from .implicit_solver import ImplicitFunction2D, ImplicitFunction3D
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
-    ScalarTensor,
     MaskTensor,
+    ScalarTensor,
     Tf,
 )
 
-
+from .implicit_solver import (
+    ImplicitFunction2D,
+    ImplicitFunction3D,
+    implicit_surface_local_raytrace,
+)
+from .raytrace import raytrace
 from .sag_functions import (
     SagFunction2D,
     SagFunction3D,
@@ -43,8 +48,6 @@ from .sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
 )
-from .implicit_solver import implicit_surface_local_raytrace
-from .raytrace import raytrace
 
 
 def sag_surface_2d(

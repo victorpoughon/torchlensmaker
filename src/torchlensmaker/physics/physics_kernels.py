@@ -15,13 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import torch
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.types import (
-    ScalarTensor,
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
+    ScalarTensor,
 )
-from torchlensmaker.core.functional_kernel import FunctionalKernel
+
 from .physics import reflection, refraction
 
 
