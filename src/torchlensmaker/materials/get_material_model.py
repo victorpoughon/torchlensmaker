@@ -22,7 +22,6 @@ from .material_elements import CauchyMaterial, MaterialModel, NonDispersiveMater
 
 
 def get_material_model(material: str | MaterialModel) -> MaterialModel:
-
     # These are "default" materials in the sense that they are the models
     # that will be picked when using a string material argument, as in: material="water"
     # any material argument can also be a MaterialModel object directly for more advanced usage

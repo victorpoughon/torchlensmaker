@@ -62,13 +62,20 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
 
     first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
     tau = lens_minimal_diameter(lens) / 2
-    front_extent, rear_extent = first_surface.surface.outer_extent(tau), last_surface.surface.outer_extent(tau)
+    front_extent, rear_extent = (
+        first_surface.surface.outer_extent(tau),
+        last_surface.surface.outer_extent(tau),
+    )
 
     if front_extent is None:
-        raise RuntimeError("Lens front surface doesn't have an outer extent defined, cannot compute outer thickness")
-    
+        raise RuntimeError(
+            "Lens front surface doesn't have an outer extent defined, cannot compute outer thickness"
+        )
+
     if rear_extent is None:
-        raise RuntimeError("Lens rear surface doesn't have an outer extent defined, cannot compute outer thickness")
+        raise RuntimeError(
+            "Lens rear surface doesn't have an outer extent defined, cannot compute outer thickness"
+        )
 
     # Infer dtype, device from the first gap element
     dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
@@ -86,8 +93,12 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     rear_extent_tf = hom_translate_2d(torch.stack((rear_extent, zero)))
 
     root = torch.zeros((2,), dtype=dtype)
-    front_outer_vertex = transform_points(kinematic_chain_append(front_vertex_tf, front_extent_tf).direct, root)
-    rear_outer_vertex = transform_points(kinematic_chain_append(rear_vertex_tf, rear_extent_tf).direct, root)
+    front_outer_vertex = transform_points(
+        kinematic_chain_append(front_vertex_tf, front_extent_tf).direct, root
+    )
+    rear_outer_vertex = transform_points(
+        kinematic_chain_append(rear_vertex_tf, rear_extent_tf).direct, root
+    )
 
     return (rear_outer_vertex - front_outer_vertex)[0]
 

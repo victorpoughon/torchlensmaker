@@ -74,11 +74,11 @@ class RayBundle:
         assert device == wavel_idx.device
 
         return cls(P, V, pupil, field, wavel, pupil_idx, field_idx, wavel_idx)
-    
+
     @property
     def dtype(self) -> torch.dtype:
         return self.P.dtype
-    
+
     @property
     def device(self) -> torch.device:
         return self.P.device

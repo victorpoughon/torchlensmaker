@@ -164,7 +164,6 @@ def transforms_3d() -> list[Tf]:
 
 
 def test_transform_functions_3d(dtype: torch.dtype, device: torch.device) -> None:
-
     rtol, atol = {torch.float32: (1e-3, 1e-4), torch.float64: (1e-5, 1e-8)}[dtype]
 
     # Any number of batch dimensions

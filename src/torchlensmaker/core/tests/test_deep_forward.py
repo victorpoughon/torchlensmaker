@@ -243,6 +243,7 @@ def test_deep_multi_forward_detects_multiple_forward_call() -> None:
         with deep_forward(model) as trace:
             _ = model.forward1(data)
 
+
 def test_multi_deep_forward_delegate() -> None:
     class Model(MultiForwardModule):
         def __init__(self):

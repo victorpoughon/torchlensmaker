@@ -64,7 +64,6 @@ def test_kinematics_kernels_eval(dtype: torch.dtype, device: torch.device) -> No
 def test_kinematics_kernels_export_onnx(
     dtype: torch.dtype, device: torch.device, tmp_path: Path
 ) -> None:
-
     # Note this test only works in float32 as of Jan 2026
     # because onnxruntime cpu doesn't seem to support cos() in float64...
     if dtype == torch.float64:

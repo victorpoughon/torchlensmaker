@@ -321,7 +321,6 @@ def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
 
 
 def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
-
     T3d = torch.tensor([5.0, 2.0, -15.0])
 
     elements_3d = nn.ModuleList(

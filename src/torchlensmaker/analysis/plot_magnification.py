@@ -38,7 +38,7 @@ def plot_magnification(
     optics: nn.Module,
     color_dim: Optional[str] = None,
     colormap: LinearSegmentedColormap = default_colormap,
-    dtype: torch.dtype | None = None
+    dtype: torch.dtype | None = None,
 ) -> None:
     """
     Compute and plot magnification data for the given optical system

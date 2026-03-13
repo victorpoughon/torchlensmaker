@@ -42,13 +42,15 @@ def rays_cylinder_collision(
 
     # Care that sqrt is undefined for negative values,
     # and also that its derivative is undefined at zero
-    sqrt_delta = torch.sqrt(torch.clamp(delta, min=const_zero + torch.finfo(P.dtype).tiny))
+    sqrt_delta = torch.sqrt(
+        torch.clamp(delta, min=const_zero + torch.finfo(P.dtype).tiny)
+    )
 
     # Ignore A = 0 case, as end cap collision points will take over
     mask_quadratic_solvable = torch.logical_and(delta >= const_zero, A != const_zero)
 
     # Solve the quadratic
-    safe_denom_quadratic = torch.where(mask_quadratic_solvable, 2*A, const_one)
+    safe_denom_quadratic = torch.where(mask_quadratic_solvable, 2 * A, const_one)
     root0 = (-B + sqrt_delta) / safe_denom_quadratic
     root1 = (-B - sqrt_delta) / safe_denom_quadratic
 
@@ -111,7 +113,7 @@ def rays_rectangle_collision(
     ymax: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Rays-rectangle collision in 2D
-    
+
     Collision detection between 2D rays and a 2D axis aligned rectangle
 
     Args:
@@ -121,7 +123,7 @@ def rays_rectangle_collision(
         xmax: end x coordinate of the rectangle, zero-dim tensor
         ymin: start y coordinate of the rectangle, zero-dim tensor
         ymax: end y coordinate of the rectangle, zero-dim tensor
-    
+
     Returns:
         t1, t2, hit_mask: tensors of shape (N,)
     """
@@ -129,26 +131,18 @@ def rays_rectangle_collision(
 
     const_zero = torch.zeros((1), dtype=P.dtype)
     const_one = torch.ones((1), dtype=P.dtype)
-    
+
     # Assume no collision in case of div by zero
 
     mask_x_solvable = V[..., 0] != const_zero
     safe_denom_x = torch.where(mask_x_solvable, V[..., 0], const_one)
-    root0 = torch.where(
-        mask_x_solvable, (xmin - P[..., 0]) / safe_denom_x, const_zero
-    )
-    root1 = torch.where(
-        mask_x_solvable, (xmax - P[..., 0]) / safe_denom_x, const_zero
-    )
+    root0 = torch.where(mask_x_solvable, (xmin - P[..., 0]) / safe_denom_x, const_zero)
+    root1 = torch.where(mask_x_solvable, (xmax - P[..., 0]) / safe_denom_x, const_zero)
 
     mask_y_solvable = V[..., 1] != const_zero
     safe_denom_y = torch.where(mask_y_solvable, V[..., 1], const_one)
-    root2 = torch.where(
-        mask_x_solvable, (ymin - P[..., 1]) / safe_denom_y, const_zero
-    )
-    root3 = torch.where(
-        mask_x_solvable, (ymax - P[..., 1]) / safe_denom_y, const_zero
-    )
+    root2 = torch.where(mask_x_solvable, (ymin - P[..., 1]) / safe_denom_y, const_zero)
+    root3 = torch.where(mask_x_solvable, (ymax - P[..., 1]) / safe_denom_y, const_zero)
 
     root0_y = P[..., 1] + root0 * V[..., 1]
     root1_y = P[..., 1] + root1 * V[..., 1]

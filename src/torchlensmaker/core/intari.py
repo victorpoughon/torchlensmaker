@@ -12,6 +12,7 @@ Bounds are represented as a batch tensor, where the last dimension is 2 and
 contains (inf, sup) bounds. The other dimensions are user-defined.
 """
 
+
 def scalar(c: torch.Tensor, bounds: torch.Tensor) -> torch.Tensor:
     """
     Interval arithmetic: scalar multiply
@@ -116,4 +117,3 @@ def monomial(p: torch.Tensor, tau: torch.Tensor) -> torch.Tensor:
             bounds_odd,
         ),
     )
-

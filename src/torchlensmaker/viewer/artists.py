@@ -34,6 +34,7 @@ from .rendering import Artist, Collective
 
 Tensor = torch.Tensor
 
+
 # TODO remove
 def ray_variables_dict(
     rays: RayBundle, valid: Optional[torch.Tensor] = None
@@ -99,7 +100,6 @@ class SurfacePropagatorArtist(Artist):
         rendered_joints = tlmviewer.render_joint(input_tf.direct)
 
         return [rendered_surface] + rendered_rays + rendered_joints
-
 
 
 class FocalPointArtist(Artist):

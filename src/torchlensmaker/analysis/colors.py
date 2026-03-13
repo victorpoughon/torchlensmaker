@@ -25,7 +25,9 @@ from .CET_I2 import isoluminant_cgo_80_c38
 
 # Default colormap*
 LinearSegmentedColormap: TypeAlias = mpl.colors.LinearSegmentedColormap
-default_colormap = mpl.colors.LinearSegmentedColormap.from_list("CET_I2", isoluminant_cgo_80_c38)
+default_colormap = mpl.colors.LinearSegmentedColormap.from_list(
+    "CET_I2", isoluminant_cgo_80_c38
+)
 
 
 Tensor: TypeAlias = torch.Tensor

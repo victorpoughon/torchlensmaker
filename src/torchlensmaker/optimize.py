@@ -59,7 +59,6 @@ class OptimizationRecord:
         print()
 
 
-
 class ImagingModel(nn.Module):
     def __init__(self, optics, image_plane):
         super().__init__()
@@ -90,11 +89,10 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
-
     # We assume the last element is the loss element
     source, core, image_plane = optics[0], optics[1:-1], optics[-1]
     model = ImagingModel(core, image_plane)
-    
+
     default_input = tlm.default_input(dim, dtype)
     input_rays = source.sequential(default_input)
 
@@ -137,7 +135,9 @@ def optimize(
 
         if i % show_every == 0 or i == num_iter - 1:
             iter_str = f"[{i + 1:>3}/{num_iter}]"
-            L_str = f"L= {loss.item():>6.5f} | grad norm= {torch.linalg.norm(grad):5>.4f}"
+            L_str = (
+                f"L= {loss.item():>6.5f} | grad norm= {torch.linalg.norm(grad):5>.4f}"
+            )
             print(f"{iter_str} {L_str}")
 
     return OptimizationRecord(num_iter, parameters_record, loss_record, optics)

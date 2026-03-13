@@ -31,6 +31,7 @@ Tensor = torch.Tensor
 
 color_spot_diagram = "coral"
 
+
 def make_var_label(name: str, value: float | list[float], precision: int):
     if isinstance(value, float):
         return f"{name}\n{value:.{precision}f}"

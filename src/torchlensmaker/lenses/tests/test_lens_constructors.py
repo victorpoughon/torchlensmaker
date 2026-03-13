@@ -95,7 +95,7 @@ def test_lens_anchors() -> None:
         tlm.SphereByCurvature(diameter=30, C=1 / 55),
         tlm.InnerGap(1.0),
         material="BK7",
-        anchors=(1, 1)
+        anchors=(1, 1),
     )
 
     check_lens(lens)
