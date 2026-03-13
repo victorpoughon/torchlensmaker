@@ -14,33 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
-
-from typing import Any, Self
 from jaxtyping import Float
 
-from torchlensmaker.core.tensor_manip import to_tensor, init_param, expand_bool_tuple
+from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
+from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.optical_data import OpticalData
-
 from torchlensmaker.types import (
+    Direction,
     HomMatrix,
     ScalarTensor,
     Tf,
-    Direction,
 )
+
 from .kinematics_kernels import (
-    Rotate2DKernel,
-    Rotate3DKernel,
-    Translate2DKernel,
-    Translate3DKernel,
     Gap2DKernel,
     Gap3DKernel,
     KinematicChainAppend2DKernel,
     KinematicChainAppend3DKernel,
+    Rotate2DKernel,
+    Rotate3DKernel,
+    Translate2DKernel,
+    Translate3DKernel,
 )
-
-from torchlensmaker.elements.sequential_element import SequentialElement
 
 
 class KinematicElement(SequentialElement):
@@ -68,7 +67,7 @@ class Gap(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(x=self.x, trainable=self.x.requires_grad)
+        kwargs: dict[str, Any] = dict(x=self.x, trainable=self.x.requires_grad)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -100,7 +99,7 @@ class Translate2D(KinematicElement):
         self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             x=self.x,
             y=self.y,
             trainable=(self.x.requires_grad, self.y.requires_grad),
@@ -128,7 +127,7 @@ class TranslateVec2D(KinematicElement):
         self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             t=self.t,
             trainable=self.t.requires_grad,
         )
@@ -160,7 +159,7 @@ class Translate3D(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             x=self.x,
             y=self.y,
             z=self.z,
@@ -193,7 +192,7 @@ class TranslateVec3D(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             t=self.t,
             trainable=self.t.requires_grad,
         )
@@ -222,7 +221,7 @@ class Rotate2D(KinematicElement):
         self.kernel_fk2d = KinematicChainAppend2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             theta=self.theta,
             trainable=self.theta.requires_grad,
         )
@@ -251,7 +250,7 @@ class AbsolutePosition2D(KinematicElement):
         self.y = init_param(self, "y", y, yt)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             x=self.x,
             y=self.y,
             trainable=(self.x.requires_grad, self.y.requires_grad),
@@ -283,7 +282,7 @@ class AbsolutePosition3D(KinematicElement):
         self.z = init_param(self, "z", z, zt)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             x=self.x,
             y=self.y,
             z=self.z,
@@ -319,7 +318,7 @@ class Rotate3D(KinematicElement):
         self.z = init_param(self, "z", z, zt)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             y=self.y,
             z=self.z,
             trainable=(
@@ -359,7 +358,7 @@ class Rotate(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             angles=torch.stack((self.z, self.y)),
             trainable=(self.z.requires_grad, self.y.requires_grad),
         )
@@ -402,7 +401,7 @@ class Translate(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             x=self.x,
             y=self.y,
             z=self.z,

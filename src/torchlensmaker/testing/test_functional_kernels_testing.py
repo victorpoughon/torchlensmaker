@@ -14,27 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from pathlib import Path
-from itertools import chain
-
 import itertools
-from typing import TypeAlias, Type
 from dataclasses import is_dataclass
-import pytest
+from itertools import chain
+from pathlib import Path
+from typing import Type, TypeAlias
 
-import torch
 import onnxruntime
-
-from torchlensmaker.types import MaskTensor, IndexTensor
+import pytest
+import torch
 
 from torchlensmaker.core.functional_kernel import (
-    export_onnx,
     FunctionalKernel,
     KernelIOType,
+    export_onnx,
     kernel_flat_io,
     kernel_flat_names,
     kernel_names,
 )
+from torchlensmaker.types import IndexTensor, MaskTensor
 
 
 def kernel_output_typecheck(
@@ -96,7 +94,9 @@ def check_kernels_eval(
     device: torch.device,
 ) -> None:
     # Evaluate kernel with example inputs
-    kwargs = dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
+    kwargs: dict[str, Any] = (
+        dict(dtype=dtype, device=device) if kernel.forward_dtype_device else {}
+    )
     kernel_outputs = kernel.apply(
         *kernel.example_inputs(dtype, device),
         *kernel.example_params(dtype, device),
@@ -119,7 +119,9 @@ def check_kernels_eval(
         )
         assert expected_num_outputs == len(kernel_outputs)
 
-    kernel_outputs_as_tuple = (kernel_outputs,) if not isinstance(kernel_outputs, tuple) else kernel_outputs
+    kernel_outputs_as_tuple = (
+        (kernel_outputs,) if not isinstance(kernel_outputs, tuple) else kernel_outputs
+    )
 
     # Check output dtype and device
     for actual, expected in zip(kernel_outputs_as_tuple, kernel.outputs.values()):

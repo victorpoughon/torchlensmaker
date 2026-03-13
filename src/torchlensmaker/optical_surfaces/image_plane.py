@@ -14,17 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Literal, Optional, Self, Sequence, TypeAlias
+
 import torch
 import torch.nn as nn
 
-from typing import Sequence, Optional, TypeAlias, Literal, Self, Any
-from torchlensmaker.types import BatchTensor, ScalarTensor, Tf, Direction, BatchNDTensor
-from torchlensmaker.core.tensor_manip import to_tensor, filter_optional_tensor
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_disk import Disk
-
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.core.tensor_manip import filter_optional_tensor, to_tensor
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.surfaces.surface_disk import Disk
+from torchlensmaker.types import BatchNDTensor, BatchTensor, Direction, ScalarTensor, Tf
 
 from .surface_propagator import SurfacePropagator
 
@@ -64,7 +64,7 @@ class ImagePlane(SequentialElement):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             diameter=self.propagator.surface.diameter,
             magnification=self.magnification,
         )

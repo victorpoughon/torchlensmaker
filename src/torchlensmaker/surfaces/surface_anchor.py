@@ -15,29 +15,31 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import torch
 from typing import Any, Self
+
+import torch
 from jaxtyping import Float
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    Tf,
-    BatchNDTensor,
-    MaskTensor,
-    Direction,
-)
-from torchlensmaker.core.tensor_manip import init_param
+
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.surfaces.sag_geometry import (
-    anchor_transforms_2d,
-    anchor_transforms_3d,
-)
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.surfaces.sag_geometry import (
+    anchor_transforms_2d,
+    anchor_transforms_3d,
+)
+from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.types import (
+    BatchNDTensor,
+    BatchTensor,
+    Direction,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
+)
 
 
 class SurfaceScaleAnchorKernel(FunctionalKernel):
@@ -108,7 +110,9 @@ class KinematicSurface(BaseModule):
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(surface=self.surface, anchors=self.anchors, scale=self.scale)
+        kwargs: dict[str, Any] = dict(
+            surface=self.surface, anchors=self.anchors, scale=self.scale
+        )
         return type(self)(**kwargs | overrides)
 
     def render(self) -> Any:
@@ -137,8 +141,6 @@ class KinematicSurface(BaseModule):
         # because surfaces also can implement anchors and scale.
         # However we could remove direction arg to surface entirely if we only
         # use kinematic surface and remove anchors/scale from surface completely, TLM-90 TLM-95
-        t, normals, valid, _, _ = self.surface(
-            P, V, tf_surface, direction
-        ) 
+        t, normals, valid, _, _ = self.surface(P, V, tf_surface, direction)
 
         return t, normals, valid, tf_surface, tf_next

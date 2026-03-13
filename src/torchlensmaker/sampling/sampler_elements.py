@@ -14,22 +14,23 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
-from typing import Self, Any
 from jaxtyping import Float, Int
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import to_tensor
 
 from .sampling_kernels import (
-    LinspaceSampling1DKernel,
-    LinspaceSampling2DKernel,
+    DiskSampling2DKernel,
     ExactSampling1DKernel,
     ExactSampling2DKernel,
+    LinspaceSampling1DKernel,
+    LinspaceSampling2DKernel,
     ZeroSampling1DKernel,
     ZeroSampling2DKernel,
-    DiskSampling2DKernel,
 )
 
 
@@ -72,7 +73,7 @@ class ExactSampler1D(SamplerElement):
         self.kernel = ExactSampling1DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(samples=self.samples)
+        kwargs: dict[str, Any] = dict(samples=self.samples)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -91,7 +92,7 @@ class ExactSampler2D(SamplerElement):
         self.kernel = ExactSampling2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(samples=self.samples)
+        kwargs: dict[str, Any] = dict(samples=self.samples)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -110,7 +111,7 @@ class LinspaceSampler1D(SamplerElement):
         self.kernel = LinspaceSampling1DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(N=self.N)
+        kwargs: dict[str, Any] = dict(N=self.N)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -132,7 +133,7 @@ class LinspaceSampler2D(SamplerElement):
         self.kernel = LinspaceSampling2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(Nx=self.Nx, Ny=self.Ny)
+        kwargs: dict[str, Any] = dict(Nx=self.Nx, Ny=self.Ny)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -154,7 +155,7 @@ class DiskSampler2D(SamplerElement):
         self.kernel = DiskSampling2DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(Nrho=self.Nrho, Ntheta=self.Ntheta)
+        kwargs: dict[str, Any] = dict(Nrho=self.Nrho, Ntheta=self.Ntheta)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:

@@ -15,15 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
 
-from typing import Self, Any
-from torchlensmaker.types import ScalarTensor
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_disk import Disk
+from torchlensmaker.types import ScalarTensor
 
 from .surface_propagator import SurfacePropagator
 
@@ -34,11 +35,13 @@ class Aperture(SequentialElement):
         self.propagator = SurfacePropagator(Disk(diameter))
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(diameter=self.propagator.surface.diameter)
+        kwargs: dict[str, Any] = dict(diameter=self.propagator.surface.diameter)
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, _, fk_next = self.propagator(data.rays, data.fk, data.direction)
+        rays_propagated, _, fk_next = self.propagator(
+            data.rays, data.fk, data.direction
+        )
 
         return data.replace(
             rays=rays_propagated,

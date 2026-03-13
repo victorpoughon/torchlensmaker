@@ -14,10 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch.nn as nn
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.optical_data import OpticalData
-from typing import Self
 
 
 class SequentialElement(BaseModule):
@@ -28,6 +26,6 @@ class SequentialElement(BaseModule):
     because it provides a sequential() forward method.
     """
 
-    def sequential(self, data: OpticalData) -> OpticalData:
+    def sequential(self, inputs: OpticalData) -> OpticalData:
         # default implementation just calls forward, can be overwritten
-        return self(data)
+        return self(inputs)

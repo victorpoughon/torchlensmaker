@@ -15,21 +15,22 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
 
-from typing import Self, Any
-from torchlensmaker.types import TIRMode, BatchNDTensor, Direction
-from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.optical_data import OpticalData
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.physics.physics_elements import RefractiveInterface
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.materials.get_material_model import (
     MaterialModel,
     get_material_model,
 )
+from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.physics.physics_elements import RefractiveInterface
+from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.types import BatchNDTensor, Direction, TIRMode
 
 from .surface_propagator import SurfacePropagator
 
@@ -47,7 +48,7 @@ class SurfaceRefractor(BaseModule):
         super().__init__()
         self.material_in = get_material_model(materials[0]).clone()
         self.material_out = get_material_model(materials[1]).clone()
-        self.tir_mode = tir_mode
+        self.tir_mode: TIRMode = tir_mode
         self.refractive_interface = RefractiveInterface()
 
     def forward(
@@ -99,7 +100,7 @@ class RefractiveSurface(SequentialElement):
         return self.refractor.tir_mode
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             surface=self.surface,
             materials=self.materials,
             tir_mode=self.refractor.tir_mode,

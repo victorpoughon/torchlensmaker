@@ -15,41 +15,39 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Sequence, Self
-from jaxtyping import Float, Bool
+from typing import Any, Self, Sequence
+
 import torch
 import torch.nn as nn
+from jaxtyping import Bool, Float
 
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    BatchNDTensor,
-    MaskTensor,
-    Tf,
-    Direction,
-)
-
-from .surface_element import SurfaceElement
-
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
-from .sag_functions import (
-    conical_sag_2d,
-    conical_sag_3d,
-    aspheric_sag_2d,
-    aspheric_sag_3d,
-    sag_sum_2d,
-    sag_sum_3d,
+from torchlensmaker.types import (
+    BatchNDTensor,
+    BatchTensor,
+    Direction,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
+from .sag_functions import (
+    aspheric_sag_2d,
+    aspheric_sag_3d,
+    conical_sag_2d,
+    conical_sag_3d,
+    sag_sum_2d,
+    sag_sum_3d,
+)
 from .sag_surface import sag_surface_2d, sag_surface_3d
+from .surface_element import SurfaceElement
 
 
 class AsphereSurfaceKernel(FunctionalKernel):
@@ -254,7 +252,7 @@ class Asphere(SurfaceElement):
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             diameter=self.diameter,
             C=self.C,
             K=self.K,

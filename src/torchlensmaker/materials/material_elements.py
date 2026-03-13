@@ -14,20 +14,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Self
+
 import torch
 import torch.nn as nn
-from typing import Self
 from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import init_param
 
 from .material_kernels import (
-    NonDispersiveMaterialKernel,
     CauchyMaterialKernel,
+    NonDispersiveMaterialKernel,
     SellmeierMaterialKernel,
 )
-
 
 # TODO add:
 # LinearSegmentedMaterial
@@ -51,7 +51,7 @@ class NonDispersiveMaterial(MaterialModel):
         self.kernel = NonDispersiveMaterialKernel()
 
     def clone(self, **overrides) -> Self:
-        kwargs = dict(n=self.n)
+        kwargs: dict[str, Any] = dict(n=self.n)
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
@@ -80,7 +80,7 @@ class CauchyMaterial(MaterialModel):
         self.kernel = CauchyMaterialKernel()
 
     def clone(self, **overrides) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             A=self.A,
             B=self.B,
             C=self.C,
@@ -115,7 +115,7 @@ class SellmeierMaterial(MaterialModel):
         self.kernel = SellmeierMaterialKernel()
 
     def clone(self, **overrides) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             B1=self.B1,
             B2=self.B2,
             B3=self.B3,

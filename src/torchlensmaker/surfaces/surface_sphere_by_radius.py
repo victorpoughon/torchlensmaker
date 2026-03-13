@@ -14,38 +14,35 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
+from functools import partial
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
-import math
-
-from typing import Any, Self
-from functools import partial
 from jaxtyping import Float
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import unit_vector, within_radius
-
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    Batch2DTensor,
-    BatchNDTensor,
-    MaskTensor,
-    Tf,
-    Direction,
-)
-
-from .surface_element import SurfaceElement
-
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.types import (
+    Batch2DTensor,
+    BatchNDTensor,
+    BatchTensor,
+    Direction,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
+)
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.core.tensor_manip import init_param
-
+from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import raytrace
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
-from .kernels_utils import example_rays_2d, example_rays_3d
+from .surface_element import SurfaceElement
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
@@ -304,7 +301,7 @@ class SphereByRadius(SurfaceElement):
         self.func3d = SphereByRadiusSurfaceKernel(3)
 
     def clone(self, **overrides) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             diameter=self.diameter,
             R=self.R,
             anchors=self.anchors,
@@ -316,7 +313,6 @@ class SphereByRadius(SurfaceElement):
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        
         # Retrograde direction just needs to swap anchors
         anchors = (
             self.anchors.unbind(-1)

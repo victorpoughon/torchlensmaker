@@ -15,28 +15,28 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import operator
-from itertools import chain, islice
-from typing import Type, Sequence, Self, TypeVar, Any
-from collections.abc import Iterator, Iterable
 from collections import OrderedDict
+from collections.abc import Iterable, Iterator
+from itertools import islice
+from typing import Any, Self, Sequence, Type, TypeVar
+
 import torch.nn as nn
-from torchlensmaker.optical_data import OpticalData
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.elements.utils import (
     get_elements_by_type,
 )
-
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
+from torchlensmaker.optical_data import OpticalData
 
 from .sequential_element import SequentialElement
 
 
 class SubChain(SequentialElement):
-    def __init__(self, *children: nn.Module):
+    def __init__(self, *children: BaseModule):
         super().__init__()
         self._sequential = Sequential(*children)
 
@@ -73,7 +73,7 @@ class Sequential(SequentialElement):
         idx %= size
         return next(islice(iterator, idx, None))
 
-    def __getitem__(self, idx: slice | int) -> BaseModule:
+    def __getitem__(self, idx: slice | int) -> SequentialElement:
         if isinstance(idx, slice):
             return self.__class__(OrderedDict(list(self._modules.items())[idx]))
         else:
@@ -82,7 +82,7 @@ class Sequential(SequentialElement):
     def __len__(self) -> int:
         return len(self._modules)
 
-    def __iter__(self) -> Iterator[BaseModule]:
+    def __iter__(self) -> Iterator[SequentialElement]:
         return iter(self._modules.values())
 
     def forward(self, data: OpticalData) -> OpticalData:
@@ -112,10 +112,10 @@ class Sequential(SequentialElement):
 
 
 class Reversed(SequentialElement):
-    def __init__(self, element: BaseModule):
+    def __init__(self, element: SequentialElement):
         super().__init__()
         self.element = element
-    
+
     def clone(self, **overrides: Any) -> Self:
         return type(self)(self.element)
 

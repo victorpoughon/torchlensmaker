@@ -14,38 +14,32 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
-
-from typing import Any, Self
 from jaxtyping import Float
 
-from torchlensmaker.types import HomMatrix, Direction
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.optical_data import OpticalData
-
-from torchlensmaker.core.dim import Dim
 from torchlensmaker.elements.sequential_element import SequentialElement
-
+from torchlensmaker.light_sources.source_geometry_elements import (
+    ObjectAtInfinityGeometry2D,
+    ObjectAtInfinityGeometry3D,
+    ObjectGeometry2D,
+    ObjectGeometry3D,
+)
+from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.sampling.sampler_elements import (
+    DiskSampler2D,
     LinspaceSampler1D,
     ZeroSampler1D,
     ZeroSampler2D,
-    DiskSampler2D,
 )
-from torchlensmaker.light_sources.source_geometry_elements import (
-    ObjectGeometry2D,
-    ObjectAtInfinityGeometry2D,
-    ObjectGeometry3D,
-    ObjectAtInfinityGeometry3D,
-)
+from torchlensmaker.types import Direction, HomMatrix
 
 
 class LightSourceBase(SequentialElement):
     def domain(self, dim: int) -> dict[str, list[float]]:
-        raise NotImplementedError
-
-    def dim(self) -> Dim:
         raise NotImplementedError
 
     def forward(self, tf: HomMatrix, direction: Direction) -> RayBundle:
@@ -163,7 +157,7 @@ class Object(GenericLightSource):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
             object_diameter=self.geometry_2d.object_diameter,
             wavelength=torch.stack(
@@ -177,9 +171,6 @@ class Object(GenericLightSource):
             sampler_wavel_3d=self.sampler_wavel_3d,
         )
         return type(self)(**kwargs | overrides)
-
-    def dim(self) -> Dim:
-        return Dim.MIXED
 
 
 class ObjectAtInfinity(GenericLightSource):
@@ -211,7 +202,7 @@ class ObjectAtInfinity(GenericLightSource):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
             angular_size=self.geometry_2d.angular_size,
             wavelength=torch.stack(
@@ -225,9 +216,6 @@ class ObjectAtInfinity(GenericLightSource):
             sampler_wavel_3d=self.sampler_wavel_3d,
         )
         return type(self)(**kwargs | overrides)
-
-    def dim(self) -> Dim:
-        return Dim.MIXED
 
 
 class PointSource(GenericLightSource):
@@ -260,7 +248,7 @@ class PointSource(GenericLightSource):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
@@ -271,9 +259,6 @@ class PointSource(GenericLightSource):
             sampler_wavel_3d=self.sampler_wavel_3d,
         )
         return type(self)(**kwargs | overrides)
-
-    def dim(self) -> Dim:
-        return Dim.MIXED
 
 
 class PointSourceAtInfinity(GenericLightSource):
@@ -306,7 +291,7 @@ class PointSourceAtInfinity(GenericLightSource):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
@@ -317,9 +302,6 @@ class PointSourceAtInfinity(GenericLightSource):
             sampler_wavel_3d=self.sampler_wavel_3d,
         )
         return type(self)(**kwargs | overrides)
-
-    def dim(self) -> Dim:
-        return Dim.MIXED
 
 
 class RaySource(GenericLightSource):
@@ -349,7 +331,7 @@ class RaySource(GenericLightSource):
         )
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(
+        kwargs: dict[str, Any] = dict(
             wavelength=torch.stack(
                 (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
             ),
@@ -357,6 +339,3 @@ class RaySource(GenericLightSource):
             sampler_wavel_3d=self.sampler_wavel_3d,
         )
         return type(self)(**kwargs | overrides)
-
-    def dim(self) -> Dim:
-        return Dim.MIXED

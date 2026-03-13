@@ -15,33 +15,34 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-import torch
-import torch.nn as nn
 from typing import Any, Self
 
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
-    BatchNDTensor,
-    MaskTensor,
-    HomMatrix,
-    Tf,
-    Direction,
-)
-from .surface_element import SurfaceElement
+import torch
+import torch.nn as nn
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import unit_vector
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.types import (
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+    BatchTensor,
+    Direction,
+    HomMatrix,
+    MaskTensor,
+    ScalarTensor,
+    Tf,
+)
 
-from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.core.functional_kernel import FunctionalKernel
+from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import raytrace
 from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
-from .kernels_utils import example_rays_2d, example_rays_3d
+from .surface_element import SurfaceElement
 
 
 def intersection_disk_2d(
@@ -142,7 +143,7 @@ class Disk(SurfaceElement):
         self.func3d = DiskSurfaceKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(diameter=self.diameter)
+        kwargs: dict[str, Any] = dict(diameter=self.diameter)
         return type(self)(**kwargs | overrides)
 
     def forward(

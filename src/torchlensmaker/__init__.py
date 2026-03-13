@@ -36,7 +36,6 @@ from torchlensmaker.types import (
 # Core
 ######
 
-from torchlensmaker.core.dim import Dim
 from torchlensmaker.physics.physics import reflection, refraction
 
 from torchlensmaker.core.parameter import parameter

@@ -18,7 +18,6 @@
 import math
 import torch
 import torch.nn as nn
-from torchlensmaker.core.dim import Dim
 from typing import Sequence, cast
 
 from torchlensmaker.sampling.sampler_elements import (

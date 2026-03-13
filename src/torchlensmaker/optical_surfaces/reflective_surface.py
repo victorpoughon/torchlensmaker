@@ -15,16 +15,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
 
-from typing import Self, Any
-from torchlensmaker.types import BatchNDTensor
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
+from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.types import BatchNDTensor
 
 from .surface_propagator import SurfacePropagator
 
@@ -54,11 +55,13 @@ class ReflectiveSurface(SequentialElement):
         return self.propagator.surface
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs = dict(surface=self.surface)
+        kwargs: dict[str, Any] = dict(surface=self.surface)
         return type(self)(**kwargs | overrides)
 
     def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(data.rays, data.fk, data.direction)
+        rays_propagated, normals, fk_next = self.propagator(
+            data.rays, data.fk, data.direction
+        )
         rays_reflected = self.reflector(rays_propagated, normals)
 
         return data.replace(rays=rays_reflected, fk=fk_next)
