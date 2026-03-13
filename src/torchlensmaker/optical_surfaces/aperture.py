@@ -39,7 +39,9 @@ class Aperture(SequentialElement):
         return type(self)(**kwargs | overrides)
 
     def sequential(self, inputs: OpticalData) -> OpticalData:
-        rays_propagated, fk_next = self(inputs.rays, inputs.fk, inputs.direction)
+        rays_propagated, tf_surface, fk_next = self(
+            inputs.rays, inputs.fk, inputs.direction
+        )
         return inputs.replace(
             rays=rays_propagated,
             fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
@@ -47,7 +49,7 @@ class Aperture(SequentialElement):
 
     def forward(
         self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[RayBundle, Tf]:
-        rays_propagated, _, fk_next = self.propagator(rays, tf, direction)
+    ) -> tuple[RayBundle, Tf, Tf]:
+        rays_propagated, _, tf_surface, fk_next = self.propagator(rays, tf, direction)
 
-        return rays_propagated, fk_next
+        return rays_propagated, tf_surface, fk_next

@@ -61,17 +61,14 @@ def kernel_flat_names(args: dict[str, Type[KernelIOType]]) -> list[str]:
 
 
 class FunctionalKernel:
-    inputs: dict[str, Type[KernelIOType]]
-    params: dict[str, Type[KernelIOType]]
-    outputs: dict[str, Type[KernelIOType]]
+    inputs: dict[str, Any]
+    params: dict[str, Any]
+    outputs: dict[str, Any]
     dynamic_shapes: dict[str, Any] | None = None
     forward_dtype_device: bool = (
         False  # true if the kernel forward() function takes dtype and device arguments
     )
     export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
-
-    def apply(self, *args: Any) -> KernelIOType | tuple[KernelIOType, ...]:
-        raise NotImplementedError
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device

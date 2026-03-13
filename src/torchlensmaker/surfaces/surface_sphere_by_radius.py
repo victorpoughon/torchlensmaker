@@ -314,11 +314,7 @@ class SphereByRadius(SurfaceElement):
         self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         # Retrograde direction just needs to swap anchors
-        anchors = (
-            self.anchors.unbind(-1)
-            if direction.is_prograde()
-            else self.anchors.flip(0).unbind(-1)
-        )
+        anchors = self.anchors if direction.is_prograde() else self.anchors.flip(0)
 
         func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
         return func(P, V, tf, self.diameter, self.R, anchors, self.scale)

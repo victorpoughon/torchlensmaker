@@ -256,7 +256,7 @@ class Conic(SurfaceElement):
 
         return t, normal, valid, tf_surface, tf_next
 
-    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor | None:
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return self.kernel_outer_extent.apply(
             anchor, self.diameter, self.C, self.K, self.normalize
         )

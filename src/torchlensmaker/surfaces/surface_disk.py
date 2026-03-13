@@ -152,7 +152,7 @@ class Disk(SurfaceElement):
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         return func.apply(P, V, tf, self.diameter)
 
-    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(r)
 
     def render(self) -> Any:

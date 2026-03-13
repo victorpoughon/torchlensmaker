@@ -22,6 +22,7 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
+    Direction,
     MaskTensor,
     ScalarTensor,
     Tf,
@@ -33,16 +34,16 @@ class SurfaceElement(BaseModule):
     Abstract base class for surfaces
     """
 
-    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         """
-        X coordinate of the surface at distance r from the optical axis. None if
-        the surface is not axially symmetric, or if the surface can't compute
+        X coordinate of the surface at distance r from the optical axis. Raises
+        if the surface is not axially symmetric, or if the surface can't compute
         this value.
         """
-        return None
+        raise NotImplementedError
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
+        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         raise NotImplementedError
 

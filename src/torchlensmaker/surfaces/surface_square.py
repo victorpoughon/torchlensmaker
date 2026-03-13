@@ -131,7 +131,7 @@ class Square(SurfaceElement):
         )
         return self.func3d.apply(P, V, tf, self.side_length)
 
-    def outer_extent(self, r: ScalarTensor) -> ScalarTensor | None:
+    def outer_extent(self, r: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(r)
 
     def render(self) -> Any:

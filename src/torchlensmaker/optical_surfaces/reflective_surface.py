@@ -59,13 +59,17 @@ class ReflectiveSurface(SequentialElement):
         return type(self)(**kwargs | overrides)
 
     def sequential(self, inputs: OpticalData) -> OpticalData:
-        rays_reflected, fk_next = self(inputs.rays, inputs.fk, inputs.direction)
+        rays_reflected, tf_surface, fk_next = self(
+            inputs.rays, inputs.fk, inputs.direction
+        )
         return inputs.replace(rays=rays_reflected, fk=fk_next)
 
     def forward(
         self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[RayBundle, Tf]:
-        rays_propagated, normals, fk_next = self.propagator(rays, tf, direction)
+    ) -> tuple[RayBundle, Tf, Tf]:
+        rays_propagated, normals, tf_surface, fk_next = self.propagator(
+            rays, tf, direction
+        )
         rays_reflected = self.reflector(rays_propagated, normals)
 
-        return rays_reflected, fk_next
+        return rays_reflected, tf_surface, fk_next

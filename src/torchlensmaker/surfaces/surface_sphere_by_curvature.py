@@ -224,11 +224,7 @@ class SphereByCurvature(SurfaceElement):
         kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
         # Retrograde direction just needs to swap anchors
-        anchors = (
-            self.anchors.unbind(-1)
-            if direction.is_prograde()
-            else self.anchors.flip(0).unbind(-1)
-        )
+        anchors = self.anchors if direction.is_prograde() else self.anchors.flip(0)
 
         extent0 = self.outer_extent(anchors[0])
         extent1 = self.outer_extent(anchors[1])
@@ -246,7 +242,7 @@ class SphereByCurvature(SurfaceElement):
 
         return t, normal, valid, tf_surface, tf_next
 
-    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor | None:
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return self.kernel_outer_extent.apply(
             anchor, self.diameter, self.C, self.normalize
         )

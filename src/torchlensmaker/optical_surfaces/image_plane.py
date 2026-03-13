@@ -70,17 +70,17 @@ class ImagePlane(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def sequential(self, data: OpticalData) -> OpticalData:
+    def sequential(self, inputs: OpticalData) -> OpticalData:
         # In sequential mode, image plane is transparent to rays
         # We compute its outputs but forward the rays bundle unchanged
-        _, _ = self(data.rays, data.fk, data.direction)
-        return data
+        _, _ = self(inputs.rays, inputs.fk, inputs.direction)
+        return inputs
 
     def forward(
         self, rays: RayBundle, tf: Tf, direction: Direction
     ) -> tuple[BatchNDTensor, ScalarTensor]:
         # Collision detection
-        rays_propagated, _, _ = self.propagator(rays, tf, direction)
+        rays_propagated, _, _, _ = self.propagator(rays, tf, direction)
 
         # check no rays special case after propagator
         # so we can still render
