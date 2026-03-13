@@ -30,11 +30,8 @@ __all__ = [
     "cemented",
     "singlet",
     "doublet",
-    "symmetric_singlets",
+    "symmetric_singlet",
     "semiplanar_front",
     "semiplanar_rear",
     "spherical_biconvex",
-    "spherical_biconcave",
-    "spherical_planoconvex",
-    "spherical_convexplano",
 ]
