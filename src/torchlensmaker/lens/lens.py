@@ -14,17 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from jaxtyping import Float
-from typing import Self, Any
+from typing import Any, Self
+
 import torch
 import torch.nn as nn
+from jaxtyping import Float
 
-from torchlensmaker.elements.sequential import SequentialElement, Sequential
+from torchlensmaker.elements.sequential import Sequential, SequentialElement
 from torchlensmaker.optical_data import OpticalData
+
 from .lens_thickness import (
     lens_inner_thickness,
-    lens_outer_thickness,
     lens_minimal_diameter,
+    lens_outer_thickness,
 )
 
 
@@ -38,6 +40,9 @@ class Lens(SequentialElement):
 
     def forward(self, data: OpticalData) -> OpticalData:
         return self.sequence(data)
+
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)
 
     def inner_thickness(self) -> Float[torch.Tensor, ""]:
         return lens_inner_thickness(self)

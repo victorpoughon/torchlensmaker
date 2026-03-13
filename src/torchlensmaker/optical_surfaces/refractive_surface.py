@@ -22,15 +22,15 @@ import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.materials.get_material_model import (
-    MaterialModel,
     get_material_model,
 )
+from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.physics.physics_elements import RefractiveInterface
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, Direction, TIRMode
+from torchlensmaker.types import BatchNDTensor, Direction, Tf, TIRMode
 
 from .surface_propagator import SurfacePropagator
 
@@ -107,10 +107,14 @@ class RefractiveSurface(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(
-            data.rays, data.fk, data.direction
-        )
-        rays_refracted = self.refractor(rays_propagated, normals, data.direction)
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        rays_refracted, fk_next = self(inputs.rays, inputs.fk, inputs.direction)
+        return inputs.replace(rays=rays_refracted, fk=fk_next)
 
-        return data.replace(rays=rays_refracted, fk=fk_next)
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[RayBundle, Tf]:
+        rays_propagated, normals, fk_next = self.propagator(rays, tf, direction)
+        rays_refracted = self.refractor(rays_propagated, normals, direction)
+
+        return rays_refracted, fk_next

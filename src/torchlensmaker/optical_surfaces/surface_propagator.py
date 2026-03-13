@@ -18,8 +18,8 @@
 import torch
 import torch.nn as nn
 
-from torchlensmaker.types import Tf, BatchNDTensor, Direction
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.types import BatchNDTensor, Direction, Tf
 
 
 class SurfacePropagator(nn.Module):

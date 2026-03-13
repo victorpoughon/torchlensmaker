@@ -43,6 +43,9 @@ class SubChain(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
 
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)
+
     def forward(self, inputs: OpticalData) -> OpticalData:
         output: OpticalData = self._sequential(inputs)
         return output.replace(fk=inputs.fk)
@@ -91,6 +94,9 @@ class Sequential(SequentialElement):
             data = module.sequential(data)
         return data
 
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)
+
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
 
@@ -122,3 +128,6 @@ class Reversed(SequentialElement):
     def forward(self, data: OpticalData) -> OpticalData:
         output = self.element.sequential(data.replace(direction=data.direction.flip()))
         return output.replace(direction=output.direction.flip())
+
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        return self(inputs)

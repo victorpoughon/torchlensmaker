@@ -25,7 +25,7 @@ from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor
+from torchlensmaker.types import BatchNDTensor, Direction, Tf
 
 from .surface_propagator import SurfacePropagator
 
@@ -58,10 +58,14 @@ class ReflectiveSurface(SequentialElement):
         kwargs: dict[str, Any] = dict(surface=self.surface)
         return type(self)(**kwargs | overrides)
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, normals, fk_next = self.propagator(
-            data.rays, data.fk, data.direction
-        )
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        rays_reflected, fk_next = self(inputs.rays, inputs.fk, inputs.direction)
+        return inputs.replace(rays=rays_reflected, fk=fk_next)
+
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[RayBundle, Tf]:
+        rays_propagated, normals, fk_next = self.propagator(rays, tf, direction)
         rays_reflected = self.reflector(rays_propagated, normals)
 
-        return data.replace(rays=rays_reflected, fk=fk_next)
+        return rays_reflected, fk_next

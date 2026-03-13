@@ -20,11 +20,11 @@ from typing import Any, Self
 import torch
 import torch.nn as nn
 
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.optical_data import OpticalData
-from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.types import ScalarTensor
+from torchlensmaker.types import Direction, ScalarTensor, Tf
 
 from .surface_propagator import SurfacePropagator
 
@@ -38,12 +38,16 @@ class Aperture(SequentialElement):
         kwargs: dict[str, Any] = dict(diameter=self.propagator.surface.diameter)
         return type(self)(**kwargs | overrides)
 
-    def forward(self, data: OpticalData) -> OpticalData:
-        rays_propagated, _, fk_next = self.propagator(
-            data.rays, data.fk, data.direction
-        )
-
-        return data.replace(
+    def sequential(self, inputs: OpticalData) -> OpticalData:
+        rays_propagated, fk_next = self(inputs.rays, inputs.fk, inputs.direction)
+        return inputs.replace(
             rays=rays_propagated,
             fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
         )
+
+    def forward(
+        self, rays: RayBundle, tf: Tf, direction: Direction
+    ) -> tuple[RayBundle, Tf]:
+        rays_propagated, _, fk_next = self.propagator(rays, tf, direction)
+
+        return rays_propagated, fk_next

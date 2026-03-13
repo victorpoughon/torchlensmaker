@@ -27,5 +27,4 @@ class SequentialElement(BaseModule):
     """
 
     def sequential(self, inputs: OpticalData) -> OpticalData:
-        # default implementation just calls forward, can be overwritten
-        return self(inputs)
+        raise NotImplementedError
