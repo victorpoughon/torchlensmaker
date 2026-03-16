@@ -78,7 +78,7 @@ class SurfaceScaleAnchorKernel(FunctionalKernel):
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
+    ) -> tuple[ScalarTensor, ScalarTensor, ScalarTensor, Tf]:
         tf_id = hom_identity_2d if self.dim == 2 else hom_identity_3d
         return (
             torch.tensor(0.0, dtype=dtype, device=device),

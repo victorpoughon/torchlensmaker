@@ -17,19 +17,16 @@
 
 from typing import Any, Self
 
-import torch
-import torch.nn as nn
-
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.types import Direction, ScalarTensor, Tf
 
+from .optical_surface import OpticalSurfaceElement
 from .surface_propagator import SurfacePropagator
 
 
-class Aperture(SequentialElement):
+class Aperture(OpticalSurfaceElement):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
         self.propagator = SurfacePropagator(Disk(diameter))

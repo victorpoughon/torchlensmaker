@@ -21,12 +21,12 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.physics.physics_elements import ReflectiveInterface
 from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, Direction, Tf
 
+from .optical_surface import OpticalSurfaceElement
 from .surface_propagator import SurfacePropagator
 
 
@@ -44,8 +44,8 @@ class SurfaceReflector(nn.Module):
         return rays.reorient(reflected)
 
 
-class ReflectiveSurface(SequentialElement):
-    def __init__(self, surface: nn.Module):
+class ReflectiveSurface(OpticalSurfaceElement):
+    def __init__(self, surface: SurfaceElement):
         super().__init__()
         self.propagator = SurfacePropagator(surface)
         self.reflector = SurfaceReflector()
