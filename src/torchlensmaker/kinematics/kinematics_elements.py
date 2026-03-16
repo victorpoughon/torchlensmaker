@@ -47,6 +47,9 @@ class KinematicElement(SequentialElement):
         fk = self(data.fk, data.direction)
         return data.replace(fk=fk)
 
+    def forward(self, fk: Tf, direction: Direction) -> Tf:
+        raise NotImplementedError
+
 
 class Gap(KinematicElement):
     """
