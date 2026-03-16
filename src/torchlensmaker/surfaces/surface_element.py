@@ -39,6 +39,9 @@ class SurfaceElement(BaseModule):
         X coordinate of the surface at distance r from the optical axis. Raises
         if the surface is not axially symmetric, or if the surface can't compute
         this value.
+
+        Args:
+            anchor: distance from the optical axis in normalized coordinates
         """
         raise NotImplementedError
 

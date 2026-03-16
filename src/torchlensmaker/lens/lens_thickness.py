@@ -16,7 +16,7 @@
 
 
 from itertools import islice
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import torch
 import torch.nn as nn
@@ -38,17 +38,25 @@ if TYPE_CHECKING:
 def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the center"
 
-    first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
+    # We assume here that the lens first and last elements are surfaces
+    first_surface, lens_core, last_surface = (
+        lens.sequence[0],
+        lens.sequence[1:-1],
+        lens.sequence[-1],
+    )
 
     # Infer dtype, device from the first gap element
-    dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
+    dtype, device = (
+        cast(torch.dtype, lens.sequence[1].x.dtype),
+        cast(torch.device, lens.sequence[1].x.device),
+    )
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
-    with deep_forward(lens) as trace:
-        _ = lens(SequentialData.empty(2, dtype))
+    data = SequentialData.empty(2, dtype, device)
 
-    front_vertex_tf = trace.outputs[first_surface.surface][3]
-    rear_vertex_tf = trace.outputs[last_surface.surface][3]
+    rays, front_vertex_tf, fk = first_surface(data.rays, data.fk, data.direction)
+    data = lens_core(data.replace(rays=rays, fk=fk))
+    _, rear_vertex_tf, _ = last_surface(data.rays, data.fk, data.direction)
 
     root = torch.zeros((2,), dtype=dtype, device=device)
     front_vertex = transform_points(front_vertex_tf.direct, root)
@@ -60,11 +68,18 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
 def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     "Thickness of a lens at the outer edge"
 
-    first_surface, last_surface = lens.sequence[0], lens.sequence[-1]
-    tau = lens_minimal_diameter(lens) / 2
+    # We assume here that the lens first and last elements are surfaces
+    first_surface, lens_core, last_surface = (
+        lens.sequence[0],
+        lens.sequence[1:-1],
+        lens.sequence[-1],
+    )
+
+    # Compute extent points of first and last surface
+    min_diam = lens_minimal_diameter(lens)
     front_extent, rear_extent = (
-        first_surface.surface.outer_extent(tau),
-        last_surface.surface.outer_extent(tau),
+        first_surface.surface.outer_extent(min_diam / first_surface.surface.diameter),
+        last_surface.surface.outer_extent(min_diam / last_surface.surface.diameter),
     )
 
     if front_extent is None:
@@ -78,14 +93,17 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
         )
 
     # Infer dtype, device from the first gap element
-    dtype, device = lens.sequence[1].x.dtype, lens.sequence[1].x.device
+    dtype, device = (
+        cast(torch.dtype, lens.sequence[1].x.dtype),
+        cast(torch.device, lens.sequence[1].x.device),
+    )
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
-    with deep_forward(lens) as trace:
-        _ = lens(SequentialData.empty(2, dtype))
+    data = SequentialData.empty(2, dtype, device)
 
-    front_vertex_tf = trace.outputs[first_surface.surface][3]
-    rear_vertex_tf = trace.outputs[last_surface.surface][3]
+    rays, front_vertex_tf, fk = first_surface(data.rays, data.fk, data.direction)
+    data = lens_core(data.replace(rays=rays, fk=fk))
+    _, rear_vertex_tf, _ = last_surface(data.rays, data.fk, data.direction)
 
     # Append translation along X to include the surface outer edge extent
     zero = torch.zeros((), dtype=dtype, device=device)
