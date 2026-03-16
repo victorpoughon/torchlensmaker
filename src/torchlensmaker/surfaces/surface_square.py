@@ -40,7 +40,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import raytrace
+from .raytrace import surface_raytrace
 from .surface_element import SurfaceElement
 
 
@@ -97,7 +97,7 @@ class SquareSurfaceKernel(FunctionalKernel):
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         solver = intersection_square_3d
         local_solver = partial(solver, side_length=side_length)
-        t, normals, valid = raytrace(P, V, tf_in, local_solver)
+        t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
         return t, normals, valid, tf_in.clone(), tf_in.clone()
 
     def example_inputs(

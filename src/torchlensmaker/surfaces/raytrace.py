@@ -39,7 +39,7 @@ LocalSolver: TypeAlias = Callable[
 ]
 
 
-def raytrace(
+def surface_raytrace(
     P: BatchNDTensor,
     V: BatchNDTensor,
     tf: Tf,
@@ -52,11 +52,11 @@ def raytrace(
         P, V: rays
         tf: kinematic transform applied to the surface
         local_solver: LocalSolver function performing raytracing in surface local frame
-        domain_function: DomainFunction restricting the valid surface domain in surface local frame
 
     Returns:
         * t: parameter such that P + tV is the surface ray intersection point
         * normals: normal unit vectors at the intersection, such that dot(normal, V) < 0
+        * valid: boolean mask, true where there is a valid intersection
     """
 
     # Convert rays to surface local frame

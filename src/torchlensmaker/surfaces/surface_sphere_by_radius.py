@@ -40,7 +40,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import raytrace
+from .raytrace import surface_raytrace
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
 from .surface_element import SurfaceElement
 
@@ -252,7 +252,7 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
             )
 
         # Perform raytrace
-        t, normals, valid = raytrace(P, V, tf_surface, local_solver)
+        t, normals, valid = surface_raytrace(P, V, tf_surface, local_solver)
 
         return t, normals, valid, tf_surface, tf_next
 

@@ -40,7 +40,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import raytrace
+from .raytrace import surface_raytrace
 from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
 from .surface_element import SurfaceElement
 
@@ -111,7 +111,7 @@ class DiskSurfaceKernel(FunctionalKernel):
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         solver = intersection_disk_2d if self.dim == 2 else intersection_disk_3d
         local_solver = partial(solver, diameter=diameter)
-        t, normals, valid = raytrace(P, V, tf_in, local_solver)
+        t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
         return t, normals, valid, tf_in.clone(), tf_in.clone()
 
     def example_inputs(

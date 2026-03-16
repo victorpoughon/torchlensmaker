@@ -37,7 +37,7 @@ from .implicit_solver import (
     ImplicitFunction3D,
     implicit_surface_local_raytrace,
 )
-from .raytrace import raytrace
+from .raytrace import surface_raytrace
 from .sag_functions import (
     SagFunction2D,
     SagFunction3D,
@@ -79,7 +79,7 @@ def sag_surface_2d(
     )
 
     # Perform raytrace
-    t, normals, valid = raytrace(P, V, tf_in, local_solver)
+    t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
 
     return t, normals, valid
 
@@ -113,6 +113,6 @@ def sag_surface_3d(
     )
 
     # Perform raytrace
-    t, normals, valid = raytrace(P, V, tf_in, local_solver)
+    t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
 
     return t, normals, valid
