@@ -24,6 +24,7 @@ import torch.nn as nn
 from torchlensmaker.core.deep_forward import deep_forward
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.elements.sequential import Reversed, Sequential, SubChain
+from torchlensmaker.elements.sequential_data import default_input
 from torchlensmaker.elements.utils import get_elements_by_type
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.lens.lens import Lens
@@ -32,7 +33,6 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.optical_data import default_input
 from torchlensmaker.optical_surfaces.aperture import Aperture
 from torchlensmaker.optical_surfaces.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface

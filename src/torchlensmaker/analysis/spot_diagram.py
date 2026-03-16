@@ -98,7 +98,7 @@ def spot_diagram(
 
     # Get the "non cartesian producted" sampling variables
     # by evaluating the stack
-    output_full: tlm.OpticalData = optics(
+    output_full: tlm.SequentialData = optics(
         tlm.default_input(sampling, dim=3, dtype=dtype)
     )
     var_row = output_full.get_rays(row) if row is not None else None

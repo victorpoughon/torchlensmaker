@@ -22,7 +22,7 @@ import torch.nn as nn
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import filter_optional_tensor, to_tensor
 from torchlensmaker.elements.sequential import SequentialElement
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.types import BatchNDTensor, BatchTensor, Direction, ScalarTensor, Tf
 
@@ -70,7 +70,7 @@ class ImagePlane(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         # In sequential mode, image plane is transparent to rays
         # We compute its outputs but forward the rays bundle unchanged
         _, _ = self(inputs.rays, inputs.fk, inputs.direction)

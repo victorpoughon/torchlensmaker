@@ -21,8 +21,8 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.elements.sequential_element import SequentialElement
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.types import (
     Direction,
     HomMatrix,
@@ -43,7 +43,7 @@ from .kinematics_kernels import (
 
 
 class KinematicElement(SequentialElement):
-    def sequential(self, data: OpticalData) -> OpticalData:
+    def sequential(self, data: SequentialData) -> SequentialData:
         fk = self(data.fk, data.direction)
         return data.replace(fk=fk)
 

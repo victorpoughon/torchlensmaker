@@ -65,7 +65,7 @@ class ImagingModel(nn.Module):
         self.optics = optics
         self.image_plane = image_plane
 
-    def forward(self, data: tlm.OpticalData) -> tlm.ScalarTensor:
+    def forward(self, data: tlm.SequentialData) -> tlm.ScalarTensor:
         outputs = self.optics(data)
         _, loss = self.image_plane(outputs.rays, outputs.fk, outputs.direction)
         return loss

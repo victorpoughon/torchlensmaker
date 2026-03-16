@@ -25,7 +25,7 @@ from torchlensmaker.types import Direction, Tf
 
 
 @dataclass
-class OpticalData:
+class SequentialData:
     dim: int
     dtype: torch.dtype
     direction: Direction
@@ -36,7 +36,7 @@ class OpticalData:
     # Rays and associated variables
     rays: RayBundle
 
-    def replace(self, /, **changes: Any) -> "OpticalData":
+    def replace(self, /, **changes: Any) -> "SequentialData":
         return replace(self, **changes)
 
 
@@ -45,7 +45,7 @@ def default_input(
     dtype: torch.dtype | None = None,
     device: torch.device | None = None,
     direction: Direction = Direction.PROGRADE,
-) -> OpticalData:
+) -> SequentialData:
     if dtype is None:
         dtype = torch.get_default_dtype()
     if device is None:
@@ -64,7 +64,7 @@ def default_input(
         wavel_idx=torch.empty((0,), dtype=torch.int64),
     )
 
-    return OpticalData(
+    return SequentialData(
         dim=dim,
         dtype=dtype,
         direction=direction,

@@ -19,7 +19,7 @@ from typing import Type
 import torch
 import torch.nn as nn
 
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential_data import SequentialData
 
 
 class Marker(nn.Module):
@@ -29,7 +29,7 @@ class Marker(nn.Module):
         super().__init__()
         self.text = text
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
+    def forward(self, inputs: SequentialData) -> SequentialData:
         return inputs
 
 

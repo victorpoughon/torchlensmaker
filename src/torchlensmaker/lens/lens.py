@@ -21,7 +21,7 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.elements.sequential import Sequential, SequentialElement
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential_data import SequentialData
 
 from .lens_thickness import (
     lens_inner_thickness,
@@ -38,10 +38,10 @@ class Lens(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self.sequence)
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    def forward(self, data: SequentialData) -> SequentialData:
         return self.sequence(data)
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         return self(inputs)
 
     def inner_thickness(self) -> Float[torch.Tensor, ""]:

@@ -23,6 +23,7 @@ from typing import Any, Self, Sequence, Type, TypeVar
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.elements.utils import (
     get_elements_by_type,
 )
@@ -30,7 +31,6 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.optical_data import OpticalData
 
 from .sequential_element import SequentialElement
 
@@ -43,11 +43,11 @@ class SubChain(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         return self(inputs)
 
-    def forward(self, inputs: OpticalData) -> OpticalData:
-        output: OpticalData = self._sequential(inputs)
+    def forward(self, inputs: SequentialData) -> SequentialData:
+        output: SequentialData = self._sequential(inputs)
         return output.replace(fk=inputs.fk)
 
 
@@ -88,13 +88,13 @@ class Sequential(SequentialElement):
     def __iter__(self) -> Iterator[SequentialElement]:
         return iter(self._modules.values())
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    def forward(self, data: SequentialData) -> SequentialData:
         iterand = iter(self) if data.direction.is_prograde() else reversed(self)
         for module in iterand:
             data = module.sequential(data)
         return data
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         return self(inputs)
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
@@ -125,9 +125,9 @@ class Reversed(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(self.element)
 
-    def forward(self, data: OpticalData) -> OpticalData:
+    def forward(self, data: SequentialData) -> SequentialData:
         output = self.element.sequential(data.replace(direction=data.direction.flip()))
         return output.replace(direction=output.direction.flip())
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         return self(inputs)

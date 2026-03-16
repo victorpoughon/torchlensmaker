@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential_data import SequentialData
 
 
 class SequentialElement(BaseModule):
@@ -26,5 +26,5 @@ class SequentialElement(BaseModule):
     because it provides a sequential() forward method.
     """
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         raise NotImplementedError

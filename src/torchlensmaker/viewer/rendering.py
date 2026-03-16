@@ -21,7 +21,7 @@ from typing import Any, Dict, Optional, TypeAlias
 import torch
 import torch.nn as nn
 
-from torchlensmaker.optical_data import OpticalData
+from torchlensmaker.elements.sequential_data import SequentialData
 
 Tensor: TypeAlias = torch.Tensor
 

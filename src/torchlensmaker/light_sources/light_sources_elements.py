@@ -21,6 +21,7 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectAtInfinityGeometry2D,
@@ -28,7 +29,6 @@ from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectGeometry2D,
     ObjectGeometry3D,
 )
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.sampling.sampler_elements import (
     DiskSampler2D,
     LinspaceSampler1D,
@@ -45,7 +45,7 @@ class LightSourceBase(SequentialElement):
     def forward(self, tf: HomMatrix, direction: Direction) -> RayBundle:
         raise NotImplementedError
 
-    def sequential(self, data: OpticalData) -> OpticalData:
+    def sequential(self, data: SequentialData) -> SequentialData:
         rays = self(data.fk.direct, data.direction)
         return data.replace(rays=rays)
 

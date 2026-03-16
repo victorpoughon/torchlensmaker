@@ -20,8 +20,8 @@ import torch
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-from torchlensmaker.optical_data import OpticalData
 from torchlensmaker.types import BatchNDTensor, Direction, ScalarTensor, Tf
 
 
@@ -32,7 +32,7 @@ class FocalPoint(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
 
-    def sequential(self, inputs: OpticalData) -> OpticalData:
+    def sequential(self, inputs: SequentialData) -> SequentialData:
         _, _ = self(inputs.rays, inputs.fk, inputs.direction)
         return inputs
 
