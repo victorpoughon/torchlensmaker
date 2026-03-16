@@ -26,8 +26,6 @@ from torchlensmaker.types import Direction, Tf
 
 @dataclass
 class SequentialData:
-    dim: int
-    dtype: torch.dtype
     direction: Direction
 
     # Forward kinematic chain
@@ -66,8 +64,6 @@ class SequentialData:
         )
 
         return cls(
-            dim=dim,
-            dtype=dtype,
             direction=direction,
             fk=tfid,
             rays=rays,
