@@ -81,7 +81,7 @@ def principal_point_with_light_source(
     lens: tlm.Lens, light_source: tlm.LightSourceBase
 ) -> Float[torch.Tensor, ""]:
     # Evaluate the light source and the model to get output rays
-    inputs = light_source.sequential(tlm.default_input(dim=2))
+    inputs = light_source.sequential(tlm.SequentialData.empty(dim=2))
     outputs = lens(inputs)
 
     # Compute intersection locus of input and output ray bundles
@@ -182,7 +182,7 @@ def focal_point_with_light_source(
     """
 
     # Evaluate the light source and the model to get output ray
-    inputs = light_source(tlm.default_input(dim=2))
+    inputs = light_source(tlm.SequentialData.empty(dim=2))
     outputs = lens(inputs)
 
     assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass, replace
-from typing import Any, Optional
+from typing import Any, Self
 
 import torch
 
@@ -39,35 +39,36 @@ class SequentialData:
     def replace(self, /, **changes: Any) -> "SequentialData":
         return replace(self, **changes)
 
+    @classmethod
+    def empty(
+        cls,
+        dim: int,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+        direction: Direction = Direction.PROGRADE,
+    ) -> Self:
+        if dtype is None:
+            dtype = torch.get_default_dtype()
+        if device is None:
+            device = torch.get_default_device()
 
-def default_input(
-    dim: int,
-    dtype: torch.dtype | None = None,
-    device: torch.device | None = None,
-    direction: Direction = Direction.PROGRADE,
-) -> SequentialData:
-    if dtype is None:
-        dtype = torch.get_default_dtype()
-    if device is None:
-        device = torch.get_default_device()
+        tfid = hom_identity(dim, dtype, device)
 
-    tfid = hom_identity(dim, dtype, device)
+        rays = RayBundle.create(
+            P=torch.empty((0, dim), dtype=dtype),
+            V=torch.empty((0, dim), dtype=dtype),
+            pupil=torch.empty((0, dim), dtype=dtype),
+            field=torch.empty((0, dim), dtype=dtype),
+            wavel=torch.empty((0,), dtype=dtype),
+            pupil_idx=torch.empty((0,), dtype=torch.int64),
+            field_idx=torch.empty((0,), dtype=torch.int64),
+            wavel_idx=torch.empty((0,), dtype=torch.int64),
+        )
 
-    rays = RayBundle.create(
-        P=torch.empty((0, dim), dtype=dtype),
-        V=torch.empty((0, dim), dtype=dtype),
-        pupil=torch.empty((0, dim), dtype=dtype),
-        field=torch.empty((0, dim), dtype=dtype),
-        wavel=torch.empty((0,), dtype=dtype),
-        pupil_idx=torch.empty((0,), dtype=torch.int64),
-        field_idx=torch.empty((0,), dtype=torch.int64),
-        wavel_idx=torch.empty((0,), dtype=torch.int64),
-    )
-
-    return SequentialData(
-        dim=dim,
-        dtype=dtype,
-        direction=direction,
-        fk=tfid,
-        rays=rays,
-    )
+        return cls(
+            dim=dim,
+            dtype=dtype,
+            direction=direction,
+            fk=tfid,
+            rays=rays,
+        )

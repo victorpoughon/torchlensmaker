@@ -28,7 +28,7 @@ def check_lens(lens: tlm.Lens) -> None:
         lens,
     )
 
-    outputs = optics(tlm.default_input(dim=2))
+    outputs = optics(tlm.SequentialData.empty(dim=2))
     scene = tlm.render_sequence(optics, dim=2)
 
 

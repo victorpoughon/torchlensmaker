@@ -154,7 +154,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 from torchlensmaker.elements.focal_point import FocalPoint
 
 # Top level stuff - to be reorganized
-from torchlensmaker.elements.sequential_data import SequentialData, default_input
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.materials.material_elements import (
     MaterialModel,
     NonDispersiveMaterial,

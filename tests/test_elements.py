@@ -54,7 +54,7 @@ def check_sample_and_render_2d(
 ) -> None:
     # Sample and render in 2D
     optics.set_sampling2d(pupil=10, field=5, wavel=2)
-    outputs_2d = optics(tlm.default_input(dim=2))
+    outputs_2d = optics(tlm.SequentialData.empty(dim=2))
     _ = tlm.render_sequence(optics, dim=2)
 
     # Check dtype, device
@@ -67,7 +67,7 @@ def check_sample_and_render_3d(
 ) -> None:
     # Sample and render in 3D
     optics.set_sampling3d(pupil=10, field=5, wavel=2)
-    outputs_3d = optics(tlm.default_input(dim=3))
+    outputs_3d = optics(tlm.SequentialData.empty(dim=3))
     _ = tlm.render_sequence(optics, dim=3)
 
     # Check dtype, device

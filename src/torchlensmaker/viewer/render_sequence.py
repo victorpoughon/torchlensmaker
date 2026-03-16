@@ -24,7 +24,7 @@ import torch.nn as nn
 from torchlensmaker.core.deep_forward import deep_forward
 from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.elements.sequential import Reversed, Sequential, SubChain
-from torchlensmaker.elements.sequential_data import default_input
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.elements.utils import get_elements_by_type
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.lens.lens import Lens
@@ -112,7 +112,7 @@ def render_sequence(
     # Evaluate the model with deep_forward to keep all intermediate outputs
     direction = Direction("prograde" if not reverse else "retrograde")
     with deep_forward(optics) as trace:
-        _ = optics(default_input(dim=dim, dtype=dtype, direction=direction))
+        _ = optics(SequentialData.empty(dim=dim, dtype=dtype, direction=direction))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables_domains = get_domain(optics, dim)

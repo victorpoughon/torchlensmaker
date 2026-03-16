@@ -49,7 +49,7 @@ def plot_magnification(
         dtype = torch.get_default_dtype()
 
     # Evaluate the optical stack
-    output = optics(tlm.default_input(dim=2, dtype=dtype))
+    output = optics(tlm.SequentialData.empty(dim=2, dtype=dtype))
 
     # Extract object and image coordinate (called T and V)
     T = output.rays_field

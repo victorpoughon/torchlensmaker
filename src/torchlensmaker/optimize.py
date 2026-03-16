@@ -93,7 +93,7 @@ def optimize(
     source, core, image_plane = optics[0], optics[1:-1], optics[-1]
     model = ImagingModel(core, image_plane)
 
-    default_input = tlm.default_input(dim, dtype)
+    default_input = tlm.SequentialData.empty(dim, dtype)
     input_rays = source.sequential(default_input)
 
     show_every = math.ceil(num_iter / nshow)

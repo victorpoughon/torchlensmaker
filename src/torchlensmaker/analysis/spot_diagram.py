@@ -99,7 +99,7 @@ def spot_diagram(
     # Get the "non cartesian producted" sampling variables
     # by evaluating the stack
     output_full: tlm.SequentialData = optics(
-        tlm.default_input(sampling, dim=3, dtype=dtype)
+        tlm.SequentialData.empty(sampling, dim=3, dtype=dtype)
     )
     var_row = output_full.get_rays(row) if row is not None else None
     var_col = output_full.get_rays(col) if col is not None else None
@@ -148,7 +148,7 @@ def spot_diagram(
         for ic in cols():
             # Evaluate model with the current row/col spot sampling dict
             output = optics(
-                tlm.default_input(spot_sampling[ir][ic], dim=3, dtype=dtype)
+                tlm.SequentialData.empty(spot_sampling[ir][ic], dim=3, dtype=dtype)
             )
 
             # Get 2D image plane coordinates

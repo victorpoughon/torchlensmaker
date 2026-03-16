@@ -66,7 +66,7 @@ def optimize(
     if dtype is None:
         dtype = torch.get_default_dtype()
 
-    default_input = tlm.default_input(dim, dtype)
+    default_input = tlm.SequentialData.empty(dim, dtype)
 
     # We assume the last element is imageplane
     source, core, image_plane = optics[0], optics[1:-1], optics[-1]

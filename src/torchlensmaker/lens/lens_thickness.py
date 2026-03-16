@@ -23,7 +23,7 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.deep_forward import deep_forward
-from torchlensmaker.elements.sequential_data import default_input
+from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_translate_2d,
     kinematic_chain_append,
@@ -45,7 +45,7 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
     with deep_forward(lens) as trace:
-        _ = lens(default_input(2, dtype))
+        _ = lens(SequentialData.empty(2, dtype))
 
     front_vertex_tf = trace.outputs[first_surface.surface][3]
     rear_vertex_tf = trace.outputs[last_surface.surface][3]
@@ -82,7 +82,7 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
     with deep_forward(lens) as trace:
-        _ = lens(default_input(2, dtype))
+        _ = lens(SequentialData.empty(2, dtype))
 
     front_vertex_tf = trace.outputs[first_surface.surface][3]
     rear_vertex_tf = trace.outputs[last_surface.surface][3]
