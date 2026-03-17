@@ -41,7 +41,7 @@ def expand_bool_tuple(n: int, t: bool | tuple[bool, ...]) -> tuple[bool, ...]:
 
 
 def to_tensor(
-    val: float | torch.Tensor | list[float],
+    val: float | torch.Tensor | Sequence[float],
     default_dtype: torch.dtype | None = None,
     default_device: torch.device | None = None,
 ) -> torch.Tensor:

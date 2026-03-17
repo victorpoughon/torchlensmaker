@@ -20,19 +20,26 @@ from collections.abc import Iterable, Iterator
 from itertools import islice
 from typing import Any, Self, Sequence, Type, TypeVar
 
+import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.elements.focal_point import FocalPoint
 from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.elements.utils import (
     get_elements_by_type,
 )
+from torchlensmaker.kinematics.kinematics_elements import KinematicElement
+from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-
-from .sequential_element import SequentialElement
+from torchlensmaker.optical_surfaces.image_plane import ImagePlane
+from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
+from torchlensmaker.types import HomMatrix, Tf
 
 
 class SubChain(SequentialElement):
@@ -42,9 +49,6 @@ class SubChain(SequentialElement):
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
-
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        return self(inputs)
 
     def forward(self, inputs: SequentialData) -> SequentialData:
         output: SequentialData = self._sequential(inputs)
@@ -67,6 +71,10 @@ class Sequential(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self)
 
+    def reverse(self) -> Self:
+        seq = [mod.reverse() for mod in reversed(self)]
+        return type(self)(*seq)
+
     def _get_item_by_idx(self, iterator: Iterable[_V], idx: int) -> _V:
         """Get the idx-th item of the iterator."""
         size = len(self)
@@ -76,7 +84,7 @@ class Sequential(SequentialElement):
         idx %= size
         return next(islice(iterator, idx, None))
 
-    def __getitem__(self, idx: slice | int) -> SequentialElement:
+    def __getitem__(self, idx: slice | int) -> BaseModule:
         if isinstance(idx, slice):
             return self.__class__(OrderedDict(list(self._modules.items())[idx]))
         else:
@@ -85,17 +93,22 @@ class Sequential(SequentialElement):
     def __len__(self) -> int:
         return len(self._modules)
 
-    def __iter__(self) -> Iterator[SequentialElement]:
+    def __iter__(self) -> Iterator[BaseModule]:
         return iter(self._modules.values())
 
     def forward(self, data: SequentialData) -> SequentialData:
-        iterand = iter(self) if data.direction.is_prograde() else reversed(self)
-        for module in iterand:
-            data = module.sequential(data)
+        for mod in iter(self):
+            data = sequential_forward(mod, data)
         return data
 
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        return self(inputs)
+    def raytrace(
+        self,
+        dim: int,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+    ) -> SequentialData:
+        data = SequentialData.empty(dim, dtype, device)
+        return self(data)
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
@@ -117,17 +130,30 @@ class Sequential(SequentialElement):
         return set_sampling3d(self, pupil, field, wavel)
 
 
-class Reversed(SequentialElement):
-    def __init__(self, element: SequentialElement):
-        super().__init__()
-        self.element = element
+def sequential_forward(mod: BaseModule, data: SequentialData):
+    """
+    Call an element forward function with a SequentialData object
+    """
 
-    def clone(self, **overrides: Any) -> Self:
-        return type(self)(self.element)
+    def istype(typ: Any):
+        return isinstance(mod, typ)
 
-    def forward(self, data: SequentialData) -> SequentialData:
-        output = self.element.sequential(data.replace(direction=data.direction.flip()))
-        return output.replace(direction=output.direction.flip())
-
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        return self(inputs)
+    if istype(KinematicElement):
+        tf = mod(data.fk)
+        return data.replace(fk=tf)
+    elif istype(LightSourceBase):
+        rays = mod(data.fk.direct)
+        return data.replace(rays=rays)
+    elif istype(OpticalSurfaceElement):
+        rays, _, tf_next = mod(data.rays, data.fk)
+        return data.replace(rays=rays, fk=tf_next)
+    elif istype(SequentialElement):
+        return mod(data)
+    elif istype(ImagePlane) or istype(FocalPoint):
+        # TODO add a LightSink / LightTarget base class
+        # In sequential mode, image plane is transparent to rays
+        # We compute its outputs but forward the rays bundle unchanged
+        _, _ = mod(data.rays, data.fk)
+        return data
+    else:
+        raise RuntimeError(f"Sequential: element type {type(mod)} not supported")

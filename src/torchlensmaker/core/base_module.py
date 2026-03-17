@@ -29,6 +29,11 @@ class BaseModule(nn.Module):
             f"clone() not implemented for {type(self).__qualname__}"
         )
 
+    def reverse(self) -> Self:
+        raise NotImplementedError(
+            f"reverse() not implemented for {type(self).__qualname__}"
+        )
+
 
 class MultiForwardModule(BaseModule):
     """

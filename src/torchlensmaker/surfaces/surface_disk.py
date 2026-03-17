@@ -32,7 +32,6 @@ from torchlensmaker.types import (
     Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
-    Direction,
     HomMatrix,
     MaskTensor,
     ScalarTensor,
@@ -146,8 +145,11 @@ class Disk(SurfaceElement):
         kwargs: dict[str, Any] = dict(diameter=self.diameter)
         return type(self)(**kwargs | overrides)
 
+    def reverse(self) -> Self:
+        return self.clone()
+
     def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf, direction: Direction
+        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         return func.apply(P, V, tf, self.diameter)

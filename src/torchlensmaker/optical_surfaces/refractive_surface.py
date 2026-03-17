@@ -29,13 +29,13 @@ from torchlensmaker.materials.get_material_model import (
 from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.physics.physics_elements import RefractiveInterface
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, Direction, Tf, TIRMode
+from torchlensmaker.types import BatchNDTensor, Tf, TIRMode
 
 from .optical_surface import OpticalSurfaceElement
 from .surface_propagator import SurfacePropagator
 
 
-class SurfaceRefractor(BaseModule):
+class SurfaceRefractor(nn.Module):
     """
     Implements refraction at a surface boundary to reorient a ray bundle
     """
@@ -51,15 +51,10 @@ class SurfaceRefractor(BaseModule):
         self.tir_mode: TIRMode = tir_mode
         self.refractive_interface = RefractiveInterface()
 
-    def forward(
-        self, rays: RayBundle, normals: BatchNDTensor, direction: Direction
-    ) -> RayBundle:
+    def forward(self, rays: RayBundle, normals: BatchNDTensor) -> RayBundle:
         # Compute indices of refraction
         n1 = self.material_in(rays.wavel)
         n2 = self.material_out(rays.wavel)
-
-        if direction.is_retrograde():
-            n1, n2 = n2, n1
 
         assert n1.shape == n2.shape == (rays.batch_size)
         assert n1.device == n2.device
@@ -107,18 +102,15 @@ class RefractiveSurface(OpticalSurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        rays_refracted, tf_surface, fk_next = self(
-            inputs.rays, inputs.fk, inputs.direction
+    def reverse(self) -> Self:
+        material_in, material_out = self.materials
+        return self.clone(
+            surface=self.surface.reverse(),
+            materials=(material_out, material_in),
         )
-        return inputs.replace(rays=rays_refracted, fk=fk_next)
 
-    def forward(
-        self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[RayBundle, Tf, Tf]:
-        rays_propagated, normals, tf_surface, fk_next = self.propagator(
-            rays, tf, direction
-        )
-        rays_refracted = self.refractor(rays_propagated, normals, direction)
+    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, Tf, Tf]:
+        rays_propagated, normals, tf_surface, fk_next = self.propagator(rays, tf)
+        rays_refracted = self.refractor(rays_propagated, normals)
 
         return rays_refracted, tf_surface, fk_next

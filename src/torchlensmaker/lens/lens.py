@@ -14,14 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Self
+from typing import Any, Self, cast
 
 import torch
 import torch.nn as nn
 from jaxtyping import Float
 
-from torchlensmaker.elements.sequential import Sequential, SequentialElement
+from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.elements.sequential import Sequential
 from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.elements.sequential_element import SequentialElement
+from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 
 from .lens_thickness import (
     lens_inner_thickness,
@@ -30,19 +33,22 @@ from .lens_thickness import (
 )
 
 
-class Lens(SequentialElement):
-    def __init__(self, *sequence: nn.Module):
-        super().__init__()
-        self.sequence = Sequential(*sequence)
+class Lens(Sequential):
+    @property
+    def dtype(self) -> torch.dtype:
+        return cast(torch.dtype, self[1].x.dtype)
 
-    def clone(self, **overrides: Any) -> Self:
-        return type(self)(*self.sequence)
+    @property
+    def device(self) -> torch.device:
+        return cast(torch.device, self[1].x.device)
 
-    def forward(self, data: SequentialData) -> SequentialData:
-        return self.sequence(data)
+    @property
+    def first_surface(self) -> RefractiveSurface:
+        return cast(RefractiveSurface, self[0])
 
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        return self(inputs)
+    @property
+    def last_surface(self) -> RefractiveSurface:
+        return cast(RefractiveSurface, self[-1])
 
     def inner_thickness(self) -> Float[torch.Tensor, ""]:
         return lens_inner_thickness(self)

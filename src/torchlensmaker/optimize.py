@@ -24,6 +24,7 @@ import torch.nn as nn
 import torch.optim
 
 import torchlensmaker as tlm
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]
@@ -67,7 +68,7 @@ class ImagingModel(nn.Module):
 
     def forward(self, data: tlm.SequentialData) -> tlm.ScalarTensor:
         outputs = self.optics(data)
-        _, loss = self.image_plane(outputs.rays, outputs.fk, outputs.direction)
+        _, loss = self.image_plane(outputs.rays, outputs.fk)
         return loss
 
 
@@ -76,12 +77,16 @@ def optimize(
     optimizer: optim.Optimizer,
     num_iter: int,
     dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
     dim: int = 2,
 ) -> OptimizationRecord:
     if dtype is None:
         dtype = torch.get_default_dtype()
+
+    if device is None:
+        device = torch.get_default_device()
 
     # Record values for analysis
     parameters_record: dict[str, list[Tensor]] = {
@@ -93,8 +98,9 @@ def optimize(
     source, core, image_plane = optics[0], optics[1:-1], optics[-1]
     model = ImagingModel(core, image_plane)
 
-    default_input = tlm.SequentialData.empty(dim, dtype)
-    input_rays = source.sequential(default_input)
+    input_tf = hom_identity(dim, dtype, device)
+    input_rays = source(input_tf.direct)
+    inputs = tlm.SequentialData(rays=input_rays, fk=input_tf)
 
     show_every = math.ceil(num_iter / nshow)
 
@@ -102,7 +108,7 @@ def optimize(
         optimizer.zero_grad()
 
         # Evaluate the model
-        loss = model(input_rays)
+        loss = model(inputs)
 
         # Add regularization function term
         if regularization is not None:

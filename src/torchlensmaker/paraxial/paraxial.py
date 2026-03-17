@@ -14,10 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import cast
+
 import torch
 from jaxtyping import Float
 
 import torchlensmaker as tlm
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
 
 
 def equivalent_locus_2d(
@@ -80,8 +83,13 @@ def fit_parabola_vertex_2d(
 def principal_point_with_light_source(
     lens: tlm.Lens, light_source: tlm.LightSourceBase
 ) -> Float[torch.Tensor, ""]:
+    # Infer dtype, device from the first gap element
+    dtype, device = lens.dtype, lens.device
+
     # Evaluate the light source and the model to get output rays
-    inputs = light_source.sequential(tlm.SequentialData.empty(dim=2))
+    input_tf = hom_identity_2d(dtype, device)
+    input_rays = light_source(input_tf.direct)
+    inputs = tlm.SequentialData(rays=input_rays, fk=input_tf)
     outputs = lens(inputs)
 
     # Compute intersection locus of input and output ray bundles
@@ -171,18 +179,21 @@ def front_principal_point(
         wavelength=wavelength,
     )
 
-    return principal_point_with_light_source(tlm.Reversed(lens), tlm.Reversed(source))
+    return principal_point_with_light_source(lens.reverse(), source.reverse())
 
 
 def focal_point_with_light_source(
-    lens: tlm.Lens, light_source: tlm.LightSourceBase
+    lens: tlm.Lens, light_source: tlm.SequentialElement
 ) -> Float[torch.Tensor, ""]:
     """
     Compute focal point with a paraxial light source
     """
 
+    # Infer dtype, device from the first gap element
+    dtype, device = lens.dtype, lens.device
+
     # Evaluate the light source and the model to get output ray
-    inputs = light_source(tlm.SequentialData.empty(dim=2))
+    inputs = light_source(tlm.SequentialData.empty(dim=2, dtype=dtype, device=device))
     outputs = lens(inputs)
 
     assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)
@@ -243,12 +254,10 @@ def front_focal_point(
     mdiam = lens.minimal_diameter()
     light_source = tlm.SubChain(
         tlm.Translate2D(y=h * mdiam),
-        tlm.Reversed(
-            tlm.RaySource(
-                wavelength=wavelength,
-                sampler_wavel_2d=tlm.ZeroSampler1D(),
-            )
-        ),
+        tlm.RaySource(
+            wavelength=wavelength,
+            sampler_wavel_2d=tlm.ZeroSampler1D(),
+        ).reverse(),
     )
 
-    return focal_point_with_light_source(tlm.Reversed(lens), light_source)
+    return focal_point_with_light_source(lens.reverse(), light_source)

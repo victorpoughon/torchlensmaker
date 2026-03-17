@@ -28,7 +28,6 @@ from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
-    Direction,
     MaskTensor,
     ScalarTensor,
     Tf,
@@ -196,8 +195,11 @@ class XYPolynomial(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def reverse(self) -> Self:
+        return self.clone()
+
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
+        self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         # TODO raise nice error if 2D
         kernel_surface = self.func3d

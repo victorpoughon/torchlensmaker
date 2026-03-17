@@ -20,11 +20,10 @@ import torch
 import torch.nn as nn
 from jaxtyping import Float
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
 from torchlensmaker.elements.sequential_data import SequentialData
-from torchlensmaker.elements.sequential_element import SequentialElement
 from torchlensmaker.types import (
-    Direction,
     HomMatrix,
     ScalarTensor,
     Tf,
@@ -42,12 +41,19 @@ from .kinematics_kernels import (
 )
 
 
-class KinematicElement(SequentialElement):
+class KinematicElement(BaseModule):
+    def __init__(self, reversed: bool):
+        super().__init__()
+        self.reversed = reversed
+
+    def reverse(self) -> Self:
+        return self.clone(reversed=not self.reversed)
+
     def sequential(self, data: SequentialData) -> SequentialData:
-        fk = self(data.fk, data.direction)
+        fk = self(data.fk)
         return data.replace(fk=fk)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         raise NotImplementedError
 
 
@@ -61,8 +67,9 @@ class Gap(KinematicElement):
         self,
         x: float | ScalarTensor | nn.Parameter,
         trainable: bool = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         self.x = init_param(self, "x", x, trainable)
         self.kernel_joint2d = Gap2DKernel()
         self.kernel_joint3d = Gap3DKernel()
@@ -70,18 +77,22 @@ class Gap(KinematicElement):
         self.kernel_fk3d = KinematicChainAppend3DKernel()
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs: dict[str, Any] = dict(x=self.x, trainable=self.x.requires_grad)
+        kwargs: dict[str, Any] = dict(
+            x=self.x,
+            trainable=self.x.requires_grad,
+            reversed=self.reversed,
+        )
         return type(self)(**kwargs | overrides)
 
     def __repr__(self) -> str:
         return f"{self._get_name()}(x={self.x.item()})"
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         kernel_joint = self.kernel_joint2d if fk.pdim() == 2 else self.kernel_joint3d
         kernel_fk = self.kernel_fk2d if fk.pdim() == 2 else self.kernel_fk3d
         joint = kernel_joint.apply(self.x)
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return kernel_fk.apply(fk, joint)
@@ -93,8 +104,9 @@ class Translate2D(KinematicElement):
         x: float | ScalarTensor | nn.Parameter = 0.0,
         y: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         xt, yt = expand_bool_tuple(2, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
@@ -106,13 +118,14 @@ class Translate2D(KinematicElement):
             x=self.x,
             y=self.y,
             trainable=(self.x.requires_grad, self.y.requires_grad),
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y)
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk2d.apply(fk, joint)
@@ -123,8 +136,9 @@ class TranslateVec2D(KinematicElement):
         self,
         t: list[float] | Float[torch.Tensor, "2"] | nn.Parameter,
         trainable: bool = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         self.t = init_param(self, "t", t, trainable)
         self.kernel_joint = Translate2DKernel()
         self.kernel_fk2d = KinematicChainAppend2DKernel()
@@ -133,13 +147,14 @@ class TranslateVec2D(KinematicElement):
         kwargs: dict[str, Any] = dict(
             t=self.t,
             trainable=self.t.requires_grad,
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk2d.apply(fk, joint)
@@ -152,8 +167,9 @@ class Translate3D(KinematicElement):
         y: float | ScalarTensor | nn.Parameter = 0.0,
         z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         xt, yt, zt = expand_bool_tuple(3, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
@@ -171,13 +187,14 @@ class Translate3D(KinematicElement):
                 self.y.requires_grad,
                 self.z.requires_grad,
             ),
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y, self.z)
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk3d.apply(fk, joint)
@@ -188,8 +205,9 @@ class TranslateVec3D(KinematicElement):
         self,
         t: list[float] | Float[torch.Tensor, "3"] | nn.Parameter,
         trainable: bool = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         self.t = init_param(self, "t", t, trainable)
         self.kernel_joint = Translate3DKernel()
         self.kernel_fk3d = KinematicChainAppend3DKernel()
@@ -198,13 +216,14 @@ class TranslateVec3D(KinematicElement):
         kwargs: dict[str, Any] = dict(
             t=self.t,
             trainable=self.t.requires_grad,
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk3d.apply(fk, joint)
@@ -217,8 +236,9 @@ class Rotate2D(KinematicElement):
         self,
         theta: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         self.theta = init_param(self, "theta", theta, trainable)
         self.kernel_joint = Rotate2DKernel()
         self.kernel_fk2d = KinematicChainAppend2DKernel()
@@ -227,13 +247,14 @@ class Rotate2D(KinematicElement):
         kwargs: dict[str, Any] = dict(
             theta=self.theta,
             trainable=self.theta.requires_grad,
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.theta)
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk2d.apply(fk, joint)
@@ -245,8 +266,11 @@ class AbsolutePosition2D(KinematicElement):
         x: float | ScalarTensor | nn.Parameter = 0.0,
         y: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        if reversed:
+            raise RuntimeError("AbsolutePosition2D cannot be reversed")
+        super().__init__(reversed)
         self.kernel_joint = Translate2DKernel()
         xt, yt = expand_bool_tuple(2, trainable)
         self.x = init_param(self, "x", x, xt)
@@ -260,12 +284,7 @@ class AbsolutePosition2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
-        if direction.is_retrograde():
-            raise RuntimeError(
-                "AbsolutePosition2D cannot be evaluated in reverse (retrograde) direction"
-            )
-
+    def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y)
 
 
@@ -276,8 +295,11 @@ class AbsolutePosition3D(KinematicElement):
         y: float | ScalarTensor | nn.Parameter = 0.0,
         z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        if reversed:
+            raise RuntimeError("AbsolutePosition2D cannot be reversed")
+        super().__init__(reversed)
         self.kernel_joint = Translate3DKernel()
         xt, yt, zt = expand_bool_tuple(3, trainable)
         self.x = init_param(self, "x", x, xt)
@@ -297,12 +319,7 @@ class AbsolutePosition3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
-        if direction.is_retrograde():
-            raise RuntimeError(
-                "AbsolutePosition3D cannot be evaluated in reverse (retrograde) direction"
-            )
-
+    def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y, self.z)
 
 
@@ -312,8 +329,9 @@ class Rotate3D(KinematicElement):
         y: float | ScalarTensor | nn.Parameter = 0.0,
         z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         self.kernel_joint = Rotate3DKernel()
         self.kernel_fk3d = KinematicChainAppend3DKernel()
         yt, zt = expand_bool_tuple(2, trainable)
@@ -328,13 +346,14 @@ class Rotate3D(KinematicElement):
                 self.y.requires_grad,
                 self.z.requires_grad,
             ),
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.y, self.z)
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return self.kernel_fk3d.apply(fk, joint)
@@ -347,14 +366,12 @@ class Rotate(KinematicElement):
 
     def __init__(
         self,
-        angles: tuple[float] | Float[torch.Tensor, "2"] | nn.Parameter,
-        trainable: bool | tuple[bool, ...] = False,
+        angles: tuple[float, float] | Float[torch.Tensor, "2"] | nn.Parameter,
+        trainable: bool = False,
+        reversed: bool = False,
     ):
-        super().__init__()
-        zt, yt = expand_bool_tuple(2, trainable)
-        z, y = to_tensor(angles).unbind()
-        self.z = init_param(self, "z", z, zt)
-        self.y = init_param(self, "y", y, yt)
+        super().__init__(reversed)
+        self.angles = init_param(self, "angles", angles, trainable)
         self.kernel_joint2d = Rotate2DKernel()
         self.kernel_joint3d = Rotate3DKernel()
         self.kernel_fk2d = KinematicChainAppend2DKernel()
@@ -362,20 +379,22 @@ class Rotate(KinematicElement):
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
-            angles=torch.stack((self.z, self.y)),
-            trainable=(self.z.requires_grad, self.y.requires_grad),
+            angles=self.angles,
+            trainable=(self.angles.requires_grad),
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
+        z, y = self.angles.unbind()
         if fk.pdim() == 2:
-            joint = self.kernel_joint2d.apply(self.z)
+            joint = self.kernel_joint2d.apply(z)
             kernel_fk = self.kernel_fk2d
         else:
-            joint = self.kernel_joint3d.apply(self.y, self.z)
+            joint = self.kernel_joint3d.apply(y, z)
             kernel_fk = self.kernel_fk3d
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return kernel_fk.apply(fk, joint)
@@ -392,8 +411,9 @@ class Translate(KinematicElement):
         y: float | ScalarTensor | nn.Parameter = 0.0,
         z: float | ScalarTensor | nn.Parameter = 0.0,
         trainable: bool | tuple[bool, ...] = False,
+        reversed: bool = False,
     ):
-        super().__init__()
+        super().__init__(reversed)
         xt, yt, zt = expand_bool_tuple(3, trainable)
         self.x = init_param(self, "x", x, xt)
         self.y = init_param(self, "y", y, yt)
@@ -413,10 +433,11 @@ class Translate(KinematicElement):
                 self.y.requires_grad,
                 self.z.requires_grad,
             ),
+            reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(self, fk: Tf, direction: Direction) -> Tf:
+    def forward(self, fk: Tf) -> Tf:
         if fk.pdim() == 2:
             joint = self.kernel_joint2d.apply(self.x, self.y)
             kernel_fk = self.kernel_fk2d
@@ -424,7 +445,7 @@ class Translate(KinematicElement):
             joint = self.kernel_joint3d.apply(self.x, self.y, self.z)
             kernel_fk = self.kernel_fk3d
 
-        if direction.is_retrograde():
+        if self.reversed:
             joint = joint.flip()
 
         return kernel_fk.apply(fk, joint)

@@ -37,37 +37,6 @@ HomMatrix: TypeAlias = Float[torch.Tensor, "D D"]
 TIRMode: TypeAlias = Literal["absorb", "reflect"]
 
 
-class Direction(Enum):
-    """
-    Direction of propagation
-
-    The two possible directions are effectively forwards / backwards, but we use
-    the vocabulary prograde / retrograde instead, to avoid any confusion with
-    other terminology which already uses common terms:
-
-      * forward / backwards (pytorch autograd)
-      * direct / inverse (geometric transforms)
-      * forward / inverse (kinematics)
-
-    and we use an enum to avoid the "boolean argument" footgun.
-    """
-
-    PROGRADE = "prograde"
-    RETROGRADE = "retrograde"
-
-    def is_prograde(self) -> bool:
-        return self is self.PROGRADE
-
-    def is_retrograde(self) -> bool:
-        return self is self.RETROGRADE
-
-    def as_scale(self) -> float:
-        return 1.0 if self.is_prograde() else -1.0
-
-    def flip(self) -> Self:
-        return self.PROGRADE if self.is_retrograde() else self.RETROGRADE
-
-
 @dataclass
 class Tf:
     """

@@ -20,7 +20,7 @@ from typing import Any, Self
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.types import Direction, ScalarTensor, Tf
+from torchlensmaker.types import ScalarTensor, Tf
 
 from .optical_surface import OpticalSurfaceElement
 from .surface_propagator import SurfacePropagator
@@ -35,6 +35,9 @@ class Aperture(OpticalSurfaceElement):
         kwargs: dict[str, Any] = dict(diameter=self.propagator.surface.diameter)
         return type(self)(**kwargs | overrides)
 
+    def reverse(self) -> Self:
+        return self.clone()
+
     def sequential(self, inputs: SequentialData) -> SequentialData:
         rays_propagated, tf_surface, fk_next = self(
             inputs.rays, inputs.fk, inputs.direction
@@ -44,9 +47,7 @@ class Aperture(OpticalSurfaceElement):
             fk=fk_next,  # correct but useless cause Aperture is only ever a disk currently
         )
 
-    def forward(
-        self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[RayBundle, Tf, Tf]:
-        rays_propagated, _, tf_surface, fk_next = self.propagator(rays, tf, direction)
+    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, Tf, Tf]:
+        rays_propagated, _, tf_surface, fk_next = self.propagator(rays, tf)
 
         return rays_propagated, tf_surface, fk_next

@@ -15,12 +15,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Any
+from typing import Any, cast
 
 import pytest
 import torch
 import torch.nn as nn
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -29,6 +30,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     AbsolutePosition2D,
     AbsolutePosition3D,
     Gap,
+    KinematicElement,
     Rotate,
     Rotate2D,
     Rotate3D,
@@ -38,14 +40,14 @@ from torchlensmaker.kinematics.kinematics_elements import (
     TranslateVec2D,
     TranslateVec3D,
 )
-from torchlensmaker.types import Direction, HomMatrix, Tf
+from torchlensmaker.types import HomMatrix, Tf
 
 
-def check_model_eval(model: nn.Module, inputs: tuple[Tf, Direction]) -> Any:
+def check_model_eval(model: nn.Module, tf: Tf) -> Any:
     "Evaluate a model forwards and run sanity checks"
 
     # Check the forward pass
-    out_tf = model(*inputs)
+    out_tf = model(tf)
     assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
     assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
 
@@ -53,7 +55,7 @@ def check_model_eval(model: nn.Module, inputs: tuple[Tf, Direction]) -> Any:
 
 
 def check_model_eval_and_grad(
-    model: nn.Module, inputs: tuple[Tf, Direction], allow_none_grad: bool = False
+    model: nn.Module, tf: Tf, allow_none_grad: bool = False
 ) -> Any:
     """
     Evaluate a model forwards and backwards and run sanity checks
@@ -61,7 +63,7 @@ def check_model_eval_and_grad(
     """
 
     # Check the forward pass
-    out_tf = model(*inputs)
+    out_tf = model(tf)
 
     assert out_tf.direct.isfinite().all(), "Model outputs contain NaN or Inf"
     assert out_tf.inverse.isfinite().all(), "Model outputs contain NaN or Inf"
@@ -135,16 +137,16 @@ def check_valid_kinematic_chain_3d(
 
 def check_kinematic_element_2d(
     element: nn.Module,
-    inputs: tuple[Tf, Direction],
+    tf: Tf,
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
     allow_none_grad: bool = False,
 ) -> None:
     if trainable:
-        tf_out = check_model_eval_and_grad(element, inputs, allow_none_grad)
+        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, inputs)
+        tf_out = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_2d(tf_out, dtype, device)
@@ -155,16 +157,16 @@ def check_kinematic_element_2d(
 
 def check_kinematic_element_3d(
     element: nn.Module,
-    inputs: tuple[Tf, Direction],
+    tf: Tf,
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
     allow_none_grad: bool = False,
 ) -> None:
     if trainable:
-        tf_out = check_model_eval_and_grad(element, inputs, allow_none_grad)
+        tf_out = check_model_eval_and_grad(element, tf, allow_none_grad)
     else:
-        tf_out = check_model_eval(element, inputs)
+        tf_out = check_model_eval(element, tf)
 
     # Check that output is a valid kinematic chain
     check_valid_kinematic_chain_3d(tf_out, dtype, device)
@@ -196,20 +198,22 @@ def test_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
     )
 
     for element in elements_2d:
+        element = cast(KinematicElement, element)
         check_kinematic_element_2d(
             element,
-            (hom_identity_2d(dtype, device), Direction("prograde")),
+            hom_identity_2d(dtype, device),
             False,
             dtype,
             device,
         )
-        # check_kinematic_element_2d(
-        #     element,
-        #     (hom_identity_2d(dtype, device), Direction("retrograde")),
-        #     False,
-        #     dtype,
-        #     device,
-        # )
+        if not isinstance(element, (AbsolutePosition2D)):
+            check_kinematic_element_2d(
+                element.reverse(),
+                hom_identity_2d(dtype, device),
+                False,
+                dtype,
+                device,
+            )
 
 
 def test_trainable_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
@@ -231,20 +235,22 @@ def test_trainable_elements_2d(dtype: torch.dtype, device: torch.device) -> None
     )
 
     for element in elements_2d:
+        element = cast(KinematicElement, element)
         check_kinematic_element_2d(
             element,
-            (hom_identity_2d(dtype, device), Direction("prograde")),
+            hom_identity_2d(dtype, device),
             True,
             dtype,
             device,
         )
-        # check_kinematic_element_2d(
-        #     element,
-        #     (hom_identity_2d(dtype, device), Direction("retrograde")),
-        #     True,
-        #     dtype,
-        #     device,
-        # )
+        if not isinstance(element, (AbsolutePosition2D)):
+            check_kinematic_element_2d(
+                element.reverse(),
+                hom_identity_2d(dtype, device),
+                True,
+                dtype,
+                device,
+            )
 
 
 def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
@@ -304,20 +310,22 @@ def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
     )
 
     for element in elements_3d:
+        element = cast(KinematicElement, element)
         check_kinematic_element_3d(
             element,
-            (hom_identity_3d(dtype, device), Direction("prograde")),
+            hom_identity_3d(dtype, device),
             False,
             dtype,
             device,
         )
-        # check_kinematic_element_3d(
-        #     element,
-        #     (hom_identity_3d(dtype, device), Direction("retrograde")),
-        #     False,
-        #     dtype,
-        #     device,
-        # )
+        if not isinstance(element, (AbsolutePosition3D)):
+            check_kinematic_element_3d(
+                element.reverse(),
+                hom_identity_3d(dtype, device),
+                False,
+                dtype,
+                device,
+            )
 
 
 def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
@@ -387,20 +395,22 @@ def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None
     )
 
     for element in elements_3d:
+        element = cast(KinematicElement, element)
         check_kinematic_element_3d(
             element,
-            (hom_identity_3d(dtype, device), Direction("prograde")),
+            hom_identity_3d(dtype, device),
             True,
             dtype,
             device,
         )
-        # check_kinematic_element_3d(
-        #     element,
-        #     (hom_identity_3d(dtype, device), Direction("retrograde")),
-        #     True,
-        #     dtype,
-        #     device,
-        # )
+        if not isinstance(element, (AbsolutePosition3D)):
+            check_kinematic_element_3d(
+                element.reverse(),
+                hom_identity_3d(dtype, device),
+                True,
+                dtype,
+                device,
+            )
 
 
 def test_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
@@ -419,34 +429,35 @@ def test_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
     )
 
     for element in elements_mixed:
+        element = cast(KinematicElement, element)
         check_kinematic_element_2d(
             element,
-            (hom_identity_2d(dtype, device), Direction("prograde")),
+            hom_identity_2d(dtype, device),
             False,
             dtype,
             device,
         )
-        # check_kinematic_element_2d(
-        #     element,
-        #     (hom_identity_2d(dtype, device), Direction("retrograde")),
-        #     False,
-        #     dtype,
-        #     device,
-        # )
+        check_kinematic_element_2d(
+            element.reverse(),
+            hom_identity_2d(dtype, device),
+            False,
+            dtype,
+            device,
+        )
         check_kinematic_element_3d(
             element,
-            (hom_identity_3d(dtype, device), Direction("prograde")),
+            hom_identity_3d(dtype, device),
             False,
             dtype,
             device,
         )
-        # check_kinematic_element_3d(
-        #     element,
-        #     (hom_identity_3d(dtype, device), Direction("retrograde")),
-        #     False,
-        #     dtype,
-        #     device,
-        # )
+        check_kinematic_element_3d(
+            element.reverse(),
+            hom_identity_3d(dtype, device),
+            False,
+            dtype,
+            device,
+        )
 
 
 def test_trainable_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
@@ -464,38 +475,39 @@ def test_trainable_elements_mixed(dtype: torch.dtype, device: torch.device) -> N
     )
 
     for element in elements_mixed:
+        element = cast(KinematicElement, element)
         check_kinematic_element_2d(
             element,
-            (hom_identity_2d(dtype, device), Direction("prograde")),
+            hom_identity_2d(dtype, device),
             True,
             dtype,
             device,
             allow_none_grad=True,
         )
-        # check_kinematic_element_2d(
-        #     element,
-        #     (hom_identity_2d(dtype, device), Direction("retrograde")),
-        #     True,
-        #     dtype,
-        #     device,
-        #     allow_none_grad=True,
-        # )
+        check_kinematic_element_2d(
+            element.reverse(),
+            hom_identity_2d(dtype, device),
+            True,
+            dtype,
+            device,
+            allow_none_grad=True,
+        )
         check_kinematic_element_3d(
             element,
-            (hom_identity_3d(dtype, device), Direction("prograde")),
+            hom_identity_3d(dtype, device),
             True,
             dtype,
             device,
             allow_none_grad=True,
         )
-        # check_kinematic_element_3d(
-        #     element,
-        #     (hom_identity_3d(dtype, device), Direction("retrograde")),
-        #     True,
-        #     dtype,
-        #     device,
-        #     allow_none_grad=True,
-        # )
+        check_kinematic_element_3d(
+            element.reverse(),
+            hom_identity_3d(dtype, device),
+            True,
+            dtype,
+            device,
+            allow_none_grad=True,
+        )
 
 
 def test_elements_shared_parameter(dtype: torch.dtype, device: torch.device) -> None:

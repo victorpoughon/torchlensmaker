@@ -77,7 +77,7 @@ class ForwardArtist(Artist):
 class SurfacePropagatorArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
         # Render module
-        input_rays, input_tf, input_direction = collective.input_tree[module]
+        input_rays, input_tf = collective.input_tree[module]
         t, normals, valid, fk_surface, fk_next = collective.output_tree[module.surface]
 
         # Render surface
@@ -104,7 +104,7 @@ class SurfacePropagatorArtist(Artist):
 
 class FocalPointArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        input_rays, input_fk, input_direction = collective.input_tree[module]
+        input_rays, input_fk = collective.input_tree[module]
 
         # Render module
         target = hom_target(input_fk.direct).unsqueeze(0)
@@ -141,5 +141,5 @@ class SequentialArtist(Artist):
 
 class KinematicArtist(Artist):
     def render(self, collective: "Collective", module: nn.Module) -> list[Any]:
-        tf, _ = collective.input_tree[module]
+        tf = collective.input_tree[module]
         return tlmviewer.render_joint(tf.direct)

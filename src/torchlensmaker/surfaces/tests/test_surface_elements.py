@@ -37,7 +37,7 @@ from torchlensmaker.surfaces.surface_sphere_by_curvature import (
 )
 from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
-from torchlensmaker.types import BatchNDTensor, Direction, Tf
+from torchlensmaker.types import BatchNDTensor, Tf
 
 
 def check_model_eval(
@@ -108,16 +108,13 @@ def check_surface_module_2d(
     P = torch.zeros((N, 2), dtype=dtype, device=device)
     V = torch.tensor([1.0, 0.0], dtype=dtype, device=device).expand_as(P)
     tfid = hom_identity_2d(dtype, device)
-    direction = Direction("prograde")
 
     if trainable:
         t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid, direction), allow_none_grad
+            mod, (P, V, tfid), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(
-            mod, (P, V, tfid, direction)
-        )
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
 
     # Check output is sane
     assert t.shape == (N,)
@@ -148,16 +145,13 @@ def check_surface_module_3d(
     P = torch.zeros((N, 3), dtype=dtype, device=device)
     V = torch.tensor([1.0, 0.0, 0.0], dtype=dtype, device=device).expand_as(P)
     tfid = hom_identity_3d(dtype, device)
-    direction = Direction("prograde")
 
     if trainable:
         t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid, direction), allow_none_grad
+            mod, (P, V, tfid), allow_none_grad
         )
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(
-            mod, (P, V, tfid, direction)
-        )
+        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
 
     # Check output is sane
     assert t.shape == (N,)
@@ -194,6 +188,7 @@ def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> No
 
     for module in surfaces_2d:
         check_surface_module_2d(module, False, dtype, device)
+        check_surface_module_2d(module.reverse(), False, dtype, device)
 
 
 def test_sag_surfaces_modules_3d(dtype: torch.dtype, device: torch.device) -> None:
@@ -215,3 +210,4 @@ def test_sag_surfaces_modules_3d(dtype: torch.dtype, device: torch.device) -> No
 
     for module in surfaces_3d:
         check_surface_module_3d(module, False, dtype, device)
+        check_surface_module_3d(module.reverse(), False, dtype, device)

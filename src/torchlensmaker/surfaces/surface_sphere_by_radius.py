@@ -33,7 +33,6 @@ from torchlensmaker.types import (
     Batch2DTensor,
     BatchNDTensor,
     BatchTensor,
-    Direction,
     MaskTensor,
     ScalarTensor,
     Tf,
@@ -310,14 +309,14 @@ class SphereByRadius(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        # Retrograde direction just needs to swap anchors
-        anchors = self.anchors if direction.is_prograde() else self.anchors.flip(0)
+    def reverse(self) -> Self:
+        return self.clone(anchors=self.anchors.flip(0))
 
+    def forward(
+        self, P: BatchTensor, V: BatchTensor, tf: Tf
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return func(P, V, tf, self.diameter, self.R, anchors, self.scale)
+        return func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
 
     def render(self) -> Any:
         return {

@@ -18,27 +18,21 @@ from typing import Any, Self
 
 import torch
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential import SequentialElement
 from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-from torchlensmaker.types import BatchNDTensor, Direction, ScalarTensor, Tf
+from torchlensmaker.types import BatchNDTensor, ScalarTensor, Tf
 
 
-class FocalPoint(SequentialElement):
+class FocalPoint(BaseModule):
     def __init__(self) -> None:
         super().__init__()
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
 
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        _, _ = self(inputs.rays, inputs.fk, inputs.direction)
-        return inputs
-
-    def forward(
-        self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[BatchNDTensor, ScalarTensor]:
+    def forward(self, rays: RayBundle, tf: Tf) -> tuple[BatchNDTensor, ScalarTensor]:
         dim = rays.P.shape[-1]
         N = rays.P.shape[0]
 

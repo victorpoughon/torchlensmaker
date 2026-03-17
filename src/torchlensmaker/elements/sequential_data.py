@@ -21,18 +21,16 @@ import torch
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
-from torchlensmaker.types import Direction, Tf
+from torchlensmaker.types import Tf
 
 
 @dataclass
 class SequentialData:
-    direction: Direction
+    # Rays and associated variables
+    rays: RayBundle
 
     # Forward kinematic chain
     fk: Tf
-
-    # Rays and associated variables
-    rays: RayBundle
 
     def replace(self, /, **changes: Any) -> "SequentialData":
         return replace(self, **changes)
@@ -43,7 +41,6 @@ class SequentialData:
         dim: int,
         dtype: torch.dtype | None = None,
         device: torch.device | None = None,
-        direction: Direction = Direction.PROGRADE,
     ) -> Self:
         if dtype is None:
             dtype = torch.get_default_dtype()
@@ -64,7 +61,6 @@ class SequentialData:
         )
 
         return cls(
-            direction=direction,
             fk=tfid,
             rays=rays,
         )

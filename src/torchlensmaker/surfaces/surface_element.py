@@ -22,7 +22,6 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
-    Direction,
     MaskTensor,
     ScalarTensor,
     Tf,
@@ -46,7 +45,7 @@ class SurfaceElement(BaseModule):
         raise NotImplementedError
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
+        self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         raise NotImplementedError
 

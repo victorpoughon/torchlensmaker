@@ -23,7 +23,10 @@ import torch.nn as nn
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.deep_forward import deep_forward
 from torchlensmaker.elements.focal_point import FocalPoint
-from torchlensmaker.elements.sequential import Reversed, Sequential, SubChain
+from torchlensmaker.elements.sequential import (
+    Sequential,
+    SubChain,
+)
 from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.elements.utils import get_elements_by_type
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
@@ -40,7 +43,6 @@ from torchlensmaker.optical_surfaces.refractive_surface import (
     RefractiveSurface,
     SurfacePropagator,
 )
-from torchlensmaker.types import Direction
 
 from . import tlmviewer
 from .artists import (
@@ -79,7 +81,6 @@ default_artists: Dict[type, list[Artist]] = {
     ReflectiveSurface: [ForwardArtist(lambda mod: mod.propagator)],
     Aperture: [ForwardArtist(lambda mod: mod.propagator)],
     ImagePlane: [ForwardArtist(lambda mod: mod.propagator)],
-    Reversed: [ForwardArtist(lambda mod: mod.element)],
     KinematicElement: [KinematicArtist()],
 }
 
@@ -104,15 +105,13 @@ def render_sequence(
     end: Optional[float] = None,
     title: str = "",
     extra_artists: Dict[type, Artist] = {},
-    reverse: bool = False,
 ) -> Any:
     if dtype is None:
         dtype = torch.get_default_dtype()
 
     # Evaluate the model with deep_forward to keep all intermediate outputs
-    direction = Direction("prograde" if not reverse else "retrograde")
     with deep_forward(optics) as trace:
-        _ = optics(SequentialData.empty(dim=dim, dtype=dtype, direction=direction))
+        _ = optics(SequentialData.empty(dim=dim, dtype=dtype))
 
     # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
     ray_variables_domains = get_domain(optics, dim)
@@ -165,7 +164,6 @@ def show(
     pupil: Any | None = None,
     field: Any | None = None,
     wavelength: Any | None = None,
-    reverse: bool = False,
 ) -> None | Any:
     "Render an optical stack and show it with ipython display"
 
@@ -177,7 +175,7 @@ def show(
     elif dim == 3:
         set_sampling3d(optics, pupil, field, wavelength)
 
-    scene = render_sequence(optics, dim, dtype, end, title, extra_artists, reverse)
+    scene = render_sequence(optics, dim, dtype, end, title, extra_artists)
 
     if controls is not None:
         scene["controls"] = controls

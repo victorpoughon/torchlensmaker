@@ -35,7 +35,6 @@ from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
-    Direction,
     MaskTensor,
     ScalarTensor,
     Tf,
@@ -115,32 +114,23 @@ class KinematicSurface(BaseModule):
         )
         return type(self)(**kwargs | overrides)
 
+    def reverse(self) -> Self:
+        return self.clone(anchors=self.anchors.flip(0))
+
     def render(self) -> Any:
         return self.surface.render()
 
     def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf, direction: Direction
+        self, P: BatchTensor, V: BatchTensor, tf: Tf
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         dim = P.shape[-1]
 
         kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
-        # Retrograde direction just needs to swap anchors
-        anchors = (
-            self.anchors.unbind(-1)
-            if direction.is_prograde()
-            else self.anchors.flip(0).unbind(-1)
-        )
-
-        extent0 = self.surface.outer_extent(anchors[0])
-        extent1 = self.surface.outer_extent(anchors[1])
+        extent0 = self.surface.outer_extent(self.anchors[0])
+        extent1 = self.surface.outer_extent(self.anchors[1])
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
-
-        # TODO note that currently surface also takes a direction
-        # because surfaces also can implement anchors and scale.
-        # However we could remove direction arg to surface entirely if we only
-        # use kinematic surface and remove anchors/scale from surface completely, TLM-90 TLM-95
-        t, normals, valid, _, _ = self.surface(P, V, tf_surface, direction)
+        t, normals, valid, _, _ = self.surface(P, V, tf_surface)
 
         return t, normals, valid, tf_surface, tf_next

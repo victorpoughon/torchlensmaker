@@ -17,11 +17,9 @@
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.surfaces.surface_element import BaseModule
-from torchlensmaker.types import Direction, Tf
+from torchlensmaker.types import Tf
 
 
 class OpticalSurfaceElement(BaseModule):
-    def forward(
-        self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[RayBundle, Tf, Tf]:
+    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, Tf, Tf]:
         raise NotImplementedError

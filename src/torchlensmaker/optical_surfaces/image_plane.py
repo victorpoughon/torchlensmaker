@@ -19,12 +19,12 @@ from typing import Any, Literal, Optional, Self, Sequence, TypeAlias
 import torch
 import torch.nn as nn
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.core.tensor_manip import filter_optional_tensor, to_tensor
-from torchlensmaker.elements.sequential import SequentialElement
+from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.types import BatchNDTensor, BatchTensor, Direction, ScalarTensor, Tf
+from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
 
 from .surface_propagator import SurfacePropagator
 
@@ -41,7 +41,7 @@ def linear_magnification(
     return mag, residuals
 
 
-class ImagePlane(SequentialElement):
+class ImagePlane(BaseModule):
     """
     Linear magnification disk image plane
 
@@ -70,17 +70,12 @@ class ImagePlane(SequentialElement):
         )
         return type(self)(**kwargs | overrides)
 
-    def sequential(self, inputs: SequentialData) -> SequentialData:
-        # In sequential mode, image plane is transparent to rays
-        # We compute its outputs but forward the rays bundle unchanged
-        _, _ = self(inputs.rays, inputs.fk, inputs.direction)
-        return inputs
+    def reverse(self) -> Self:
+        return self.clone()
 
-    def forward(
-        self, rays: RayBundle, tf: Tf, direction: Direction
-    ) -> tuple[BatchNDTensor, ScalarTensor]:
+    def forward(self, rays: RayBundle, tf: Tf) -> tuple[BatchNDTensor, ScalarTensor]:
         # Collision detection
-        rays_propagated, _, _, _ = self.propagator(rays, tf, direction)
+        rays_propagated, _, _, _ = self.propagator(rays, tf)
 
         # check no rays special case after propagator
         # so we can still render
