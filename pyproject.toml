@@ -22,7 +22,7 @@ test = [
   "nbstripout-fast",
   "onnxruntime>=1.23.2",
 ]
-dev = ["ruff>=0.11.2"]
+dev = ["ruff>=0.11.2", "basedpyright>=1.38.2"]
 onnx = ["onnx>=1.20.0", "onnxscript>=0.5.7"]
 
 [tool.uv]
@@ -47,3 +47,6 @@ packages = ["torchlensmaker"]
 
 [tool.pytest.ini_options]
 addopts = ["--import-mode=importlib"]
+
+[tool.basedpyright]
+typeCheckingMode = "standard"
