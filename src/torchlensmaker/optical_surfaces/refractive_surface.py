@@ -22,14 +22,14 @@ import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.materials.get_material_model import (
     get_material_model,
 )
 from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.physics.physics_elements import RefractiveInterface
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, Tf, TIRMode
+from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf, TIRMode
 
 from .optical_surface import OpticalSurfaceElement
 from .surface_propagator import SurfacePropagator
@@ -109,8 +109,12 @@ class RefractiveSurface(OpticalSurfaceElement):
             materials=(material_out, material_in),
         )
 
-    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, Tf, Tf]:
-        rays_propagated, normals, tf_surface, fk_next = self.propagator(rays, tf)
+    def forward(
+        self, rays: RayBundle, tf: Tf
+    ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+        rays_propagated, t, normals, valid, tf_surface, fk_next = self.propagator(
+            rays, tf
+        )
         rays_refracted = self.refractor(rays_propagated, normals)
 
-        return rays_refracted, tf_surface, fk_next
+        return rays_refracted, t, normals, valid, tf_surface, fk_next

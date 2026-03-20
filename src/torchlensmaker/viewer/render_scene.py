@@ -15,18 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
+from typing import Any
+
+import torchlensmaker as tlm
 
 
-class OpticalSurfaceElement(BaseModule):
-    def forward(
-        self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        raise NotImplementedError
+def scene_render_surfaces(scene: tlm.OpticalScene) -> Any:
+    surfaces = []
+    for key, (tf, surface) in scene.surfaces.items():
+        surf = surface.render()
+        surf["matrix"] = tf
 
-    @property
-    def surface(self) -> SurfaceElement:
-        raise NotImplementedError
+    return surfaces
+
+
+def render_scene(scene: tlm.OpticalScene) -> Any:
+    "Render an OpticalScene to a tlmviewer scene"
+
+    # render rays
+    # render joints
+    # render surfaces

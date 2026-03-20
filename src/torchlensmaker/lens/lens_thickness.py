@@ -50,9 +50,9 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     # Evaluate the lens with zero rays, so we can extract surface transforms
     data = SequentialData.empty(2, dtype, device)
 
-    rays, front_vertex_tf, fk = first_surface(data.rays, data.fk)
+    rays, _, _, _, front_vertex_tf, fk = first_surface(data.rays, data.fk)
     data = lens_core(data.replace(rays=rays, fk=fk))
-    _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
+    _, _, _, _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
 
     root = torch.zeros((2,), dtype=dtype, device=device)
     front_vertex = transform_points(front_vertex_tf.direct, root)
@@ -94,9 +94,9 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     # Evaluate the lens with zero rays, so we can extract surface transforms
     data = SequentialData.empty(2, dtype, device)
 
-    rays, front_vertex_tf, fk = first_surface(data.rays, data.fk)
+    rays, _, _, _, front_vertex_tf, fk = first_surface(data.rays, data.fk)
     data = lens_core(data.replace(rays=rays, fk=fk))
-    _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
+    _, _, _, _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
 
     # Append translation along X to include the surface outer edge extent
     zero = torch.zeros((), dtype=dtype, device=device)

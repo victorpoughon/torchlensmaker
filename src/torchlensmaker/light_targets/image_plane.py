@@ -73,7 +73,7 @@ class ImagePlane(BaseModule):
 
     def forward(self, rays: RayBundle, tf: Tf) -> tuple[BatchNDTensor, ScalarTensor]:
         # Collision detection
-        rays_propagated, _, _, _ = self.propagator(rays, tf)
+        rays_propagated, _, _, _, _, _ = self.propagator(rays, tf)
 
         # check no rays special case after propagator
         # so we can still render

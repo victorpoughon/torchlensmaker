@@ -20,23 +20,33 @@ from dataclasses import dataclass
 from typing import Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import Tf
+from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 
 
 @dataclass
 class OpticalScene:
     rays: OrderedDict[str, RayBundle]
+    collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]]
     joints: OrderedDict[str, Tf]
     surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]]
 
     @classmethod
     def empty(cls) -> Self:
-        return cls(rays=OrderedDict(), joints=OrderedDict(), surfaces=OrderedDict())
+        return cls(
+            rays=OrderedDict(),
+            collisions=OrderedDict(),
+            joints=OrderedDict(),
+            surfaces=OrderedDict(),
+        )
 
     def add_rays(self, key: str, rays: RayBundle) -> None:
         self.rays[key] = rays
+
+    def add_collision(
+        self, key: str, t: BatchTensor, normals: BatchNDTensor, valid: MaskTensor
+    ) -> None:
+        self.collisions[key] = (t, normals, valid)
 
     def add_joint(self, key: str, tf: Tf) -> None:
         self.joints[key] = tf

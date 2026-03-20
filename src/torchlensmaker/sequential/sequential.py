@@ -168,11 +168,12 @@ def sequential_forward(
             scene.add_rays(key, rays)
         return data.replace(rays=rays)
     elif isinstance(mod, OpticalSurfaceElement):
-        rays, tf_surface, tf_next = mod(data.rays, data.fk)
+        rays, t, normals, valid, tf_surface, tf_next = mod(data.rays, data.fk)
         if scene:
             scene.add_joint(key, tf_next)
             scene.add_rays(key, rays)
             scene.add_surface(key, tf_surface, mod.surface.render())
+            scene.add_collision(key, t, normals, valid)
         return data.replace(rays=rays, fk=tf_next)
     elif isinstance(mod, SequentialElement):
         if scene:
