@@ -22,7 +22,7 @@ import torch.nn as nn
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
-from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
 

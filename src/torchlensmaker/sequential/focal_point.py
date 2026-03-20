@@ -20,8 +20,8 @@ import torch
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import BatchNDTensor, ScalarTensor, Tf
 
 

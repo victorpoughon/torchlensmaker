@@ -22,7 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
-from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import (
     HomMatrix,
     ScalarTensor,

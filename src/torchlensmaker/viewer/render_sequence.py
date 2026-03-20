@@ -22,13 +22,13 @@ import torch.nn as nn
 
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.deep_forward import deep_forward
-from torchlensmaker.elements.focal_point import FocalPoint
-from torchlensmaker.elements.sequential import (
+from torchlensmaker.sequential.focal_point import FocalPoint
+from torchlensmaker.sequential.sequential import (
     Sequential,
     SubChain,
 )
-from torchlensmaker.elements.sequential_data import SequentialData
-from torchlensmaker.elements.utils import get_elements_by_type
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.lens.lens import Lens
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase

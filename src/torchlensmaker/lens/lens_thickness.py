@@ -22,13 +22,13 @@ import torch
 import torch.nn as nn
 from jaxtyping import Float
 
-from torchlensmaker.elements.sequential_data import SequentialData
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_translate_2d,
     kinematic_chain_append,
     transform_points,
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
+from torchlensmaker.sequential.sequential_data import SequentialData
 
 if TYPE_CHECKING:
     from .lens import Lens

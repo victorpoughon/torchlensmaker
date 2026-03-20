@@ -21,9 +21,9 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.elements.sequential import Sequential
-from torchlensmaker.elements.sequential_data import SequentialData
-from torchlensmaker.elements.sequential_element import SequentialElement
+from torchlensmaker.sequential.sequential import Sequential
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 
 from .lens_thickness import (

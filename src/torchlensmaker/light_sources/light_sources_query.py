@@ -21,13 +21,13 @@ from typing import Sequence, cast
 import torch
 import torch.nn as nn
 
-from torchlensmaker.elements.utils import get_elements_by_type
 from torchlensmaker.light_sources.light_sources_elements import GenericLightSource
 from torchlensmaker.sampling.sampler_elements import (
     DiskSampler2D,
     ExactSampler1D,
     LinspaceSampler1D,
 )
+from torchlensmaker.sequential.utils import get_elements_by_type
 
 
 def init_sampler1d(value: int | Sequence[float]) -> nn.Module:

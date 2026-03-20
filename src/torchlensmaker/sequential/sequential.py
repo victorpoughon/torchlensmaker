@@ -25,10 +25,10 @@ import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.focal_point import FocalPoint
-from torchlensmaker.elements.sequential_data import SequentialData
-from torchlensmaker.elements.sequential_element import SequentialElement
-from torchlensmaker.elements.utils import (
+from torchlensmaker.sequential.focal_point import FocalPoint
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_element import SequentialElement
+from torchlensmaker.sequential.utils import (
     get_elements_by_type,
 )
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
@@ -50,9 +50,9 @@ class SubChain(SequentialElement):
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
 
-    def forward(self, inputs: SequentialData) -> SequentialData:
-        output: SequentialData = self._sequential(inputs)
-        return output.replace(fk=inputs.fk)
+    def forward(self, data: SequentialData) -> SequentialData:
+        output: SequentialData = self._sequential(data)
+        return output.replace(fk=data.fk)
 
 
 _V = TypeVar("_V")

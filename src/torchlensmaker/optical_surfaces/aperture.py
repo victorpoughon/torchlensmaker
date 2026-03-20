@@ -18,7 +18,7 @@
 from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.types import ScalarTensor, Tf
 

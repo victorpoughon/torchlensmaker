@@ -19,7 +19,7 @@ from typing import TypeAlias
 import matplotlib as mpl
 import torch
 
-from torchlensmaker.elements.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_data import SequentialData
 
 from .CET_I2 import isoluminant_cgo_80_c38
 
