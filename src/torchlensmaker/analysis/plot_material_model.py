@@ -19,11 +19,11 @@ from typing import Optional
 import matplotlib.pyplot as plt
 import torch
 
-import torchlensmaker as tlm
+from torchlensmaker.materials.material_elements import MaterialModel
 
 
 def plot_material_models(
-    models: list[tlm.MaterialModel],
+    models: list[MaterialModel],
     wmin: float = 400,
     wmax: float = 700,
     labels: Optional[list[str]] = None,

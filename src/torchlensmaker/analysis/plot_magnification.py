@@ -20,12 +20,13 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-import torchlensmaker as tlm
 from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
     color_rays,
     default_colormap,
 )
+from torchlensmaker.light_targets.image_plane import linear_magnification
+from torchlensmaker.sequential.sequential_data import SequentialData
 
 color_valid = "#ffa724"
 color_blocked = "red"
@@ -49,13 +50,13 @@ def plot_magnification(
         dtype = torch.get_default_dtype()
 
     # Evaluate the optical stack
-    output = optics(tlm.SequentialData.empty(dim=2, dtype=dtype))
+    output = optics(SequentialData.empty(dim=2, dtype=dtype))
 
     # Extract object and image coordinate (called T and V)
     T = output.rays_field
     V = output.rays_image
 
-    mag, residuals = tlm.linear_magnification(T, V)
+    mag, residuals = linear_magnification(T, V)
 
     # Get color data
     color_data = (

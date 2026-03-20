@@ -14,220 +14,294 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# ruff: noqa: F401
-# ruff: noqa: I001
-
 import torch
+import torch.optim as optim
 
-#######
-# Types
-#######
-
-from torchlensmaker.types import (
-    ScalarTensor,
-    BatchTensor,
-    Batch2DTensor,
-    Batch3DTensor,
-    BatchNDTensor,
-    HomMatrix,
-)
-
-######
-# Core
-######
-
-from torchlensmaker.physics.physics import reflection, refraction
-
-from torchlensmaker.core.parameter import parameter
+from torchlensmaker.analysis.plot_magnification import plot_magnification
+from torchlensmaker.analysis.plot_material_model import plot_material_models
+from torchlensmaker.analysis.spot_diagram import spot_diagram
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.geometry import (
-    unit_vector,
     rotated_unit_vector,
     unit2d_rot,
     unit3d_rot,
+    unit_vector,
 )
-from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.core.parameter import parameter
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.core.base_module import BaseModule
-
-############
-# Kinematics
-############
-
+from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    transform_points,
-    transform_vectors,
-    hom_target,
     hom_identity,
     hom_identity_2d,
     hom_identity_3d,
+    hom_target,
     hom_translate_2d,
     hom_translate_3d,
     kinematic_chain_append,
     kinematic_chain_extend,
+    transform_points,
+    transform_vectors,
 )
-
 from torchlensmaker.kinematics.kinematics_elements import (
-    KinematicElement,
     AbsolutePosition3D,
     Gap,
-    Rotate3D,
+    KinematicElement,
+    Rotate,
     Rotate2D,
+    Rotate3D,
+    Translate,
     Translate2D,
     Translate3D,
-    Rotate,
-    Translate,
-)
-
-##########
-# Samplers
-##########
-from torchlensmaker.sampling.sampler_elements import (
-    ZeroSampler1D,
-    ZeroSampler2D,
-    LinspaceSampler1D,
-    LinspaceSampler2D,
-    DiskSampler2D,
-    ExactSampler1D,
-    ExactSampler2D,
-)
-from torchlensmaker.sampling.sampling import disk_sampling
-
-##########
-# Surfaces
-##########
-
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.surfaces.sag_functions import (
-    sag_to_implicit_2d,
-    sag_to_implicit_3d,
-    spherical_sag_2d,
-    spherical_sag_3d,
-    parabolic_sag_2d,
-    parabolic_sag_3d,
-    conical_sag_2d,
-    conical_sag_3d,
-    aspheric_sag_2d,
-    aspheric_sag_3d,
-    xypolynomial_sag_3d,
-    sag_sum_2d,
-    sag_sum_3d,
-)
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
-from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
-from torchlensmaker.surfaces.surface_parabola import Parabola
-from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.surfaces.surface_conic import Conic
-from torchlensmaker.surfaces.surface_asphere import Asphere
-from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
-from torchlensmaker.surfaces.surface_square import Square
-from torchlensmaker.surfaces.surface_anchor import KinematicSurface
-
-##################
-# Optical elements
-##################
-
-from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
-from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
-from torchlensmaker.optical_surfaces.aperture import Aperture
-from torchlensmaker.light_targets.image_plane import ImagePlane, linear_magnification
-from torchlensmaker.light_targets.focal_point import FocalPoint
-
-from torchlensmaker.sequential.sequential import Sequential, SubChain, SequentialElement
-from torchlensmaker.light_sources.light_sources_elements import (
-    RaySource,
-    PointSourceAtInfinity,
-    PointSource,
-    ObjectAtInfinity,
-    Object,
-    LightSourceBase,
-)
-from torchlensmaker.light_sources.light_sources_query import (
-    set_sampling2d,
-    set_sampling3d,
-)
-
-from torchlensmaker.sequential.optical_scene import OpticalScene
-
-# Top level stuff - to be reorganized
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.materials.material_elements import (
-    MaterialModel,
-    NonDispersiveMaterial,
-    CauchyMaterial,
-    SellmeierMaterial,
-)
-
-from torchlensmaker.sequential.utils import (
-    Debug,
-    get_elements_by_type,
-)
-
-######
-# Lens
-######
-
-from torchlensmaker.lens.position_gap import (
-    position_gap_to_anchors,
-    PositionGap,
-    InnerGap,
-    OuterGap,
 )
 from torchlensmaker.lens.lens import Lens
 from torchlensmaker.lens.lens_thickness import (
     lens_inner_thickness,
     lens_outer_thickness,
 )
-
-########
-# Lenses
-########
-from . import lenses
-
-##########
-# Paraxial
-##########
-
-from . import paraxial
-
-##############
-# Optimization
-##############
-
-import torch.optim as optim
+from torchlensmaker.lens.position_gap import (
+    InnerGap,
+    OuterGap,
+    PositionGap,
+    position_gap_to_anchors,
+)
+from torchlensmaker.light_sources.light_sources_elements import (
+    LightSourceBase,
+    Object,
+    ObjectAtInfinity,
+    PointSource,
+    PointSourceAtInfinity,
+    RaySource,
+)
+from torchlensmaker.light_sources.light_sources_query import (
+    set_sampling2d,
+    set_sampling3d,
+)
+from torchlensmaker.light_targets.focal_point import FocalPoint
+from torchlensmaker.light_targets.image_plane import ImagePlane, linear_magnification
+from torchlensmaker.materials.material_elements import (
+    CauchyMaterial,
+    MaterialModel,
+    NonDispersiveMaterial,
+    SellmeierMaterial,
+)
+from torchlensmaker.optical_surfaces.aperture import Aperture
+from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
+from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optimize import (
-    optimize,
     OptimizationRecord,
+    optimize,
     plot_optimization_record,
 )
-
-########
-# Viewer
-########
-
-from torchlensmaker.viewer.tlmviewer import (
-    render_rays,
-    render_points,
-    render_collisions,
-    render_arrows,
-    render_surface,
-    render_surface_local,
-    new_scene,
-    display_scene,
+from torchlensmaker.physics.physics import reflection, refraction
+from torchlensmaker.sampling.sampler_elements import (
+    DiskSampler2D,
+    ExactSampler1D,
+    ExactSampler2D,
+    LinspaceSampler1D,
+    LinspaceSampler2D,
+    ZeroSampler1D,
+    ZeroSampler2D,
+)
+from torchlensmaker.sampling.sampling import disk_sampling
+from torchlensmaker.sequential.optical_scene import OpticalScene
+from torchlensmaker.sequential.sequential import Sequential, SequentialElement, SubChain
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.utils import (
+    Debug,
+    get_elements_by_type,
+)
+from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
+from torchlensmaker.surfaces.sag_functions import (
+    aspheric_sag_2d,
+    aspheric_sag_3d,
+    conical_sag_2d,
+    conical_sag_3d,
+    parabolic_sag_2d,
+    parabolic_sag_3d,
+    sag_sum_2d,
+    sag_sum_3d,
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
+    spherical_sag_2d,
+    spherical_sag_3d,
+    xypolynomial_sag_3d,
+)
+from torchlensmaker.surfaces.surface_anchor import KinematicSurface
+from torchlensmaker.surfaces.surface_asphere import Asphere
+from torchlensmaker.surfaces.surface_conic import Conic
+from torchlensmaker.surfaces.surface_disk import Disk
+from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces.surface_parabola import Parabola
+from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
+from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
+from torchlensmaker.surfaces.surface_square import Square
+from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
+from torchlensmaker.types import (
+    Batch2DTensor,
+    Batch3DTensor,
+    BatchNDTensor,
+    BatchTensor,
+    HomMatrix,
+    ScalarTensor,
 )
 from torchlensmaker.viewer.render_sequence import (
+    ForwardArtist,
+    export_json,
+    render_sequence,
     show,
     show2d,
     show3d,
-    export_json,
-    render_sequence,
-    ForwardArtist,
+)
+from torchlensmaker.viewer.tlmviewer import (
+    display_scene,
+    new_scene,
+    render_arrows,
+    render_collisions,
+    render_points,
+    render_rays,
+    render_surface,
+    render_surface_local,
 )
 
-##########
-# Analysis
-##########
+from . import lenses, paraxial
 
-from torchlensmaker.analysis.plot_magnification import plot_magnification
-from torchlensmaker.analysis.plot_material_model import plot_material_models
-from torchlensmaker.analysis.spot_diagram import spot_diagram
+__all__ = [
+    # Analysis
+    "plot_magnification",
+    "plot_material_models",
+    "spot_diagram",
+    # Core
+    "BaseModule",
+    "rotated_unit_vector",
+    "unit2d_rot",
+    "unit3d_rot",
+    "unit_vector",
+    "parameter",
+    "RayBundle",
+    "to_tensor",
+    # Kinematics
+    "hom_identity",
+    "hom_identity_2d",
+    "hom_identity_3d",
+    "hom_target",
+    "hom_translate_2d",
+    "hom_translate_3d",
+    "kinematic_chain_append",
+    "kinematic_chain_extend",
+    "transform_points",
+    "transform_vectors",
+    "AbsolutePosition3D",
+    "Gap",
+    "KinematicElement",
+    "Rotate",
+    "Rotate2D",
+    "Rotate3D",
+    "Translate",
+    "Translate2D",
+    "Translate3D",
+    # Lens
+    "Lens",
+    "lens_inner_thickness",
+    "lens_outer_thickness",
+    "InnerGap",
+    "OuterGap",
+    "PositionGap",
+    "position_gap_to_anchors",
+    # Lenses
+    "lenses",
+    # Light Sources
+    "LightSourceBase",
+    "Object",
+    "ObjectAtInfinity",
+    "PointSource",
+    "PointSourceAtInfinity",
+    "RaySource",
+    "set_sampling2d",
+    "set_sampling3d",
+    # Light Targets
+    "FocalPoint",
+    "ImagePlane",
+    "linear_magnification",
+    # Materials
+    "CauchyMaterial",
+    "MaterialModel",
+    "NonDispersiveMaterial",
+    "SellmeierMaterial",
+    # Optical Surfaces
+    "Aperture",
+    "ReflectiveSurface",
+    "RefractiveSurface",
+    # Optimization
+    "OptimizationRecord",
+    "optimize",
+    "plot_optimization_record",
+    # Paraxial
+    "paraxial",
+    # Physics
+    "reflection",
+    "refraction",
+    # Sampling
+    "DiskSampler2D",
+    "ExactSampler1D",
+    "ExactSampler2D",
+    "LinspaceSampler1D",
+    "LinspaceSampler2D",
+    "ZeroSampler1D",
+    "ZeroSampler2D",
+    "disk_sampling",
+    # Sequential
+    "OpticalScene",
+    "Sequential",
+    "SequentialElement",
+    "SubChain",
+    "SequentialData",
+    "Debug",
+    "get_elements_by_type",
+    # Surfaces
+    "implicit_solver_newton",
+    "aspheric_sag_2d",
+    "aspheric_sag_3d",
+    "conical_sag_2d",
+    "conical_sag_3d",
+    "parabolic_sag_2d",
+    "parabolic_sag_3d",
+    "sag_sum_2d",
+    "sag_sum_3d",
+    "sag_to_implicit_2d",
+    "sag_to_implicit_3d",
+    "spherical_sag_2d",
+    "spherical_sag_3d",
+    "xypolynomial_sag_3d",
+    "KinematicSurface",
+    "Asphere",
+    "Conic",
+    "Disk",
+    "SurfaceElement",
+    "Parabola",
+    "SphereByCurvature",
+    "SphereByRadius",
+    "Square",
+    "XYPolynomial",
+    # Types
+    "Batch2DTensor",
+    "Batch3DTensor",
+    "BatchNDTensor",
+    "BatchTensor",
+    "HomMatrix",
+    "ScalarTensor",
+    # Viewer
+    "ForwardArtist",
+    "export_json",
+    "render_sequence",
+    "show",
+    "show2d",
+    "show3d",
+    "display_scene",
+    "new_scene",
+    "render_arrows",
+    "render_collisions",
+    "render_points",
+    "render_rays",
+    "render_surface",
+    "render_surface_local",
+]

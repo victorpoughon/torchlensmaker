@@ -20,7 +20,6 @@ import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 
-import torchlensmaker as tlm
 from torchlensmaker.analysis.colors import (
     LinearSegmentedColormap,
     color_rays,
@@ -79,7 +78,8 @@ def spot_diagram(
     """
 
     # Process shortcut definitions in the sampling dict
-    sampling = tlm.init_sampling(sampling)
+    # sampling = init_sampling(sampling)
+    sampling = {}  # TODO
 
     # Setup rows and cols, with convenience generators for iteration
     nrows = sampling[row].size() if row is not None else 1
