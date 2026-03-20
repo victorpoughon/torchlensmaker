@@ -32,7 +32,8 @@ class ModelTrace:
     """
 
     dim: int
-    rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
+    input_rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
+    output_rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
     collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]] = field(
         default_factory=OrderedDict
     )
@@ -46,8 +47,11 @@ class ModelTrace:
     def empty(cls, dim: int) -> Self:
         return cls(dim=dim)
 
-    def add_rays(self, key: str, rays: RayBundle) -> None:
-        self.rays[key] = rays
+    def add_input_rays(self, key: str, rays: RayBundle) -> None:
+        self.input_rays[key] = rays
+
+    def add_output_rays(self, key: str, rays: RayBundle) -> None:
+        self.output_rays[key] = rays
 
     def add_collision(
         self, key: str, t: BatchTensor, normals: BatchNDTensor, valid: MaskTensor
@@ -68,7 +72,7 @@ class ModelTrace:
             for k, v in other.items():
                 this[key + "." + k] = v
 
-        merge(self.rays, other.rays)
+        merge(self.output_rays, other.output_rays)
         merge(self.input_joints, other.input_joints)
         merge(self.output_joints, other.output_joints)
         merge(self.surfaces, other.surfaces)
