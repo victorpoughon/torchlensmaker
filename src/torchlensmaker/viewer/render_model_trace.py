@@ -21,9 +21,9 @@ from torchlensmaker.sequential.sequential import ModelTrace
 from torchlensmaker.viewer import tlmviewer
 
 
-def trace_render_surfaces(scene: ModelTrace) -> list[Any]:
+def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
     surfaces = []
-    for key, (tf, surface) in scene.surfaces.items():
+    for key, (tf, surface) in trace.surfaces.items():
         surf = surface.render()
         surf["matrix"] = tf.direct.tolist()
         surfaces.append(surf)
@@ -31,10 +31,16 @@ def trace_render_surfaces(scene: ModelTrace) -> list[Any]:
     return surfaces
 
 
-def trace_render_joints(scene: ModelTrace) -> list[Any]:
+def trace_render_joints(trace: ModelTrace) -> list[Any]:
     ret = []
-    for tf in scene.joints.values():
+    for tf in trace.output_joints.values():
         ret.extend(tlmviewer.render_joint(tf.direct))
+    return ret
+
+
+def trace_render_rays(trace: ModelTrace) -> list[Any]:
+    ret = []
+
     return ret
 
 
@@ -46,5 +52,6 @@ def render_model_trace(trace: ModelTrace) -> Any:
     # Render parts of the scene: surfaces, joints, rays
     viewer_scene["data"].extend(trace_render_surfaces(trace))
     viewer_scene["data"].extend(trace_render_joints(trace))
+    viewer_scene["data"].extend(trace_render_rays(trace))
 
     return viewer_scene

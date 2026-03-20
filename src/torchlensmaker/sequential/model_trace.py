@@ -16,8 +16,8 @@
 
 
 from collections import OrderedDict
-from dataclasses import dataclass
-from typing import Self
+from dataclasses import dataclass, field
+from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.surfaces.surface_element import SurfaceElement
@@ -32,20 +32,19 @@ class ModelTrace:
     """
 
     dim: int
-    rays: OrderedDict[str, RayBundle]
-    collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]]
-    joints: OrderedDict[str, Tf]
-    surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]]
+    rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
+    collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]] = field(
+        default_factory=OrderedDict
+    )
+    input_joints: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
+    output_joints: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
+    surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]] = field(
+        default_factory=OrderedDict
+    )
 
     @classmethod
     def empty(cls, dim: int) -> Self:
-        return cls(
-            dim=dim,
-            rays=OrderedDict(),
-            collisions=OrderedDict(),
-            joints=OrderedDict(),
-            surfaces=OrderedDict(),
-        )
+        return cls(dim=dim)
 
     def add_rays(self, key: str, rays: RayBundle) -> None:
         self.rays[key] = rays
@@ -55,18 +54,21 @@ class ModelTrace:
     ) -> None:
         self.collisions[key] = (t, normals, valid)
 
-    def add_joint(self, key: str, tf: Tf) -> None:
-        self.joints[key] = tf
+    def add_input_joint(self, key: str, tf: Tf) -> None:
+        self.input_joints[key] = tf
 
-    def add_surface(self, key: str, tf: Tf, surface: SurfaceElement) -> None:
-        self.surfaces[key] = (tf, surface)
+    def add_output_joint(self, key: str, tf: Tf) -> None:
+        self.output_joints[key] = tf
+
+    def add_surface(self, key: str, tf_and_surface: tuple[Tf, SurfaceElement]) -> None:
+        self.surfaces[key] = tf_and_surface
 
     def add_scene(self, key: str, other: Self) -> None:
-        for k, v in other.rays.items():
-            self.add_rays(key + "." + k, v)
+        def merge(this: OrderedDict[str, Any], other: OrderedDict[str, Any]):
+            for k, v in other.items():
+                this[key + "." + k] = v
 
-        for k, v in other.joints.items():
-            self.add_joint(key + "." + k, v)
-
-        for k, v in other.surfaces.items():
-            self.add_surface(key + "." + k, *v)
+        merge(self.rays, other.rays)
+        merge(self.input_joints, other.input_joints)
+        merge(self.output_joints, other.output_joints)
+        merge(self.surfaces, other.surfaces)
