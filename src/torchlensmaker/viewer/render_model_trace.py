@@ -17,21 +17,34 @@
 
 from typing import Any
 
-import torchlensmaker as tlm
+from torchlensmaker.sequential.sequential import ModelTrace
+from torchlensmaker.viewer import tlmviewer
 
 
-def scene_render_surfaces(scene: tlm.OpticalScene) -> Any:
+def trace_render_surfaces(scene: ModelTrace) -> list[Any]:
     surfaces = []
     for key, (tf, surface) in scene.surfaces.items():
         surf = surface.render()
-        surf["matrix"] = tf
+        surf["matrix"] = tf.direct.tolist()
+        surfaces.append(surf)
 
     return surfaces
 
 
-def render_scene(scene: tlm.OpticalScene) -> Any:
+def trace_render_joints(scene: ModelTrace) -> list[Any]:
+    ret = []
+    for tf in scene.joints.values():
+        ret.extend(tlmviewer.render_joint(tf.direct))
+    return ret
+
+
+def render_model_trace(trace: ModelTrace) -> Any:
     "Render an OpticalScene to a tlmviewer scene"
 
-    # render rays
-    # render joints
-    # render surfaces
+    viewer_scene = tlmviewer.new_scene("2D" if trace.dim == 2 else "3D")
+
+    # Render parts of the scene: surfaces, joints, rays
+    viewer_scene["data"].extend(trace_render_surfaces(trace))
+    viewer_scene["data"].extend(trace_render_joints(trace))
+
+    return viewer_scene

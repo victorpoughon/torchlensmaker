@@ -34,7 +34,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 from torchlensmaker.light_targets.focal_point import FocalPoint
 from torchlensmaker.light_targets.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
-from torchlensmaker.sequential.optical_scene import OpticalScene
+from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.sequential.utils import (
@@ -55,10 +55,10 @@ class SubChain(SequentialElement):
         output: SequentialData = self._sequential(data)
         return output.replace(fk=data.fk)
 
-    def forward_scene(
-        self, data: SequentialData, prefix: str, scene: OpticalScene
+    def forward_trace(
+        self, data: SequentialData, prefix: str, trace: ModelTrace
     ) -> SequentialData:
-        output: SequentialData = self._sequential.forward_scene(data, prefix, scene)
+        output: SequentialData = self._sequential.forward_trace(data, prefix, trace)
         return output.replace(fk=data.fk)
 
 
@@ -109,23 +109,14 @@ class Sequential(SequentialElement):
             data = sequential_forward(mod, key, data, None)
         return data
 
-    def forward_scene(
-        self, data: SequentialData, prefix: str, scene: OpticalScene
+    def forward_trace(
+        self, data: SequentialData, prefix: str, trace: ModelTrace
     ) -> SequentialData:
         # iterate on _modules to not skip any duplicated modules
         for key, mod in self._modules.items():
             mod = cast(SequentialElement, mod)
-            data = sequential_forward(mod, prefix + key, data, scene)
+            data = sequential_forward(mod, prefix + key, data, trace)
         return data
-
-    def raytrace(
-        self,
-        dim: int,
-        dtype: torch.dtype | None = None,
-        device: torch.device | None = None,
-    ) -> SequentialData:
-        data = SequentialData.empty(dim, dtype, device)
-        return self(data)
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
@@ -151,7 +142,7 @@ def sequential_forward(
     mod: BaseModule,
     key: str,
     data: SequentialData,
-    scene: OpticalScene | None,
+    trace: ModelTrace | None,
 ) -> SequentialData:
     """
     Call an element forward function with a SequentialData object, optionally record in an OpticalScene
@@ -159,25 +150,25 @@ def sequential_forward(
 
     if isinstance(mod, KinematicElement):
         tf = mod(data.fk)
-        if scene:
-            scene.add_joint(key, tf)
+        if trace:
+            trace.add_joint(key, tf)
         return data.replace(fk=tf)
     elif isinstance(mod, LightSourceBase):
         rays = mod(data.fk.direct)
-        if scene:
-            scene.add_rays(key, rays)
+        if trace:
+            trace.add_rays(key, rays)
         return data.replace(rays=rays)
     elif isinstance(mod, OpticalSurfaceElement):
         rays, t, normals, valid, tf_surface, tf_next = mod(data.rays, data.fk)
-        if scene:
-            scene.add_joint(key, tf_next)
-            scene.add_rays(key, rays)
-            scene.add_surface(key, tf_surface, mod.surface.render())
-            scene.add_collision(key, t, normals, valid)
+        if trace:
+            trace.add_joint(key, tf_next)
+            trace.add_rays(key, rays)
+            trace.add_surface(key, tf_surface, mod.surface)
+            trace.add_collision(key, t, normals, valid)
         return data.replace(rays=rays, fk=tf_next)
     elif isinstance(mod, SequentialElement):
-        if scene:
-            new_data = mod.forward_scene(data, key + ".", scene)
+        if trace:
+            new_data = mod.forward_trace(data, key + ".", trace)
         else:
             new_data = mod(data)
         return new_data

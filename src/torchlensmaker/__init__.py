@@ -103,7 +103,7 @@ from torchlensmaker.sampling.sampler_elements import (
     ZeroSampler2D,
 )
 from torchlensmaker.sampling.sampling import disk_sampling
-from torchlensmaker.sequential.optical_scene import OpticalScene
+from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential import Sequential, SequentialElement, SubChain
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
@@ -144,6 +144,7 @@ from torchlensmaker.types import (
     HomMatrix,
     ScalarTensor,
 )
+from torchlensmaker.viewer.render_model_trace import render_model_trace
 from torchlensmaker.viewer.render_sequence import (
     ForwardArtist,
     export_json,
@@ -250,7 +251,7 @@ __all__ = [
     "ZeroSampler2D",
     "disk_sampling",
     # Sequential
-    "OpticalScene",
+    "ModelTrace",
     "Sequential",
     "SequentialElement",
     "SubChain",
@@ -302,6 +303,7 @@ __all__ = [
     "render_collisions",
     "render_points",
     "render_rays",
+    "render_model_trace",
     "render_surface",
     "render_surface_local",
 ]

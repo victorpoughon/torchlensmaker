@@ -25,15 +25,22 @@ from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 
 
 @dataclass
-class OpticalScene:
+class ModelTrace:
+    """
+    A concrete realization of a model after sampling and forward evaluation,
+    including intermediate data in the model sequence
+    """
+
+    dim: int
     rays: OrderedDict[str, RayBundle]
     collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]]
     joints: OrderedDict[str, Tf]
     surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]]
 
     @classmethod
-    def empty(cls) -> Self:
+    def empty(cls, dim: int) -> Self:
         return cls(
+            dim=dim,
             rays=OrderedDict(),
             collisions=OrderedDict(),
             joints=OrderedDict(),

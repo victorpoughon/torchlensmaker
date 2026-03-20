@@ -48,10 +48,10 @@ def test_sequential_forward_scene() -> None:
         ),
     )
 
-    scene = tlm.OpticalScene.empty()
+    trace = tlm.ModelTrace.empty(dim=2)
 
-    output = optics.forward_scene(tlm.SequentialData.empty(dim=2), "", scene)
+    output = optics.forward_trace(tlm.SequentialData.empty(dim=2), "", trace)
 
-    assert len(scene.rays) == 4
-    assert len(scene.joints) == 7
-    assert len(scene.surfaces) == 3
+    assert len(trace.rays) == 4
+    assert len(trace.joints) == 7
+    assert len(trace.surfaces) == 3

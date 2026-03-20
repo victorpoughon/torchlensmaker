@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.sequential.optical_scene import OpticalScene
+from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 
 
@@ -30,7 +30,7 @@ class SequentialElement(BaseModule):
     def forward(self, data: SequentialData) -> SequentialData:
         raise NotImplementedError
 
-    def forward_scene(
-        self, data: SequentialData, prefix: str, scene: OpticalScene
+    def forward_trace(
+        self, data: SequentialData, prefix: str, trace: ModelTrace
     ) -> SequentialData:
         raise NotImplementedError
