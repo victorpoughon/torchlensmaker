@@ -20,16 +20,11 @@ from dataclasses import dataclass
 from typing import Any
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.types import Tf
 
 
 @dataclass
 class OpticalScene:
-    model: SequentialElement
-    inputs: Any
-    outputs: Any
-
     rays: OrderedDict[str, RayBundle]
     chain: OrderedDict[str, Tf]
     surfaces: OrderedDict[str, tuple[Tf, Any]]

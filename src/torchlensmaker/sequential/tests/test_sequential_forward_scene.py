@@ -13,24 +13,3 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.sequential.optical_scene import OpticalScene
-from torchlensmaker.sequential.sequential_data import SequentialData
-
-
-class SequentialElement(BaseModule):
-    """
-    Base class for sequential elements
-
-    A sequential element is an element that can be used in a Sequential model,
-    because it provides a sequential() forward method.
-    """
-
-    def forward(self, data: SequentialData) -> SequentialData:
-        raise NotImplementedError
-
-    def forward_scene(
-        self, data: SequentialData, scene: OpticalScene
-    ) -> tuple[SequentialData, OpticalScene]:
-        raise NotImplementedError

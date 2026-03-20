@@ -18,7 +18,7 @@ import operator
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator
 from itertools import islice
-from typing import Any, Self, Sequence, Type, TypeVar
+from typing import Any, Self, Sequence, Type, TypeVar, cast
 
 import torch
 import torch.nn as nn
@@ -34,6 +34,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 from torchlensmaker.light_targets.focal_point import FocalPoint
 from torchlensmaker.light_targets.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
+from torchlensmaker.sequential.optical_scene import OpticalScene
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.sequential.utils import (
@@ -97,9 +98,19 @@ class Sequential(SequentialElement):
         return iter(self._modules.values())
 
     def forward(self, data: SequentialData) -> SequentialData:
-        for mod in iter(self):
-            data = sequential_forward(mod, data)
+        for key, mod in self._modules.items():
+            mod = cast(SequentialElement, mod)
+            data = sequential_forward(mod, key, data)
         return data
+
+    def forward_scene(
+        self, data: SequentialData, scene: OpticalScene
+    ) -> tuple[SequentialData, OpticalScene]:
+        # iterate on _modules to not skip any duplicated modules
+        for key, mod in self._modules.items():
+            mod = cast(SequentialElement, mod)
+            data = sequential_forward(mod, key, data)
+        return data, scene
 
     def raytrace(
         self,
@@ -130,7 +141,9 @@ class Sequential(SequentialElement):
         return set_sampling3d(self, pupil, field, wavel)
 
 
-def sequential_forward(mod: BaseModule, data: SequentialData):
+def sequential_forward(
+    mod: BaseModule, key: str, data: SequentialData
+) -> SequentialData:
     """
     Call an element forward function with a SequentialData object
     """
