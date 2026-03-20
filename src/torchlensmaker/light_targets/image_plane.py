@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Literal, Optional, Self, Sequence, TypeAlias
+from typing import Any, Optional, Self
 
 import torch
 import torch.nn as nn
@@ -22,11 +22,9 @@ import torch.nn as nn
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
-from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.optical_surfaces.surface_propagator import SurfacePropagator
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
-
-from .surface_propagator import SurfacePropagator
 
 
 def linear_magnification(

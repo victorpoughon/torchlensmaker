@@ -130,7 +130,8 @@ from torchlensmaker.surfaces.surface_anchor import KinematicSurface
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.optical_surfaces.aperture import Aperture
-from torchlensmaker.optical_surfaces.image_plane import ImagePlane, linear_magnification
+from torchlensmaker.light_targets.image_plane import ImagePlane, linear_magnification
+from torchlensmaker.light_targets.focal_point import FocalPoint
 
 from torchlensmaker.sequential.sequential import Sequential, SubChain, SequentialElement
 from torchlensmaker.light_sources.light_sources_elements import (
@@ -145,7 +146,6 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.sequential.focal_point import FocalPoint
 
 # Top level stuff - to be reorganized
 from torchlensmaker.sequential.sequential_data import SequentialData

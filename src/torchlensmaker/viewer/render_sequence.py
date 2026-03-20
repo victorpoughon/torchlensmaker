@@ -22,13 +22,6 @@ import torch.nn as nn
 
 # from torchlensmaker.lenses import LensBase
 from torchlensmaker.core.deep_forward import deep_forward
-from torchlensmaker.sequential.focal_point import FocalPoint
-from torchlensmaker.sequential.sequential import (
-    Sequential,
-    SubChain,
-)
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.lens.lens import Lens
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
@@ -36,13 +29,20 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
+from torchlensmaker.light_targets.focal_point import FocalPoint
+from torchlensmaker.light_targets.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.aperture import Aperture
-from torchlensmaker.optical_surfaces.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.reflective_surface import ReflectiveSurface
 from torchlensmaker.optical_surfaces.refractive_surface import (
     RefractiveSurface,
     SurfacePropagator,
 )
+from torchlensmaker.sequential.sequential import (
+    Sequential,
+    SubChain,
+)
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.utils import get_elements_by_type
 
 from . import tlmviewer
 from .artists import (

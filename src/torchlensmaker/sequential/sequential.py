@@ -25,20 +25,20 @@ import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.focal_point import FocalPoint
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.sequential.sequential_element import SequentialElement
-from torchlensmaker.sequential.utils import (
-    get_elements_by_type,
-)
 from torchlensmaker.kinematics.kinematics_elements import KinematicElement
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.optical_surfaces.image_plane import ImagePlane
+from torchlensmaker.light_targets.focal_point import FocalPoint
+from torchlensmaker.light_targets.image_plane import ImagePlane
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.sequential_element import SequentialElement
+from torchlensmaker.sequential.utils import (
+    get_elements_by_type,
+)
 from torchlensmaker.types import HomMatrix, Tf
 
 
