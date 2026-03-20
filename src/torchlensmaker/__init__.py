@@ -147,6 +147,8 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling3d,
 )
 
+from torchlensmaker.sequential.optical_scene import OpticalScene
+
 # Top level stuff - to be reorganized
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.materials.material_elements import (

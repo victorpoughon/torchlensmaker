@@ -31,6 +31,6 @@ class SequentialElement(BaseModule):
         raise NotImplementedError
 
     def forward_scene(
-        self, data: SequentialData, scene: OpticalScene
-    ) -> tuple[SequentialData, OpticalScene]:
+        self, data: SequentialData, prefix: str, scene: OpticalScene
+    ) -> SequentialData:
         raise NotImplementedError

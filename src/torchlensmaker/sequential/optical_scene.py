@@ -17,14 +17,39 @@
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import Any
+from typing import Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import Tf
 
 
 @dataclass
 class OpticalScene:
     rays: OrderedDict[str, RayBundle]
-    chain: OrderedDict[str, Tf]
-    surfaces: OrderedDict[str, tuple[Tf, Any]]
+    joints: OrderedDict[str, Tf]
+    surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]]
+
+    @classmethod
+    def empty(cls) -> Self:
+        return cls(rays=OrderedDict(), joints=OrderedDict(), surfaces=OrderedDict())
+
+    def add_rays(self, key: str, rays: RayBundle) -> None:
+        self.rays[key] = rays
+
+    def add_joint(self, key: str, tf: Tf) -> None:
+        self.joints[key] = tf
+
+    def add_surface(self, key: str, tf: Tf, surface: SurfaceElement) -> None:
+        self.surfaces[key] = (tf, surface)
+
+    def add_scene(self, key: str, other: Self) -> None:
+        for k, v in other.rays.items():
+            self.add_rays(key + "." + k, v)
+
+        for k, v in other.joints.items():
+            self.add_joint(key + "." + k, v)
+
+        for k, v in other.surfaces.items():
+            self.add_surface(key + "." + k, *v)

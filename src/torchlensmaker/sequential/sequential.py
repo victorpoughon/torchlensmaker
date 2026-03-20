@@ -55,6 +55,12 @@ class SubChain(SequentialElement):
         output: SequentialData = self._sequential(data)
         return output.replace(fk=data.fk)
 
+    def forward_scene(
+        self, data: SequentialData, prefix: str, scene: OpticalScene
+    ) -> SequentialData:
+        output: SequentialData = self._sequential.forward_scene(data, prefix, scene)
+        return output.replace(fk=data.fk)
+
 
 _V = TypeVar("_V")
 
@@ -100,17 +106,17 @@ class Sequential(SequentialElement):
     def forward(self, data: SequentialData) -> SequentialData:
         for key, mod in self._modules.items():
             mod = cast(SequentialElement, mod)
-            data = sequential_forward(mod, key, data)
+            data = sequential_forward(mod, key, data, None)
         return data
 
     def forward_scene(
-        self, data: SequentialData, scene: OpticalScene
-    ) -> tuple[SequentialData, OpticalScene]:
+        self, data: SequentialData, prefix: str, scene: OpticalScene
+    ) -> SequentialData:
         # iterate on _modules to not skip any duplicated modules
         for key, mod in self._modules.items():
             mod = cast(SequentialElement, mod)
-            data = sequential_forward(mod, key, data)
-        return data, scene
+            data = sequential_forward(mod, prefix + key, data, scene)
+        return data
 
     def raytrace(
         self,
@@ -142,30 +148,42 @@ class Sequential(SequentialElement):
 
 
 def sequential_forward(
-    mod: BaseModule, key: str, data: SequentialData
+    mod: BaseModule,
+    key: str,
+    data: SequentialData,
+    scene: OpticalScene | None,
 ) -> SequentialData:
     """
-    Call an element forward function with a SequentialData object
+    Call an element forward function with a SequentialData object, optionally record in an OpticalScene
     """
 
-    def istype(typ: Any):
-        return isinstance(mod, typ)
-
-    if istype(KinematicElement):
+    if isinstance(mod, KinematicElement):
         tf = mod(data.fk)
+        if scene:
+            scene.add_joint(key, tf)
         return data.replace(fk=tf)
-    elif istype(LightSourceBase):
+    elif isinstance(mod, LightSourceBase):
         rays = mod(data.fk.direct)
+        if scene:
+            scene.add_rays(key, rays)
         return data.replace(rays=rays)
-    elif istype(OpticalSurfaceElement):
-        rays, _, tf_next = mod(data.rays, data.fk)
+    elif isinstance(mod, OpticalSurfaceElement):
+        rays, tf_surface, tf_next = mod(data.rays, data.fk)
+        if scene:
+            scene.add_joint(key, tf_next)
+            scene.add_rays(key, rays)
+            scene.add_surface(key, tf_surface, mod.surface.render())
         return data.replace(rays=rays, fk=tf_next)
-    elif istype(SequentialElement):
-        return mod(data)
-    elif istype(ImagePlane) or istype(FocalPoint):
-        # TODO add a LightSink / LightTarget base class
+    elif isinstance(mod, SequentialElement):
+        if scene:
+            new_data = mod.forward_scene(data, key + ".", scene)
+        else:
+            new_data = mod(data)
+        return new_data
+    elif isinstance(mod, ImagePlane) or isinstance(mod, FocalPoint):
+        # TODO add a LightTarget base class
         # In sequential mode, image plane is transparent to rays
-        # We compute its outputs but forward the rays bundle unchanged
+        # We compute its outputs but forward the data unchanged
         _, _ = mod(data.rays, data.fk)
         return data
     else:

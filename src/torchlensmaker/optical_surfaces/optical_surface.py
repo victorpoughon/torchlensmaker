@@ -15,11 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import BaseModule
+from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import Tf
 
 
 class OpticalSurfaceElement(BaseModule):
     def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, Tf, Tf]:
+        raise NotImplementedError
+
+    @property
+    def surface(self) -> SurfaceElement:
         raise NotImplementedError
