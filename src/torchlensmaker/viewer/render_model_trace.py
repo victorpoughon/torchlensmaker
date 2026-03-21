@@ -16,6 +16,7 @@
 
 from typing import Any, cast
 
+import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
@@ -61,20 +62,40 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
 
     for key, input_rays in trace.input_rays.items():
         input_tf = trace.input_joints[key]
-        t, normals, valid = trace.collisions[key]
 
-        ret.extend(
-            tlmviewer.render_hit_miss_rays(
-                input_rays.P,
-                input_rays.V,
-                t,
-                hom_target(input_tf.direct)[0],
-                valid,
-                variables_hit=ray_variables_dict(input_rays, valid),
-                variables_miss=ray_variables_dict(input_rays, ~valid),
-                domain=domain,
+        # if the input rays have a matching collision entry, use it to render rays as hit / miss
+        if key in trace.collisions:
+            t, normals, valid = trace.collisions[key]
+
+            ret.extend(
+                tlmviewer.render_hit_miss_rays(
+                    input_rays.P,
+                    input_rays.V,
+                    t,
+                    hom_target(input_tf.direct)[0],
+                    valid,
+                    variables_hit=ray_variables_dict(input_rays, valid),
+                    variables_miss=ray_variables_dict(input_rays, ~valid),
+                    domain=domain,
+                )
             )
-        )
+        else:
+            # else render rays until the joint
+            target = hom_target(input_tf.direct)
+            dist = torch.linalg.vector_norm(input_rays.P - target, dim=1)
+            # Always draw rays in their positive t direction
+            t = torch.abs(dist)
+            ret.extend(
+                tlmviewer.render_rays_length(
+                    input_rays.P,
+                    input_rays.V,
+                    t,
+                    layer=tlmviewer.LAYER_VALID_RAYS,
+                    variables=ray_variables_dict(input_rays),
+                    domain=domain,
+                    default_color=tlmviewer.color_valid,
+                )
+            )
 
     return ret
 
@@ -95,6 +116,15 @@ def trace_render_end_rays(
         default_color=tlmviewer.color_valid,
         layer=tlmviewer.LAYER_OUTPUT_RAYS,
     )
+
+
+def trace_render_focal_points(trace: ModelTrace) -> list[Any]:
+    ret = []
+    for key, fp in trace.focal_points.items():
+        target = hom_target(fp.direct).unsqueeze(0)
+        ret.append(tlmviewer.render_points(target, "red"))
+
+    return ret
 
 
 def render_model_trace(
@@ -120,5 +150,8 @@ def render_model_trace(
     viewer_scene["data"].extend(
         trace_render_end_rays(trace, end, ray_variables_domains)
     )
+
+    # Render focal point
+    viewer_scene["data"].extend(trace_render_focal_points(trace))
 
     return viewer_scene

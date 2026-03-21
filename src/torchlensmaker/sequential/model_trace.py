@@ -42,6 +42,7 @@ class ModelTrace:
     surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]] = field(
         default_factory=OrderedDict
     )
+    focal_points: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
 
     @classmethod
     def empty(cls, dim: int) -> Self:
@@ -66,6 +67,9 @@ class ModelTrace:
 
     def add_surface(self, key: str, tf_and_surface: tuple[Tf, SurfaceElement]) -> None:
         self.surfaces[key] = tf_and_surface
+
+    def add_focal_point(self, key: str, tf: Tf) -> None:
+        self.focal_points[key] = tf
 
     def add_scene(self, key: str, other: Self) -> None:
         def merge(this: OrderedDict[str, Any], other: OrderedDict[str, Any]):

@@ -192,6 +192,12 @@ def sequential_forward(
     elif isinstance(mod, FocalPoint):
         out = mod(data.rays, data.fk)
 
+        if trace:
+            trace.add_input_joint(key, data.fk)
+            trace.add_output_joint(key, out.tf_next)
+            trace.add_input_rays(key, data.rays)
+            trace.add_focal_point(key, data.fk)
+
         # In sequential mode, light targets are transparent to rays
         # We evaluate the optical element outputs but forward the data unchanged
         return data
