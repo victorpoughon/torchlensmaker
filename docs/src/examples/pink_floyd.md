@@ -28,7 +28,7 @@ optics = tlm.Sequential(
 
 optics.set_sampling2d(wavel=10)
 
-output = optics(tlm.default_input(dim=2))
+output = optics(tlm.SequentialData.empty(dim=2))
 
 tlm.show(optics, dim=2, end=10, controls={"color_rays": "wavelength"})
 ```

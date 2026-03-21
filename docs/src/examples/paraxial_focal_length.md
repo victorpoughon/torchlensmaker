@@ -61,7 +61,7 @@ cosmetic_points_rear = torch.tensor([
     [rear_principal_point.detach().item(), 0]
 ])
 
-scene_rear = tlm.render_sequence(optics_rear, 2, end=15)
+scene_rear = tlm.render_model(optics_rear, 2, end=15)
 scene_rear["data"].append(tlm.render_points(cosmetic_points_rear, radius=0.05))
 scene_rear["controls"] = controls
 tlm.display_scene(scene_rear)
@@ -72,9 +72,9 @@ tlm.display_scene(scene_rear)
 # Keep the lens vertex at the origin so we can display the points in the correct reference frame
 optics_front = tlm.Sequential(
     tlm.Gap(1),
-    tlm.Reversed(tlm.PointSourceAtInfinity(beam_diameter=3.0, wavelength=550)),
+    tlm.PointSourceAtInfinity(beam_diameter=3.0, wavelength=550).reverse(),
     tlm.Gap(-1),
-    tlm.Reversed(doublet),
+    doublet.reverse(),
 )
 
 optics_front.set_sampling2d(pupil=10)
@@ -84,7 +84,7 @@ cosmetic_points_front = torch.tensor([
     [front_principal_point.detach().item(), 0]
 ])
 
-scene_front = tlm.render_sequence(optics_front, 2, end=15)
+scene_front = tlm.render_model(optics_front, 2, end=15)
 scene_front["data"].append(tlm.render_points(cosmetic_points_front, radius=0.05))
 scene_front["controls"] = controls
 tlm.display_scene(scene_front)
@@ -92,7 +92,7 @@ tlm.display_scene(scene_front)
 
     Lens minimal diameter: 3.799999952316284
     Lens inner thickness: 1.4499999284744263
-    Lens outer thickness: -0.0532536506652832
+    Lens outer thickness: 1.0899138450622559
     Lens rear principal point: 0.7356008887290955
     Lens rear focal point: 12.746492385864258
     Lens rear focal length: 12.010891914367676
@@ -123,12 +123,12 @@ source = tlm.PointSourceAtInfinity(
         sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=500,
 )
-inputs = source.sequential(tlm.default_input(dim=2))
+inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
 outputs = lens(inputs)
 t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
 CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
 
-scene = tlm.render_sequence(optics_rear, 2, end=4)
+scene = tlm.render_model(optics_rear, 2, end=4)
 scene["data"].append(tlm.render_points(CP, radius=0.01))
 tlm.display_scene(scene)
 
@@ -153,21 +153,21 @@ plt.show()
 
 ```python
 # Illustration of the front equivalent refracting locus
-lens = tlm.Reversed(doublet)
+lens = doublet.reverse()
 
-source = tlm.Reversed(tlm.PointSourceAtInfinity(
+source = tlm.PointSourceAtInfinity(
         0.98 * mdiam,
         sampler_pupil_2d=tlm.LinspaceSampler1D(64),
         sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=500,
-))
+).reverse()
 
-inputs = source.sequential(tlm.default_input(dim=2))
+inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
 outputs = lens(inputs)
 t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
 CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
 
-scene = tlm.render_sequence(optics_front, 2, end=4)
+scene = tlm.render_model(optics_front, 2, end=4)
 scene["data"].append(tlm.render_points(CP, radius=0.01))
 tlm.display_scene(scene)
 
@@ -200,12 +200,12 @@ source = tlm.PointSourceAtInfinity(
         sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=500,
 )
-inputs = source.sequential(tlm.default_input(dim=2))
+inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
 outputs = lens(inputs)
 t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
 CP = outputs.rays.points_at(t)
 
-scene = tlm.render_sequence(optics_rear, 2, end=12)
+scene = tlm.render_model(optics_rear, 2, end=12)
 scene["data"].append(tlm.render_points(CP, radius=0.001))
 tlm.display_scene(scene)
 
