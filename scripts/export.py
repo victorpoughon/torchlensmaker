@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
 
+import argparse
 import os
 import os.path
 from pathlib import Path
-import argparse
+
 import nbformat
-
-from nbconvert import nbconvertapp
-
-from nbconvert import MarkdownExporter
+from nbconvert import MarkdownExporter, nbconvertapp
 from nbconvert.preprocessors import (
+    CoalesceStreamsPreprocessor,
     ExecutePreprocessor,
     RegexRemovePreprocessor,
-    CoalesceStreamsPreprocessor,
 )
 from nbconvert.writers import FilesWriter
-
 
 
 def print_md_list(folder: Path):
@@ -30,7 +27,7 @@ def main():
         description="export notebooks to markdown for inclusion in the docs",
     )
 
-    parser.add_argument("filepaths", nargs='+')
+    parser.add_argument("filepaths", nargs="+")
     parser.add_argument(
         "-s",
         "--skip",
@@ -44,11 +41,12 @@ def main():
         help="Print list at destination in md format",
     )
     parser.add_argument(
+        "-o",
         "--output-dir",
         help="Directory to write output(s) to",
         type=str,
         default=None,
-        metavar="DIR"
+        metavar="DIR",
     )
     parser.add_argument(
         "--allow-fail",
@@ -59,17 +57,22 @@ def main():
     args = parser.parse_args()
 
     for filepath in args.filepaths:
-
         try:
             # dir_path = Path(__file__).resolve().parent.parts
             fullpath = Path(filepath).resolve()
 
             if Path(filepath).is_file():
-                output_folder: Path = fullpath.parent if args.output_dir is None else Path(args.output_dir)
+                output_folder: Path = (
+                    fullpath.parent
+                    if args.output_dir is None
+                    else Path(args.output_dir)
+                )
                 print(f"Exporting notebook {filepath} to {output_folder}")
                 export_notebook(Path(filepath), output_folder, args.skip)
             elif Path(filepath).is_dir():
-                output_folder: Path = fullpath if args.output_dir is None else Path(args.output_dir)
+                output_folder: Path = (
+                    fullpath if args.output_dir is None else Path(args.output_dir)
+                )
                 print(f"Exporting all notebooks in {filepath} to {output_folder}")
                 export_all(Path(filepath), output_folder, args.skip)
             else:
@@ -79,7 +82,6 @@ def main():
             if not args.allow_fail:
                 raise
 
-        
     # Print markdown list if requested
     if args.print_md_list:
         print(f"Markdown format list for {output_folder}:")
@@ -109,7 +111,7 @@ def export_notebook(filename: Path, output_folder: Path, skip: bool) -> None:
 
     with open(filename) as f:
         nb = nbformat.read(f, as_version=4)
-    
+
     # Set env var to request vue component format
     os.environ["TLMVIEWER_TARGET_DIRECTORY"] = str(output_folder)
     os.environ["TLMVIEWER_TARGET_NAME"] = root
@@ -125,7 +127,7 @@ def export_notebook(filename: Path, output_folder: Path, skip: bool) -> None:
         # Merge consecutive sequences of stream output into single stream to
         # prevent extra newlines inserted at flush calls
         CoalesceStreamsPreprocessor(),
-        
+
         # Remove cells containing only whitespace or empty
         RegexRemovePreprocessor(patterns=[r"\s*\Z"]),
     ]
