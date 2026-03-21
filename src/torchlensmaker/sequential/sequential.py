@@ -33,6 +33,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 )
 from torchlensmaker.light_targets.focal_point import FocalPoint
 from torchlensmaker.light_targets.image_plane import ImagePlane
+from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
@@ -175,11 +176,24 @@ def sequential_forward(
         else:
             new_data = mod(data)
         return new_data
-    elif isinstance(mod, ImagePlane) or isinstance(mod, FocalPoint):
-        # TODO add a LightTarget base class
-        # In sequential mode, image plane is transparent to rays
-        # We compute its outputs but forward the data unchanged
-        _, _ = mod(data.rays, data.fk)
+    elif isinstance(mod, ImagePlane):
+        out = cast(LightTargetOutput, mod(data.rays, data.fk))
+
+        if trace:
+            trace.add_input_joint(key, data.fk)
+            trace.add_output_joint(key, out.tf_next)
+            trace.add_input_rays(key, data.rays)
+            trace.add_surface(key, (out.tf_surface, mod.surface))
+            trace.add_collision(key, out.t, out.normals, out.valid)
+
+        # In sequential mode, light targets are transparent to rays
+        # We evaluate the optical element outputs but forward the data unchanged
+        return data
+    elif isinstance(mod, FocalPoint):
+        out = mod(data.rays, data.fk)
+
+        # In sequential mode, light targets are transparent to rays
+        # We evaluate the optical element outputs but forward the data unchanged
         return data
     else:
         raise RuntimeError(f"Sequential: element type {type(mod)} not supported")

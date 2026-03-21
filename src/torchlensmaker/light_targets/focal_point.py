@@ -18,21 +18,20 @@ from typing import Any, Self
 
 import torch
 
-from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.types import BatchNDTensor, ScalarTensor, Tf
+from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.types import Tf
 
 
-class FocalPoint(BaseModule):
+class FocalPoint(LightTarget):
     def __init__(self) -> None:
         super().__init__()
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
 
-    def forward(self, rays: RayBundle, tf: Tf) -> tuple[BatchNDTensor, ScalarTensor]:
+    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
         dim = rays.P.shape[-1]
         N = rays.P.shape[0]
 
@@ -55,5 +54,12 @@ class FocalPoint(BaseModule):
 
         loss = distance.sum() / N
 
-        rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
-        return rays_image, loss
+        return LightTargetOutput(
+            rays_image=torch.zeros((), dtype=rays.dtype, device=rays.device),
+            loss=loss,
+            t=torch.zeros((), dtype=rays.dtype, device=rays.device),
+            normals=torch.zeros((), dtype=rays.dtype, device=rays.device),
+            valid=torch.zeros((), dtype=torch.bool, device=rays.device),
+            tf_surface=tf,
+            tf_next=tf,
+        )

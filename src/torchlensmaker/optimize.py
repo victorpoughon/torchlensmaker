@@ -69,8 +69,8 @@ class ImagingModel(nn.Module):
 
     def forward(self, data: SequentialData) -> ScalarTensor:
         outputs = self.optics(data)
-        _, loss = self.image_plane(outputs.rays, outputs.fk)
-        return loss
+        out = self.image_plane(outputs.rays, outputs.fk)
+        return out.loss
 
 
 def optimize(
