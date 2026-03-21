@@ -48,7 +48,7 @@ def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
 
 def render_model(
     optics: BaseModule,
-    dim: int = 2,
+    dim: int,
     dtype: torch.dtype | None = None,
     device: torch.device | None = None,
     end: Optional[float] = None,
@@ -66,7 +66,7 @@ def render_model(
     if not isinstance(optics, SequentialElement):
         optics = Sequential(optics)
 
-    trace = ModelTrace.empty(dim=2)
+    trace = ModelTrace.empty(dim=dim)
     inputs = SequentialData.empty(dim=dim, dtype=dtype, device=device)
     _ = optics.forward_trace(inputs, "", trace)
     scene = render_model_trace(optics, trace, end)
