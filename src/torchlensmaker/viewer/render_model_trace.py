@@ -20,12 +20,42 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.sequential.sequential import ModelTrace
 from torchlensmaker.sequential.utils import get_elements_by_type
+from torchlensmaker.types import MaskTensor
 from torchlensmaker.viewer import tlmviewer
-from torchlensmaker.viewer.artists import ray_variables_dict
+
+
+# TODO refactor this horror
+def ray_variables_dict(
+    rays: RayBundle, valid: MaskTensor | None = None
+) -> dict[str, torch.Tensor]:
+    "Convert ray variables from to a dict of Tensors"
+    d = {}
+
+    def update(tensor: torch.Tensor, name: str) -> None:
+        # TODO this if check is temporary to avoid a divide by zero in tlmviewer
+        # ideally we would export all three variables allways, and tlmviewer
+        # handles correctly degenerate cases like PointSource which has all
+        # field coord = 0, or a single wavelength, etc.
+        if tensor.numel() > 0 and (tensor.max() - tensor.min()) > 1e-3:
+            d[name] = filter_optional_mask(tensor, valid)
+
+    # TODO no support for 2D colormaps in tlmviewer yet
+    # but base and object are 2D variables in 3D
+    # TODO tlmviewer: rename base/object to pupil/field
+    dim = rays.P.shape[-1]
+    if dim == 2:
+        update(rays.pupil, "base")
+        update(rays.field, "object")
+
+    update(rays.wavel, "wavelength")
+
+    return d
 
 
 def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
