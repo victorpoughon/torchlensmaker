@@ -26,6 +26,7 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling3d,
 )
 from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.sequential import Sequential
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.viewer import tlmviewer as tlmviewer
@@ -68,7 +69,7 @@ def render_model(
     trace = ModelTrace.empty(dim=2)
     inputs = SequentialData.empty(dim=dim, dtype=dtype, device=device)
     _ = optics.forward_trace(inputs, "", trace)
-    scene = render_model_trace(optics, trace)
+    scene = render_model_trace(optics, trace, end)
 
     if controls is not None:
         scene["controls"] = controls

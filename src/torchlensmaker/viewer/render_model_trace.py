@@ -79,7 +79,29 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
     return ret
 
 
-def render_model_trace(model: BaseModule, trace: ModelTrace) -> Any:
+def trace_render_end_rays(
+    trace: ModelTrace, end: float | None, domain: dict[str, list[float]]
+) -> list[Any]:
+    if end is None:
+        return []
+
+    rays = next(reversed(trace.output_rays.values()))
+    return tlmviewer.render_rays_length(
+        rays.P,
+        rays.V,
+        end,
+        variables=ray_variables_dict(rays),
+        domain=domain,
+        default_color=tlmviewer.color_valid,
+        layer=tlmviewer.LAYER_OUTPUT_RAYS,
+    )
+
+
+def render_model_trace(
+    model: BaseModule,
+    trace: ModelTrace,
+    end: float | None = None,
+) -> Any:
     "Render an OpticalScene to a tlmviewer scene"
 
     dim = trace.dim
@@ -93,5 +115,10 @@ def render_model_trace(model: BaseModule, trace: ModelTrace) -> Any:
     viewer_scene["data"].extend(trace_render_surfaces(trace))
     viewer_scene["data"].extend(trace_render_joints(trace))
     viewer_scene["data"].extend(trace_render_rays(trace, ray_variables_domains))
+
+    # Render end rays, i.e. rays that
+    viewer_scene["data"].extend(
+        trace_render_end_rays(trace, end, ray_variables_domains)
+    )
 
     return viewer_scene
