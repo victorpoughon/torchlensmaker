@@ -145,10 +145,9 @@ from torchlensmaker.types import (
     ScalarTensor,
 )
 from torchlensmaker.viewer.render_model_trace import render_model_trace
-from torchlensmaker.viewer.render_sequence import (
-    ForwardArtist,
+from torchlensmaker.viewer.show import (
     export_json,
-    render_sequence,
+    render_model,
     show,
     show2d,
     show3d,
@@ -291,9 +290,8 @@ __all__ = [
     "HomMatrix",
     "ScalarTensor",
     # Viewer
-    "ForwardArtist",
     "export_json",
-    "render_sequence",
+    "render_model",
     "show",
     "show2d",
     "show3d",

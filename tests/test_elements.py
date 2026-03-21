@@ -55,7 +55,7 @@ def check_sample_and_render_2d(
     # Sample and render in 2D
     optics.set_sampling2d(pupil=10, field=5, wavel=2)
     outputs_2d = optics(tlm.SequentialData.empty(dim=2))
-    _ = tlm.render_sequence(optics, dim=2)
+    _ = tlm.render_model(optics, dim=2)
 
     # Check dtype, device
     assert_ray_bundle_dtype(outputs_2d.rays, expected_dtype)
@@ -63,12 +63,12 @@ def check_sample_and_render_2d(
 
 
 def check_sample_and_render_3d(
-    optics: tlm.BaseModule, expected_dtype: torch.device, expected_device: torch.device
+    optics: tlm.BaseModule, expected_dtype: torch.dtype, expected_device: torch.device
 ) -> None:
     # Sample and render in 3D
     optics.set_sampling3d(pupil=10, field=5, wavel=2)
     outputs_3d = optics(tlm.SequentialData.empty(dim=3))
-    _ = tlm.render_sequence(optics, dim=3)
+    _ = tlm.render_model(optics, dim=3)
 
     # Check dtype, device
     assert_ray_bundle_dtype(outputs_3d.rays, expected_dtype)

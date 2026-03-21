@@ -26,7 +26,7 @@ import torchlensmaker as tlm
 def cemented(
     surfaces: list[tlm.SurfaceElement],
     gaps: list[tlm.PositionGap],
-    materials=list[tlm.MaterialModel | str],
+    materials: list[tlm.MaterialModel | str],
     anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
 ) -> tlm.Lens:
     """

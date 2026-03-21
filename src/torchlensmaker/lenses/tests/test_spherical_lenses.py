@@ -29,7 +29,7 @@ def check_lens(lens: tlm.Lens) -> None:
     )
 
     outputs = optics(tlm.SequentialData.empty(dim=2))
-    scene = tlm.render_sequence(optics, dim=2)
+    scene = tlm.render_model(optics, dim=2)
 
 
 def test_spherical_biconvex() -> None:

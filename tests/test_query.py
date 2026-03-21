@@ -22,7 +22,7 @@ def test_query0(dtype: torch.dtype, device: torch.device):
     optics.set_sampling2d(pupil=10, field=5, wavel=3)
     outputs = optics(tlm.SequentialData.empty(dim=2))
 
-    scene = tlm.render_sequence(optics, dim=2)
+    scene = tlm.render_model(optics, dim=2)
 
     tlm.show2d(optics)
 

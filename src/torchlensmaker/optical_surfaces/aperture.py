@@ -18,12 +18,12 @@
 from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import (
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
+    SurfaceElement,
 )
 from torchlensmaker.types import ScalarTensor, Tf
 
@@ -35,6 +35,10 @@ class Aperture(OpticalSurfaceElement):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
         self.propagator = SurfacePropagator(Disk(diameter))
+
+    @property
+    def surface(self) -> SurfaceElement:
+        return self.propagator.surface
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(diameter=self.propagator.surface.diameter)

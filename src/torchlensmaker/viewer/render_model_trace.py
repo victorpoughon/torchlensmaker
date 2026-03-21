@@ -14,15 +14,29 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from typing import Any, cast
 
-from typing import Any
+import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
+from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.sequential.sequential import ModelTrace
+from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.viewer import tlmviewer
 from torchlensmaker.viewer.artists import ray_variables_dict
-from torchlensmaker.viewer.render_sequence import get_domain
+
+
+def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
+    light_sources = get_elements_by_type(optics, LightSourceBase)
+
+    if len(light_sources) == 0:
+        return {}
+
+    # TODO handle multiple light sources
+    ls = cast(LightSourceBase, light_sources[0])
+
+    return ls.domain(dim)
 
 
 def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
@@ -71,7 +85,8 @@ def render_model_trace(model: BaseModule, trace: ModelTrace) -> Any:
     dim = trace.dim
     viewer_scene = tlmviewer.new_scene("2D" if dim == 2 else "3D")
 
-    # Figure out available ray variables and their range, this will be used for coloring info by tlmviewer
+    # Figure out available ray variables and their range,
+    # this will be used for rays coloring info by tlmviewer
     ray_variables_domains = get_domain(model, dim)
 
     # Render parts of the scene: surfaces, joints, rays
