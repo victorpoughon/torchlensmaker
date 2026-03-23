@@ -95,6 +95,35 @@ def rotate_x_zy(angles: torch.Tensor) -> torch.Tensor:
     return torch.stack([x, y, z], dim=-1)  # (N, 3)
 
 
+def rotate_x_zx(angles: torch.Tensor) -> torch.Tensor:
+    """
+    Rotate a unit vector X in 3D: (1, 0, 0)
+    by provided angles Z, X.
+
+    angles: (N, 2) tensor
+        angles[:, 0] = rotation around Z
+        angles[:, 1] = rotation around X
+
+    Returns:
+        (N, 3) tensor, result of rotating (1, 0, 0) by Z then X.
+    """
+    assert angles.dim() == 2 and angles.shape[1] == 2, "angles must have shape (N, 2)"
+
+    theta_z = angles[:, 0]  # (N,)
+    theta_x = angles[:, 1]  # (N,)
+
+    cz = torch.cos(theta_z)
+    sz = torch.sin(theta_z)
+    cx = torch.cos(theta_x)
+    sx = torch.sin(theta_x)
+
+    x = cz
+    y = sz * cx
+    z = sz * sx
+
+    return torch.stack([x, y, z], dim=-1)  # (N, 3)
+
+
 def unit2d_rot(theta: float, dtype: torch.dtype | None = None) -> Tensor:
     if dtype is None:
         dtype = torch.get_default_dtype()

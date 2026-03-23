@@ -32,7 +32,7 @@ class ObjectGeometry2D(nn.Module):
         self,
         beam_angular_size: ScalarTensor | float,
         object_diameter: ScalarTensor | float,
-        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float,
     ):
         super().__init__()
         self.beam_angular_size = to_tensor(beam_angular_size)
@@ -115,7 +115,7 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         self,
         beam_diameter: ScalarTensor | float,
         angular_size: ScalarTensor | float,
-        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float,
     ):
         super().__init__()
         self.beam_diameter = to_tensor(beam_diameter)
@@ -198,7 +198,7 @@ class ObjectGeometry3D(nn.Module):
         self,
         beam_angular_size: ScalarTensor | float,
         object_diameter: ScalarTensor | float,
-        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float,
     ):
         super().__init__()
         self.beam_angular_size = to_tensor(beam_angular_size)
@@ -277,7 +277,7 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         self,
         beam_diameter: ScalarTensor | float,
         angular_size: ScalarTensor | float,
-        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float = 500,
+        wavelength: Float[torch.Tensor, " 2"] | tuple[float, float] | float,
     ):
         super().__init__()
         self.beam_diameter = to_tensor(beam_diameter)

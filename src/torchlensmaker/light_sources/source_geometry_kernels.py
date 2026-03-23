@@ -126,10 +126,12 @@ class ObjectGeometry2DKernel(FunctionalKernel):
             angular_idx, spatial_idx, wavel_idx
         )
 
-        # Convert pupil and field to physical space
+        # Convert spatial coordinates to physical space by adding X=0 to the YZ plane samples
         P = torch.stack(
             (torch.zeros_like(spatial_coords_full), spatial_coords_full), dim=-1
         )
+
+        # Convert angular coordinates to direction vectors by rotating the unit X vector
         V = torch.stack(
             (torch.cos(angular_coords_full), torch.sin(angular_coords_full)), dim=-1
         )
@@ -230,11 +232,11 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         IndexTensor,
     ]:
         device = tf.device
-        # pupil coordinates are the pupil samples over the beam angular size
+        # angular coordinates are the angular samples over the angular domain
         angular_coords = angular_samples * angular_diameter / 2
         angular_idx = torch.arange(angular_samples.size(0), device=device)
 
-        # field coordinates are the field samples over the object diameter
+        # spatial coordinates are the spatial samples over the spatial domain
         spatial_coords = spatial_samples * spatial_diameter / 2
         spatial_idx = torch.arange(spatial_samples.size(0), device=device)
 
@@ -253,7 +255,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
             angular_idx, spatial_idx, wavel_idx
         )
 
-        # Convert field to physical space by adding X=0 to the YZ plane samples
+        # Convert spatial coordinates to physical space by adding X=0 to the YZ plane samples
         Px = torch.zeros(
             (spatial_coords_full.shape[0], 1),
             dtype=spatial_coords_full.dtype,
@@ -261,7 +263,7 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         )
         P = torch.cat((Px, spatial_coords_full), dim=-1)
 
-        # Convert pupil to physical space by rotating the unit X vector
+        # Convert angular coordinates to direction vectors by rotating the unit X vector
         V = rotate_x_zy(angular_coords_full)
 
         # Apply kinematic transform

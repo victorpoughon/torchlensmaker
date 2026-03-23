@@ -128,7 +128,7 @@ def filter_optional_mask(t: Tensor, valid: Optional[Tensor]) -> Tensor:
 
 
 def meshgrid_flat(
-    *tensors: Sequence[torch.Tensor],
+    *tensors: torch.Tensor,
 ) -> tuple[torch.Tensor, ...]:
     "Like torch.meshgrid but returns flattened tensors"
 

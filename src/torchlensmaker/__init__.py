@@ -22,6 +22,8 @@ from torchlensmaker.analysis.plot_material_model import plot_material_models
 from torchlensmaker.analysis.spot_diagram import spot_diagram
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.geometry import (
+    rotate_x_zx,
+    rotate_x_zy,
     rotated_unit_vector,
     unit2d_rot,
     unit3d_rot,
@@ -29,7 +31,7 @@ from torchlensmaker.core.geometry import (
 )
 from torchlensmaker.core.parameter import parameter
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.core.tensor_manip import to_tensor
+from torchlensmaker.core.tensor_manip import meshgrid2d_flat3, to_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
     hom_identity_2d,
@@ -40,6 +42,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_append,
     kinematic_chain_extend,
     transform_points,
+    transform_rays,
     transform_vectors,
 )
 from torchlensmaker.kinematics.kinematics_elements import (
@@ -65,6 +68,7 @@ from torchlensmaker.lens.position_gap import (
     position_gap_to_anchors,
 )
 from torchlensmaker.light_sources.light_sources_elements import (
+    GenericLightSource,
     LightSourceBase,
     Object,
     ObjectAtInfinity,
@@ -179,6 +183,9 @@ __all__ = [
     "parameter",
     "RayBundle",
     "to_tensor",
+    "rotate_x_zy",
+    "rotate_x_zx",
+    "meshgrid2d_flat3",
     # Kinematics
     "hom_identity",
     "hom_identity_2d",
@@ -190,6 +197,7 @@ __all__ = [
     "kinematic_chain_extend",
     "transform_points",
     "transform_vectors",
+    "transform_rays",
     "AbsolutePosition3D",
     "Gap",
     "KinematicElement",
@@ -211,6 +219,7 @@ __all__ = [
     "lenses",
     # Light Sources
     "LightSourceBase",
+    "GenericLightSource",
     "Object",
     "ObjectAtInfinity",
     "PointSource",
