@@ -18,7 +18,7 @@ import operator
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator
 from itertools import islice
-from typing import Any, Self, Sequence, Type, TypeVar, cast
+from typing import Any, Callable, Self, Sequence, Type, TypeVar, cast
 
 import torch
 import torch.nn as nn
@@ -109,6 +109,10 @@ class Sequential(SequentialElement):
             mod = cast(SequentialElement, mod)
             data = sequential_forward(mod, key, data, None)
         return data
+
+    def __call__(self, data: SequentialData) -> SequentialData:
+        # this is there only so that type hints work
+        return cast(SequentialData, super().__call__(data))
 
     def forward_trace(
         self, data: SequentialData, prefix: str, trace: ModelTrace
