@@ -49,16 +49,7 @@ class SequentialData:
 
         tfid = hom_identity(dim, dtype, device)
 
-        rays = RayBundle.create(
-            P=torch.empty((0, dim), dtype=dtype),
-            V=torch.empty((0, dim), dtype=dtype),
-            pupil=torch.empty((0, dim), dtype=dtype),
-            field=torch.empty((0, dim), dtype=dtype),
-            wavel=torch.empty((0,), dtype=dtype),
-            pupil_idx=torch.empty((0,), dtype=torch.int64),
-            field_idx=torch.empty((0,), dtype=torch.int64),
-            wavel_idx=torch.empty((0,), dtype=torch.int64),
-        )
+        rays = RayBundle.empty(dim, dtype, device)
 
         return cls(
             fk=tfid,

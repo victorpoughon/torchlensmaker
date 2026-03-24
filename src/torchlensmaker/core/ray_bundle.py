@@ -42,6 +42,7 @@ class RayBundle:
     pupil_idx: IndexTensor
     field_idx: IndexTensor
     wavel_idx: IndexTensor
+    source_idx: IndexTensor
 
     @classmethod
     def create(
@@ -54,6 +55,7 @@ class RayBundle:
         pupil_idx: IndexTensor,
         field_idx: IndexTensor,
         wavel_idx: IndexTensor,
+        source_idx: IndexTensor,
     ) -> Self:
         float_dtype = P.dtype
         assert float_dtype == V.dtype
@@ -63,6 +65,7 @@ class RayBundle:
         assert pupil_idx.dtype == torch.int64
         assert field_idx.dtype == torch.int64
         assert wavel_idx.dtype == torch.int64
+        assert source_idx.dtype == torch.int64
 
         device = P.device
         assert device == V.device
@@ -73,7 +76,32 @@ class RayBundle:
         assert device == field_idx.device
         assert device == wavel_idx.device
 
-        return cls(P, V, pupil, field, wavel, pupil_idx, field_idx, wavel_idx)
+        return cls(
+            P,
+            V,
+            pupil,
+            field,
+            wavel,
+            pupil_idx,
+            field_idx,
+            wavel_idx,
+            source_idx,
+        )
+
+    @classmethod
+    def empty(cls, dim: int, dtype: torch.dtype, device: torch.device) -> Self:
+        coords_shape = (0,) if dim == 2 else (0, 2)
+        return cls.create(
+            P=torch.empty((0, dim), dtype=dtype),
+            V=torch.empty((0, dim), dtype=dtype),
+            pupil=torch.empty(coords_shape, dtype=dtype),
+            field=torch.empty(coords_shape, dtype=dtype),
+            wavel=torch.empty((0,), dtype=dtype),
+            pupil_idx=torch.empty((0,), dtype=torch.int64),
+            field_idx=torch.empty((0,), dtype=torch.int64),
+            wavel_idx=torch.empty((0,), dtype=torch.int64),
+            source_idx=torch.empty((0,), dtype=torch.int64),
+        )
 
     @property
     def dtype(self) -> torch.dtype:
@@ -100,6 +128,20 @@ class RayBundle:
             pupil_idx=self.pupil_idx[valid],
             field_idx=self.field_idx[valid],
             wavel_idx=self.wavel_idx[valid],
+            source_idx=self.source_idx[valid],
+        )
+
+    def cat(self, other: Self) -> Self:
+        return type(self)(
+            P=torch.cat((self.P, other.P)),
+            V=torch.cat((self.V, other.V)),
+            pupil=torch.cat((self.pupil, other.pupil)),
+            field=torch.cat((self.field, other.field)),
+            wavel=torch.cat((self.wavel, other.wavel)),
+            pupil_idx=torch.cat((self.pupil_idx, other.pupil_idx)),
+            field_idx=torch.cat((self.field_idx, other.field_idx)),
+            wavel_idx=torch.cat((self.wavel_idx, other.wavel_idx)),
+            source_idx=torch.cat((self.source_idx, other.source_idx)),
         )
 
     def points_at(self, t: BatchTensor) -> BatchNDTensor:

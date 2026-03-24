@@ -57,6 +57,7 @@ class GenericLightSource(LightSourceBase):
         geometry_2d: nn.Module,
         geometry_3d: nn.Module,
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__()
         self.sampler_pupil_2d = sampler_pupil_2d
@@ -68,6 +69,7 @@ class GenericLightSource(LightSourceBase):
         self.geometry_2d = geometry_2d
         self.geometry_3d = geometry_3d
         self.reversed = reversed
+        self.source_idx: int = source_idx
 
     def reverse(self) -> Self:
         return self.clone(reversed=not self.reversed)
@@ -116,6 +118,11 @@ class GenericLightSource(LightSourceBase):
         if self.reversed:
             V = -V
 
+        # Source idx is user provided
+        source_idx = torch.full(
+            pupil_idx.shape, self.source_idx, dtype=torch.int64, device=device
+        )
+
         return RayBundle.create(
             P=P,
             V=V,
@@ -125,6 +132,7 @@ class GenericLightSource(LightSourceBase):
             pupil_idx=pupil_idx,
             field_idx=field_idx,
             wavel_idx=wavel_idx,
+            source_idx=source_idx,
         )
 
 
@@ -141,6 +149,7 @@ class Object(GenericLightSource):
         sampler_field_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__(
             sampler_pupil_2d=sampler_pupil_2d,
@@ -156,6 +165,7 @@ class Object(GenericLightSource):
                 beam_angular_size, object_diameter, wavelength
             ),
             reversed=reversed,
+            source_idx=source_idx,
         )
 
     def clone(self, **overrides: Any) -> Self:
@@ -172,6 +182,7 @@ class Object(GenericLightSource):
             sampler_field_3d=self.sampler_field_3d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,
+            source_idx=self.source_idx,
         )
         return type(self)(**kwargs | overrides)
 
@@ -189,6 +200,7 @@ class ObjectAtInfinity(GenericLightSource):
         sampler_field_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__(
             sampler_pupil_2d=sampler_pupil_2d,
@@ -204,6 +216,7 @@ class ObjectAtInfinity(GenericLightSource):
                 beam_diameter, angular_size, wavelength
             ),
             reversed=reversed,
+            source_idx=source_idx,
         )
 
     def clone(self, **overrides: Any) -> Self:
@@ -220,6 +233,7 @@ class ObjectAtInfinity(GenericLightSource):
             sampler_field_3d=self.sampler_field_3d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,
+            source_idx=self.source_idx,
         )
         return type(self)(**kwargs | overrides)
 
@@ -234,6 +248,7 @@ class PointSource(GenericLightSource):
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__(
             sampler_pupil_2d=sampler_pupil_2d,
@@ -253,6 +268,7 @@ class PointSource(GenericLightSource):
                 wavelength=wavelength,
             ),
             reversed=reversed,
+            source_idx=source_idx,
         )
 
     def clone(self, **overrides: Any) -> Self:
@@ -266,6 +282,7 @@ class PointSource(GenericLightSource):
             sampler_pupil_3d=self.sampler_pupil_3d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,
+            source_idx=self.source_idx,
         )
         return type(self)(**kwargs | overrides)
 
@@ -280,6 +297,7 @@ class PointSourceAtInfinity(GenericLightSource):
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__(
             sampler_pupil_2d=sampler_pupil_2d,
@@ -299,6 +317,7 @@ class PointSourceAtInfinity(GenericLightSource):
                 wavelength=wavelength,
             ),
             reversed=reversed,
+            source_idx=source_idx,
         )
 
     def clone(self, **overrides: Any) -> Self:
@@ -312,6 +331,7 @@ class PointSourceAtInfinity(GenericLightSource):
             sampler_pupil_3d=self.sampler_pupil_3d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,
+            source_idx=self.source_idx,
         )
         return type(self)(**kwargs | overrides)
 
@@ -323,6 +343,7 @@ class RaySource(GenericLightSource):
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
         reversed: bool = False,
+        source_idx: int = 0,
     ):
         super().__init__(
             sampler_pupil_2d=ZeroSampler1D(),
@@ -342,6 +363,7 @@ class RaySource(GenericLightSource):
                 wavelength=wavelength,
             ),
             reversed=reversed,
+            source_idx=source_idx,
         )
 
     def clone(self, **overrides: Any) -> Self:
@@ -352,5 +374,6 @@ class RaySource(GenericLightSource):
             sampler_wavel_2d=self.sampler_wavel_2d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,
+            source_idx=self.source_idx,
         )
         return type(self)(**kwargs | overrides)
