@@ -27,6 +27,9 @@ from .homogeneous_geometry import (
     hom_identity_3d,
     hom_rotate_2d,
     hom_rotate_3d,
+    hom_rotate_x_3d,
+    hom_rotate_y_3d,
+    hom_rotate_z_3d,
     hom_translate_2d,
     hom_translate_3d,
     kinematic_chain_append_2d,
@@ -130,6 +133,64 @@ class Rotate2DKernel(FunctionalKernel):
         return (torch.tensor(0.1, dtype=dtype, device=device),)
 
 
+class RotateX3DKernel(FunctionalKernel):
+    "3D rotation around the X axis in degrees"
+
+    inputs = {}
+    params = {"theta": ScalarTensor}
+    outputs = {"joint": Tf}
+
+    def apply(self, theta: ScalarTensor) -> Tf:
+        return hom_rotate_x_3d(torch.deg2rad(theta))
+
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor]:
+        return (torch.tensor(0.1, dtype=dtype, device=device),)
+
+
+class RotateY3DKernel(FunctionalKernel):
+    "3D rotation around the Y axis in degrees"
+
+    inputs = {}
+    params = {"theta": ScalarTensor}
+    outputs = {"joint": Tf}
+
+    def apply(self, theta: ScalarTensor) -> Tf:
+        return hom_rotate_y_3d(torch.deg2rad(theta))
+
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor]:
+        return (torch.tensor(0.1, dtype=dtype, device=device),)
+
+
+class RotateZ3DKernel(FunctionalKernel):
+    "3D rotation around the Z axis in degrees"
+
+    inputs = {}
+    params = {"theta": ScalarTensor}
+    outputs = {"joint": Tf}
+
+    def apply(self, theta: ScalarTensor) -> Tf:
+        return hom_rotate_z_3d(torch.deg2rad(theta))
+
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+        return tuple()
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor]:
+        return (torch.tensor(0.1, dtype=dtype, device=device),)
+
+
+# TODO remove
 class Rotate3DKernel(FunctionalKernel):
     "3D rotation in degrees"
 
@@ -140,7 +201,7 @@ class Rotate3DKernel(FunctionalKernel):
     def apply(self, y: ScalarTensor, z: ScalarTensor) -> Tf:
         return hom_rotate_3d(y, z)
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(

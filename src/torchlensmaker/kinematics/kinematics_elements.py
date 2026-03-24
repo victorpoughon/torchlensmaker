@@ -36,6 +36,9 @@ from .kinematics_kernels import (
     KinematicChainAppend3DKernel,
     Rotate2DKernel,
     Rotate3DKernel,
+    RotateX3DKernel,
+    RotateY3DKernel,
+    RotateZ3DKernel,
     Translate2DKernel,
     Translate3DKernel,
 )
@@ -323,6 +326,100 @@ class AbsolutePosition3D(KinematicElement):
         return self.kernel_joint.apply(self.x, self.y, self.z)
 
 
+class RotateX(KinematicElement):
+    "3D rotation around the X axis, in degrees"
+
+    def __init__(
+        self,
+        angle: float | ScalarTensor | nn.Parameter,
+        trainable: bool = False,
+        reversed: bool = False,
+    ):
+        super().__init__(reversed)
+        self.kernel_joint = RotateX3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
+        self.angle = init_param(self, "angle", angle, trainable)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs: dict[str, Any] = dict(
+            angle=self.angle,
+            trainable=self.angle.requires_grad,
+            reversed=self.reversed,
+        )
+        return type(self)(**kwargs | overrides)
+
+    def forward(self, fk: Tf) -> Tf:
+        joint = self.kernel_joint.apply(self.angle)
+
+        if self.reversed:
+            joint = joint.flip()
+
+        return self.kernel_fk3d.apply(fk, joint)
+
+
+class RotateY(KinematicElement):
+    "3D rotation around the Y axis, in degrees"
+
+    def __init__(
+        self,
+        angle: float | ScalarTensor | nn.Parameter,
+        trainable: bool = False,
+        reversed: bool = False,
+    ):
+        super().__init__(reversed)
+        self.kernel_joint = RotateY3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
+        self.angle = init_param(self, "angle", angle, trainable)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs: dict[str, Any] = dict(
+            angle=self.angle,
+            trainable=self.angle.requires_grad,
+            reversed=self.reversed,
+        )
+        return type(self)(**kwargs | overrides)
+
+    def forward(self, fk: Tf) -> Tf:
+        joint = self.kernel_joint.apply(self.angle)
+
+        if self.reversed:
+            joint = joint.flip()
+
+        return self.kernel_fk3d.apply(fk, joint)
+
+
+class RotateZ(KinematicElement):
+    "3D rotation around the Z axis, in degrees"
+
+    def __init__(
+        self,
+        angle: float | ScalarTensor | nn.Parameter,
+        trainable: bool = False,
+        reversed: bool = False,
+    ):
+        super().__init__(reversed)
+        self.kernel_joint = RotateZ3DKernel()
+        self.kernel_fk3d = KinematicChainAppend3DKernel()
+        self.angle = init_param(self, "angle", angle, trainable)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs: dict[str, Any] = dict(
+            angle=self.angle,
+            trainable=self.angle.requires_grad,
+            reversed=self.reversed,
+        )
+        return type(self)(**kwargs | overrides)
+
+    def forward(self, fk: Tf) -> Tf:
+        joint = self.kernel_joint.apply(self.angle)
+
+        if self.reversed:
+            joint = joint.flip()
+
+        return self.kernel_fk3d.apply(fk, joint)
+
+
+# TODO remove
 class Rotate3D(KinematicElement):
     def __init__(
         self,

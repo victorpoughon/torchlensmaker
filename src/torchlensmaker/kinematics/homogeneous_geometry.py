@@ -122,6 +122,56 @@ def hom_rotate_2d(theta: Float[torch.Tensor, ""]) -> Tf:
     return Tf(rot, rot.T)
 
 
+def hom_rotate_x_3d(theta: Float[torch.Tensor, ""]) -> Tf:
+    "3D rotation around the X axis in radians"
+
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+    zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
+    one = torch.ones((), dtype=theta.dtype, device=theta.device)
+    M = torch.stack(
+        (
+            torch.stack((one, zero, zero)),
+            torch.stack((zero, cos, -sin)),
+            torch.stack((zero, sin, cos)),
+        )
+    )
+
+    return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
+
+
+def hom_rotate_y_3d(theta: Float[torch.Tensor, ""]) -> Tf:
+    "3D rotation around the Y axis in radians"
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+    zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
+    one = torch.ones((), dtype=theta.dtype, device=theta.device)
+    M = torch.stack(
+        (
+            torch.stack((cos, zero, sin)),
+            torch.stack((zero, one, zero)),
+            torch.stack((-sin, zero, cos)),
+        )
+    )
+    return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
+
+
+def hom_rotate_z_3d(theta: Float[torch.Tensor, ""]) -> Tf:
+    "3D rotation around the Z axis in radians"
+    cos = torch.cos(theta)
+    sin = torch.sin(theta)
+    zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
+    one = torch.ones((), dtype=theta.dtype, device=theta.device)
+    M = torch.stack(
+        (
+            torch.stack((cos, -sin, zero)),
+            torch.stack((sin, cos, zero)),
+            torch.stack((zero, zero, one)),
+        )
+    )
+    return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
+
+
 def hom_rotate_3d(y: Float[torch.Tensor, ""], z: Float[torch.Tensor, ""]) -> Tf:
     """
     Transform for a 2 axis euler angles 3D rotation in degrees
