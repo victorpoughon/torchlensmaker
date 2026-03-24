@@ -156,10 +156,11 @@ def sequential_forward(
             trace.add_output_joint(key, tf)
         return data.replace(fk=tf)
     elif isinstance(mod, LightSourceBase):
-        new_rays = mod(data.fk.direct)
+        # Merge this light source rays with any previous rays
+        new_rays = data.rays.cat(mod(data.fk.direct))
         if trace:
             trace.add_output_rays(key, new_rays)
-        return data.replace(rays=data.rays.cat(new_rays))
+        return data.replace(rays=new_rays)
     elif isinstance(mod, OpticalSurfaceElement):
         new_rays, t, normals, valid, tf_surface, tf_next = mod(data.rays, data.fk)
         if trace:
