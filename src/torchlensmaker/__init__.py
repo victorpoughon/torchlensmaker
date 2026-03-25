@@ -17,6 +17,7 @@
 import torch
 import torch.optim as optim
 
+from torchlensmaker.analysis.colors import default_colormap
 from torchlensmaker.analysis.plot_magnification import plot_magnification
 from torchlensmaker.analysis.plot_material_model import plot_material_models
 from torchlensmaker.analysis.spot_diagram import spot_diagram
@@ -177,6 +178,7 @@ __all__ = [
     "plot_magnification",
     "plot_material_models",
     "spot_diagram",
+    "default_colormap",
     # Core
     "BaseModule",
     "rotated_unit_vector",
