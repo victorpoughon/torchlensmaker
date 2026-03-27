@@ -17,16 +17,12 @@
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
+from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
+from torchlensmaker.types import Tf
 
 
 class OpticalSurfaceElement(BaseModule):
     def forward(
         self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        raise NotImplementedError
-
-    @property
-    def surface(self) -> SurfaceElement:
+    ) -> tuple[RayBundle, SurfaceElementOutput]:
         raise NotImplementedError

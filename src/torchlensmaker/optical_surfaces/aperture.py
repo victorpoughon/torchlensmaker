@@ -24,24 +24,20 @@ from torchlensmaker.surfaces.surface_element import (
     BatchTensor,
     MaskTensor,
     SurfaceElement,
+    SurfaceElementOutput,
 )
 from torchlensmaker.types import ScalarTensor, Tf
 
 from .optical_surface import OpticalSurfaceElement
-from .surface_propagator import SurfacePropagator
 
 
 class Aperture(OpticalSurfaceElement):
     def __init__(self, diameter: float | ScalarTensor):
         super().__init__()
-        self.propagator = SurfacePropagator(Disk(diameter))
-
-    @property
-    def surface(self) -> SurfaceElement:
-        return self.propagator.surface
+        self.surface = Disk(diameter)
 
     def clone(self, **overrides: Any) -> Self:
-        kwargs: dict[str, Any] = dict(diameter=self.propagator.surface.diameter)
+        kwargs: dict[str, Any] = dict(diameter=self.surface.diameter)
         return type(self)(**kwargs | overrides)
 
     def reverse(self) -> Self:
@@ -49,5 +45,8 @@ class Aperture(OpticalSurfaceElement):
 
     def forward(
         self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        return self.propagator(rays, tf)
+    ) -> tuple[RayBundle, SurfaceElementOutput]:
+        sout = self.surface(rays.P, rays.V, tf)
+        # TODO should probably propagate for consistency?
+        new_rays = rays.mask(sout.valid)
+        return new_rays, sout

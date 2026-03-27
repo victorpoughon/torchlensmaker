@@ -147,16 +147,3 @@ class RayBundle:
     def points_at(self, t: BatchTensor) -> BatchNDTensor:
         "Points on rays at parametric distance t"
         return self.P + t.unsqueeze(-1) * self.V
-
-    def propagate_absorb(self, t: BatchTensor, valid: MaskTensor) -> Self:
-        "Propagate rays by distance t, removing non valid rays"
-        collision_points = self.points_at(t)
-        return self.mask(valid).replace(P=collision_points[valid])
-
-    def reorient(self, V: BatchNDTensor) -> Self:
-        "Reorient rays to a new direction"
-        return self.replace(V=V)
-
-    def reorient_absorb(self, V: BatchNDTensor, valid: MaskTensor) -> Self:
-        "Reorient rays to a new direction, removing non valid rays"
-        return self.mask(valid).replace(V=V[valid])

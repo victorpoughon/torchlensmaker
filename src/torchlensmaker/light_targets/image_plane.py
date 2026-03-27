@@ -21,7 +21,6 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
-from torchlensmaker.optical_surfaces.surface_propagator import SurfacePropagator
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
@@ -56,18 +55,14 @@ class ImagePlane(LightTarget):
         magnification: Optional[int | float | ScalarTensor] = None,
     ):
         super().__init__()
-        self.propagator = SurfacePropagator(Disk(diameter))
+        self.surface = Disk(diameter)
         self.magnification = (
             to_tensor(magnification) if magnification is not None else None
         )
 
-    @property
-    def surface(self) -> SurfaceElement:
-        return self.propagator.surface
-
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
-            diameter=self.propagator.surface.diameter,
+            diameter=self.surface.diameter,
             magnification=self.magnification,
         )
         return type(self)(**kwargs | overrides)
@@ -77,26 +72,23 @@ class ImagePlane(LightTarget):
 
     def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
         # Collision detection
-        rays_propagated, t, normals, valid, tf_surface, tf_next = self.propagator(
-            rays, tf
+        sout = self.surface(rays.P, rays.V, tf)
+        rays_propagated = rays.mask(sout.valid).replace(
+            P=sout.points_global[sout.valid]
         )
 
-        # check no rays special case after propagator
-        # so we can still render
+        # check no rays special case after we've performed surface collision
+        # so we can still render the surface
         if rays.V.shape[0] == 0:
             rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(
-                rays_image, loss, t, normals, valid, tf_surface, tf_next
-            )
+            return LightTargetOutput(rays_image, loss, sout)
 
         # TODO 2D only for now
         if rays.V.shape[-1] == 3:
             rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(
-                rays_image, loss, t, normals, valid, tf_surface, tf_next
-            )
+            return LightTargetOutput(rays_image, loss, sout)
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
@@ -119,6 +111,4 @@ class ImagePlane(LightTarget):
         else:
             loss = torch.sum(torch.pow(res, 2))
 
-        return LightTargetOutput(
-            rays_image, loss, t, normals, valid, tf_surface, tf_next
-        )
+        return LightTargetOutput(rays_image, loss, sout)

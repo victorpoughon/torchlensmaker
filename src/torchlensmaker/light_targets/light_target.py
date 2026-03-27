@@ -19,6 +19,7 @@ from typing import NamedTuple
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
@@ -31,11 +32,7 @@ from torchlensmaker.types import (
 class LightTargetOutput(NamedTuple):
     rays_image: BatchNDTensor
     loss: ScalarTensor
-    t: BatchTensor
-    normals: BatchNDTensor
-    valid: MaskTensor
-    tf_surface: Tf
-    tf_next: Tf
+    surface_outputs: SurfaceElementOutput
 
 
 class LightTarget(BaseModule):

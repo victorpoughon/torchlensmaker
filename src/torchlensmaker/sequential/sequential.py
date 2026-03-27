@@ -166,15 +166,17 @@ def sequential_forward(
             trace.add_output_rays(key, new_rays)
         return data.replace(rays=new_rays)
     elif isinstance(mod, OpticalSurfaceElement):
-        new_rays, t, normals, valid, tf_surface, tf_next = mod(data.rays, data.fk)
+        new_rays, surface_outputs = mod(data.rays, data.fk)
         if trace:
             trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, tf_next)
+            trace.add_output_joint(key, surface_outputs.tf_next)
             trace.add_input_rays(key, data.rays)
             trace.add_output_rays(key, new_rays)
-            trace.add_surface(key, (tf_surface, mod.surface))
-            trace.add_collision(key, t, normals, valid)
-        return data.replace(rays=new_rays, fk=tf_next)
+            trace.add_surface(key, (surface_outputs.tf_surface, mod.surface))
+            trace.add_collision(
+                key, surface_outputs.t, surface_outputs.normals, surface_outputs.valid
+            )
+        return data.replace(rays=new_rays, fk=surface_outputs.tf_next)
     elif isinstance(mod, SequentialElement):
         if trace:
             new_data = mod.forward_trace(data, key + ".", trace)
@@ -186,10 +188,15 @@ def sequential_forward(
 
         if trace:
             trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, out.tf_next)
+            trace.add_output_joint(key, out.surface_outputs.tf_next)
             trace.add_input_rays(key, data.rays)
-            trace.add_surface(key, (out.tf_surface, mod.surface))
-            trace.add_collision(key, out.t, out.normals, out.valid)
+            trace.add_surface(key, (out.surface_outputs.tf_surface, mod.surface))
+            trace.add_collision(
+                key,
+                out.surface_outputs.t,
+                out.surface_outputs.normals,
+                out.surface_outputs.valid,
+            )
 
         # In sequential mode, light targets are transparent to rays
         # We evaluate the optical element outputs but forward the data unchanged
@@ -199,7 +206,7 @@ def sequential_forward(
 
         if trace:
             trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, out.tf_next)
+            trace.add_output_joint(key, out.surface_outputs.tf_next)
             trace.add_input_rays(key, data.rays)
             trace.add_focal_point(key, data.fk)
 

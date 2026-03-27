@@ -21,6 +21,7 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.types import Tf
 
 
@@ -57,9 +58,13 @@ class FocalPoint(LightTarget):
         return LightTargetOutput(
             rays_image=torch.zeros((), dtype=rays.dtype, device=rays.device),
             loss=loss,
-            t=torch.zeros((), dtype=rays.dtype, device=rays.device),
-            normals=torch.zeros((), dtype=rays.dtype, device=rays.device),
-            valid=torch.zeros((), dtype=torch.bool, device=rays.device),
-            tf_surface=tf,
-            tf_next=tf,
+            surface_outputs=SurfaceElementOutput(
+                t=None,
+                normals=None,
+                valid=None,
+                points_local=None,
+                points_global=None,
+                tf_surface=tf,
+                tf_next=tf,
+            ),  # TODO probably need to use an actual surface for focal point, plane?
         )

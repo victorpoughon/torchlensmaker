@@ -29,14 +29,15 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
     from .lens import Lens
 
 
-def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
-    "Thickness of a lens at the center"
-
+def extract_surface_vertices(
+    lens: "Lens", dtype: torch.dtype, device: torch.device
+) -> tuple[Tf, Tf]:
     # We assume here that the lens first and last elements are surfaces
     first_surface, lens_core, last_surface = (
         lens.first_surface,
@@ -44,15 +45,24 @@ def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
         lens.last_surface,
     )
 
+    # Evaluate the lens with zero rays, so we can extract surface transforms
+    data = SequentialData.empty(2, dtype, device)
+    rays, first_surface_outputs = first_surface(data.rays, data.fk)
+    front_vertex_tf = first_surface_outputs.tf_surface
+    data = lens_core(data.replace(rays=rays, fk=first_surface_outputs.tf_next))
+    _, last_surface_outputs = last_surface(data.rays, data.fk)
+    rear_vertex_tf = last_surface_outputs.tf_surface
+
+    return front_vertex_tf, rear_vertex_tf
+
+
+def lens_inner_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
+    "Thickness of a lens at the center"
     # Infer dtype, device from the first gap element
     dtype, device = lens.dtype, lens.device
 
-    # Evaluate the lens with zero rays, so we can extract surface transforms
-    data = SequentialData.empty(2, dtype, device)
-
-    rays, _, _, _, front_vertex_tf, fk = first_surface(data.rays, data.fk)
-    data = lens_core(data.replace(rays=rays, fk=fk))
-    _, _, _, _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
+    # Extract surface transforms for vertices
+    front_vertex_tf, rear_vertex_tf = extract_surface_vertices(lens, dtype, device)
 
     root = torch.zeros((2,), dtype=dtype, device=device)
     front_vertex = transform_points(front_vertex_tf.direct, root)
@@ -91,12 +101,8 @@ def lens_outer_thickness(lens: "Lens") -> Float[torch.Tensor, ""]:
     # Infer dtype, device from the first gap element
     dtype, device = lens.dtype, lens.device
 
-    # Evaluate the lens with zero rays, so we can extract surface transforms
-    data = SequentialData.empty(2, dtype, device)
-
-    rays, _, _, _, front_vertex_tf, fk = first_surface(data.rays, data.fk)
-    data = lens_core(data.replace(rays=rays, fk=fk))
-    _, _, _, _, rear_vertex_tf, _ = last_surface(data.rays, data.fk)
+    # Extract surface transforms for vertices
+    front_vertex_tf, rear_vertex_tf = extract_surface_vertices(lens, dtype, device)
 
     # Append translation along X to include the surface outer edge extent
     zero = torch.zeros((), dtype=dtype, device=device)

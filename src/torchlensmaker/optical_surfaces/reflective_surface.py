@@ -20,40 +20,19 @@ from typing import Any, Self
 import torch
 import torch.nn as nn
 
-from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.physics.physics_elements import ReflectiveInterface
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
+from torchlensmaker.physics.physics_kernels import ReflectionKernel
+from torchlensmaker.surfaces.surface_element import SurfaceElement, SurfaceElementOutput
+from torchlensmaker.types import Tf
 
 from .optical_surface import OpticalSurfaceElement
-from .surface_propagator import SurfacePropagator
-
-
-class SurfaceReflector(nn.Module):
-    """
-    Implements reflection at a surface boundary to reorient a ray bundle
-    """
-
-    def __init__(self):
-        super().__init__()
-        self.reflective_interface = ReflectiveInterface()
-
-    def forward(self, rays: RayBundle, normals: BatchNDTensor) -> RayBundle:
-        reflected = self.reflective_interface(rays.V, normals)
-        return rays.reorient(reflected)
 
 
 class ReflectiveSurface(OpticalSurfaceElement):
     def __init__(self, surface: SurfaceElement):
         super().__init__()
-        self.propagator = SurfacePropagator(surface)
-        self.reflector = SurfaceReflector()
-
-    @property
-    def surface(self) -> SurfaceElement:
-        return self.propagator.surface
+        self.surface = surface
+        self.func = ReflectionKernel()
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(surface=self.surface)
@@ -64,10 +43,15 @@ class ReflectiveSurface(OpticalSurfaceElement):
 
     def forward(
         self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
-        rays_propagated, t, normals, valid, tf_surface, fk_next = self.propagator(
-            rays, tf
-        )
-        rays_reflected = self.reflector(rays_propagated, normals)
+    ) -> tuple[RayBundle, SurfaceElementOutput]:
+        # Raytrace with the surface
+        sout = self.surface(rays.P, rays.V, tf)
 
-        return rays_reflected, t, normals, valid, tf_surface, fk_next
+        # Compute optical reflection
+        reflected = self.func.apply(rays.V[sout.valid], sout.normals[sout.valid])
+
+        # Filter the ray bundle for valid collisions
+        points = sout.points_global[sout.valid]
+        rays_reflected = rays.mask(sout.valid).replace(P=points, V=reflected)
+
+        return rays_reflected, sout
