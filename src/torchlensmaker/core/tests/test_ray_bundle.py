@@ -30,6 +30,7 @@ def test_ray_bundle() -> None:
         pupil_idx=torch.tensor([[0]], dtype=torch.int64),
         field_idx=torch.tensor([[0]], dtype=torch.int64),
         wavel_idx=torch.tensor([0], dtype=torch.int64),
+        source_idx=torch.tensor([42], dtype=torch.int64),
     )
 
     print(rays)

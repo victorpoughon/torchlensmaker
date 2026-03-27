@@ -121,8 +121,6 @@ class ConicSurfaceKernel(FunctionalKernel):
         ScalarTensor,
         ScalarTensor,
         ScalarTensor,
-        Float[torch.Tensor, " 2"],
-        ScalarTensor,
         Bool[torch.Tensor, ""],
     ]:
         return (
@@ -156,12 +154,14 @@ class ConicOuterExtentSurfaceKernel(FunctionalKernel):
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[(ScalarTensor)]:
         return (torch.tensor(1.0, dtype=dtype, device=device),)
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
+    ) -> tuple[ScalarTensor, ScalarTensor, ScalarTensor, Bool[torch.Tensor, ""]]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),

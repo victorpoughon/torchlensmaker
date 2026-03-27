@@ -126,7 +126,6 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         ScalarTensor,
         ScalarTensor,
         Float[torch.Tensor, "P Q"],
-        ScalarTensor,
         Bool[torch.Tensor, ""],
     ]:
         return (

@@ -117,7 +117,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
-            sag_function,
+            sag_function,  # type: ignore
             self.num_iter,
             self.damping,
             self.tol,
@@ -147,8 +147,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         ScalarTensor,
         ScalarTensor,
         ScalarTensor,
-        Float[torch.Tensor, " 2"],
-        ScalarTensor,
+        Float[torch.Tensor, " N"],
         Bool[torch.Tensor, ""],
     ]:
         return (
@@ -192,12 +191,20 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor]:
         return (torch.tensor(1.0, dtype=dtype, device=device),)
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
+    ) -> tuple[
+        ScalarTensor,
+        ScalarTensor,
+        ScalarTensor,
+        Float[torch.Tensor, " N"],
+        Bool[torch.Tensor, ""],
+    ]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
             torch.tensor(0.5, dtype=dtype, device=device),

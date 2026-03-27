@@ -60,7 +60,7 @@ def sag_surface_2d(
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, Tf, Tf]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
@@ -94,7 +94,7 @@ def sag_surface_3d(
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, Tf, Tf]:
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
