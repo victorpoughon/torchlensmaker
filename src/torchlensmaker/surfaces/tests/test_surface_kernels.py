@@ -70,7 +70,7 @@ kernels_library: Dict[str, FunctionalKernel] = {
 }
 
 
-def test_kinematics_kernels_inputs_and_params(
+def test_surface_kernels_inputs_and_params(
     dtype: torch.dtype, device: torch.device
 ) -> None:
     # Export, load, compare eval on example inputs
@@ -78,13 +78,13 @@ def test_kinematics_kernels_inputs_and_params(
         check_kernels_example_inputs_and_params(name, kernel, dtype, device)
 
 
-def test_kinematics_kernels_eval(dtype: torch.dtype, device: torch.device) -> None:
+def test_surface_kernels_eval(dtype: torch.dtype, device: torch.device) -> None:
     # Export, load, compare eval on example inputs
     for name, kernel in kernels_library.items():
         check_kernels_eval(name, kernel, dtype, device)
 
 
-def test_kinematics_kernels_export_onnx(
+def test_surface_kernels_export_onnx(
     dtype: torch.dtype, device: torch.device, tmp_path: Path
 ) -> None:
     # Note this test only works in float32 as of Jan 2026
