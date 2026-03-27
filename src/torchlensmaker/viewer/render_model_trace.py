@@ -176,7 +176,7 @@ def render_model_trace(
     viewer_scene["data"].extend(trace_render_joints(trace))
     viewer_scene["data"].extend(trace_render_rays(trace, ray_variables_domains))
 
-    # Render end rays, i.e. rays that
+    # Render end rays
     viewer_scene["data"].extend(
         trace_render_end_rays(trace, end, ray_variables_domains)
     )

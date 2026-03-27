@@ -310,7 +310,7 @@ def render_rays_length(
         assert length.dim() in {0, 1}
 
     if isinstance(length, Tensor) and length.dim() == 1:
-        length = length.unsqueeze(1).expand_as(V)
+        length = length.unsqueeze(-1).expand_as(V)
 
     return [
         render_rays(

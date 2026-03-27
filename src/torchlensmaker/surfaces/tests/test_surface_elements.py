@@ -33,6 +33,7 @@ from torchlensmaker.surfaces.surface_conic import Conic
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.surfaces.surface_parabola import Parabola
+from torchlensmaker.surfaces.surface_plane import Plane
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
 )
@@ -198,6 +199,7 @@ def check_surface_module_3d(
 def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> None:
     surfaces_2d = [
         Disk(10.0),
+        Plane(10.0),
         SphereByCurvature(10.0, C=0.0),
         SphereByCurvature(10.0, C=0.5),
         SphereByCurvature(10.0, C=-0.5),
@@ -219,6 +221,7 @@ def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> No
 def test_sag_surfaces_modules_3d(dtype: torch.dtype, device: torch.device) -> None:
     surfaces_3d = [
         Disk(10.0),
+        Plane(10.0),
         SphereByCurvature(10, 0.05),
         SphereByRadius(10, 5),
         Parabola(10.0, A=-0.0),

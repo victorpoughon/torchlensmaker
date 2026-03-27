@@ -28,6 +28,7 @@ from torchlensmaker.surfaces.surface_disk import (
     DiskSurfaceKernel,
 )
 from torchlensmaker.surfaces.surface_parabola import ParabolaSurfaceKernel
+from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
     SphereByCurvatureSurfaceKernel,
@@ -67,6 +68,8 @@ kernels_library: Dict[str, FunctionalKernel] = {
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
     "Disk2D": DiskSurfaceKernel(2),
     "Disk3D": DiskSurfaceKernel(3),
+    "Plane2D": PlaneSurfaceKernel(2),
+    "Plane3D": PlaneSurfaceKernel(3),
 }
 
 
