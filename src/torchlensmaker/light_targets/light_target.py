@@ -30,7 +30,6 @@ from torchlensmaker.types import (
 
 
 class LightTargetOutput(NamedTuple):
-    rays_image: BatchNDTensor
     loss: ScalarTensor
     surface_outputs: SurfaceElementOutput
 

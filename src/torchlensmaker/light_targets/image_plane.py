@@ -80,23 +80,20 @@ class ImagePlane(LightTarget):
         # check no rays special case after we've performed surface collision
         # so we can still render the surface
         if rays.V.shape[0] == 0:
-            rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(rays_image, loss, sout)
+            return LightTargetOutput(loss, sout)
 
         # TODO 2D only for now
         if rays.V.shape[-1] == 3:
-            rays_image = torch.zeros((), dtype=rays.dtype, device=rays.device)
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(rays_image, loss, sout)
+            return LightTargetOutput(loss, sout)
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
 
-        collision_points = rays_propagated.P
-        rays_image = collision_points[:, 1]
+        rays_image = sout.points_local[:, 1]
         rays_object = rays_propagated.field
 
         # Compute loss
@@ -111,4 +108,4 @@ class ImagePlane(LightTarget):
         else:
             loss = torch.sum(torch.pow(res, 2))
 
-        return LightTargetOutput(rays_image, loss, sout)
+        return LightTargetOutput(loss, sout)

@@ -56,7 +56,6 @@ class FocalPoint(LightTarget):
         loss = distance.sum() / N
 
         return LightTargetOutput(
-            rays_image=torch.zeros((), dtype=rays.dtype, device=rays.device),
             loss=loss,
             surface_outputs=SurfaceElementOutput(
                 t=None,
