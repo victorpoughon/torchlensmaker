@@ -40,7 +40,7 @@ from .sag_functions import (
     xypolynomial_sag_3d,
 )
 from .sag_surface import sag_surface_3d
-from .surface_element import SurfaceElement
+from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 class XYPolynomialSurfaceKernel(FunctionalKernel):
@@ -73,6 +73,8 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
+        "points_local": BatchNDTensor,
+        "points_global": BatchNDTensor,
     }
 
     def __init__(self, num_iter: int, damping: float, tol: float):
@@ -90,7 +92,7 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         coefficients: Float[torch.Tensor, " P Q"],
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         # XYPolynomial is 3D only because it's freeform
         sag_function = partial(
             sag_sum_3d,
@@ -197,9 +199,7 @@ class XYPolynomial(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         # TODO raise nice error if 2D
         kernel_surface = self.func3d
         kernel_anchor = self.kernel_anchor3d
@@ -207,7 +207,7 @@ class XYPolynomial(SurfaceElement):
         zero = torch.zeros((), dtype=P.dtype, device=P.device)
         tf_surface, tf_next = kernel_anchor.apply(zero, zero, self.scale, tf)
 
-        t, normal, valid = kernel_surface.apply(
+        t, normal, valid, points_local, points_global = kernel_surface.apply(
             P,
             V,
             tf_surface,
@@ -218,7 +218,9 @@ class XYPolynomial(SurfaceElement):
             self.normalize,
         )
 
-        return t, normal, valid, tf_surface, tf_next
+        return SurfaceElementOutput(
+            t, normal, valid, points_local, points_global, tf_surface, tf_next
+        )
 
     def render(self) -> Any:
         return {

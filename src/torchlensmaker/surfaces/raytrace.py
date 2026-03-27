@@ -44,7 +44,7 @@ def surface_raytrace(
     V: BatchNDTensor,
     tf: Tf,
     local_solver: LocalSolver,
-) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
+) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     """
     Surface raytracing
 
@@ -57,6 +57,8 @@ def surface_raytrace(
         * t: parameter such that P + tV is the surface ray intersection point
         * normals: normal unit vectors at the intersection, such that dot(normal, V) < 0
         * valid: boolean mask, true where there is a valid intersection
+        * points_local: intersection points in surface local frame
+        * points_global: intersection points in global frame
     """
 
     # Convert rays to surface local frame
@@ -76,4 +78,7 @@ def surface_raytrace(
     # Convert normals to global frame
     global_normals = transform_vectors(tf.direct, opposite_normals)
 
-    return t, global_normals, valid
+    points_local = P_local + t.unsqueeze(-1) * V_local
+    points_global = P + t.unsqueeze(-1) * V
+
+    return t, global_normals, valid, points_local, points_global

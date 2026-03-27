@@ -60,7 +60,7 @@ def sag_surface_2d(
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
@@ -79,9 +79,7 @@ def sag_surface_2d(
     )
 
     # Perform raytrace
-    t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
-
-    return t, normals, valid
+    return surface_raytrace(P, V, tf_in, local_solver)
 
 
 def sag_surface_3d(
@@ -94,7 +92,7 @@ def sag_surface_3d(
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch3DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = torch.where(normalize, diameter / 2, one)
@@ -113,6 +111,4 @@ def sag_surface_3d(
     )
 
     # Perform raytrace
-    t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
-
-    return t, normals, valid
+    return surface_raytrace(P, V, tf_in, local_solver)

@@ -36,7 +36,7 @@ class SurfacePropagator(nn.Module):
         self, rays: RayBundle, tf: Tf
     ) -> tuple[RayBundle, BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
         # Raytrace with the surface
-        t, normals, valid_collision, tf_surface, fk_next = self.surface(
+        surface_outputs = self.surface(
             rays.P,
             rays.V,
             tf,
@@ -44,6 +44,13 @@ class SurfacePropagator(nn.Module):
 
         # First step: propagate rays forward to their collision point
         # This produces a new ray bundle, with possibly fewer rays
-        new_rays = rays.propagate_absorb(t, valid_collision)
-        normals = normals[valid_collision]
-        return new_rays, t, normals, valid_collision, tf_surface, fk_next
+        new_rays = rays.propagate_absorb(surface_outputs.t, surface_outputs.valid)
+        normals = surface_outputs.normals[surface_outputs.valid]
+        return (
+            new_rays,
+            surface_outputs.t,
+            normals,
+            surface_outputs.valid,
+            surface_outputs.tf_surface,
+            surface_outputs.tf_next,
+        )

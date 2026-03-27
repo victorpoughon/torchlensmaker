@@ -46,7 +46,7 @@ from .sag_functions import (
     sag_sum_3d,
 )
 from .sag_surface import sag_surface_2d, sag_surface_3d
-from .surface_element import SurfaceElement
+from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 class AsphereSurfaceKernel(FunctionalKernel):
@@ -78,6 +78,8 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
+        "points_local": BatchNDTensor,
+        "points_global": BatchNDTensor,
     }
 
     def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
@@ -96,7 +98,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         alphas: Float[torch.Tensor, " N"],
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         if self.dim == 2:
             sag_function = partial(
                 sag_sum_2d,
@@ -276,9 +278,7 @@ class Asphere(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 
-    def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         kernel_surface = self.func2d if tf.pdim() == 2 else self.func3d
         kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
@@ -287,7 +287,7 @@ class Asphere(SurfaceElement):
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
-        t, normal, valid = kernel_surface.apply(
+        t, normal, valid, points_local, points_global = kernel_surface.apply(
             P,
             V,
             tf_surface,
@@ -298,7 +298,9 @@ class Asphere(SurfaceElement):
             self.normalize,
         )
 
-        return t, normal, valid, tf_surface, tf_next
+        return SurfaceElementOutput(
+            t, normal, valid, points_local, points_global, tf_surface, tf_next
+        )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return self.kernel_outer_extent.apply(

@@ -41,7 +41,7 @@ from torchlensmaker.types import (
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
-from .surface_element import SurfaceElement
+from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
@@ -218,6 +218,8 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
+        "points_local": BatchNDTensor,
+        "points_global": BatchNDTensor,
         "surface_tf": Tf,
         "next_tf": Tf,
     }
@@ -234,7 +236,9 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
         R: ScalarTensor,
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[
+        BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor, Tf, Tf
+    ]:
         # Setup the local solver for this surface class
         local_solver = partial(sphere_radius_raytracing, diameter=diameter, R=R)
 
@@ -251,9 +255,11 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
             )
 
         # Perform raytrace
-        t, normals, valid = surface_raytrace(P, V, tf_surface, local_solver)
+        t, normals, valid, points_local, points_global = surface_raytrace(
+            P, V, tf_surface, local_solver
+        )
 
-        return t, normals, valid, tf_surface, tf_next
+        return t, normals, valid, points_local, points_global, tf_surface, tf_next
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -312,11 +318,11 @@ class SphereByRadius(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 
-    def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
+        return SurfaceElementOutput(
+            *func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
+        )
 
     def render(self) -> Any:
         return {

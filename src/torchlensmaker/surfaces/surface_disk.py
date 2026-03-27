@@ -41,7 +41,7 @@ from torchlensmaker.types import (
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
 from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
-from .surface_element import SurfaceElement
+from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 def intersection_disk_2d(
@@ -94,8 +94,8 @@ class DiskSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
+        "points_local": BatchNDTensor,
+        "points_global": BatchNDTensor,
     }
 
     def __init__(self, dim: int):
@@ -107,11 +107,13 @@ class DiskSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         solver = intersection_disk_2d if self.dim == 2 else intersection_disk_3d
         local_solver = partial(solver, diameter=diameter)
-        t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
-        return t, normals, valid, tf_in.clone(), tf_in.clone()
+        t, normals, valid, points_local, points_global = surface_raytrace(
+            P, V, tf_in, local_solver
+        )
+        return (t, normals, valid, points_local, points_global)
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -150,9 +152,11 @@ class Disk(SurfaceElement):
 
     def forward(
         self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> SurfaceElementOutput:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
-        return func.apply(P, V, tf, self.diameter)
+        return SurfaceElementOutput(
+            *func.apply(P, V, tf, self.diameter), tf.clone(), tf.clone()
+        )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)

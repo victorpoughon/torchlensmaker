@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Self
+from typing import Any, NamedTuple, Self
 
 import torch.nn as nn
 
@@ -26,6 +26,25 @@ from torchlensmaker.types import (
     ScalarTensor,
     Tf,
 )
+
+
+class SurfaceElementOutput(NamedTuple):
+    """
+    Return type of all surface elements
+
+    Evaluating a surface module realizes three things:
+        * ray-surface collisions
+        * the kinematic transform with the joint added by the surface
+        * the surface transform
+    """
+
+    t: BatchTensor  # P+tV are the collision points
+    normals: BatchNDTensor  # unit normals at the collision points (global frame)
+    valid: MaskTensor  # boolean mask for valid collisions
+    points_local: BatchNDTensor  # collision points (surface frame)
+    points_global: BatchNDTensor  # collision points (global frame)
+    tf_surface: Tf  # surface transform
+    tf_next: Tf  # next transform of the kinematic chain
 
 
 class SurfaceElement(BaseModule):
@@ -44,9 +63,7 @@ class SurfaceElement(BaseModule):
         """
         raise NotImplementedError
 
-    def forward(
-        self, P: BatchTensor, V: BatchTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         raise NotImplementedError
 
     def render(self) -> Any:

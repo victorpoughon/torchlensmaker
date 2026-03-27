@@ -31,6 +31,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.surfaces.surface_asphere import Asphere
 from torchlensmaker.surfaces.surface_conic import Conic
 from torchlensmaker.surfaces.surface_disk import Disk
+from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.surfaces.surface_parabola import Parabola
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
@@ -42,47 +43,51 @@ from torchlensmaker.types import BatchNDTensor, Tf
 
 def check_model_eval(
     model: nn.Module, inputs: tuple[BatchNDTensor, BatchNDTensor, Tf]
-) -> Any:
+) -> SurfaceElementOutput:
     "Evaluate a model forwards and run sanity checks"
 
     # Check the forward pass
-    t, normals, valid, tf_surface, tf_next = model(*inputs)
-    assert t.isfinite().all()
-    assert normals.isfinite().all()
-    assert valid.isfinite().all()
-    assert tf_surface.direct.isfinite().all()
-    assert tf_surface.inverse.isfinite().all()
-    assert tf_next.direct.isfinite().all()
-    assert tf_next.inverse.isfinite().all()
+    outputs = model(*inputs)
+    assert outputs.t.isfinite().all()
+    assert outputs.normals.isfinite().all()
+    assert outputs.valid.isfinite().all()
+    assert outputs.points_local.isfinite().all()
+    assert outputs.points_global.isfinite().all()
+    assert outputs.tf_surface.direct.isfinite().all()
+    assert outputs.tf_surface.inverse.isfinite().all()
+    assert outputs.tf_next.direct.isfinite().all()
+    assert outputs.tf_next.inverse.isfinite().all()
 
-    return t, normals, valid, tf_surface, tf_next
+    return outputs
 
 
 def check_model_eval_and_grad(
     model: nn.Module,
     inputs: tuple[BatchNDTensor, BatchNDTensor, Tf],
     allow_none_grad: bool = False,
-) -> Any:
+) -> SurfaceElementOutput:
     """
     Evaluate a model forwards and backwards and run sanity checks
     Expects at least one trainable parameter
     """
 
     # Check the forward pass
-    t, normals, valid, tf_surface, tf_next = model(*inputs)
-    assert t.isfinite().all()
-    assert normals.isfinite().all()
-    assert valid.isfinite().all()
-    assert tf_surface.direct.isfinite().all()
-    assert tf_surface.inverse.isfinite().all()
-    assert tf_next.direct.isfinite().all()
-    assert tf_next.inverse.isfinite().all()
+    outputs = model(*inputs)
+    assert outputs.t.isfinite().all()
+    assert outputs.normals.isfinite().all()
+    assert outputs.valid.isfinite().all()
+    assert outputs.points_local.isfinite().all()
+    assert outputs.points_global.isfinite().all()
+    assert outputs.tf_surface.direct.isfinite().all()
+    assert outputs.tf_surface.inverse.isfinite().all()
+    assert outputs.tf_next.direct.isfinite().all()
+    assert outputs.tf_next.inverse.isfinite().all()
 
     # Check the backward pass
     parameters = list(model.named_parameters())
     assert len(parameters) > 0
 
-    loss = t.pow(2).sum() + tf_next.direct.sum().pow(2)
+    loss = outputs.t.pow(2).sum() + outputs.tf_next.direct.sum().pow(2)
     model.zero_grad()
     loss.backward()  # type: ignore[no-untyped-call]
     for name, param in parameters:
@@ -93,7 +98,7 @@ def check_model_eval_and_grad(
                 f"Gradient of {name} contains NaN or Inf: {param.grad}"
             )
 
-    return t, normals, valid, tf_surface, tf_next
+    return outputs
 
 
 def check_surface_module_2d(
@@ -110,24 +115,34 @@ def check_surface_module_2d(
     tfid = hom_identity_2d(dtype, device)
 
     if trainable:
-        t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid), allow_none_grad
-        )
+        outputs = check_model_eval_and_grad(mod, (P, V, tfid), allow_none_grad)
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
+        outputs = check_model_eval(mod, (P, V, tfid))
 
     # Check output is sane
-    assert t.shape == (N,)
-    assert normals.shape == (N, 2)
-    assert valid.shape == (N,)
-    assert tf_surface.shape == (3, 3)
-    assert tf_next.shape == (3, 3)
+    assert outputs.t.shape == (N,)
+    assert outputs.normals.shape == (N, 2)
+    assert outputs.valid.shape == (N,)
+    assert outputs.points_local.shape == (N, 2)
+    assert outputs.points_global.shape == (N, 2)
+    assert outputs.tf_surface.shape == (3, 3)
+    assert outputs.tf_next.shape == (3, 3)
 
-    assert t.device == device
-    assert normals.device == device
-    assert valid.device == device
-    assert tf_surface.device == device
-    assert tf_next.device == device
+    assert outputs.t.dtype == dtype
+    assert outputs.normals.dtype == dtype
+    assert outputs.valid.dtype == torch.bool
+    assert outputs.points_local.dtype == dtype
+    assert outputs.points_global.dtype == dtype
+    assert outputs.tf_surface.dtype == dtype
+    assert outputs.tf_next.dtype == dtype
+
+    assert outputs.t.device == device
+    assert outputs.normals.device == device
+    assert outputs.valid.device == device
+    assert outputs.points_local.device == device
+    assert outputs.points_global.device == device
+    assert outputs.tf_surface.device == device
+    assert outputs.tf_next.device == device
 
     # Check that surface can be cloned
     mod.clone()
@@ -147,24 +162,34 @@ def check_surface_module_3d(
     tfid = hom_identity_3d(dtype, device)
 
     if trainable:
-        t, normals, valid, tf_surface, tf_next = check_model_eval_and_grad(
-            mod, (P, V, tfid), allow_none_grad
-        )
+        outputs = check_model_eval_and_grad(mod, (P, V, tfid), allow_none_grad)
     else:
-        t, normals, valid, tf_surface, tf_next = check_model_eval(mod, (P, V, tfid))
+        outputs = check_model_eval(mod, (P, V, tfid))
 
     # Check output is sane
-    assert t.shape == (N,)
-    assert normals.shape == (N, 3)
-    assert valid.shape == (N,)
-    assert tf_surface.shape == (4, 4)
-    assert tf_next.shape == (4, 4)
+    assert outputs.t.shape == (N,)
+    assert outputs.normals.shape == (N, 3)
+    assert outputs.valid.shape == (N,)
+    assert outputs.points_local.shape == (N, 3)
+    assert outputs.points_global.shape == (N, 3)
+    assert outputs.tf_surface.shape == (4, 4)
+    assert outputs.tf_next.shape == (4, 4)
 
-    assert t.device == device
-    assert normals.device == device
-    assert valid.device == device
-    assert tf_surface.device == device
-    assert tf_next.device == device
+    assert outputs.t.dtype == dtype
+    assert outputs.normals.dtype == dtype
+    assert outputs.valid.dtype == torch.bool
+    assert outputs.points_local.dtype == dtype
+    assert outputs.points_global.dtype == dtype
+    assert outputs.tf_surface.dtype == dtype
+    assert outputs.tf_next.dtype == dtype
+
+    assert outputs.t.device == device
+    assert outputs.normals.device == device
+    assert outputs.valid.device == device
+    assert outputs.points_local.device == device
+    assert outputs.points_global.device == device
+    assert outputs.tf_surface.device == device
+    assert outputs.tf_next.device == device
 
     # Check that surface can be cloned
     mod.clone()
