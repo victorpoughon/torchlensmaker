@@ -82,6 +82,10 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         "wavelength_samples": {0: "N_wavelength"},
     }
 
+    # seems to be some issue with meshgrid in some cases
+    # maybe swithing to arange would help, to be investigated
+    export_legacy = True
+
     def apply(
         self,
         tf: HomMatrix,
@@ -210,6 +214,10 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         "spatial_samples": {0: "N_spatial"},
         "wavelength_samples": {0: "N_wavelength"},
     }
+
+    # seems to be some issue with meshgrid in some cases
+    # maybe swithing to arange would help, to be investigated
+    export_legacy = True
 
     def apply(
         self,
