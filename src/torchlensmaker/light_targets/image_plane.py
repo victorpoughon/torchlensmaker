@@ -112,11 +112,11 @@ class ImagePlane(LightTarget):
 
         return LightTargetOutput(loss, sout)
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
-        output = self(data.rays, data.fk)
+    def sequential(self, data: SequentialData) -> SequentialData:
+        _ = self(data.rays, data.fk)
         # In sequential mode, light targets are transparent to rays
         # We evaluate the optical element outputs but forward the data unchanged
-        return data, (data.rays, data.fk), output
+        return data
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
         input_rays, input_tf = inputs

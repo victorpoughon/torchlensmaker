@@ -46,9 +46,9 @@ class SubChain(BaseModule):
         output: SequentialData = self._sequential(data)
         return output.replace(fk=data.fk)
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         new_data = self(data)
-        return new_data, data, new_data
+        return new_data
 
 
 _V = TypeVar("_V")
@@ -95,12 +95,12 @@ class Sequential(BaseModule):
     def forward(self, data: SequentialData) -> SequentialData:
         for key, mod in self._modules.items():
             mod = cast(BaseModule, mod)
-            data, _, _ = mod.sequential(data)
+            data = mod.sequential(data)
         return data
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         new_data = self(data)
-        return new_data, data, new_data
+        return new_data
 
     def __call__(self, data: SequentialData) -> SequentialData:
         # this is there only so that type hints work

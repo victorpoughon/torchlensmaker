@@ -46,10 +46,10 @@ class LightSourceBase(BaseModule):
     def forward(self, tf: HomMatrix) -> RayBundle:
         raise NotImplementedError
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         # Merge this light source rays with any previous rays
         new_rays = data.rays.cat(self(data.fk.direct))
-        return data.replace(rays=new_rays), data.fk.direct, new_rays
+        return data.replace(rays=new_rays)
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
         trace.add_output_rays(key, outputs)

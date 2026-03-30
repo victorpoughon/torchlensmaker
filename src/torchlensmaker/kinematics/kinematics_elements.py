@@ -60,9 +60,9 @@ class KinematicElement(BaseModule):
         trace.add_input_joint(key, inputs)
         trace.add_output_joint(key, outputs)
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         tf_out = self(data.fk)
-        return data.replace(fk=tf_out), data.fk, tf_out
+        return data.replace(fk=tf_out)
 
 
 class Gap(KinematicElement):

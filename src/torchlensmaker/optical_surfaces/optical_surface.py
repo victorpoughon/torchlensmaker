@@ -31,13 +31,9 @@ class OpticalSurfaceElement(BaseModule):
     ) -> tuple[RayBundle, SurfaceElementOutput]:
         raise NotImplementedError
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         new_rays, surface_outputs = self(data.rays, data.fk)
-        return (
-            data.replace(rays=new_rays, fk=surface_outputs.tf_next),
-            (data.rays, data.fk),
-            (new_rays, surface_outputs),
-        )
+        return data.replace(rays=new_rays, fk=surface_outputs.tf_next)
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
         input_rays, input_tf = inputs

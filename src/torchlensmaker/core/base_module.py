@@ -44,7 +44,7 @@ class BaseModule(nn.Module):
             f"reverse() not implemented for {type(self).__qualname__}"
         )
 
-    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+    def sequential(self, data: SequentialData) -> SequentialData:
         raise NotImplementedError(
             f"sequential() not implemented for {type(self).__qualname__}"
         )
