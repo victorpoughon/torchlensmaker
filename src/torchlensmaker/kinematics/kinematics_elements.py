@@ -52,10 +52,6 @@ class KinematicElement(BaseModule):
     def reverse(self) -> Self:
         return self.clone(reversed=not self.reversed)
 
-    def sequential(self, data: SequentialData) -> SequentialData:
-        fk = self(data.fk)
-        return data.replace(fk=fk)
-
     def forward(self, fk: Tf) -> Tf:
         raise NotImplementedError
 

@@ -38,10 +38,6 @@ class Debug(nn.Module):
         super().__init__()
         self.func = func
 
-    def sequential(self, data):
-        self.func(data)
-        return data
-
 
 def get_elements_by_type(module: nn.Module, typ: Type[nn.Module]) -> nn.ModuleList:
     """
