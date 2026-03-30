@@ -184,7 +184,7 @@ class SphereByCurvature(SurfaceElement):
         *,
         anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
         scale: float | ScalarTensor = 1.0,
-        trainable: bool = True,
+        trainable: bool = False,
         normalize: bool = False,
         num_iter: int = 12,
         damping: float = 0.95,

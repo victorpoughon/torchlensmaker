@@ -295,7 +295,7 @@ class SphereByRadius(SurfaceElement):
         *,
         anchors: tuple[float, float] | Float[torch.Tensor, " 2"] = (0.0, 0.0),
         scale: float | ScalarTensor = 1.0,
-        trainable: bool = True,
+        trainable: bool = False,
     ):
         super().__init__()
         self.diameter = init_param(self, "diameter", diameter, False)
