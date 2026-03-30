@@ -21,6 +21,8 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.types import Tf
 
@@ -67,3 +69,16 @@ class FocalPoint(LightTarget):
                 tf_next=tf,
             ),  # TODO probably need to use an actual surface for focal point, plane?
         )
+
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        out = self(data.rays, data.fk)
+        # In sequential mode, light targets are transparent to rays
+        # We evaluate the optical element outputs but forward the data unchanged
+        return data, (data.rays, data.fk), out
+
+    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+        input_rays, input_tf = inputs
+        trace.add_input_joint(key, input_tf)
+        trace.add_output_joint(key, outputs.surface_outputs.tf_next)
+        trace.add_input_rays(key, input_rays)
+        trace.add_focal_point(key, input_tf)

@@ -15,10 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
-from typing import Any, Self
+from typing import Any, DefaultDict, Self
 
+from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
@@ -80,3 +81,29 @@ class ModelTrace:
         merge(self.input_joints, other.input_joints)
         merge(self.output_joints, other.output_joints)
         merge(self.surfaces, other.surfaces)
+
+
+def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> ModelTrace:
+    trace = ModelTrace.empty(dim=dim)
+
+    # keep track of how many times we called each module type to produce unique default keys
+    counts: DefaultDict[Any, int] = defaultdict(int)
+
+    def hookfn(mod: BaseModule, ins: Any, outs: Any) -> None:
+        default_key = f"{type(mod).__qualname__}.{counts[type(mod)]}"
+        counts[type(mod)] += 1
+        try:
+            key = mod.trace_key or default_key
+        except Exception:
+            key = default_key
+
+        if hasattr(mod, "trace") and callable(mod.trace):
+            mod.trace(trace, key, ins, outs)
+
+    hooks: list[Any] = []
+    for _, module in optics.named_modules():
+        hooks.append(module.register_forward_hook(hookfn))
+
+    _ = optics(*inputs)
+
+    return trace

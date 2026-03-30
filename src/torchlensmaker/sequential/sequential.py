@@ -18,33 +18,23 @@ import operator
 from collections import OrderedDict
 from collections.abc import Iterable, Iterator
 from itertools import islice
-from typing import Any, Callable, Self, Sequence, Type, TypeVar, cast
+from typing import Any, Self, Sequence, Type, TypeVar, cast
 
 import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.kinematics.kinematics_elements import KinematicElement
-from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.light_targets.focal_point import FocalPoint
-from torchlensmaker.light_targets.image_plane import ImagePlane
-from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
-from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceElement
-from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.sequential.sequential_element import SequentialElement
 from torchlensmaker.sequential.utils import (
     get_elements_by_type,
 )
-from torchlensmaker.types import HomMatrix, Tf
 
 
-class SubChain(SequentialElement):
+class SubChain(BaseModule):
     def __init__(self, *children: BaseModule):
         super().__init__()
         self._sequential = Sequential(*children)
@@ -56,17 +46,15 @@ class SubChain(SequentialElement):
         output: SequentialData = self._sequential(data)
         return output.replace(fk=data.fk)
 
-    def forward_trace(
-        self, data: SequentialData, prefix: str, trace: ModelTrace
-    ) -> SequentialData:
-        output: SequentialData = self._sequential.forward_trace(data, prefix, trace)
-        return output.replace(fk=data.fk)
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        new_data = self(data)
+        return new_data, data, new_data
 
 
 _V = TypeVar("_V")
 
 
-class Sequential(SequentialElement):
+class Sequential(BaseModule):
     def __init__(self, *args: BaseModule):
         super().__init__()
         if len(args) == 1 and isinstance(args[0], OrderedDict):
@@ -106,22 +94,17 @@ class Sequential(SequentialElement):
 
     def forward(self, data: SequentialData) -> SequentialData:
         for key, mod in self._modules.items():
-            mod = cast(SequentialElement, mod)
-            data = sequential_forward(mod, key, data, None)
+            mod = cast(BaseModule, mod)
+            data, _, _ = mod.sequential(data)
         return data
+
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        new_data = self(data)
+        return new_data, data, new_data
 
     def __call__(self, data: SequentialData) -> SequentialData:
         # this is there only so that type hints work
         return cast(SequentialData, super().__call__(data))
-
-    def forward_trace(
-        self, data: SequentialData, prefix: str, trace: ModelTrace
-    ) -> SequentialData:
-        # iterate on _modules to not skip any duplicated modules
-        for key, mod in self._modules.items():
-            mod = cast(SequentialElement, mod)
-            data = sequential_forward(mod, prefix + key, data, trace)
-        return data
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)
@@ -141,77 +124,3 @@ class Sequential(SequentialElement):
         wavel: int | Sequence[float] | None = None,
     ) -> None:
         return set_sampling3d(self, pupil, field, wavel)
-
-
-def sequential_forward(
-    mod: BaseModule,
-    key: str,
-    data: SequentialData,
-    trace: ModelTrace | None,
-) -> SequentialData:
-    """
-    Call an element forward function with a SequentialData object, optionally record in an OpticalScene
-    """
-
-    if isinstance(mod, KinematicElement):
-        tf = mod(data.fk)
-        if trace:
-            trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, tf)
-        return data.replace(fk=tf)
-    elif isinstance(mod, LightSourceBase):
-        # Merge this light source rays with any previous rays
-        new_rays = data.rays.cat(mod(data.fk.direct))
-        if trace:
-            trace.add_output_rays(key, new_rays)
-        return data.replace(rays=new_rays)
-    elif isinstance(mod, OpticalSurfaceElement):
-        new_rays, surface_outputs = mod(data.rays, data.fk)
-        if trace:
-            trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, surface_outputs.tf_next)
-            trace.add_input_rays(key, data.rays)
-            trace.add_output_rays(key, new_rays)
-            trace.add_surface(key, (surface_outputs.tf_surface, mod.surface))
-            trace.add_collision(
-                key, surface_outputs.t, surface_outputs.normals, surface_outputs.valid
-            )
-        return data.replace(rays=new_rays, fk=surface_outputs.tf_next)
-    elif isinstance(mod, SequentialElement):
-        if trace:
-            new_data = mod.forward_trace(data, key + ".", trace)
-        else:
-            new_data = mod(data)
-        return new_data
-    elif isinstance(mod, ImagePlane):
-        out = cast(LightTargetOutput, mod(data.rays, data.fk))
-
-        if trace:
-            trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, out.surface_outputs.tf_next)
-            trace.add_input_rays(key, data.rays)
-            trace.add_surface(key, (out.surface_outputs.tf_surface, mod.surface))
-            trace.add_collision(
-                key,
-                out.surface_outputs.t,
-                out.surface_outputs.normals,
-                out.surface_outputs.valid,
-            )
-
-        # In sequential mode, light targets are transparent to rays
-        # We evaluate the optical element outputs but forward the data unchanged
-        return data
-    elif isinstance(mod, FocalPoint):
-        out = mod(data.rays, data.fk)
-
-        if trace:
-            trace.add_input_joint(key, data.fk)
-            trace.add_output_joint(key, out.surface_outputs.tf_next)
-            trace.add_input_rays(key, data.rays)
-            trace.add_focal_point(key, data.fk)
-
-        # In sequential mode, light targets are transparent to rays
-        # We evaluate the optical element outputs but forward the data unchanged
-        return data
-    else:
-        raise RuntimeError(f"Sequential: element type {type(mod)} not supported")

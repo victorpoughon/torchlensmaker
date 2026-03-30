@@ -183,7 +183,7 @@ def front_principal_point(
 
 
 def focal_point_with_light_source(
-    lens: tlm.Lens, light_source: tlm.SequentialElement
+    lens: tlm.Lens, light_source: tlm.BaseModule
 ) -> Float[torch.Tensor, ""]:
     """
     Compute focal point with a paraxial light source

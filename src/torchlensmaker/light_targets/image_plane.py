@@ -21,6 +21,8 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
@@ -109,3 +111,22 @@ class ImagePlane(LightTarget):
             loss = torch.sum(torch.pow(res, 2))
 
         return LightTargetOutput(loss, sout)
+
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        output = self(data.rays, data.fk)
+        # In sequential mode, light targets are transparent to rays
+        # We evaluate the optical element outputs but forward the data unchanged
+        return data, (data.rays, data.fk), output
+
+    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+        input_rays, input_tf = inputs
+        trace.add_input_joint(key, input_tf)
+        trace.add_output_joint(key, outputs.surface_outputs.tf_next)
+        trace.add_input_rays(key, input_rays)
+        trace.add_surface(key, (outputs.surface_outputs.tf_surface, self.surface))
+        trace.add_collision(
+            key,
+            outputs.surface_outputs.t,
+            outputs.surface_outputs.normals,
+            outputs.surface_outputs.valid,
+        )

@@ -22,6 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
+from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import (
     HomMatrix,
@@ -54,6 +55,14 @@ class KinematicElement(BaseModule):
 
     def forward(self, fk: Tf) -> Tf:
         raise NotImplementedError
+
+    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+        trace.add_input_joint(key, inputs)
+        trace.add_output_joint(key, outputs)
+
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        tf_out = self(data.fk)
+        return data.replace(fk=tf_out), data.fk, tf_out
 
 
 class Gap(KinematicElement):

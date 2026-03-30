@@ -14,15 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Callable, Self
+from typing import TYPE_CHECKING, Any, Callable, Self
 
 import torch.nn as nn
+from torch.nn.modules.container import Sequential
+
+from torchlensmaker.sequential.sequential_data import SequentialData
+
+if TYPE_CHECKING:
+    from torchlensmaker.sequential.model_trace import ModelTrace
 
 
 class BaseModule(nn.Module):
     """
     Base class for tlm modules
     """
+
+    def __init__(self):
+        super().__init__()
+        self.trace_key: str | None = None
 
     def clone(self, **overrides: Any) -> Self:
         raise NotImplementedError(
@@ -33,6 +43,14 @@ class BaseModule(nn.Module):
         raise NotImplementedError(
             f"reverse() not implemented for {type(self).__qualname__}"
         )
+
+    def sequential(self, data: SequentialData) -> tuple[SequentialData, Any, Any]:
+        raise NotImplementedError(
+            f"sequential() not implemented for {type(self).__qualname__}"
+        )
+
+    def trace(self, trace: "ModelTrace", key: str, inputs: Any, outputs: Any) -> Any:
+        return
 
 
 class MultiForwardModule(BaseModule):

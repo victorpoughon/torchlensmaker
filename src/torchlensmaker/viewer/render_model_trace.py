@@ -24,7 +24,7 @@ from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
-from torchlensmaker.sequential.sequential import ModelTrace
+from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.types import MaskTensor
 from torchlensmaker.viewer import tlmviewer

@@ -14,10 +14,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from collections import defaultdict
+from typing import Any, DefaultDict
+
 import torchlensmaker as tlm
+from torchlensmaker.sequential.model_trace import ModelTrace
 
 
-def test_sequential_forward_scene() -> None:
+def test_trace_model() -> None:
     # Use half spheres to model interface boundaries
     radius = 5
     halfsphere = tlm.SphereByRadius(diameter=2 * radius, R=radius)
@@ -48,9 +52,9 @@ def test_sequential_forward_scene() -> None:
         ),
     )
 
-    trace = tlm.ModelTrace.empty(dim=2)
+    trace = tlm.trace_model(optics, 2, tlm.SequentialData.empty(dim=2))
 
-    output = optics.forward_trace(tlm.SequentialData.empty(dim=2), "", trace)
+    assert isinstance(trace, ModelTrace)
 
     assert len(trace.input_rays) == 3
     assert len(trace.output_rays) == 4

@@ -111,8 +111,8 @@ from torchlensmaker.sampling.sampler_elements import (
     ZeroSampler2D,
 )
 from torchlensmaker.sampling.sampling import disk_sampling
-from torchlensmaker.sequential.model_trace import ModelTrace
-from torchlensmaker.sequential.sequential import Sequential, SequentialElement, SubChain
+from torchlensmaker.sequential.model_trace import ModelTrace, trace_model
+from torchlensmaker.sequential.sequential import Sequential, SubChain
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
     Debug,
@@ -270,11 +270,11 @@ __all__ = [
     # Sequential
     "ModelTrace",
     "Sequential",
-    "SequentialElement",
     "SubChain",
     "SequentialData",
     "Debug",
     "get_elements_by_type",
+    "trace_model",
     # Surfaces
     "Asphere",
     "Conic",
