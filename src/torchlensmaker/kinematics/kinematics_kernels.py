@@ -26,7 +26,6 @@ from .homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
     hom_rotate_2d,
-    hom_rotate_3d,
     hom_rotate_x_3d,
     hom_rotate_y_3d,
     hom_rotate_z_3d,
@@ -45,7 +44,7 @@ class Gap2DKernel(FunctionalKernel):
     def apply(self, X: ScalarTensor) -> Tf:
         return hom_translate_2d(torch.stack((X, torch.zeros_like(X))))
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(
@@ -64,7 +63,7 @@ class Gap3DKernel(FunctionalKernel):
             torch.stack((X, torch.zeros_like(X), torch.zeros_like(X)))
         )
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(
@@ -81,7 +80,7 @@ class Translate2DKernel(FunctionalKernel):
     def apply(self, X: ScalarTensor, Y: ScalarTensor) -> Tf:
         return hom_translate_2d(torch.stack((X, Y)))
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(
@@ -101,7 +100,7 @@ class Translate3DKernel(FunctionalKernel):
     def apply(self, X: ScalarTensor, Y: ScalarTensor, Z: ScalarTensor) -> Tf:
         return hom_translate_3d(torch.stack((X, Y, Z)))
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(
@@ -124,7 +123,7 @@ class Rotate2DKernel(FunctionalKernel):
     def apply(self, theta: ScalarTensor) -> Tf:
         return hom_rotate_2d(torch.deg2rad(theta))
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
     def example_params(
@@ -190,29 +189,6 @@ class RotateZ3DKernel(FunctionalKernel):
         return (torch.tensor(0.1, dtype=dtype, device=device),)
 
 
-# TODO remove
-class Rotate3DKernel(FunctionalKernel):
-    "3D rotation in degrees"
-
-    inputs = {}
-    params = {"y": ScalarTensor, "z": ScalarTensor}
-    outputs = {"joint": Tf}
-
-    def apply(self, y: ScalarTensor, z: ScalarTensor) -> Tf:
-        return hom_rotate_3d(y, z)
-
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
-        return tuple()
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
-        return (
-            torch.tensor(0.1, dtype=dtype, device=device),
-            torch.tensor(0.2, dtype=dtype, device=device),
-        )
-
-
 class KinematicChainAppend2DKernel(FunctionalKernel):
     inputs = {"fk_in": Tf, "joint": Tf}
     params = {}
@@ -221,15 +197,13 @@ class KinematicChainAppend2DKernel(FunctionalKernel):
     def apply(self, fk: Tf, joint: Tf) -> Tf:
         return kinematic_chain_append_2d(fk, joint)
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf, Tf]:
         return (
             hom_identity_2d(dtype=dtype, device=device),
             hom_identity_2d(dtype=dtype, device=device),
         )
 
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
+    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()
 
 
@@ -241,13 +215,11 @@ class KinematicChainAppend3DKernel(FunctionalKernel):
     def apply(self, fk: Tf, joint: Tf) -> Tf:
         return kinematic_chain_append_3d(fk, joint)
 
-    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf]:
+    def example_inputs(self, dtype: torch.dtype, device: torch.device) -> tuple[Tf, Tf]:
         return (
             hom_identity_3d(dtype=dtype, device=device),
             hom_identity_3d(dtype=dtype, device=device),
         )
 
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor]:
+    def example_params(self, dtype: torch.dtype, device: torch.device) -> tuple[()]:
         return tuple()

@@ -31,7 +31,6 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_matrix_2d,
     hom_matrix_3d,
     hom_rotate_2d,
-    hom_rotate_3d,
     hom_scale,
     hom_scale_2d,
     hom_scale_3d,
@@ -149,7 +148,7 @@ def test_transform_functions_2d(dtype: torch.dtype, device: torch.device) -> Non
 def transforms_3d() -> list[Tf]:
     base = hom_identity_3d()
     t1 = hom_translate_3d(torch.tensor([1.0, 2.0, 3.0]))
-    t2 = hom_rotate_3d(torch.tensor(0.5), torch.tensor(0.6))
+    t2 = hom_translate_3d(torch.tensor([10.0, -5.0, 5.0]))
     t3 = kinematic_chain_append_3d(base, t1)
     t4 = kinematic_chain_append_3d(t3, t2)
     t5 = kinematic_chain_append_3d(t4, t4)

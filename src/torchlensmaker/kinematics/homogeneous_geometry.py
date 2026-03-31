@@ -172,28 +172,6 @@ def hom_rotate_z_3d(theta: Float[torch.Tensor, ""]) -> Tf:
     return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
 
 
-def hom_rotate_3d(y: Float[torch.Tensor, ""], z: Float[torch.Tensor, ""]) -> Tf:
-    """
-    Transform for a 2 axis euler angles 3D rotation in degrees
-
-    Args:
-        y: rotation around the Y axis in degrees
-        z: rotation around the Z axis in degrees
-
-    Returns:
-        Pair of homogeneous transform matrices representing the transform
-    """
-
-    zero = torch.zeros((), dtype=y.dtype, device=y.device)
-    euler_angles = torch.deg2rad(torch.stack((zero, y, z)))
-    M = euler_angles_to_matrix(
-        euler_angles,
-        "XYZ",
-    ).to(dtype=y.dtype)  # TODO need to support dtype in euler_angles_to_matrix
-
-    return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
-
-
 def hom_scale_2d(scale: Float[torch.Tensor, ""]) -> Tf:
     """
     Homogeneous transform matrices for a 2D scale on all axes
