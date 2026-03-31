@@ -85,10 +85,8 @@ class GenericLightSource(LightSourceBase):
         return self.clone(reversed=not self.reversed)
 
     def domain(self, dim: int) -> dict[str, list[float]]:
-        if dim == 2:
-            return self.geometry_2d.domain()
-        else:
-            return self.geometry_3d.domain()
+        geom = self.geometry_2d if dim == 2 else self.geometry_3d
+        return {**geom.domain(), "source": [self.source_idx, self.source_idx]}
 
     def forward(self, tf: HomMatrix) -> RayBundle:
         dim, dtype, device = tf.shape[0] - 1, tf.dtype, tf.device

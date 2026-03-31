@@ -30,32 +30,40 @@ from torchlensmaker.types import MaskTensor
 from torchlensmaker.viewer import tlmviewer
 
 
-# TODO refactor this horror
-def ray_variables_dict(
-    rays: RayBundle, valid: MaskTensor | None = None
-) -> dict[str, torch.Tensor]:
-    "Convert ray variables from to a dict of Tensors"
+def raybundle_var_dict(rays: RayBundle) -> dict[str, torch.Tensor]:
+    "RayBundle to tlmviewer variable dict"
+    dim = rays.P.shape[-1]
     d = {}
 
-    def update(tensor: torch.Tensor, name: str) -> None:
-        # TODO this if check is temporary to avoid a divide by zero in tlmviewer
-        # ideally we would export all three variables allways, and tlmviewer
-        # handles correctly degenerate cases like PointSource which has all
-        # field coord = 0, or a single wavelength, etc.
-        if tensor.numel() > 0 and (tensor.max() - tensor.min()) > 1e-3:
-            d[name] = filter_optional_mask(tensor, valid)
+    def add(name: str, t: torch.Tensor):
+        d[name] = t
 
-    # TODO no support for 2D colormaps in tlmviewer yet
-    # but base and object are 2D variables in 3D
-    # TODO tlmviewer: rename base/object to pupil/field
-    dim = rays.P.shape[-1]
     if dim == 2:
-        update(rays.pupil, "base")
-        update(rays.field, "object")
+        add("pupil", rays.pupil)
+        add("field", rays.field)
+    if dim == 3:
+        add("pupil0", rays.pupil[:, 0])
+        add("pupil1", rays.pupil[:, 1])
+        add("field0", rays.field[:, 0])
+        add("field1", rays.field[:, 1])
 
-    update(rays.wavel, "wavelength")
+    add("wavelength", rays.wavel)
+    add("source", rays.source_idx)
 
     return d
+
+
+def domain_union(a: dict[str, list[float]], b: dict[str, list[float]]):
+    U = dict(a)
+    # merge b into a
+    for key, val in b.items():
+        if key not in a:
+            U[key] = val
+        else:
+            amin, amax = U[key]
+            bmin, bmax = val
+            U[key] = [min(amin, bmin), max(amax, bmax)]
+    return U
 
 
 def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
@@ -64,10 +72,15 @@ def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
     if len(light_sources) == 0:
         return {}
 
-    # TODO handle multiple light sources
-    ls = cast(LightSourceBase, light_sources[0])
+    domain = {}
 
-    return ls.domain(dim)
+    # Compute union of all light sources domains
+    for ls in light_sources:
+        ls = cast(LightSourceBase, ls)
+        d = ls.domain(dim)
+        domain = domain_union(domain, d)
+
+    return domain
 
 
 def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
@@ -104,8 +117,8 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
                     t,
                     hom_target(input_tf.direct)[0],
                     valid,
-                    variables_hit=ray_variables_dict(input_rays, valid),
-                    variables_miss=ray_variables_dict(input_rays, ~valid),
+                    variables_hit=raybundle_var_dict(input_rays.mask(valid)),
+                    variables_miss=raybundle_var_dict(input_rays.mask(~valid)),
                     domain=domain,
                 )
             )
@@ -121,7 +134,7 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
                     input_rays.V,
                     t,
                     layer=tlmviewer.LAYER_VALID_RAYS,
-                    variables=ray_variables_dict(input_rays),
+                    variables=raybundle_var_dict(input_rays),
                     domain=domain,
                     default_color=tlmviewer.color_valid,
                 )
@@ -141,7 +154,7 @@ def trace_render_end_rays(
         rays.P,
         rays.V,
         end,
-        variables=ray_variables_dict(rays),
+        variables=raybundle_var_dict(rays),
         domain=domain,
         default_color=tlmviewer.color_valid,
         layer=tlmviewer.LAYER_OUTPUT_RAYS,

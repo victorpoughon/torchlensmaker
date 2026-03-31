@@ -57,8 +57,8 @@ class ObjectGeometry2D(nn.Module):
         A = self.beam_angular_size.item() / 2
         B = self.object_diameter.item() / 2
         return {
-            "base": [-A, A],
-            "object": [-B, B],
+            "pupil": [-A, A],
+            "field": [-B, B],
             "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
         }
 
@@ -140,8 +140,8 @@ class ObjectAtInfinityGeometry2D(nn.Module):
         A = self.beam_diameter.item() / 2
         B = self.angular_size.item() / 2
         return {
-            "base": [-A, A],
-            "object": [-B, B],
+            "pupil": [-A, A],
+            "field": [-B, B],
             "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
         }
 
@@ -220,7 +220,13 @@ class ObjectGeometry3D(nn.Module):
         self.kernel = ObjectGeometry3DKernel()
 
     def domain(self) -> dict[str, list[float]]:
+        A = self.beam_angular_size.item() / 2
+        B = self.object_diameter.item() / 2
         return {
+            "pupil0": [-A, A],
+            "pupil1": [-A, A],
+            "field0": [-B, B],
+            "field1": [-B, B],
             "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
         }
 
@@ -299,7 +305,13 @@ class ObjectAtInfinityGeometry3D(nn.Module):
         self.kernel = ObjectGeometry3DKernel()
 
     def domain(self) -> dict[str, list[float]]:
+        A = self.beam_diameter.item() / 2
+        B = self.angular_size.item() / 2
         return {
+            "pupil0": [-A, A],
+            "pupil1": [-A, A],
+            "field0": [-B, B],
+            "field1": [-B, B],
             "wavelength": [self.wavelength_lower.item(), self.wavelength_upper.item()],
         }
 

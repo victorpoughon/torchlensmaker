@@ -118,8 +118,16 @@ def export_json(
     title: str = "",
     ndigits: int | None = 8,
     controls: object | None = None,
+    pupil: Any | None = None,
+    field: Any | None = None,
+    wavelength: Any | None = None,
 ) -> None:
     "Render and export an optical stack to a tlmviewer json file"
+
+    if dim == 2:
+        set_sampling2d(optics, pupil, field, wavelength)
+    elif dim == 3:
+        set_sampling3d(optics, pupil, field, wavelength)
 
     scene = render_model(optics, dim, dtype, device, end, title, controls)
 
