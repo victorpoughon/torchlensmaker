@@ -106,4 +106,7 @@ def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> ModelTrace:
 
     _ = optics(*inputs)
 
+    for h in hooks:
+        h.remove()
+
     return trace
