@@ -17,7 +17,6 @@
 from typing import TYPE_CHECKING, Any, Callable, Self
 
 import torch.nn as nn
-from torch.nn.modules.container import Sequential
 
 from torchlensmaker.sequential.sequential_data import SequentialData
 
