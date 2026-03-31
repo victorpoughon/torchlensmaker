@@ -42,8 +42,8 @@ class RefractiveSurface(OpticalSurfaceElement):
         super().__init__()
         self.surface = surface
         self.func = RefractionKernel()
-        self.material_in = get_material_model(materials[0]).clone()
-        self.material_out = get_material_model(materials[1]).clone()
+        self.material_in = get_material_model(materials[0])
+        self.material_out = get_material_model(materials[1])
         self.tir_mode: TIRMode = tir_mode
 
     @property

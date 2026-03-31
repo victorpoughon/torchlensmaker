@@ -102,7 +102,7 @@ class KinematicSurface(BaseModule):
         scale: float | ScalarTensor = 1.0,
     ):
         super().__init__()
-        self.surface = surface.clone()
+        self.surface = surface
         self.anchors = init_param(self, "anchors", anchors, False)
         self.scale = init_param(self, "scale", scale, False)
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
