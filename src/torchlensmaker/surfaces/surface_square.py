@@ -16,7 +16,7 @@
 
 import math
 from functools import partial
-from typing import Any, cast
+from typing import Any, Self, cast
 
 import torch
 import torch.nn as nn
@@ -41,7 +41,7 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
-from .surface_element import SurfaceElement
+from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 def intersection_square_3d(
@@ -84,8 +84,8 @@ class SquareSurfaceKernel(FunctionalKernel):
         "t": BatchTensor,
         "normals": BatchNDTensor,
         "valid": MaskTensor,
-        "surface_tf": Tf,
-        "next_tf": Tf,
+        "points_local": BatchNDTensor,
+        "points_global": BatchNDTensor,
     }
 
     def apply(
@@ -94,11 +94,13 @@ class SquareSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         side_length: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         solver = intersection_square_3d
         local_solver = partial(solver, side_length=side_length)
-        t, normals, valid = surface_raytrace(P, V, tf_in, local_solver)
-        return t, normals, valid, tf_in.clone(), tf_in.clone()
+        t, normals, valid, points_local, points_global = surface_raytrace(
+            P, V, tf_in, local_solver
+        )
+        return t, normals, valid, points_local, points_global
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -123,13 +125,25 @@ class Square(SurfaceElement):
         self.side_length = init_param(self, "side_length", side_length, False)
         self.func3d = SquareSurfaceKernel()
 
-    def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, Tf, Tf]:
+    def clone(self, **overrides) -> Self:
+        kwargs: dict[str, Any] = dict(
+            side_length=self.side_length,
+        )
+        return type(self)(**kwargs | overrides)
+
+    def reverse(self) -> Self:
+        return self.clone()
+
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         assert P.shape[-1] == 3, (
             "Square surface can only be raytraced in 3D because it's not axially symmetric"
         )
-        return self.func3d.apply(P, V, tf, self.side_length)
+        t, normal, valid, points_local, points_global = self.func3d.apply(
+            P, V, tf, self.side_length
+        )
+        return SurfaceElementOutput(
+            t, normal, valid, points_local, points_global, tf.clone(), tf.clone()
+        )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)
