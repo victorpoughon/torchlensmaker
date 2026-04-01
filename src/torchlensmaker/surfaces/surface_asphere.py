@@ -38,7 +38,6 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
-    SagFunction2D,
     aspheric_sag_2d,
     aspheric_sag_3d,
     conical_sag_2d,
@@ -103,26 +102,21 @@ class AsphereSurfaceKernel(FunctionalKernel):
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         if self.dim == 2:
-            sag_function = cast(
-                SagFunction2D,
-                partial(
-                    sag_sum_2d,
-                    sags=[
-                        partial(conical_sag_2d, C=C, K=K),
-                        partial(aspheric_sag_2d, coefficients=alphas),
-                    ],
-                ),
+            sag_function = partial(
+                sag_sum_2d,
+                sags=[
+                    partial(conical_sag_2d, C=C, K=K),
+                    partial(aspheric_sag_2d, coefficients=alphas),
+                ],
             )
+
         else:
-            sag_function = cast(
-                SagFunction2D,
-                partial(
-                    sag_sum_3d,
-                    sags=[
-                        partial(conical_sag_3d, C=C, K=K),
-                        partial(aspheric_sag_3d, coefficients=alphas),
-                    ],
-                ),
+            sag_function = partial(
+                sag_sum_3d,
+                sags=[
+                    partial(conical_sag_3d, C=C, K=K),
+                    partial(aspheric_sag_3d, coefficients=alphas),
+                ],
             )
 
         lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d

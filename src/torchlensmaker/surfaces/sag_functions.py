@@ -14,8 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
-from typing import Any, Callable, Sequence, TypeAlias, cast
+from typing import Any, Callable, Sequence, TypeAlias
 
 import torch
 from jaxtyping import Float
@@ -24,25 +23,42 @@ from torchlensmaker.core.tensor_manip import bbroad
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
+    BatchNDTensor,
     BatchTensor,
     ScalarTensor,
 )
 
 from .implicit_solver import ImplicitFunction
 
-# r -> g(r), g_grad(r)
-SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]
+SagFunction: TypeAlias = Callable[[BatchNDTensor], tuple[BatchTensor, BatchNDTensor]]
+"""
+A sag function models a surface as a deviation from a plane. In 2D that 'plane'
+is the abstract meridional axis, in 3D it's the YZ plane.
 
-# y, z -> g(y, z), g_grad(y, z)
-SagFunction3D = Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
+SagFunction :: points -> g(points), g_grad(points)
 
-SagFunction: TypeAlias = SagFunction2D | SagFunction3D
+In 2D:
+    points: tensor of shape (..., 1)
+    g(points): tensor of shape (...)
+    g_grad(points): tensor of shape (..., 1)
 
-# Lift a 2D sag function to an implicit function
-LiftFunction2D = Callable[[SagFunction2D, ScalarTensor, ScalarTensor], ImplicitFunction]
+In 3D:
+    points: tensor of shape (..., 2)
+    g(points): tensor of shape (...)
+    g_grad(points): tensor of shape (..., 2)
+"""
 
-# Lift a 3D sag function to an implicit function
-LiftFunction3D = Callable[[SagFunction3D, ScalarTensor, ScalarTensor], ImplicitFunction]
+LiftFunction: TypeAlias = Callable[
+    [SagFunction, ScalarTensor, ScalarTensor],
+    ImplicitFunction,
+]
+"""
+A lift function is a transformation that turns a sag function into an implicit
+function. It is also given two extra arguments:
+
+    nf: the normalization factor
+    tau: the radius of the domain of the sag function
+"""
 
 
 def sag_to_implicit_2d(
@@ -59,13 +75,11 @@ def sag_to_implicit_2d(
         An implicit function representing the surface defined by the sag function
     """
 
-    sag = cast(SagFunction2D, sag)
-
     def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
-        x, r = points.unbind(-1)
-        g, g_grad = sag(r / nf)
+        x = points[..., 0]
+        g, g_grad = sag(points[..., 1:] / nf)
         f = nf * g - x
-        f_grad = torch.stack((-torch.ones_like(x), g_grad), dim=-1)
+        f_grad = torch.stack((-torch.ones_like(x), g_grad.squeeze(-1)), dim=-1)
         return f, f_grad
 
     return implicit
@@ -87,14 +101,12 @@ def sag_to_implicit_2d_euclid(
         An implicit function representing the surface defined by the sag function
     """
 
-    sag = cast(SagFunction2D, sag)
-
     def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
         # inner part
         x, r = points.unbind(-1)
         g, g_grad = sag(r / nf)
         f_inner = nf * g - x
-        f_grad_inner = torch.stack((-torch.ones_like(x), g_grad), dim=-1)
+        f_grad_inner = torch.stack((-torch.ones_like(x), g_grad.squeeze(-1)), dim=-1)
 
         # outer part
         r_abs = torch.abs(r)
@@ -126,11 +138,9 @@ def sag_to_implicit_3d(
         An implicit function representing the surface defined by the sag function
     """
 
-    sag = cast(SagFunction3D, sag)
-
     def implicit(points: Batch3DTensor) -> tuple[BatchTensor, Batch3DTensor]:
-        x, y, z = points.unbind(-1)
-        g, g_grad = sag(y / nf, z / nf)
+        x = points[..., 0]
+        g, g_grad = sag(points[..., 1:] / nf)
         f = nf * g - x
         grad_x = -torch.ones_like(x)
         grad_y, grad_z = g_grad.unbind(-1)
@@ -161,23 +171,25 @@ def safe_div(dividend: torch.Tensor, divisor: torch.Tensor) -> torch.Tensor:
 
 
 def spherical_sag_2d(
-    r: BatchTensor, C: ScalarTensor
-) -> tuple[BatchTensor, BatchTensor]:
+    r: BatchNDTensor, C: ScalarTensor
+) -> tuple[BatchTensor, BatchNDTensor]:
     "Spherical sag in 2D, parameterized by curvature"
 
+    r = r.squeeze(-1)
     r2 = torch.pow(r, 2)
     C2 = torch.pow(C, 2)
     g = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
     g_grad = safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * C2))
 
-    return g, g_grad
+    return g, g_grad.unsqueeze(-1)
 
 
 def spherical_sag_3d(
-    y: BatchTensor, z: BatchTensor, C: ScalarTensor
+    yz: BatchNDTensor, C: ScalarTensor
 ) -> tuple[BatchTensor, Batch2DTensor]:
     "Spherical sag in 3D, parameterized by curvature"
 
+    y, z = yz.unbind(-1)
     r2 = torch.pow(y, 2) + torch.pow(z, 2)
     C2 = torch.pow(C, 2)
     G = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
@@ -188,43 +200,47 @@ def spherical_sag_3d(
 
 
 def parabolic_sag_2d(
-    r: BatchTensor, A: ScalarTensor
-) -> tuple[BatchTensor, BatchTensor]:
+    r: BatchNDTensor, A: ScalarTensor
+) -> tuple[BatchTensor, BatchNDTensor]:
     "Parabolic sag in 2D"
 
+    r = r.squeeze(-1)
     g = torch.mul(A, torch.pow(r, 2))
     g_grad = 2.0 * A * r
-    return g, g_grad
+    return g, g_grad.unsqueeze(-1)
 
 
 def parabolic_sag_3d(
-    y: BatchTensor, z: BatchTensor, A: ScalarTensor
+    yz: BatchNDTensor, A: ScalarTensor
 ) -> tuple[BatchTensor, Batch2DTensor]:
     "Parabolic sag in 3D"
 
+    y, z = yz.unbind(-1)
     G = torch.mul(A, (y**2 + z**2))
     G_grad = torch.stack((2 * A * y, 2 * A * z), dim=-1)
     return G, G_grad
 
 
 def conical_sag_2d(
-    r: BatchTensor, C: ScalarTensor, K: ScalarTensor
-) -> tuple[BatchTensor, BatchTensor]:
+    r: BatchNDTensor, C: ScalarTensor, K: ScalarTensor
+) -> tuple[BatchTensor, BatchNDTensor]:
     "Conical sag in 2D"
 
+    r = r.squeeze(-1)
     r2 = torch.pow(r, 2)
     C2 = torch.pow(C, 2)
     g = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
     g_grad = safe_div(C * r, safe_sqrt(1 - (1 + K) * r2 * C2))
 
-    return g, g_grad
+    return g, g_grad.unsqueeze(-1)
 
 
 def conical_sag_3d(
-    y: BatchTensor, z: BatchTensor, C: ScalarTensor, K: ScalarTensor
+    yz: BatchNDTensor, C: ScalarTensor, K: ScalarTensor
 ) -> tuple[BatchTensor, Batch2DTensor]:
     "Conical sag in 3D"
 
+    y, z = yz.unbind(-1)
     r2 = y**2 + z**2
     C2 = torch.pow(C, 2)
     G = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
@@ -236,8 +252,9 @@ def conical_sag_3d(
 
 
 def aspheric_sag_2d(
-    r: BatchTensor, coefficients: Float[torch.Tensor, " C"]
-) -> tuple[BatchTensor, BatchTensor]:
+    r: BatchNDTensor, coefficients: Float[torch.Tensor, " C"]
+) -> tuple[BatchTensor, BatchNDTensor]:
+    r = r.squeeze(-1)
     C = coefficients.shape[-1]  # number of coefficents
     alphas = bbroad(coefficients, r.dim())
     index = torch.arange(C, dtype=r.dtype, device=r.device)
@@ -246,12 +263,13 @@ def aspheric_sag_2d(
     g = torch.sum(alphas * torch.pow(r, 4 + 2 * i), dim=0)
     g_grad = torch.sum(alphas * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
 
-    return g, g_grad
+    return g, g_grad.unsqueeze(-1)
 
 
 def aspheric_sag_3d(
-    y: BatchTensor, z: BatchTensor, coefficients: Float[torch.Tensor, " C"]
+    yz: BatchNDTensor, coefficients: Float[torch.Tensor, " C"]
 ) -> tuple[BatchTensor, Batch2DTensor]:
+    y, z = yz.unbind(-1)
     r2 = y**2 + z**2
     C = coefficients.shape[-1]  # number of coefficents
     alphas = bbroad(coefficients, r2.dim())
@@ -266,7 +284,7 @@ def aspheric_sag_3d(
 
 
 def xypolynomial_sag_3d(
-    y: BatchTensor, z: BatchTensor, coefficients: Float[torch.Tensor, "P Q"]
+    yz: BatchNDTensor, coefficients: Float[torch.Tensor, "P Q"]
 ) -> tuple[BatchTensor, Batch2DTensor]:
     r"""
     Sag function for the XY Polynomial model in 3D
@@ -276,6 +294,7 @@ def xypolynomial_sag_3d(
     $$
     """
 
+    y, z = yz.unbind(-1)
     assert coefficients.dim() == 2
     assert y.shape == z.shape
     P, Q = coefficients.shape
@@ -321,9 +340,9 @@ def xypolynomial_sag_3d(
 
 
 def sag_sum_2d(
-    r: BatchTensor,
-    sags: Sequence[Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]],
-) -> tuple[BatchTensor, BatchTensor]:
+    r: BatchNDTensor,
+    sags: Sequence[SagFunction],
+) -> tuple[BatchTensor, BatchNDTensor]:
     # Call the sag function of each term
     results = [sag(r) for sag in sags]
 
@@ -336,14 +355,11 @@ def sag_sum_2d(
 
 
 def sag_sum_3d(
-    y: BatchTensor,
-    z: BatchTensor,
-    sags: Sequence[
-        Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
-    ],
-) -> tuple[BatchTensor, BatchTensor]:
+    yz: BatchNDTensor,
+    sags: Sequence[SagFunction],
+) -> tuple[BatchTensor, BatchNDTensor]:
     # Call the sag function of each term
-    results = [sag(y, z) for sag in sags]
+    results = [sag(yz) for sag in sags]
 
     # Sum the results
     g_sum = torch.sum(torch.stack([g for (g, _) in results], dim=0), dim=0)

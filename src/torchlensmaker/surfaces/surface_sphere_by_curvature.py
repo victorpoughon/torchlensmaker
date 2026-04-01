@@ -38,8 +38,6 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
-    SagFunction2D,
-    SagFunction3D,
     sag_to_implicit_2d,
     sag_to_implicit_3d,
     spherical_sag_2d,

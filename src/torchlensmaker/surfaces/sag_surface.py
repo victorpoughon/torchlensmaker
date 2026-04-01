@@ -34,10 +34,8 @@ from torchlensmaker.types import (
 from .implicit_solver import implicit_surface_local_raytrace
 from .raytrace import surface_raytrace
 from .sag_functions import (
-    LiftFunction2D,
-    LiftFunction3D,
-    SagFunction2D,
-    SagFunction3D,
+    LiftFunction,
+    SagFunction,
 )
 from .sag_geometry import (
     lens_diameter_implicit_domain_2d,
@@ -46,8 +44,8 @@ from .sag_geometry import (
 
 
 def sag_surface_2d(
-    sag_function: SagFunction2D,
-    lift_function: LiftFunction2D,
+    sag_function: SagFunction,
+    lift_function: LiftFunction,
     num_iter: int,
     damping: float,
     tol: float,
@@ -80,8 +78,8 @@ def sag_surface_2d(
 
 
 def sag_surface_3d(
-    sag: SagFunction3D,
-    lift_function: LiftFunction3D,
+    sag: SagFunction,
+    lift_function: LiftFunction,
     num_iter: int,
     damping: float,
     tol: float,
