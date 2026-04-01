@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Any, Callable, Sequence, TypeAlias
+from typing import Any, Callable, Sequence, TypeAlias, cast
 
 import torch
 from jaxtyping import Float
@@ -24,12 +24,11 @@ from torchlensmaker.core.tensor_manip import bbroad
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
-    BatchNDTensor,
     BatchTensor,
     ScalarTensor,
 )
 
-from .implicit_solver import ImplicitFunction2D, ImplicitFunction3D
+from .implicit_solver import ImplicitFunction
 
 # r -> g(r), g_grad(r)
 SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTensor]]
@@ -37,8 +36,18 @@ SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTenso
 # y, z -> g(y, z), g_grad(y, z)
 SagFunction3D = Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
 
+SagFunction: TypeAlias = SagFunction2D | SagFunction3D
 
-def sag_to_implicit_2d(sag: SagFunction2D, nf: ScalarTensor) -> ImplicitFunction2D:
+# Lift a 2D sag function to an implicit function
+LiftFunction2D = Callable[[SagFunction2D, ScalarTensor, ScalarTensor], ImplicitFunction]
+
+# Lift a 3D sag function to an implicit function
+LiftFunction3D = Callable[[SagFunction3D, ScalarTensor, ScalarTensor], ImplicitFunction]
+
+
+def sag_to_implicit_2d(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
     """
     Wrap a 2D sag function into an implicit function
 
@@ -50,6 +59,8 @@ def sag_to_implicit_2d(sag: SagFunction2D, nf: ScalarTensor) -> ImplicitFunction
         An implicit function representing the surface defined by the sag function
     """
 
+    sag = cast(SagFunction2D, sag)
+
     def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
         x, r = points.unbind(-1)
         g, g_grad = sag(r / nf)
@@ -60,7 +71,50 @@ def sag_to_implicit_2d(sag: SagFunction2D, nf: ScalarTensor) -> ImplicitFunction
     return implicit
 
 
-def sag_to_implicit_3d(sag: SagFunction3D, nf: ScalarTensor) -> ImplicitFunction3D:
+def sag_to_implicit_2d_euclid(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
+    """
+    Wrap a 2D sag function into an implicit function
+    Enforces lens diameter bounds with the euclian distance
+
+    Args:
+        sag: the sag function
+        nf: normalization factor, typically either 1 (no normalization) or half lens diameter (normalization enabled)
+        tau: domain of sag function is [-tau, tau]
+
+    Returns:
+        An implicit function representing the surface defined by the sag function
+    """
+
+    sag = cast(SagFunction2D, sag)
+
+    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
+        # inner part
+        x, r = points.unbind(-1)
+        g, g_grad = sag(r / nf)
+        f_inner = nf * g - x
+        f_grad_inner = torch.stack((-torch.ones_like(x), g_grad), dim=-1)
+
+        # outer part
+        r_abs = torch.abs(r)
+        P = torch.stack((x, r_abs), dim=-1)  # (..., 2)
+        A = torch.stack((nf * sag(tau / nf)[0], tau), dim=-1)  # (2)
+        f_outer = torch.linalg.vector_norm(P - A, dim=-1)
+        f_grad_outer = (P - A) / f_outer.unsqueeze(-1)
+
+        mask = r_abs <= tau
+        f = torch.where(mask, f_inner, f_outer)
+        f_grad = torch.where(mask.unsqueeze(-1), f_grad_inner, f_grad_outer)
+
+        return f, f_grad
+
+    return implicit
+
+
+def sag_to_implicit_3d(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
     """
     Wrap a 3D sag function into an implicit function
 
@@ -71,6 +125,8 @@ def sag_to_implicit_3d(sag: SagFunction3D, nf: ScalarTensor) -> ImplicitFunction
     Returns:
         An implicit function representing the surface defined by the sag function
     """
+
+    sag = cast(SagFunction3D, sag)
 
     def implicit(points: Batch3DTensor) -> tuple[BatchTensor, Batch3DTensor]:
         x, y, z = points.unbind(-1)

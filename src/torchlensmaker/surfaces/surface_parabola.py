@@ -40,6 +40,8 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
     parabolic_sag_2d,
     parabolic_sag_3d,
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
 )
 from .sag_surface import sag_surface_2d, sag_surface_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -90,10 +92,12 @@ class ParabolaSurfaceKernel(FunctionalKernel):
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         sag_function = parabolic_sag_2d if self.dim == 2 else parabolic_sag_3d
+        lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d
         apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
             partial(sag_function, A=A),
+            lift_function,
             self.num_iter,
             self.damping,
             self.tol,

@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Self, Sequence
+from typing import Any, Self, Sequence, cast
 
 import torch
 import torch.nn as nn
@@ -38,12 +38,15 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
+    SagFunction2D,
     aspheric_sag_2d,
     aspheric_sag_3d,
     conical_sag_2d,
     conical_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
 )
 from .sag_surface import sag_surface_2d, sag_surface_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -100,26 +103,34 @@ class AsphereSurfaceKernel(FunctionalKernel):
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         if self.dim == 2:
-            sag_function = partial(
-                sag_sum_2d,
-                sags=[
-                    partial(conical_sag_2d, C=C, K=K),
-                    partial(aspheric_sag_2d, coefficients=alphas),
-                ],
+            sag_function = cast(
+                SagFunction2D,
+                partial(
+                    sag_sum_2d,
+                    sags=[
+                        partial(conical_sag_2d, C=C, K=K),
+                        partial(aspheric_sag_2d, coefficients=alphas),
+                    ],
+                ),
             )
         else:
-            sag_function = partial(
-                sag_sum_3d,
-                sags=[
-                    partial(conical_sag_3d, C=C, K=K),
-                    partial(aspheric_sag_3d, coefficients=alphas),
-                ],
+            sag_function = cast(
+                SagFunction2D,
+                partial(
+                    sag_sum_3d,
+                    sags=[
+                        partial(conical_sag_3d, C=C, K=K),
+                        partial(aspheric_sag_3d, coefficients=alphas),
+                    ],
+                ),
             )
 
+        lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d
         apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
-            sag_function,  # type: ignore
+            sag_function,
+            lift_function,
             self.num_iter,
             self.damping,
             self.tol,

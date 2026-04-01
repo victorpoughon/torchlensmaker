@@ -40,6 +40,8 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
     SagFunction2D,
     SagFunction3D,
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
     spherical_sag_2d,
     spherical_sag_3d,
 )
@@ -92,10 +94,12 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
         sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
+        lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d
         apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
 
         return apply_impl(
             partial(sag_function, C=C),
+            lift_function,
             self.num_iter,
             self.damping,
             self.tol,

@@ -21,7 +21,6 @@ from typing import Any, Callable, Sequence, TypeAlias
 import torch
 from jaxtyping import Bool, Float
 
-from torchlensmaker.core.tensor_manip import bbroad
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -32,17 +31,13 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .implicit_solver import (
-    ImplicitFunction2D,
-    ImplicitFunction3D,
-    implicit_surface_local_raytrace,
-)
+from .implicit_solver import implicit_surface_local_raytrace
 from .raytrace import surface_raytrace
 from .sag_functions import (
+    LiftFunction2D,
+    LiftFunction3D,
     SagFunction2D,
     SagFunction3D,
-    sag_to_implicit_2d,
-    sag_to_implicit_3d,
 )
 from .sag_geometry import (
     lens_diameter_implicit_domain_2d,
@@ -51,7 +46,8 @@ from .sag_geometry import (
 
 
 def sag_surface_2d(
-    sag: SagFunction2D,
+    sag_function: SagFunction2D,
+    lift_function: LiftFunction2D,
     num_iter: int,
     damping: float,
     tol: float,
@@ -63,8 +59,9 @@ def sag_surface_2d(
 ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
-    nf = torch.where(normalize, diameter / 2, one)
-    implicit_function = sag_to_implicit_2d(sag, nf=nf)
+    tau = diameter / 2
+    nf = torch.where(normalize, tau, one)
+    implicit_function = lift_function(sag_function, nf, tau)
     domain_function = partial(
         lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol
     )
@@ -84,6 +81,7 @@ def sag_surface_2d(
 
 def sag_surface_3d(
     sag: SagFunction3D,
+    lift_function: LiftFunction3D,
     num_iter: int,
     damping: float,
     tol: float,
@@ -95,8 +93,9 @@ def sag_surface_3d(
 ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
-    nf = torch.where(normalize, diameter / 2, one)
-    implicit_function = sag_to_implicit_3d(sag, nf=nf)
+    tau = diameter / 2
+    nf = torch.where(normalize, tau, one)
+    implicit_function = lift_function(sag, nf, tau)
     domain_function = partial(
         lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol
     )

@@ -37,6 +37,7 @@ from .kernels_utils import example_rays_3d
 from .sag_functions import (
     conical_sag_3d,
     sag_sum_3d,
+    sag_to_implicit_3d,
     xypolynomial_sag_3d,
 )
 from .sag_surface import sag_surface_3d
@@ -102,8 +103,11 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
             ],
         )
 
+        lift_function = sag_to_implicit_3d
+
         return sag_surface_3d(
             sag_function,
+            lift_function,
             self.num_iter,
             self.damping,
             self.tol,

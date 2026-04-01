@@ -21,24 +21,15 @@ from jaxtyping import Bool, Float, Int
 from torch._higher_order_ops import while_loop
 
 from torchlensmaker.types import (
-    Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
 )
 
-# x, r -> F(x, r), F_grad(x, r)
-ImplicitFunction2D: TypeAlias = Callable[
-    [Batch2DTensor], tuple[BatchTensor, Batch2DTensor]
+# points -> F(points), F_grad(points)
+ImplicitFunction: TypeAlias = Callable[
+    [BatchNDTensor], tuple[BatchTensor, BatchNDTensor]
 ]
-
-# x, y, z -> F(x, y, z), F_grad(x, y, z)
-ImplicitFunction3D: TypeAlias = Callable[
-    [Batch3DTensor], tuple[BatchTensor, Batch3DTensor]
-]
-
-ImplicitFunction: TypeAlias = ImplicitFunction2D | ImplicitFunction3D
 
 # (points) -> valid mask
 DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
@@ -51,7 +42,7 @@ def init_closest_origin(P: BatchNDTensor, V: BatchNDTensor) -> BatchTensor:
 def implicit_solver_newton(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
-    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
+    implicit_function: ImplicitFunction,
     num_iter: int,
     damping: float,
 ) -> Float[torch.Tensor, " N"]:
@@ -133,7 +124,7 @@ def implicit_solver_newton_while_loop(
 def implicit_surface_local_raytrace(
     P: Float[torch.Tensor, "N D"],
     V: Float[torch.Tensor, "N D"],
-    implicit_function: ImplicitFunction2D | ImplicitFunction3D,
+    implicit_function: ImplicitFunction,
     domain_function: DomainFunction,
     num_iter: int,
     damping: float,
