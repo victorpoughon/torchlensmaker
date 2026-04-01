@@ -63,8 +63,8 @@ def sag_surface_2d(
 ) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
-    tau = torch.where(normalize, diameter / 2, one)
-    implicit_function = sag_to_implicit_2d(sag, tau=tau)
+    nf = torch.where(normalize, diameter / 2, one)
+    implicit_function = sag_to_implicit_2d(sag, nf=nf)
     domain_function = partial(
         lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol
     )
@@ -95,8 +95,8 @@ def sag_surface_3d(
 ) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
     # Setup implicit function and domain function
     one = torch.ones((), dtype=P.dtype, device=P.device)
-    tau = torch.where(normalize, diameter / 2, one)
-    implicit_function = sag_to_implicit_3d(sag, tau=tau)
+    nf = torch.where(normalize, diameter / 2, one)
+    implicit_function = sag_to_implicit_3d(sag, nf=nf)
     domain_function = partial(
         lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol
     )

@@ -38,13 +38,13 @@ SagFunction2D: TypeAlias = Callable[[BatchTensor], tuple[BatchTensor, BatchTenso
 SagFunction3D = Callable[[BatchTensor, BatchTensor], tuple[BatchTensor, Batch2DTensor]]
 
 
-def sag_to_implicit_2d(sag: SagFunction2D, tau: ScalarTensor) -> ImplicitFunction2D:
+def sag_to_implicit_2d(sag: SagFunction2D, nf: ScalarTensor) -> ImplicitFunction2D:
     """
     Wrap a 2D sag function into an implicit function
 
     Args:
         sag: the sag function
-        tau: normalization factor, typically either 1 (no normalization) or half the lens diameter
+        nf: normalization factor, typically either 1 (no normalization) or tau (normalization enabled)
 
     Returns:
         An implicit function representing the surface defined by the sag function
@@ -52,21 +52,21 @@ def sag_to_implicit_2d(sag: SagFunction2D, tau: ScalarTensor) -> ImplicitFunctio
 
     def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
         x, r = points.unbind(-1)
-        g, g_grad = sag(r / tau)
-        f = tau * g - x
+        g, g_grad = sag(r / nf)
+        f = nf * g - x
         f_grad = torch.stack((-torch.ones_like(x), g_grad), dim=-1)
         return f, f_grad
 
     return implicit
 
 
-def sag_to_implicit_3d(sag: SagFunction3D, tau: ScalarTensor) -> ImplicitFunction3D:
+def sag_to_implicit_3d(sag: SagFunction3D, nf: ScalarTensor) -> ImplicitFunction3D:
     """
     Wrap a 3D sag function into an implicit function
 
     Args:
         sag: the sag function
-        tau: normalization factor, typically either 1 (no normalization) or half the lens diameter
+        nf: normalization factor, typically either 1 (no normalization) or tau (normalization enabled)
 
     Returns:
         An implicit function representing the surface defined by the sag function
@@ -74,8 +74,8 @@ def sag_to_implicit_3d(sag: SagFunction3D, tau: ScalarTensor) -> ImplicitFunctio
 
     def implicit(points: Batch3DTensor) -> tuple[BatchTensor, Batch3DTensor]:
         x, y, z = points.unbind(-1)
-        g, g_grad = sag(y / tau, z / tau)
-        f = tau * g - x
+        g, g_grad = sag(y / nf, z / nf)
+        f = nf * g - x
         grad_x = -torch.ones_like(x)
         grad_y, grad_z = g_grad.unbind(-1)
         f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
