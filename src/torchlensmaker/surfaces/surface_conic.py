@@ -27,6 +27,10 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.surfaces.sag_geometry import (
+    lens_diameter_implicit_domain_2d,
+    lens_diameter_implicit_domain_3d,
+)
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -43,7 +47,7 @@ from .sag_functions import (
     sag_to_implicit_2d,
     sag_to_implicit_3d,
 )
-from .sag_surface import sag_surface_2d, sag_surface_3d
+from .sag_surface import sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -94,16 +98,21 @@ class ConicSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
-        sag_function = conical_sag_2d if self.dim == 2 else conical_sag_3d
-        lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d
-        apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
+        if self.dim == 2:
+            sag_function = conical_sag_2d
+            lift_function = sag_to_implicit_2d
+            domain_function = lens_diameter_implicit_domain_2d
+        else:
+            sag_function = conical_sag_3d
+            lift_function = sag_to_implicit_3d
+            domain_function = lens_diameter_implicit_domain_3d
 
-        return apply_impl(
+        return sag_surface_raytrace(
             partial(sag_function, C=C, K=K),
             lift_function,
+            partial(domain_function, diameter=diameter, tol=self.tol),
             self.num_iter,
             self.damping,
-            self.tol,
             P,
             V,
             tf_in,

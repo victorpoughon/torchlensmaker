@@ -23,7 +23,6 @@ from jaxtyping import Bool, Float
 
 from torchlensmaker.types import (
     Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
@@ -31,72 +30,36 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .implicit_solver import implicit_surface_local_raytrace
+from .implicit_solver import DomainFunction, implicit_surface_local_raytrace
 from .raytrace import surface_raytrace
 from .sag_functions import (
     LiftFunction,
     SagFunction,
 )
-from .sag_geometry import (
-    lens_diameter_implicit_domain_2d,
-    lens_diameter_implicit_domain_3d,
-)
 
 
-def sag_surface_2d(
+def sag_surface_raytrace(
     sag_function: SagFunction,
     lift_function: LiftFunction,
+    domain_function: DomainFunction,
     num_iter: int,
     damping: float,
-    tol: float,
-    P: Batch2DTensor,
-    V: Batch2DTensor,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
-    # Setup implicit function and domain function
+) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    """
+    Generic raytracing for a sag surface.
+    Used to implement surface kernels.
+    """
+
+    # Setup the implicit function
     one = torch.ones((), dtype=P.dtype, device=P.device)
     tau = diameter / 2
     nf = torch.where(normalize, tau, one)
     implicit_function = lift_function(sag_function, nf, tau)
-    domain_function = partial(
-        lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol
-    )
-
-    # Setup the local solver
-    local_solver = partial(
-        implicit_surface_local_raytrace,
-        implicit_function=implicit_function,
-        domain_function=domain_function,
-        num_iter=num_iter,
-        damping=damping,
-    )
-
-    # Perform raytrace
-    return surface_raytrace(P, V, tf_in, local_solver)
-
-
-def sag_surface_3d(
-    sag: SagFunction,
-    lift_function: LiftFunction,
-    num_iter: int,
-    damping: float,
-    tol: float,
-    P: Batch3DTensor,
-    V: Batch3DTensor,
-    tf_in: Tf,
-    diameter: ScalarTensor,
-    normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
-    # Setup implicit function and domain function
-    one = torch.ones((), dtype=P.dtype, device=P.device)
-    tau = diameter / 2
-    nf = torch.where(normalize, tau, one)
-    implicit_function = lift_function(sag, nf, tau)
-    domain_function = partial(
-        lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol
-    )
 
     # Setup the local solver
     local_solver = partial(

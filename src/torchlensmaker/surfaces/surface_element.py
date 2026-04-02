@@ -14,9 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, NamedTuple, Self
-
-import torch.nn as nn
+from typing import Any, NamedTuple
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.types import (

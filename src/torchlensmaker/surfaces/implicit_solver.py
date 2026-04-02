@@ -142,8 +142,8 @@ def implicit_surface_local_raytrace(
     local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
 
     # Apply the domain function to contraint to the valid domain.
-    # This is required because typically sag functions extend beyond
-    # that domain or even to infinity
+    # This is required because sag functions can extend beyond the surface to be
+    # modeled and also because the implicit solver can fail to converge
     valid = domain_function(F, P + t.unsqueeze(-1) * V)
 
     return t, local_normals, valid

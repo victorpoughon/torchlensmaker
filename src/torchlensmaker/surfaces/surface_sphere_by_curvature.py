@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Self, cast
+from typing import Any, Self
 
 import torch
 import torch.nn as nn
@@ -27,6 +27,11 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.surfaces.sag_geometry import (
+    lens_diameter_implicit_domain_2d,
+    lens_diameter_implicit_domain_3d,
+)
+from torchlensmaker.surfaces.sag_surface import sag_surface_raytrace
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -43,7 +48,6 @@ from .sag_functions import (
     spherical_sag_2d,
     spherical_sag_3d,
 )
-from .sag_surface import sag_surface_2d, sag_surface_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -91,16 +95,21 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
-        sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
-        lift_function = sag_to_implicit_2d if self.dim == 2 else sag_to_implicit_3d
-        apply_impl = sag_surface_2d if self.dim == 2 else sag_surface_3d
+        if self.dim == 2:
+            sag_function = spherical_sag_2d
+            domain_function = lens_diameter_implicit_domain_2d
+            lift_function = sag_to_implicit_2d
+        else:
+            sag_function = spherical_sag_3d
+            domain_function = lens_diameter_implicit_domain_3d
+            lift_function = sag_to_implicit_3d
 
-        return apply_impl(
+        return sag_surface_raytrace(
             partial(sag_function, C=C),
             lift_function,
+            partial(domain_function, diameter=diameter, tol=self.tol),
             self.num_iter,
             self.damping,
-            self.tol,
             P,
             V,
             tf_in,

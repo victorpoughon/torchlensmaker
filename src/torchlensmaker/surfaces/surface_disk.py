@@ -18,7 +18,6 @@ from functools import partial
 from typing import Any, Self
 
 import torch
-import torch.nn as nn
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import unit_vector
@@ -32,7 +31,6 @@ from torchlensmaker.types import (
     Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
-    HomMatrix,
     MaskTensor,
     ScalarTensor,
     Tf,
