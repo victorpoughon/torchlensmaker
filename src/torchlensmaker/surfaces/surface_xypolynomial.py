@@ -44,7 +44,7 @@ from .kernels_utils import example_rays_3d
 from .sag_functions import (
     conical_sag_3d,
     sag_sum_3d,
-    sag_to_implicit_3d_bare,
+    sag_to_implicit_3d_raw,
     xypolynomial_sag_3d,
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -163,7 +163,11 @@ class XYPolynomial(SurfaceElement):
     """
 
     default_config = SagSolverConfig(
-        num_iter=6, damping=0.95, tol=1e-4, lift_function="raw"
+        implicit_solver="newton",
+        num_iter=6,
+        damping=0.95,
+        tol=1e-4,
+        lift_function="raw",
     )
 
     def __init__(

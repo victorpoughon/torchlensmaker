@@ -48,8 +48,8 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
-    sag_to_implicit_2d_bare,
-    sag_to_implicit_3d_bare,
+    sag_to_implicit_2d_raw,
+    sag_to_implicit_3d_raw,
     spherical_sag_2d,
     spherical_sag_3d,
 )
@@ -187,7 +187,11 @@ class SphereByCurvature(SurfaceElement):
     """
 
     default_config = SagSolverConfig(
-        num_iter=8, damping=0.95, tol=1e-4, lift_function="raw"
+        implicit_solver="newton",
+        num_iter=8,
+        damping=0.95,
+        tol=1e-4,
+        lift_function="raw",
     )
 
     def __init__(

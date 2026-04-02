@@ -44,9 +44,9 @@ from .raytrace import surface_raytrace
 from .sag_functions import (
     LiftFunction,
     SagFunction,
-    sag_to_implicit_2d_bare,
     sag_to_implicit_2d_euclid,
-    sag_to_implicit_3d_bare,
+    sag_to_implicit_2d_raw,
+    sag_to_implicit_3d_raw,
 )
 
 SagSolverConfig: TypeAlias = dict[str, Any]
@@ -55,6 +55,7 @@ Static configuration for raytracing sag surfaces using
 an implicit solver
 
 Possible values:
+    * implicit_solver: implicit solver algorithm, supported values: "newton"
     * num_iter: number of iterations of the solver
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance for the domain function
@@ -62,22 +63,27 @@ Possible values:
 """
 
 
+def _make_implicit_solver(config: SagSolverConfig) -> ImplicitSolver:
+    num_iter: int = config["num_iter"]
+    damping: float = config["damping"]
+    solver_name: str = config["implicit_solver"]
+    if solver_name == "newton":
+        return partial(implicit_solver_newton, num_iter=num_iter, damping=damping)
+    else:
+        raise ValueError(f"Unknown implicit solver: {solver_name!r}")
+
+
 def sag_solver_config_2d(
     config: SagSolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
     tol: float = config["tol"]
-    num_iter: int = config["num_iter"]
-    damping: float = config["damping"]
     liftf = {
-        "raw": sag_to_implicit_2d_bare,
+        "raw": sag_to_implicit_2d_raw,
         "euclid": sag_to_implicit_2d_euclid,
     }[config["lift_function"]]
 
     domainf = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
-
-    implicit_solver = partial(
-        implicit_solver_newton, num_iter=num_iter, damping=damping
-    )
+    implicit_solver = _make_implicit_solver(config)
 
     return liftf, domainf, implicit_solver
 
@@ -86,18 +92,13 @@ def sag_solver_config_3d(
     config: SagSolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
     tol: float = config["tol"]
-    num_iter: int = config["num_iter"]
-    damping: float = config["damping"]
 
     liftf = {
-        "raw": sag_to_implicit_3d_bare,
+        "raw": sag_to_implicit_3d_raw,
         # "euclid": sag_to_implicit_3d_euclid,
     }[config["lift_function"]]
     domainf = partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
-
-    implicit_solver = partial(
-        implicit_solver_newton, num_iter=num_iter, damping=damping
-    )
+    implicit_solver = _make_implicit_solver(config)
 
     return liftf, domainf, implicit_solver
 

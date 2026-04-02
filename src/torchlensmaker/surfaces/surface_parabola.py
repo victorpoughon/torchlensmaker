@@ -185,7 +185,11 @@ class Parabola(SurfaceElement):
     """
 
     default_config = SagSolverConfig(
-        num_iter=6, damping=0.95, tol=1e-4, lift_function="raw"
+        implicit_solver="newton",
+        num_iter=6,
+        damping=0.95,
+        tol=1e-4,
+        lift_function="raw",
     )
 
     def __init__(

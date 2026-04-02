@@ -54,8 +54,8 @@ from .sag_functions import (
     conical_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
-    sag_to_implicit_2d_bare,
-    sag_to_implicit_3d_bare,
+    sag_to_implicit_2d_raw,
+    sag_to_implicit_3d_raw,
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
@@ -240,7 +240,11 @@ class Asphere(SurfaceElement):
     """
 
     default_config = SagSolverConfig(
-        num_iter=8, damping=0.95, tol=1e-4, lift_function="raw"
+        implicit_solver="newton",
+        num_iter=8,
+        damping=0.95,
+        tol=1e-4,
+        lift_function="raw",
     )
 
     def __init__(
