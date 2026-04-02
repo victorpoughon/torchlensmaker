@@ -28,7 +28,7 @@ from torchlensmaker.surfaces.sag_functions import (
     parabolic_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
-    sag_to_implicit_2d,
+    sag_to_implicit_2d_bare,
     spherical_sag_2d,
     spherical_sag_3d,
     xypolynomial_sag_3d,
@@ -46,7 +46,7 @@ def test_debug_shape_A():
 def test_debug_shape2b():
     points = torch.rand((10, 10, 2))
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d(sag, nf=torch.tensor(1), tau=torch.tensor(1))
+    imp = sag_to_implicit_2d_bare(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
     f, f_grad = imp(points)
 
@@ -56,7 +56,7 @@ def test_debug_shape2b():
 def test_debug_shape2s():
     points = torch.rand((10, 1, 2))
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d(sag, nf=torch.tensor(1), tau=torch.tensor(1))
+    imp = sag_to_implicit_2d_bare(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
     f, f_grad = imp(points)
 
@@ -66,7 +66,7 @@ def test_debug_shape2s():
 def test_debug_shape1b():
     points = torch.rand((10, 2))
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d(sag, nf=torch.tensor(1), tau=torch.tensor(1))
+    imp = sag_to_implicit_2d_bare(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
     f, f_grad = imp(points)
 
@@ -76,7 +76,7 @@ def test_debug_shape1b():
 def test_debug_shape1s():
     points = torch.rand((1, 2))  # fails
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d(sag, nf=torch.tensor(1), tau=torch.tensor(1))
+    imp = sag_to_implicit_2d_bare(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
     f, f_grad = imp(points)
 
@@ -86,7 +86,7 @@ def test_debug_shape1s():
 def test_debug_shape0():
     points = torch.rand((2))
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d(sag, nf=torch.tensor(1), tau=torch.tensor(1))
+    imp = sag_to_implicit_2d_bare(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
     f, f_grad = imp(points)
 

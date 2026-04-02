@@ -48,8 +48,8 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
-    sag_to_implicit_2d,
-    sag_to_implicit_3d,
+    sag_to_implicit_2d_bare,
+    sag_to_implicit_3d_bare,
     spherical_sag_2d,
     spherical_sag_3d,
 )
@@ -186,7 +186,9 @@ class SphereByCurvature(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SagSolverConfig(num_iter=8, damping=0.95, tol=1e-4)
+    default_config = SagSolverConfig(
+        num_iter=8, damping=0.95, tol=1e-4, lift_function="raw"
+    )
 
     def __init__(
         self,

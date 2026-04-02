@@ -45,8 +45,8 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
     conical_sag_2d,
     conical_sag_3d,
-    sag_to_implicit_2d,
-    sag_to_implicit_3d,
+    sag_to_implicit_2d_bare,
+    sag_to_implicit_3d_bare,
 )
 from .sag_surface import SagSolverConfig, sag_solver_config, sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -193,7 +193,9 @@ class Conic(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SagSolverConfig(num_iter=6, damping=0.95, tol=1e-4)
+    default_config = SagSolverConfig(
+        num_iter=6, damping=0.95, tol=1e-4, lift_function="raw"
+    )
 
     def __init__(
         self,

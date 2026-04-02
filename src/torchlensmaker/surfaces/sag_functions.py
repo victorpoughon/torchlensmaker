@@ -61,7 +61,7 @@ function. It is also given two extra arguments:
 """
 
 
-def sag_to_implicit_2d(
+def sag_to_implicit_2d_bare(
     sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
 ) -> ImplicitFunction:
     """
@@ -124,7 +124,7 @@ def sag_to_implicit_2d_euclid(
     return implicit
 
 
-def sag_to_implicit_3d(
+def sag_to_implicit_3d_bare(
     sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
 ) -> ImplicitFunction:
     """

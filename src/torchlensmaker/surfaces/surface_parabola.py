@@ -184,7 +184,9 @@ class Parabola(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SagSolverConfig(num_iter=6, damping=0.95, tol=1e-4)
+    default_config = SagSolverConfig(
+        num_iter=6, damping=0.95, tol=1e-4, lift_function="raw"
+    )
 
     def __init__(
         self,

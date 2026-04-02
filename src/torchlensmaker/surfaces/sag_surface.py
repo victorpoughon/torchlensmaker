@@ -44,14 +44,21 @@ from .raytrace import surface_raytrace
 from .sag_functions import (
     LiftFunction,
     SagFunction,
-    sag_to_implicit_2d,
-    sag_to_implicit_3d,
+    sag_to_implicit_2d_bare,
+    sag_to_implicit_2d_euclid,
+    sag_to_implicit_3d_bare,
 )
 
 SagSolverConfig: TypeAlias = dict[str, Any]
 """
 Static configuration for raytracing sag surfaces using
 an implicit solver
+
+Possible values:
+    * num_iter: number of iterations of the solver
+    * damping: damping factor in ]0, 1]
+    * tol: absolute tolerance for the domain function
+    * lift_function: "raw" or "euclid"
 """
 
 
@@ -61,8 +68,11 @@ def sag_solver_config_2d(
     tol: float = config["tol"]
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
+    liftf = {
+        "raw": sag_to_implicit_2d_bare,
+        "euclid": sag_to_implicit_2d_euclid,
+    }[config["lift_function"]]
 
-    liftf = sag_to_implicit_2d
     domainf = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
 
     implicit_solver = partial(
@@ -79,7 +89,10 @@ def sag_solver_config_3d(
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
 
-    liftf = sag_to_implicit_3d
+    liftf = {
+        "raw": sag_to_implicit_3d_bare,
+        # "euclid": sag_to_implicit_3d_euclid,
+    }[config["lift_function"]]
     domainf = partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
 
     implicit_solver = partial(
