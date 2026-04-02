@@ -129,6 +129,9 @@ class Translate2D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()}, y={self.y.item()})"
+
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y)
 
@@ -157,6 +160,9 @@ class TranslateVec2D(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(t={self.t.tolist()})"
 
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
@@ -198,6 +204,9 @@ class Translate3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()}, y={self.y.item()}, z={self.z.item()})"
+
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.x, self.y, self.z)
 
@@ -226,6 +235,9 @@ class TranslateVec3D(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(t={self.t.tolist()})"
 
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(*torch.unbind(self.t))
@@ -257,6 +269,9 @@ class Rotate2D(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(theta={self.theta.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.theta)
@@ -290,6 +305,9 @@ class AbsolutePosition2D(KinematicElement):
             trainable=(self.x.requires_grad, self.y.requires_grad),
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()}, y={self.y.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y)
@@ -326,6 +344,9 @@ class AbsolutePosition3D(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()}, y={self.y.item()}, z={self.z.item()})"
+
     def forward(self, fk: Tf) -> Tf:
         return self.kernel_joint.apply(self.x, self.y, self.z)
 
@@ -351,6 +372,9 @@ class RotateX(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(angle={self.angle.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.angle)
@@ -383,6 +407,9 @@ class RotateY(KinematicElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(angle={self.angle.item()})"
+
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.angle)
 
@@ -413,6 +440,9 @@ class RotateZ(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(angle={self.angle.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         joint = self.kernel_joint.apply(self.angle)
@@ -454,6 +484,9 @@ class RotateMixed(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(angle={self.angle.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         if fk.pdim() == 2:
@@ -505,6 +538,9 @@ class Translate(KinematicElement):
             reversed=self.reversed,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(x={self.x.item()}, y={self.y.item()}, z={self.z.item()})"
 
     def forward(self, fk: Tf) -> Tf:
         if fk.pdim() == 2:

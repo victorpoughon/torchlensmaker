@@ -238,6 +238,9 @@ class Conic(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.diameter.item()}, C={self.C.item()}, K={self.K.item()})"
+
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 

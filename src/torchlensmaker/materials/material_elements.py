@@ -88,6 +88,9 @@ class CauchyMaterial(MaterialModel):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(A={self.A.item()}, B={self.B.item()}, C={self.C.item()}, D={self.D.item()})"
+
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]
     ) -> Float[torch.Tensor, " N"]:
@@ -124,6 +127,13 @@ class SellmeierMaterial(MaterialModel):
             C3=self.C3,
         )
         return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self._get_name()}("
+            f"B1={self.B1.item()}, B2={self.B2.item()}, B3={self.B3.item()}, "
+            f"C1={self.C1.item()}, C2={self.C2.item()}, C3={self.C3.item()})"
+        )
 
     def forward(
         self, wavelength: Float[torch.Tensor, " N"]

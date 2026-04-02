@@ -315,6 +315,9 @@ class SphereByRadius(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.diameter.item()}, R={self.R.item()})"
+
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 

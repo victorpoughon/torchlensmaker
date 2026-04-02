@@ -142,6 +142,9 @@ class Plane(SurfaceElement):
         kwargs: dict[str, Any] = dict(display_diameter=self.display_diameter)
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(display_diameter={self.display_diameter.item()})"
+
     def reverse(self) -> Self:
         return self.clone()
 

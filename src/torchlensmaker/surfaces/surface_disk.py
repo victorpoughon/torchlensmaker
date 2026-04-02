@@ -145,6 +145,9 @@ class Disk(SurfaceElement):
         kwargs: dict[str, Any] = dict(diameter=self.diameter)
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.diameter.item()})"
+
     def reverse(self) -> Self:
         return self.clone()
 

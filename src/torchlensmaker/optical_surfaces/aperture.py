@@ -40,6 +40,9 @@ class Aperture(OpticalSurfaceElement):
         kwargs: dict[str, Any] = dict(diameter=self.surface.diameter)
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.surface.diameter.item()})"
+
     def reverse(self) -> Self:
         return self.clone()
 

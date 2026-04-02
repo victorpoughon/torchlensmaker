@@ -226,6 +226,9 @@ class Parabola(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.diameter.item()}, A={self.A.item()})"
+
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 

@@ -131,6 +131,9 @@ class Square(SurfaceElement):
         )
         return type(self)(**kwargs | overrides)
 
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(side_length={self.side_length.item()})"
+
     def reverse(self) -> Self:
         return self.clone()
 
