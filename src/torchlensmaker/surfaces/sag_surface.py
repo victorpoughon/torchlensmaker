@@ -30,7 +30,11 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .implicit_solver import DomainFunction, implicit_surface_local_raytrace
+from .implicit_solver import (
+    DomainFunction,
+    ImplicitSolver,
+    implicit_surface_local_raytrace,
+)
 from .raytrace import surface_raytrace
 from .sag_functions import (
     LiftFunction,
@@ -42,8 +46,7 @@ def sag_surface_raytrace(
     sag_function: SagFunction,
     lift_function: LiftFunction,
     domain_function: DomainFunction,
-    num_iter: int,
-    damping: float,
+    implicit_solver: ImplicitSolver,
     P: BatchNDTensor,
     V: BatchNDTensor,
     tf_in: Tf,
@@ -66,8 +69,7 @@ def sag_surface_raytrace(
         implicit_surface_local_raytrace,
         implicit_function=implicit_function,
         domain_function=domain_function,
-        num_iter=num_iter,
-        damping=damping,
+        implicit_solver=implicit_solver,
     )
 
     # Perform raytrace

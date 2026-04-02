@@ -34,18 +34,22 @@ ImplicitFunction: TypeAlias = Callable[
 # (points) -> valid mask
 DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
 
+ImplicitSolver: TypeAlias = Callable[
+    [BatchNDTensor, BatchNDTensor, ImplicitFunction], BatchTensor
+]
+
 
 def init_closest_origin(P: BatchNDTensor, V: BatchNDTensor) -> BatchTensor:
     return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
 
 
 def implicit_solver_newton(
-    P: Float[torch.Tensor, "N D"],
-    V: Float[torch.Tensor, "N D"],
+    P: BatchNDTensor,
+    V: BatchNDTensor,
     implicit_function: ImplicitFunction,
     num_iter: int,
     damping: float,
-) -> Float[torch.Tensor, " N"]:
+) -> BatchTensor:
     """
     Newton's method, diffentiable over the last iteration
     This version exports with static loop unrolling
@@ -76,12 +80,12 @@ def implicit_solver_newton(
 
 
 def implicit_solver_newton_while_loop(
-    P: Float[torch.Tensor, "N D"],
-    V: Float[torch.Tensor, "N D"],
+    P: BatchNDTensor,
+    V: BatchNDTensor,
     implicit_function: ImplicitFunction,
     num_iter: Int[torch.Tensor, ""],
     damping: Float[torch.Tensor, ""],
-) -> Float[torch.Tensor, " N"]:
+) -> BatchTensor:
     """
     Newton's method, diffentiable over the last iteration
 
@@ -122,18 +126,17 @@ def implicit_solver_newton_while_loop(
 
 
 def implicit_surface_local_raytrace(
-    P: Float[torch.Tensor, "N D"],
-    V: Float[torch.Tensor, "N D"],
+    P: BatchNDTensor,
+    V: BatchNDTensor,
     implicit_function: ImplicitFunction,
     domain_function: DomainFunction,
-    num_iter: int,
-    damping: float,
+    implicit_solver: ImplicitSolver,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
     """
     Raytracing for implicit surfaces in local frame
     """
 
-    t = implicit_solver_newton(P, V, implicit_function, num_iter, damping)
+    t = implicit_solver(P, V, implicit_function)
 
     # To get the normals of an implicit surface,
     # normalize the gradient of the implicit function

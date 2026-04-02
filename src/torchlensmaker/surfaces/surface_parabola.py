@@ -27,6 +27,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
 from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
@@ -104,12 +105,15 @@ class ParabolaSurfaceKernel(FunctionalKernel):
             lift_function = sag_to_implicit_3d
             domain_function = lens_diameter_implicit_domain_3d
 
+        implicit_solver = partial(
+            implicit_solver_newton, num_iter=self.num_iter, damping=self.damping
+        )
+
         return sag_surface_raytrace(
             partial(sag_function, A=A),
             lift_function,
             partial(domain_function, diameter=diameter, tol=self.tol),
-            self.num_iter,
-            self.damping,
+            implicit_solver,
             P,
             V,
             tf_in,

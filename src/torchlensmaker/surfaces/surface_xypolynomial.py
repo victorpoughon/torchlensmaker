@@ -24,6 +24,7 @@ from jaxtyping import Bool, Float
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
+from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
 from torchlensmaker.surfaces.sag_geometry import lens_diameter_implicit_domain_3d
 from torchlensmaker.surfaces.sag_surface import sag_surface_raytrace
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
@@ -108,13 +109,15 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         domain_function = partial(
             lens_diameter_implicit_domain_3d, diameter=diameter, tol=self.tol
         )
+        implicit_solver = partial(
+            implicit_solver_newton, num_iter=self.num_iter, damping=self.damping
+        )
 
         return sag_surface_raytrace(
             sag_function,
             lift_function,
             domain_function,
-            self.num_iter,
-            self.damping,
+            implicit_solver,
             P,
             V,
             tf_in,
