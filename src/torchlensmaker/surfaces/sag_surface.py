@@ -73,33 +73,57 @@ def _make_implicit_solver(config: SagSolverConfig) -> ImplicitSolver:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
 
+def _make_lift_function_2d(config: SagSolverConfig) -> LiftFunction:
+    lift_name: str = config["lift_function"]
+    options = {
+        "raw": sag_to_implicit_2d_raw,
+        "euclid": sag_to_implicit_2d_euclid,
+    }
+    if lift_name not in options:
+        raise ValueError(f"Unknown 2D lift function: {lift_name!r}")
+    return options[lift_name]
+
+
+def _make_lift_function_3d(config: SagSolverConfig) -> LiftFunction:
+    lift_name: str = config["lift_function"]
+    options = {
+        "raw": sag_to_implicit_3d_raw,
+        # "euclid": sag_to_implicit_3d_euclid,
+    }
+    if lift_name not in options:
+        raise ValueError(f"Unknown 3D lift function: {lift_name!r}")
+    return options[lift_name]
+
+
+def _make_domain_function_2d(
+    config: SagSolverConfig, diameter: ScalarTensor
+) -> DomainFunction:
+    tol: float = config["tol"]
+    return partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
+
+
+def _make_domain_function_3d(
+    config: SagSolverConfig, diameter: ScalarTensor
+) -> DomainFunction:
+    tol: float = config["tol"]
+    return partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
+
+
 def sag_solver_config_2d(
     config: SagSolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
-    tol: float = config["tol"]
-    liftf = {
-        "raw": sag_to_implicit_2d_raw,
-        "euclid": sag_to_implicit_2d_euclid,
-    }[config["lift_function"]]
-
-    domainf = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
+    liftf = _make_lift_function_2d(config)
+    domainf = _make_domain_function_2d(config, diameter)
     implicit_solver = _make_implicit_solver(config)
-
     return liftf, domainf, implicit_solver
 
 
 def sag_solver_config_3d(
     config: SagSolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
-    tol: float = config["tol"]
-
-    liftf = {
-        "raw": sag_to_implicit_3d_raw,
-        # "euclid": sag_to_implicit_3d_euclid,
-    }[config["lift_function"]]
-    domainf = partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
+    liftf = _make_lift_function_3d(config)
+    domainf = _make_domain_function_3d(config, diameter)
     implicit_solver = _make_implicit_solver(config)
-
     return liftf, domainf, implicit_solver
 
 

@@ -52,9 +52,9 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_export_onnx,
 )
 
-config1 = dict(num_iter=1, damping=1.0, tol=1e-3, lift_function="raw")
-config6 = dict(num_iter=6, damping=0.9, tol=1e-3, lift_function="raw")
-config12 = dict(num_iter=12, damping=0.9, tol=1e-4, lift_function="raw")
+config1 = dict(num_iter=1, damping=1.0, tol=1e-3, lift_function="raw", implicit_solver="newton")
+config6 = dict(num_iter=6, damping=0.9, tol=1e-3, lift_function="raw", implicit_solver="newton")
+config12 = dict(num_iter=12, damping=0.9, tol=1e-4, lift_function="raw", implicit_solver="newton")
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC2D-1": SphereByCurvatureSurfaceKernel(2, config1),
