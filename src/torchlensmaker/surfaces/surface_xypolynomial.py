@@ -26,7 +26,11 @@ from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
 from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
 from torchlensmaker.surfaces.sag_geometry import lens_diameter_implicit_domain_3d
-from torchlensmaker.surfaces.sag_surface import sag_surface_raytrace
+from torchlensmaker.surfaces.sag_surface import (
+    SagSolverConfig,
+    sag_solver_config,
+    sag_surface_raytrace,
+)
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -80,10 +84,8 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         "points_global": BatchNDTensor,
     }
 
-    def __init__(self, num_iter: int, damping: float, tol: float):
-        self.num_iter = num_iter
-        self.damping = damping
-        self.tol = tol
+    def __init__(self, solver_config: SagSolverConfig):
+        self.solver_config = solver_config
 
     def apply(
         self,
@@ -105,18 +107,14 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
             ],
         )
 
-        lift_function = sag_to_implicit_3d
-        domain_function = partial(
-            lens_diameter_implicit_domain_3d, diameter=diameter, tol=self.tol
-        )
-        implicit_solver = partial(
-            implicit_solver_newton, num_iter=self.num_iter, damping=self.damping
+        liftf, domainf, implicit_solver = sag_solver_config(
+            3, self.solver_config, diameter
         )
 
         return sag_surface_raytrace(
             sag_function,
-            lift_function,
-            domain_function,
+            liftf,
+            domainf,
             implicit_solver,
             P,
             V,
@@ -164,6 +162,8 @@ class XYPolynomial(SurfaceElement):
     Support for scale.
     """
 
+    default_config = SagSolverConfig(num_iter=6, damping=0.95, tol=1e-4)
+
     def __init__(
         self,
         diameter: float | ScalarTensor,
@@ -176,11 +176,10 @@ class XYPolynomial(SurfaceElement):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = False,
         normalize: bool = False,
-        num_iter: int = 6,
-        damping: float = 0.95,
-        tol: float = 1e-6,
+        solver_config: dict[str, Any] = {},
     ):
         super().__init__()
+        self.solver_config = SagSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.K = init_param(self, "K", K, trainable)
@@ -189,7 +188,7 @@ class XYPolynomial(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func3d = XYPolynomialSurfaceKernel(num_iter, damping, tol)
+        self.func3d = XYPolynomialSurfaceKernel(self.solver_config)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
@@ -201,9 +200,7 @@ class XYPolynomial(SurfaceElement):
             scale=self.scale,
             trainable=self.C.requires_grad,
             normalize=self.normalize,
-            num_iter=self.func3d.num_iter,
-            damping=self.func3d.damping,
-            tol=self.func3d.tol,
+            solver_config=self.solver_config,
         )
         return type(self)(**kwargs | overrides)
 

@@ -32,7 +32,11 @@ from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
 )
-from torchlensmaker.surfaces.sag_surface import sag_surface_raytrace
+from torchlensmaker.surfaces.sag_surface import (
+    SagSolverConfig,
+    sag_solver_config,
+    sag_surface_raytrace,
+)
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -89,11 +93,9 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "points_global": BatchNDTensor,
     }
 
-    def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
+    def __init__(self, dim: int, solver_config: SagSolverConfig):
         self.dim = dim
-        self.num_iter = num_iter
-        self.damping = damping
-        self.tol = tol
+        self.solver_config = solver_config
 
     def apply(
         self,
@@ -114,9 +116,6 @@ class AsphereSurfaceKernel(FunctionalKernel):
                     partial(aspheric_sag_2d, coefficients=alphas),
                 ],
             )
-            lift_function = sag_to_implicit_2d
-            domain_function = lens_diameter_implicit_domain_2d
-
         else:
             sag_function = partial(
                 sag_sum_3d,
@@ -125,17 +124,15 @@ class AsphereSurfaceKernel(FunctionalKernel):
                     partial(aspheric_sag_3d, coefficients=alphas),
                 ],
             )
-            lift_function = sag_to_implicit_3d
-            domain_function = lens_diameter_implicit_domain_3d
 
-        implicit_solver = partial(
-            implicit_solver_newton, num_iter=self.num_iter, damping=self.damping
+        liftf, domainf, implicit_solver = sag_solver_config(
+            self.dim, self.solver_config, diameter
         )
 
         return sag_surface_raytrace(
             sag_function,
-            lift_function,
-            partial(domain_function, diameter=diameter, tol=self.tol),
+            liftf,
+            domainf,
             implicit_solver,
             P,
             V,
@@ -242,6 +239,8 @@ class Asphere(SurfaceElement):
     Support for anchors and scale.
     """
 
+    default_config = SagSolverConfig(num_iter=8, damping=0.95, tol=1e-4)
+
     def __init__(
         self,
         diameter: float | ScalarTensor,
@@ -253,11 +252,10 @@ class Asphere(SurfaceElement):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = False,
         normalize: bool = False,
-        num_iter: int = 6,
-        damping: float = 0.95,
-        tol: float = 1e-6,
+        solver_config: dict[str, Any] = {},
     ):
         super().__init__()
+        self.solver_config = SagSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.K = init_param(self, "K", K, trainable)
@@ -267,8 +265,8 @@ class Asphere(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = AsphereSurfaceKernel(2, num_iter, damping, tol)
-        self.func3d = AsphereSurfaceKernel(3, num_iter, damping, tol)
+        self.func2d = AsphereSurfaceKernel(2, self.solver_config)
+        self.func3d = AsphereSurfaceKernel(3, self.solver_config)
         self.kernel_outer_extent = AsphereOuterExtentSurfaceKernel()
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
@@ -283,9 +281,7 @@ class Asphere(SurfaceElement):
             scale=self.scale,
             trainable=self.C.requires_grad,
             normalize=self.normalize,
-            num_iter=self.func2d.num_iter,
-            damping=self.func2d.damping,
-            tol=self.func2d.tol,
+            solver_config=self.solver_config,
         )
         return type(self)(**kwargs | overrides)
 

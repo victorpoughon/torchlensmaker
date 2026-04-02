@@ -16,11 +16,15 @@
 
 
 from functools import partial
-from typing import Any, Callable, Sequence, TypeAlias
+from typing import Any, Callable, Sequence, TypeAlias, TypedDict
 
 import torch
 from jaxtyping import Bool, Float
 
+from torchlensmaker.surfaces.sag_geometry import (
+    lens_diameter_implicit_domain_2d,
+    lens_diameter_implicit_domain_3d,
+)
 from torchlensmaker.types import (
     Batch2DTensor,
     BatchNDTensor,
@@ -33,13 +37,69 @@ from torchlensmaker.types import (
 from .implicit_solver import (
     DomainFunction,
     ImplicitSolver,
+    implicit_solver_newton,
     implicit_surface_local_raytrace,
 )
 from .raytrace import surface_raytrace
 from .sag_functions import (
     LiftFunction,
     SagFunction,
+    sag_to_implicit_2d,
+    sag_to_implicit_3d,
 )
+
+SagSolverConfig: TypeAlias = dict[str, Any]
+"""
+Static configuration for raytracing sag surfaces using
+an implicit solver
+"""
+
+
+def sag_solver_config_2d(
+    config: SagSolverConfig, diameter: ScalarTensor
+) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
+    tol: float = config["tol"]
+    num_iter: int = config["num_iter"]
+    damping: float = config["damping"]
+
+    liftf = sag_to_implicit_2d
+    domainf = partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
+
+    implicit_solver = partial(
+        implicit_solver_newton, num_iter=num_iter, damping=damping
+    )
+
+    return liftf, domainf, implicit_solver
+
+
+def sag_solver_config_3d(
+    config: SagSolverConfig, diameter: ScalarTensor
+) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
+    tol: float = config["tol"]
+    num_iter: int = config["num_iter"]
+    damping: float = config["damping"]
+
+    liftf = sag_to_implicit_3d
+    domainf = partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
+
+    implicit_solver = partial(
+        implicit_solver_newton, num_iter=num_iter, damping=damping
+    )
+
+    return liftf, domainf, implicit_solver
+
+
+def sag_solver_config(
+    dim: int, config: SagSolverConfig, diameter: ScalarTensor
+) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
+    """
+    Configure a sag function from static parameters
+    """
+
+    if dim == 2:
+        return sag_solver_config_2d(config, diameter)
+    else:
+        return sag_solver_config_3d(config, diameter)
 
 
 def sag_surface_raytrace(

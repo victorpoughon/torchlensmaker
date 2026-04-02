@@ -32,7 +32,11 @@ from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
 )
-from torchlensmaker.surfaces.sag_surface import sag_surface_raytrace
+from torchlensmaker.surfaces.sag_surface import (
+    SagSolverConfig,
+    sag_solver_config,
+    sag_surface_raytrace,
+)
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -81,11 +85,9 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         "points_global": BatchNDTensor,
     }
 
-    def __init__(self, dim: int, num_iter: int, damping: float, tol: float):
+    def __init__(self, dim: int, solver_config: SagSolverConfig):
         self.dim = dim
-        self.num_iter = num_iter
-        self.damping = damping
-        self.tol = tol
+        self.solver_config = solver_config
 
     def apply(
         self,
@@ -96,23 +98,15 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
-        if self.dim == 2:
-            sag_function = spherical_sag_2d
-            domain_function = lens_diameter_implicit_domain_2d
-            lift_function = sag_to_implicit_2d
-        else:
-            sag_function = spherical_sag_3d
-            domain_function = lens_diameter_implicit_domain_3d
-            lift_function = sag_to_implicit_3d
-
-        implicit_solver = partial(
-            implicit_solver_newton, num_iter=self.num_iter, damping=self.damping
+        sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
+        liftf, domainf, implicit_solver = sag_solver_config(
+            self.dim, self.solver_config, diameter
         )
 
         return sag_surface_raytrace(
             partial(sag_function, C=C),
-            lift_function,
-            partial(domain_function, diameter=diameter, tol=self.tol),
+            liftf,
+            domainf,
             implicit_solver,
             P,
             V,
@@ -192,6 +186,8 @@ class SphereByCurvature(SurfaceElement):
     Support for anchors and scale.
     """
 
+    default_config = SagSolverConfig(num_iter=8, damping=0.95, tol=1e-4)
+
     def __init__(
         self,
         diameter: float | ScalarTensor,
@@ -201,11 +197,10 @@ class SphereByCurvature(SurfaceElement):
         scale: float | ScalarTensor = 1.0,
         trainable: bool = False,
         normalize: bool = False,
-        num_iter: int = 12,
-        damping: float = 0.95,
-        tol: float = 1e-4,
+        solver_config: dict[str, Any] = {},
     ):
         super().__init__()
+        self.solver_config = SagSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)
@@ -213,8 +208,8 @@ class SphereByCurvature(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = SphereByCurvatureSurfaceKernel(2, num_iter, damping, tol)
-        self.func3d = SphereByCurvatureSurfaceKernel(3, num_iter, damping, tol)
+        self.func2d = SphereByCurvatureSurfaceKernel(2, self.solver_config)
+        self.func3d = SphereByCurvatureSurfaceKernel(3, self.solver_config)
         self.kernel_outer_extent = SphereByCurvatureOuterExtentSurfaceKernel()
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
@@ -227,9 +222,7 @@ class SphereByCurvature(SurfaceElement):
             scale=self.scale,
             trainable=self.C.requires_grad,
             normalize=self.normalize,
-            num_iter=self.func2d.num_iter,
-            damping=self.func2d.damping,
-            tol=self.func2d.tol,
+            solver_config=self.solver_config,
         )
         return type(self)(**kwargs | overrides)
 
