@@ -22,12 +22,21 @@ import pytest
 import torch
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.surfaces.surface_asphere import AsphereSurfaceKernel
-from torchlensmaker.surfaces.surface_conic import ConicSurfaceKernel
+from torchlensmaker.surfaces.surface_asphere import (
+    AsphereOuterExtentSurfaceKernel,
+    AsphereSurfaceKernel,
+)
+from torchlensmaker.surfaces.surface_conic import (
+    ConicOuterExtentSurfaceKernel,
+    ConicSurfaceKernel,
+)
 from torchlensmaker.surfaces.surface_disk import (
     DiskSurfaceKernel,
 )
-from torchlensmaker.surfaces.surface_parabola import ParabolaSurfaceKernel
+from torchlensmaker.surfaces.surface_parabola import (
+    ParabolaOuterExtentSurfaceKernel,
+    ParabolaSurfaceKernel,
+)
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
@@ -55,14 +64,17 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "Parabola2D-6": ParabolaSurfaceKernel(2, 1, 1.0, 1e-3),
     "Parabola3D-1": ParabolaSurfaceKernel(3, 1, 1.0, 1e-3),
     "Parabola3D-6": ParabolaSurfaceKernel(3, 6, 1.0, 1e-3),
+    "ParabolaOuterExtent": ParabolaOuterExtentSurfaceKernel(),
     "Conic2D-1": ConicSurfaceKernel(2, 1, 1.0, 1e-3),
     "Conic2D-6": ConicSurfaceKernel(2, 6, 1.0, 1e-3),
     "Conic3D-1": ConicSurfaceKernel(3, 1, 1.0, 1e-3),
     "Conic3D-6": ConicSurfaceKernel(3, 6, 1.0, 1e-3),
+    "ConicOuterExtent": ConicOuterExtentSurfaceKernel(),
     "Asphere2D-1": AsphereSurfaceKernel(2, 1, 1.0, 1e-3),
     "Asphere2D-6": AsphereSurfaceKernel(2, 6, 1.0, 1e-3),
     "Asphere3D-1": AsphereSurfaceKernel(3, 1, 1.0, 1e-3),
     "Asphere3D-6": AsphereSurfaceKernel(3, 6, 1.0, 1e-3),
+    "AsphereOuterExtent": AsphereOuterExtentSurfaceKernel(),
     "XYPolynomial3D-1": XYPolynomialSurfaceKernel(6, 1.0, 1e-3),
     "XYPolynomial3D-2": XYPolynomialSurfaceKernel(6, 1.0, 1e-3),
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
