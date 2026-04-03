@@ -49,7 +49,7 @@ from .sag_functions import (
     sag_to_implicit_3d_raw,
 )
 
-SagSolverConfig: TypeAlias = dict[str, Any]
+SolverConfig: TypeAlias = dict[str, Any]
 """
 Static configuration for raytracing sag surfaces using
 an implicit solver
@@ -63,7 +63,7 @@ Possible values:
 """
 
 
-def _make_implicit_solver(config: SagSolverConfig) -> ImplicitSolver:
+def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
     solver_name: str = config["implicit_solver"]
@@ -73,7 +73,7 @@ def _make_implicit_solver(config: SagSolverConfig) -> ImplicitSolver:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
 
-def _make_lift_function_2d(config: SagSolverConfig) -> LiftFunction:
+def _make_lift_function_2d(config: SolverConfig) -> LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_2d_raw,
@@ -84,7 +84,7 @@ def _make_lift_function_2d(config: SagSolverConfig) -> LiftFunction:
     return options[lift_name]
 
 
-def _make_lift_function_3d(config: SagSolverConfig) -> LiftFunction:
+def _make_lift_function_3d(config: SolverConfig) -> LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_3d_raw,
@@ -96,21 +96,21 @@ def _make_lift_function_3d(config: SagSolverConfig) -> LiftFunction:
 
 
 def _make_domain_function_2d(
-    config: SagSolverConfig, diameter: ScalarTensor
+    config: SolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
 
 
 def _make_domain_function_3d(
-    config: SagSolverConfig, diameter: ScalarTensor
+    config: SolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
 
 
 def sag_solver_config_2d(
-    config: SagSolverConfig, diameter: ScalarTensor
+    config: SolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
     liftf = _make_lift_function_2d(config)
     domainf = _make_domain_function_2d(config, diameter)
@@ -119,7 +119,7 @@ def sag_solver_config_2d(
 
 
 def sag_solver_config_3d(
-    config: SagSolverConfig, diameter: ScalarTensor
+    config: SolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
     liftf = _make_lift_function_3d(config)
     domainf = _make_domain_function_3d(config, diameter)
@@ -128,7 +128,7 @@ def sag_solver_config_3d(
 
 
 def sag_solver_config(
-    dim: int, config: SagSolverConfig, diameter: ScalarTensor
+    dim: int, config: SolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
     """
     Configure a sag function from static parameters

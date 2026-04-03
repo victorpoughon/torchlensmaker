@@ -33,7 +33,7 @@ from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_3d,
 )
 from torchlensmaker.surfaces.sag_surface import (
-    SagSolverConfig,
+    SolverConfig,
     sag_solver_config,
     sag_surface_raytrace,
 )
@@ -93,7 +93,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "points_global": BatchNDTensor,
     }
 
-    def __init__(self, dim: int, solver_config: SagSolverConfig):
+    def __init__(self, dim: int, solver_config: SolverConfig):
         self.dim = dim
         self.solver_config = solver_config
 
@@ -239,7 +239,7 @@ class Asphere(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SagSolverConfig(
+    default_config = SolverConfig(
         implicit_solver="newton",
         num_iter=8,
         damping=0.95,
@@ -261,7 +261,7 @@ class Asphere(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SagSolverConfig(**self.default_config | solver_config)
+        self.solver_config = SolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.K = init_param(self, "K", K, trainable)

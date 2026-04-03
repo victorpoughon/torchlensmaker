@@ -48,7 +48,7 @@ from .sag_functions import (
     sag_to_implicit_2d_raw,
     sag_to_implicit_3d_raw,
 )
-from .sag_surface import SagSolverConfig, sag_solver_config, sag_surface_raytrace
+from .sag_surface import SolverConfig, sag_solver_config, sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -83,7 +83,7 @@ class ConicSurfaceKernel(FunctionalKernel):
         "points_global": BatchNDTensor,
     }
 
-    def __init__(self, dim: int, solver_config: SagSolverConfig):
+    def __init__(self, dim: int, solver_config: SolverConfig):
         self.dim = dim
         self.solver_config = solver_config
 
@@ -193,7 +193,7 @@ class Conic(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SagSolverConfig(
+    default_config = SolverConfig(
         implicit_solver="newton",
         num_iter=6,
         damping=0.95,
@@ -214,7 +214,7 @@ class Conic(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SagSolverConfig(**self.default_config | solver_config)
+        self.solver_config = SolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.K = init_param(self, "K", K, trainable)
