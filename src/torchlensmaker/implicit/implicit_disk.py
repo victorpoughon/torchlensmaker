@@ -24,11 +24,15 @@ from torchlensmaker.implicit.implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
+from torchlensmaker.implicit.types import ImplicitResult
 
 
 def implicit_disk_2d(
-    points: torch.Tensor, R: float | torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    points: torch.Tensor,
+    R: float | torch.Tensor,
+    *,
+    order: int = 1,
+) -> ImplicitResult:
     """
     Implicit disk in 2D.
 
@@ -38,21 +42,35 @@ def implicit_disk_2d(
     r = points[..., 1]
     within_cylinder = torch.abs(r) <= R
 
-    plane_F, plane_grad, plane_hess = implicit_yaxis_2d(points)
-    circle_F, circle_grad, circle_hess = implicit_yzcircle_2d(points, R)
+    planeR = implicit_yaxis_2d(points, order=order)
+    circleR = implicit_yzcircle_2d(points, R, order=order)
 
-    F = torch.where(within_cylinder, plane_F, circle_F)
-    grad = torch.where(within_cylinder.unsqueeze(-1), plane_grad, circle_grad)
-    hess = torch.where(
-        within_cylinder.unsqueeze(-1).unsqueeze(-1), plane_hess, circle_hess
-    )
+    F = torch.where(within_cylinder, planeR.val, circleR.val)
+    if order >= 1:
+        assert planeR.grad is not None
+        assert circleR.grad is not None
+        grad = torch.where(within_cylinder.unsqueeze(-1), planeR.grad, circleR.grad)
+    else:
+        grad = None
 
-    return F, grad, hess
+    if order >= 2:
+        assert planeR.hess is not None
+        assert circleR.hess is not None
+        hess = torch.where(
+            within_cylinder.unsqueeze(-1).unsqueeze(-1), planeR.hess, circleR.hess
+        )
+    else:
+        hess = None
+
+    return ImplicitResult(F, grad, hess)
 
 
 def implicit_disk_3d(
-    points: torch.Tensor, R: float | torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    points: torch.Tensor,
+    R: float | torch.Tensor,
+    *,
+    order: int = 1,
+) -> ImplicitResult:
     """
     Implicit disk in 3D.
 
@@ -71,13 +89,25 @@ def implicit_disk_3d(
     y, z = points[..., 1], points[..., 2]
     within_cylinder = y**2 + z**2 <= R**2
 
-    plane_F, plane_grad, plane_hess = implicit_yzplane_3d(points)
-    circle_F, circle_grad, circle_hess = implicit_yzcircle_3d(points, R)
+    planeR = implicit_yzplane_3d(points, order=order)
+    circleR = implicit_yzcircle_3d(points, R, order=order)
 
-    F = torch.where(within_cylinder, plane_F, circle_F)
-    grad = torch.where(within_cylinder.unsqueeze(-1), plane_grad, circle_grad)
-    hess = torch.where(
-        within_cylinder.unsqueeze(-1).unsqueeze(-1), plane_hess, circle_hess
-    )
+    F = torch.where(within_cylinder, planeR.val, circleR.val)
 
-    return F, grad, hess
+    # --- gradient ---
+    grad = None
+    if order >= 1:
+        assert planeR.grad is not None
+        assert circleR.grad is not None
+        grad = torch.where(within_cylinder.unsqueeze(-1), planeR.grad, circleR.grad)
+
+    # --- hessian ---
+    hess = None
+    if order >= 2:
+        assert planeR.hess is not None
+        assert circleR.hess is not None
+        hess = torch.where(
+            within_cylinder.unsqueeze(-1).unsqueeze(-1), planeR.hess, circleR.hess
+        )
+
+    return ImplicitResult(F, grad, hess)

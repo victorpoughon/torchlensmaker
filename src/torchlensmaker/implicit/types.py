@@ -14,10 +14,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from dataclasses import dataclass, field
 from typing import Callable, TypeAlias
 
 import torch
 
-ImplicitFunction: TypeAlias = Callable[
-    [torch.Tensor], tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-]
+
+@dataclass
+class ImplicitResult:
+    val: torch.Tensor
+    grad: torch.Tensor | None = field(default=None)
+    hess: torch.Tensor | None = field(default=None)
+
+
+ImplicitFunction: TypeAlias = Callable[[torch.Tensor], ImplicitResult]
