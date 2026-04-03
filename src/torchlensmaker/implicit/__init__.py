@@ -14,18 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .paraxial import (
-    equivalent_locus_2d,
-    front_focal_point,
-    front_principal_point,
-    rear_focal_point,
-    rear_principal_point,
+from .implicit_circle import (
+    implicit_circle_2d,
+    implicit_circle_3d,
 )
 
 __all__ = [
-    "equivalent_locus_2d",
-    "rear_principal_point",
-    "rear_focal_point",
-    "front_principal_point",
-    "front_focal_point",
+    "implicit_circle_2d",
+    "implicit_circle_3d",
 ]

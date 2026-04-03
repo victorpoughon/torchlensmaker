@@ -19,7 +19,7 @@ import torch
 
 
 def implicit_circle_2d(
-    points: torch.Tensor, R: float
+    points: torch.Tensor, R: float | torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Implicit circle in 2D.
@@ -30,18 +30,18 @@ def implicit_circle_2d(
         F(x, r) = sqrt((|r| - R)^2 + x^2)
 
     Args:
-        points : (N, 2) tensor, columns are (x, r)
+        points : (..., 2) tensor, columns are (x, r)
         R      : circle radius
 
     Returns:
-        F    : (N,)     — function values
-        grad : (N, 2)   — gradient [∇_x F, ∇_r F]
-        hess : (N, 2, 2)— Hessian [[∇_xx, ∇_xr], [∇_rx, ∇_rr]]
+        F    : (...,)      — function values
+        grad : (..., 2)    — gradient
+        hess : (..., 2, 2) — symmetric Hessian
 
     Note: singular at r = 0
     """
-    x = points[:, 0]
-    r = points[:, 1]
+    x = points[..., 0]
+    r = points[..., 1]
 
     # --- shared intermediates ---
     sgn_r = torch.sign(r)
@@ -55,7 +55,7 @@ def implicit_circle_2d(
     # --- gradient ---
     grad_x = x * inv_F
     grad_r = sgn_r * d * inv_F
-    grad = torch.stack([grad_x, grad_r], dim=1)  # (N, 2)
+    grad = torch.stack([grad_x, grad_r], dim=-1)  # (..., 2)
 
     # --- Hessian ---
     H_xx = (s - x**2) * A
@@ -64,17 +64,17 @@ def implicit_circle_2d(
 
     hess = torch.stack(
         [
-            torch.stack([H_xx, H_xr], dim=1),
-            torch.stack([H_xr, H_rr], dim=1),
+            torch.stack([H_xx, H_xr], dim=-1),
+            torch.stack([H_xr, H_rr], dim=-1),
         ],
-        dim=1,
-    )  # (N, 2, 2)
+        dim=-1,
+    )  # (..., 2, 2)
 
     return F, grad, hess
 
 
 def implicit_circle_3d(
-    points: torch.Tensor, R: float
+    points: torch.Tensor, R: float | torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Implicit circle in 3D.
@@ -84,19 +84,19 @@ def implicit_circle_3d(
         F(x, y, z) = sqrt((sqrt(y^2 + z^2) - R)^2 + x^2)
 
     Args:
-        points : (N, 3) tensor, columns are (x, y, z)
+        points : (..., 3) tensor, columns are (x, y, z)
         R      : circle radius
 
     Returns:
-        F    : (N,)      — function values
-        grad : (N, 3)    — gradient [∇_x F, ∇_y F, ∇_z F]
-        hess : (N, 3, 3) — symmetric Hessian
+        F    : (...,)      — function values
+        grad : (..., 3)    — gradient
+        hess : (..., 3, 3) — symmetric Hessian
 
     Note: singular on the x-axis (y = z = 0)
     """
-    x = points[:, 0]
-    y = points[:, 1]
-    z = points[:, 2]
+    x = points[..., 0]
+    y = points[..., 1]
+    z = points[..., 2]
 
     # --- shared intermediates ---
     r = (y**2 + z**2).sqrt()  # radial distance from x-axis
@@ -118,7 +118,7 @@ def implicit_circle_3d(
     grad_x = x * inv_F
     grad_y = y * d * inv_r * inv_F
     grad_z = z * d * inv_r * inv_F
-    grad = torch.stack([grad_x, grad_y, grad_z], dim=1)  # (N, 3)
+    grad = torch.stack([grad_x, grad_y, grad_z], dim=-1)  # (..., 3)
 
     # --- Hessian ---
     diag_num = d * r2 * s  # (r-R) r² s
@@ -133,11 +133,11 @@ def implicit_circle_3d(
 
     hess = torch.stack(
         [
-            torch.stack([H_xx, H_xy, H_xz], dim=1),
-            torch.stack([H_xy, H_yy, H_yz], dim=1),
-            torch.stack([H_xz, H_yz, H_zz], dim=1),
+            torch.stack([H_xx, H_xy, H_xz], dim=-1),
+            torch.stack([H_xy, H_yy, H_yz], dim=-1),
+            torch.stack([H_xz, H_yz, H_zz], dim=-1),
         ],
-        dim=1,
-    )  # (N, 3, 3)
+        dim=-1,
+    )  # (..., 3, 3)
 
     return F, grad, hess
