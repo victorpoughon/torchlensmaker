@@ -47,7 +47,7 @@ def implicit_circle_2d(
     sgn_r = torch.sign(r)
     d = r.abs() - R  # |r| - R
     s = d**2 + x**2
-    F = s.sqrt()  # (N,)
+    F = s.sqrt()  # (...,)
     inv_F = 1.0 / F  # 1 / sqrt(s)
     s32 = s * F  # s^(3/2)
     A = 1.0 / s32  # 1 / s^(3/2)
@@ -102,7 +102,7 @@ def implicit_circle_3d(
     r = (y**2 + z**2).sqrt()  # radial distance from x-axis
     d = r - R  # r - R
     s = d**2 + x**2
-    F = s.sqrt()  # (N,)
+    F = s.sqrt()  # (...,)
     inv_F = 1.0 / F  # 1 / sqrt(s)
     inv_r = 1.0 / r  # 1 / r
     s32 = s * F  # s^(3/2)
