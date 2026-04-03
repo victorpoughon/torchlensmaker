@@ -1,3 +1,6 @@
 [lint]
 # Fix for jaxtyping https://docs.kidger.site/jaxtyping/faq/#flake8-or-ruff-are-throwing-an-error
 ignore = ["F722"]
+
+[format]
+preview = true
