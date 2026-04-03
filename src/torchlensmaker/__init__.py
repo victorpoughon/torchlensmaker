@@ -139,6 +139,7 @@ from torchlensmaker.surfaces.surface_asphere import Asphere
 from torchlensmaker.surfaces.surface_conic import Conic
 from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces.surface_implicit_disk import ImplicitDisk
 from torchlensmaker.surfaces.surface_parabola import Parabola
 from torchlensmaker.surfaces.surface_plane import Plane
 from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
@@ -278,6 +279,7 @@ __all__ = [
     "Asphere",
     "Conic",
     "Disk",
+    "ImplicitDisk",
     "KinematicSurface",
     "Parabola",
     "Plane",

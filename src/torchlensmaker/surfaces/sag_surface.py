@@ -109,24 +109,6 @@ def _make_domain_function_3d(
     return partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
 
 
-def sag_solver_config_2d(
-    config: SolverConfig, diameter: ScalarTensor
-) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
-    liftf = _make_lift_function_2d(config)
-    domainf = _make_domain_function_2d(config, diameter)
-    implicit_solver = _make_implicit_solver(config)
-    return liftf, domainf, implicit_solver
-
-
-def sag_solver_config_3d(
-    config: SolverConfig, diameter: ScalarTensor
-) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
-    liftf = _make_lift_function_3d(config)
-    domainf = _make_domain_function_3d(config, diameter)
-    implicit_solver = _make_implicit_solver(config)
-    return liftf, domainf, implicit_solver
-
-
 def sag_solver_config(
     dim: int, config: SolverConfig, diameter: ScalarTensor
 ) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
@@ -135,9 +117,28 @@ def sag_solver_config(
     """
 
     if dim == 2:
-        return sag_solver_config_2d(config, diameter)
+        liftf = _make_lift_function_2d(config)
+        domainf = _make_domain_function_2d(config, diameter)
+        implicit_solver = _make_implicit_solver(config)
+        return liftf, domainf, implicit_solver
     else:
-        return sag_solver_config_3d(config, diameter)
+        liftf = _make_lift_function_3d(config)
+        domainf = _make_domain_function_3d(config, diameter)
+        implicit_solver = _make_implicit_solver(config)
+        return liftf, domainf, implicit_solver
+
+
+def implicit_solver_config(dim: int, config: SolverConfig) -> ImplicitSolver:
+    """
+    Configure implicit solver parameters from static parameters
+    """
+
+    if dim == 2:
+        implicit_solver = _make_implicit_solver(config)
+        return implicit_solver
+    else:
+        implicit_solver = _make_implicit_solver(config)
+        return implicit_solver
 
 
 def sag_surface_raytrace(

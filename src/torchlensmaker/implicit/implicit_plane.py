@@ -19,6 +19,12 @@ import torch
 from torchlensmaker.implicit.types import ImplicitResult
 
 
+def safe_sign(x: torch.Tensor) -> torch.Tensor:
+    "Like torch.sign() but equals 1 at 0"
+    ones = torch.ones_like(x)
+    return torch.where(x >= 0, ones, -ones)
+
+
 def implicit_yaxis_2d(
     points: torch.Tensor,
     *,
@@ -30,7 +36,7 @@ def implicit_yaxis_2d(
     x = points[..., 0]
     F = torch.abs(x)
     zero = torch.zeros_like(x)
-    grad = torch.stack((torch.sign(x), zero), dim=-1) if order >= 1 else None
+    grad = torch.stack((safe_sign(x), zero), dim=-1) if order >= 1 else None
     hess = (
         torch.zeros((*x.shape, 2, 2), dtype=x.dtype, device=x.device)
         if order >= 2

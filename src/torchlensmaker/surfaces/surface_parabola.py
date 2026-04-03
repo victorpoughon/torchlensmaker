@@ -63,11 +63,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
     with support for anchors and scale.
     """
 
-    inputs = {
-        "P": BatchNDTensor,
-        "V": BatchNDTensor,
-        "tf_in": Tf,
-    }
+    inputs = {"P": BatchNDTensor, "V": BatchNDTensor, "tf_in": Tf}
 
     params = {
         "diameter": ScalarTensor,
