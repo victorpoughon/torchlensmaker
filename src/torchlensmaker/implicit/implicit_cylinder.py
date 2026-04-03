@@ -14,26 +14,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .implicit_circle import (
-    implicit_yzcircle_2d,
-    implicit_yzcircle_3d,
-)
-from .implicit_disk import (
-    implicit_disk_2d,
-    implicit_disk_3d,
-)
-from .implicit_plane import (
-    implicit_yaxis_2d,
-    implicit_yzplane_3d,
-)
-from .types import ImplicitFunction
 
-__all__ = [
-    "ImplicitFunction",
-    "implicit_disk_2d",
-    "implicit_disk_3d",
-    "implicit_yaxis_2d",
-    "implicit_yzcircle_2d",
-    "implicit_yzcircle_3d",
-    "implicit_yzplane_3d",
-]
+import torch
+
+
+def implicit_xcylinder_2d(
+    points: torch.Tensor, R: float | torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]: ...
+
+
+def implicit_xcylinder_3d(
+    points: torch.Tensor, R: float | torch.Tensor
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """
+    Implicit function for an infinite cylinder around the X axis
+    """
+    ...

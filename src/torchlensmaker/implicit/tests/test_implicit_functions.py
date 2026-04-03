@@ -15,18 +15,18 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Callable, TypeAlias
 
 import torch
 
 from torchlensmaker.implicit.implicit_circle import (
-    implicit_circle_2d,
-    implicit_circle_3d,
+    implicit_yzcircle_2d,
+    implicit_yzcircle_3d,
 )
-
-ImplicitFunction: TypeAlias = Callable[
-    [torch.Tensor], tuple[torch.Tensor, torch.Tensor, torch.Tensor]
-]
+from torchlensmaker.implicit.implicit_plane import (
+    implicit_yaxis_2d,
+    implicit_yzplane_3d,
+)
+from torchlensmaker.implicit.types import ImplicitFunction
 
 
 def _fd_grad(f_fn: ImplicitFunction, points: torch.Tensor, eps: float) -> torch.Tensor:
@@ -70,6 +70,32 @@ def _fd_hess(f_fn: ImplicitFunction, points: torch.Tensor, eps: float) -> torch.
     return H
 
 
+def check_shape_dtype_device_correctness(
+    implicit_function: ImplicitFunction,
+    points: torch.Tensor,
+):
+    dtype, device = points.dtype, points.device
+
+    F, grad, hess = implicit_function(points)
+
+    print(f"Checking dtype={dtype}")
+    assert F.dtype == dtype
+    assert grad.dtype == dtype
+    assert hess.dtype == dtype
+
+    print(f"Checking device={device}")
+    assert F.device == device
+    assert grad.device == device
+    assert hess.device == device
+
+    print("Checking shape")
+    N = points.shape[:-1]
+    D = points.shape[-1]
+    assert F.shape == N
+    assert grad.shape == (*N, D)
+    assert hess.shape == (*N, D, D)
+
+
 def check_implicit_finite_difference(
     implicit_function: ImplicitFunction,
     points: torch.Tensor,
@@ -78,7 +104,7 @@ def check_implicit_finite_difference(
     Compare implicit function gradient and hessian with finite differences
     """
 
-    dtype = torch.get_default_dtype()
+    dtype = points.dtype
     eps_grad = {
         torch.float32: 3e-3,
         torch.float64: 1e-5,
@@ -127,13 +153,31 @@ def test_fd_circle_2d():
     points_2d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 2))
     points_2d[:, 1] = points_2d[:, 1].clamp(min=0.2)  # avoid r = 0
 
-    f_2d = partial(implicit_circle_2d, R=1.5)
+    f_2d = partial(implicit_yzcircle_2d, R=1.5)
     check_implicit_finite_difference(f_2d, points_2d)
+    check_shape_dtype_device_correctness(f_2d, points_2d)
 
 
 def test_fd_circle_3d():
     points_3d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 3))
     points_3d[:, 1:] = points_3d[:, 1:].clamp(min=0.2)  # avoid r = 0
 
-    f_3d = partial(implicit_circle_3d, R=1.5)
+    f_3d = partial(implicit_yzcircle_3d, R=1.5)
     check_implicit_finite_difference(f_3d, points_3d)
+    check_shape_dtype_device_correctness(f_3d, points_3d)
+
+
+def test_fd_yplane_2d():
+    points_2d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 2))
+
+    f_2d = implicit_yaxis_2d
+    check_implicit_finite_difference(f_2d, points_2d)
+    check_shape_dtype_device_correctness(f_2d, points_2d)
+
+
+def test_fd_yplane_3d():
+    points_3d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 3))
+
+    f_3d = implicit_yzplane_3d
+    check_implicit_finite_difference(f_3d, points_3d)
+    check_shape_dtype_device_correctness(f_3d, points_3d)

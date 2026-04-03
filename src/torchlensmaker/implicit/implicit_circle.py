@@ -18,14 +18,14 @@
 import torch
 
 
-def implicit_circle_2d(
+def implicit_yzcircle_2d(
     points: torch.Tensor, R: float | torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Implicit circle in 2D.
 
     Note that this is really the projection of a 3D circle into an abstract 2D meridional plane.
-    So in practice is is actually the "surface" defined by the two points (0, R) and (0, -R).
+    So in practice it is actually the "surface" defined by the two points (0, R) and (0, -R).
 
         F(x, r) = sqrt((|r| - R)^2 + x^2)
 
@@ -73,7 +73,7 @@ def implicit_circle_2d(
     return F, grad, hess
 
 
-def implicit_circle_3d(
+def implicit_yzcircle_3d(
     points: torch.Tensor, R: float | torch.Tensor
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
