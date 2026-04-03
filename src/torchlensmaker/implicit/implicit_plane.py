@@ -56,7 +56,7 @@ def implicit_yzplane_3d(
     x = points[..., 0]
     F = torch.abs(x)
     zero = torch.zeros_like(x)
-    grad = torch.stack((torch.sign(x), zero, zero), dim=-1) if order >= 1 else None
+    grad = torch.stack((safe_sign(x), zero, zero), dim=-1) if order >= 1 else None
     hess = (
         torch.zeros((*x.shape, 3, 3), dtype=x.dtype, device=x.device)
         if order >= 2
