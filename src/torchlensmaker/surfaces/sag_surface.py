@@ -38,6 +38,7 @@ from .implicit_solver import (
     DomainFunction,
     ImplicitSolver,
     implicit_solver_newton,
+    implicit_solver_newton2,
     implicit_surface_local_raytrace,
 )
 from .raytrace import surface_raytrace
@@ -69,6 +70,8 @@ def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
     solver_name: str = config["implicit_solver"]
     if solver_name == "newton":
         return partial(implicit_solver_newton, num_iter=num_iter, damping=damping)
+    elif solver_name == "newton2":
+        return partial(implicit_solver_newton2, num_iter=num_iter, damping=damping)
     else:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
@@ -128,6 +131,7 @@ def sag_solver_config(
         return liftf, domainf, implicit_solver
 
 
+# TODO move
 def implicit_solver_config(dim: int, config: SolverConfig) -> ImplicitSolver:
     """
     Configure implicit solver parameters from static parameters

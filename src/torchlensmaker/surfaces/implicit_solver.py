@@ -79,6 +79,62 @@ def implicit_solver_newton(
     return t
 
 
+def implicit_solver_newton2(
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    implicit_function: ImplicitFunction,
+    num_iter: int,
+    damping: float,
+) -> BatchTensor:
+    """
+    Second order Newton's method, diffentiable over the last iteration
+    This version exports with static loop unrolling
+    Requires hessian of the implicit function
+    """
+
+    # Initialize t at the point closest to the origin
+    t = torch.maximum(torch.zeros_like(P[..., -1]), init_closest_origin(P, V))
+
+    if num_iter == 0:
+        return t
+
+    # Do N - 1 non differentiable steps
+    with torch.no_grad():
+        for i in range(num_iter - 1):
+            points = P + t.unsqueeze(-1) * V
+            F, F_grad, F_hess = implicit_function(points)
+
+            Q = F
+            Qp = torch.sum(F_grad * V, dim=-1)
+            R = (F_hess @ V.unsqueeze(-1)).squeeze(-1)
+            Qpp = torch.sum(V * R, dim=-1)
+
+            num = Qp * Q
+            denom = Qp**2 + Qpp * Q
+
+            delta = num / denom
+            t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+
+    # One differentiable step
+    points = P + t.unsqueeze(-1) * V
+    F, F_grad, F_hess = implicit_function(points)
+
+    Q = F
+    Qp = torch.sum(F_grad * V, dim=-1)
+
+    R = (F_hess @ V.unsqueeze(-1)).squeeze(-1)
+    Qpp = torch.sum(V * R, dim=-1)
+
+    num = Qp * Q
+    denom = Qp**2 + Qpp * Q
+
+    delta = num / denom
+
+    t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+
+    return t
+
+
 def implicit_solver_newton_while_loop(
     P: BatchNDTensor,
     V: BatchNDTensor,
@@ -141,7 +197,7 @@ def implicit_surface_local_raytrace(
     # To get the normals of an implicit surface,
     # normalize the gradient of the implicit function
     points = P + t.unsqueeze(-1) * V
-    F, Fgrad = implicit_function(points)
+    F, Fgrad, _ = implicit_function(points)
     local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
 
     # Apply the domain function to contraint to the valid domain.

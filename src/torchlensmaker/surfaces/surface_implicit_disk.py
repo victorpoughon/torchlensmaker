@@ -57,9 +57,9 @@ def temp_implicit(dim: int, R: torch.Tensor):
     impf = implicit_disk_2d if dim == 2 else implicit_disk_3d
 
     def f(points: torch.Tensor):
-        res = impf(points, R=R, order=1)
+        res = impf(points, R=R, order=2)
         assert res.grad is not None
-        return res.val, res.grad
+        return res.val, res.grad, res.hess
 
     return f
 
