@@ -187,22 +187,24 @@ def implicit_surface_local_raytrace(
     implicit_function: ImplicitFunction,
     domain_function: DomainFunction,
     implicit_solver: ImplicitSolver,
-) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
+) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]:
     """
     Raytracing for implicit surfaces in local frame
     """
 
     t = implicit_solver(P, V, implicit_function)
 
-    # To get the normals of an implicit surface,
-    # normalize the gradient of the implicit function
     points = P + t.unsqueeze(-1) * V
-    F, Fgrad, _ = implicit_function(points)
-    local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
+    F, Fgrad, _ = implicit_function(points)  # TODO order 1 here
 
-    # Apply the domain function to contraint to the valid domain.
-    # This is required because sag functions can extend beyond the surface to be
-    # modeled and also because the implicit solver can fail to converge
-    valid = domain_function(F, P + t.unsqueeze(-1) * V)
+    with torch.no_grad():
+        # To get the normals of an implicit surface,
+        # normalize the gradient of the implicit function
+        local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
 
-    return t, local_normals, valid
+        # Apply the domain function to contraint to the valid domain.
+        # This is required because sag functions can extend beyond the surface to be
+        # modeled and also because the implicit solver can fail to converge
+        valid = domain_function(F, P + t.unsqueeze(-1) * V)
+
+    return t, local_normals, valid, F.abs()

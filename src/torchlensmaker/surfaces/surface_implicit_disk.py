@@ -79,6 +79,7 @@ class ImplicitDiskSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, dim: int, solver_config: SolverConfig):
@@ -91,7 +92,14 @@ class ImplicitDiskSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         F = temp_implicit(self.dim, R=diameter / 2)
         implicit_solver = implicit_solver_config(self.dim, self.solver_config)
         local_solver = partial(

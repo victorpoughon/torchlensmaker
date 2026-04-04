@@ -41,6 +41,7 @@ class SurfaceElementOutput(NamedTuple):
     valid: MaskTensor  # boolean mask for valid collisions
     points_local: BatchNDTensor  # collision points (surface frame)
     points_global: BatchNDTensor  # collision points (global frame)
+    rsm: BatchTensor  # Ray-surface minimum
     tf_surface: Tf  # surface transform
     tf_next: Tf  # next transform of the kinematic chain
 

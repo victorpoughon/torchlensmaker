@@ -30,11 +30,14 @@ from torchlensmaker.types import (
     Tf,
 )
 
-# (P, V) -> t, local_normals, valid
+# (P, V) -> t, local_normals, valid, rsm
 LocalSolver: TypeAlias = Callable[
     [Float[torch.Tensor, "N D"], Float[torch.Tensor, "N D"]],
     tuple[
-        Float[torch.Tensor, "  N"], Float[torch.Tensor, "N D"], Bool[torch.Tensor, " N"]
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchTensor,
     ],
 ]
 
@@ -44,7 +47,14 @@ def surface_raytrace(
     V: BatchNDTensor,
     tf: Tf,
     local_solver: LocalSolver,
-) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+) -> tuple[
+    BatchTensor,
+    BatchNDTensor,
+    MaskTensor,
+    BatchNDTensor,
+    BatchNDTensor,
+    BatchTensor,
+]:
     """
     Surface raytracing
 
@@ -59,13 +69,14 @@ def surface_raytrace(
         * valid: boolean mask, true where there is a valid intersection
         * points_local: intersection points in surface local frame
         * points_global: intersection points in global frame
+        * rsm: ray surface minimum
     """
 
     # Convert rays to surface local frame
     P_local, V_local = transform_rays(tf.inverse, P, V)
 
     # Call the local solver
-    t, local_normals, valid = local_solver(P_local, V_local)
+    t, local_normals, valid, rsm = local_solver(P_local, V_local)
 
     # A surface always has two opposite normals, so keep the one pointing
     # against the ray, because that's what we need for refraction / reflection
@@ -81,4 +92,4 @@ def surface_raytrace(
     points_local = P_local + t.unsqueeze(-1) * V_local
     points_global = P + t.unsqueeze(-1) * V
 
-    return t, global_normals, valid, points_local, points_global
+    return t, global_normals, valid, points_local, points_global, rsm
