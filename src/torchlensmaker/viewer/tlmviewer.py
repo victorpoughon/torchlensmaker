@@ -31,7 +31,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
     transform_points,
 )
-from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces import SurfaceElement
 
 # Color theme
 color_valid = "#ffa724"

@@ -18,14 +18,7 @@
 from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.surfaces.surface_element import (
-    BatchNDTensor,
-    BatchTensor,
-    MaskTensor,
-    SurfaceElement,
-    SurfaceElementOutput,
-)
+from torchlensmaker.surfaces import Disk, SurfaceElementOutput
 from torchlensmaker.types import ScalarTensor, Tf
 
 from .optical_surface import OpticalSurfaceElement

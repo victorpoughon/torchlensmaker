@@ -23,8 +23,7 @@ from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces import Disk, SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
 
 

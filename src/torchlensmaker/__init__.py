@@ -117,12 +117,29 @@ from torchlensmaker.sequential.utils import (
     Debug,
     get_elements_by_type,
 )
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.sag_functions import (
+from torchlensmaker.surfaces import (
+    Asphere,
+    Conic,
+    Disk,
+    DomainFunction,
+    ImplicitDisk,
+    ImplicitSolver,
+    KinematicSurface,
+    LiftFunction,
+    Parabola,
+    Plane,
+    SagFunction,
+    SphereByCurvature,
+    SphereByRadius,
+    Square,
+    SurfaceElement,
+    SurfaceElementOutput,
+    XYPolynomial,
     aspheric_sag_2d,
     aspheric_sag_3d,
     conical_sag_2d,
     conical_sag_3d,
+    implicit_solver_newton,
     parabolic_sag_2d,
     parabolic_sag_3d,
     sag_sum_2d,
@@ -134,18 +151,6 @@ from torchlensmaker.surfaces.sag_functions import (
     spherical_sag_3d,
     xypolynomial_sag_3d,
 )
-from torchlensmaker.surfaces.surface_anchor import KinematicSurface
-from torchlensmaker.surfaces.surface_asphere import Asphere
-from torchlensmaker.surfaces.surface_conic import Conic
-from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.surfaces.surface_element import SurfaceElement
-from torchlensmaker.surfaces.surface_implicit_disk import ImplicitDisk
-from torchlensmaker.surfaces.surface_parabola import Parabola
-from torchlensmaker.surfaces.surface_plane import Plane
-from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
-from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
-from torchlensmaker.surfaces.surface_square import Square
-from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -287,6 +292,7 @@ __all__ = [
     "SphereByRadius",
     "Square",
     "SurfaceElement",
+    "SurfaceElementOutput",
     "XYPolynomial",
     "aspheric_sag_2d",
     "aspheric_sag_3d",
@@ -303,6 +309,10 @@ __all__ = [
     "spherical_sag_2d",
     "spherical_sag_3d",
     "xypolynomial_sag_3d",
+    "DomainFunction",
+    "ImplicitSolver",
+    "LiftFunction",
+    "SagFunction",
     # Types
     "Batch2DTensor",
     "Batch3DTensor",

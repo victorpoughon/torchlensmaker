@@ -21,7 +21,7 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElementOutput
 from torchlensmaker.types import Tf
 
 

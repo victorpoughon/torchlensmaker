@@ -23,7 +23,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElementOutput
 from torchlensmaker.types import Tf
 
 

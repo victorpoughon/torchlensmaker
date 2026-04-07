@@ -22,7 +22,7 @@ import torch.nn as nn
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.physics.physics_kernels import ReflectionKernel
-from torchlensmaker.surfaces.surface_element import SurfaceElement, SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElement, SurfaceElementOutput
 from torchlensmaker.types import Tf
 
 from .optical_surface import OpticalSurfaceElement

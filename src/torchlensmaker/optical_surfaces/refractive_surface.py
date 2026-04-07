@@ -26,7 +26,7 @@ from torchlensmaker.materials.get_material_model import (
 )
 from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.physics.physics_kernels import RefractionKernel
-from torchlensmaker.surfaces.surface_element import SurfaceElement, SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElement, SurfaceElementOutput
 from torchlensmaker.types import Tf, TIRMode
 
 from .optical_surface import OpticalSurfaceElement

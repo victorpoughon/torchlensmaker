@@ -21,7 +21,7 @@ from typing import Any, DefaultDict, Self
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import SurfaceElement
+from torchlensmaker.surfaces import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 
 

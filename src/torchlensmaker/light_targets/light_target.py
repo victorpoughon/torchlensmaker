@@ -19,14 +19,8 @@ from typing import NamedTuple
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
-from torchlensmaker.types import (
-    BatchNDTensor,
-    BatchTensor,
-    MaskTensor,
-    ScalarTensor,
-    Tf,
-)
+from torchlensmaker.surfaces import SurfaceElementOutput
+from torchlensmaker.types import ScalarTensor, Tf
 
 
 class LightTargetOutput(NamedTuple):
