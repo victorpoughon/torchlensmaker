@@ -85,7 +85,7 @@ $$
 \nabla_z G(y,z) &= 2 A z \\
 \\
 \nabla_{yy} G(y,z) &= 2A \\
-\nabla_{xy} G(y,z) &= 0 \\
+\nabla_{yz} G(y,z) &= 0 \\
 \nabla_{zz} G(y,z) &= 2A \\
 \end{align}
 $$
@@ -254,6 +254,10 @@ $$
 \nabla F(x, r) = \left(-1,\; g'\!\left(\frac{r}{\eta}\right)\right)
 $$
 
+$$
+\nabla \nabla F(x, r) = \begin{pmatrix} 0 & 0 \\ 0 & \dfrac{1}{\eta}\, g''\!\left(\dfrac{r}{\eta}\right) \end{pmatrix}
+$$
+
 ### Euclid (2D)
 
 Inside the domain $|r| \le \tau$, same as raw. Outside the domain $|r| > \tau$,
@@ -263,11 +267,22 @@ $$
 A = \Bigl(\eta \cdot g\!\left(\tfrac{\tau}{\eta}\right),\; \tau\Bigr)
 $$
 
+Define $P = (x,\, |r|)$. Then:
+
 $$
-F(x, r) = \begin{cases}
-\eta \cdot g\!\left(\dfrac{r}{\eta}\right) - x & |r| \le \tau \\[6pt]
-\left\|(x,\, |r|) - A\right\|_2 & |r| > \tau
-\end{cases}
+F(x, r) = \left\|P - A\right\|
+$$
+
+**Gradient**:
+
+$$
+\nabla F(x, r) = \frac{P - A}{\left\|P - A\right\|}
+$$
+
+**Hessian**:
+
+$$
+\nabla \nabla F(x, r) = \frac{F(x,r)^2\, I \;-\; (P - A)(P - A)^\top}{F(x, r)^3}
 $$
 
 ### Raw (3D)
@@ -279,3 +294,9 @@ $$
 $$
 \nabla F(x, y, z) = \left(-1,\; \nabla_y G,\; \nabla_z G\right)
 $$
+
+$$
+\nabla \nabla F(x, y, z) = \frac{1}{\eta}\begin{pmatrix} 0 & 0 & 0 \\ 0 & \nabla_{yy} G & \nabla_{yz} G \\ 0 & \nabla_{yz} G & \nabla_{zz} G \end{pmatrix}
+$$
+
+where $\nabla_{*} G$ are the sag gradient and hessian entries evaluated at $(y/\eta,\, z/\eta)$.
