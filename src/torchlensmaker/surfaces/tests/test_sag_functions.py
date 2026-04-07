@@ -38,7 +38,7 @@ from torchlensmaker.surfaces.sag_functions import (
 def test_debug_shape_A():
     points = torch.rand((10, 1))
 
-    g = spherical_sag_2d(points, C=torch.tensor(1 / 10))
+    g = spherical_sag_2d(points, C=torch.tensor(1 / 10), order=1)
     print(g.val.shape, g.grad.shape)
 
 
@@ -228,7 +228,7 @@ def test_sag_functions_2d() -> None:
 
     for sag in sags:
         for r in r_tensors:
-            g = sag(r)
+            g = sag(r, order=1)
             assert torch.all(torch.isfinite(g.val))
             assert torch.all(torch.isfinite(g.grad))
             assert g.val.shape == r.shape[:-1]
@@ -381,7 +381,7 @@ def test_sag_functions_3d() -> None:
 
     for sag in sags:
         for yz in yz_tensors:
-            g = sag(yz)
+            g = sag(yz, order=1)
 
             assert torch.all(torch.isfinite(g.val))
             assert torch.all(torch.isfinite(g.grad))

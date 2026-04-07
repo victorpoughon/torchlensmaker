@@ -160,8 +160,8 @@ class ParabolaOuterExtentSurfaceKernel(FunctionalKernel):
         A: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = parabolic_sag_2d(anchor * diameter / 2, A).val
-        extent_normalized = diameter / 2 * parabolic_sag_2d(anchor, A).val
+        extent_unnormalized = parabolic_sag_2d(anchor * diameter / 2, A, order=0).val
+        extent_normalized = diameter / 2 * parabolic_sag_2d(anchor, A, order=0).val
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
