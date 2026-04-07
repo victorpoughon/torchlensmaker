@@ -169,8 +169,8 @@ class ConicOuterExtentSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = conical_sag_2d(anchor * diameter / 2, C, K)[0]
-        extent_normalized = diameter / 2 * conical_sag_2d(anchor, C, K)[0]
+        extent_unnormalized = conical_sag_2d(anchor * diameter / 2, C, K).val
+        extent_normalized = diameter / 2 * conical_sag_2d(anchor, C, K).val
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 

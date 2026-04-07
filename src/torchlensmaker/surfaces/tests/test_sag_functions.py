@@ -38,9 +38,8 @@ from torchlensmaker.surfaces.sag_functions import (
 def test_debug_shape_A():
     points = torch.rand((10, 1))
 
-    g, g_grad = spherical_sag_2d(points, C=torch.tensor(1 / 10))
-
-    print(g.shape, g_grad.shape)
+    g = spherical_sag_2d(points, C=torch.tensor(1 / 10))
+    print(g.val.shape, g.grad.shape)
 
 
 def test_debug_shape2b():
@@ -229,13 +228,13 @@ def test_sag_functions_2d() -> None:
 
     for sag in sags:
         for r in r_tensors:
-            g, g_grad = sag(r)
-            assert torch.all(torch.isfinite(g))
-            assert torch.all(torch.isfinite(g_grad))
-            assert g.shape == r.shape[:-1]
-            assert g_grad.shape == r.shape
-            assert g.dtype == g_grad.dtype == r.dtype
-            assert g.device == g_grad.device == r.device
+            g = sag(r)
+            assert torch.all(torch.isfinite(g.val))
+            assert torch.all(torch.isfinite(g.grad))
+            assert g.val.shape == r.shape[:-1]
+            assert g.grad.shape == r.shape
+            assert g.val.dtype == g.grad.dtype == r.dtype
+            assert g.val.device == g.grad.device == r.device
 
 
 def test_sag_functions_3d() -> None:
@@ -382,12 +381,12 @@ def test_sag_functions_3d() -> None:
 
     for sag in sags:
         for yz in yz_tensors:
-            G, G_grad = sag(yz)
+            g = sag(yz)
 
-            assert torch.all(torch.isfinite(G))
-            assert torch.all(torch.isfinite(G_grad))
-            assert G.shape == yz[..., 0].shape
-            assert G_grad.shape == yz.shape
+            assert torch.all(torch.isfinite(g.val))
+            assert torch.all(torch.isfinite(g.grad))
+            assert g.val.shape == yz[..., 0].shape
+            assert g.grad.shape == yz.shape
 
-            assert G.dtype == G_grad.dtype == yz.dtype
-            assert G.device == G_grad.device == yz.device
+            assert g.val.dtype == g.grad.dtype == yz.dtype
+            assert g.val.device == g.grad.device == yz.device

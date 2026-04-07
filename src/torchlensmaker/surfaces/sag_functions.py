@@ -18,6 +18,7 @@ from typing import Callable, Sequence, TypeAlias
 
 import torch
 from jaxtyping import Float
+from dataclasses import dataclass, field
 
 from torchlensmaker.core.tensor_manip import bbroad
 from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
@@ -25,11 +26,17 @@ from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
     BatchNDTensor,
-    BatchTensor,
     ScalarTensor,
 )
 
-SagFunction: TypeAlias = Callable[[BatchNDTensor], tuple[BatchTensor, BatchNDTensor]]
+
+@dataclass
+class SagResult:
+    val: torch.Tensor
+    grad: torch.Tensor
+
+
+SagFunction: TypeAlias = Callable[[BatchNDTensor], SagResult]
 """
 A sag function models a surface as a deviation from a plane. In 2D that 'plane'
 is the abstract meridional axis, in 3D it's the YZ plane.
@@ -76,9 +83,9 @@ def sag_to_implicit_2d_raw(
 
     def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
-        g, g_grad = sag(points[..., 1:] / nf)
-        f = nf * g - x
-        f_grad = torch.stack((-torch.ones_like(x), g_grad.squeeze(-1)), dim=-1)
+        g = sag(points[..., 1:] / nf)
+        f = nf * g.val - x
+        f_grad = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
         return ImplicitResult(f, f_grad, None)
 
     return implicit
@@ -103,14 +110,16 @@ def sag_to_implicit_2d_euclid(
     def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         # inner part
         x, r = points.unbind(-1)
-        g, g_grad = sag(r / nf)
-        f_inner = nf * g - x
-        f_grad_inner = torch.stack((-torch.ones_like(x), g_grad.squeeze(-1)), dim=-1)
+        g = sag(r / nf)
+        f_inner = nf * g.val - x
+        f_grad_inner = torch.stack(
+            (-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1
+        )
 
         # outer part
         r_abs = torch.abs(r)
         P = torch.stack((x, r_abs), dim=-1)  # (..., 2)
-        A = torch.stack((nf * sag(tau / nf)[0], tau), dim=-1)  # (2)
+        A = torch.stack((nf * sag(tau / nf).val, tau), dim=-1)  # (2)
         f_outer = torch.linalg.vector_norm(P - A, dim=-1)
         f_grad_outer = (P - A) / f_outer.unsqueeze(-1)
 
@@ -139,10 +148,10 @@ def sag_to_implicit_3d_raw(
 
     def implicit(points: Batch3DTensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
-        g, g_grad = sag(points[..., 1:] / nf)
-        f = nf * g - x
+        g = sag(points[..., 1:] / nf)
+        f = nf * g.val - x
         grad_x = -torch.ones_like(x)
-        grad_y, grad_z = g_grad.unbind(-1)
+        grad_y, grad_z = g.grad.unbind(-1)
         f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
 
         return ImplicitResult(f, f_grad, None)
@@ -169,9 +178,7 @@ def safe_div(dividend: torch.Tensor, divisor: torch.Tensor) -> torch.Tensor:
     return torch.div(dividend, torch.where(ok, divisor, safe))
 
 
-def spherical_sag_2d(
-    r: BatchNDTensor, C: ScalarTensor
-) -> tuple[BatchTensor, BatchNDTensor]:
+def spherical_sag_2d(r: BatchNDTensor, C: ScalarTensor) -> SagResult:
     "Spherical sag in 2D, parameterized by curvature"
 
     r = r.squeeze(-1)
@@ -180,12 +187,10 @@ def spherical_sag_2d(
     g = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
     g_grad = safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * C2))
 
-    return g, g_grad.unsqueeze(-1)
+    return SagResult(g, g_grad.unsqueeze(-1))
 
 
-def spherical_sag_3d(
-    yz: BatchNDTensor, C: ScalarTensor
-) -> tuple[BatchTensor, Batch2DTensor]:
+def spherical_sag_3d(yz: BatchNDTensor, C: ScalarTensor) -> SagResult:
     "Spherical sag in 3D, parameterized by curvature"
 
     y, z = yz.unbind(-1)
@@ -195,34 +200,28 @@ def spherical_sag_3d(
     denom = safe_sqrt(1 - r2 * C2)
     G_grad = torch.stack((safe_div(y * C, denom), safe_div(z * C, denom)), dim=-1)
 
-    return G, G_grad
+    return SagResult(G, G_grad)
 
 
-def parabolic_sag_2d(
-    r: BatchNDTensor, A: ScalarTensor
-) -> tuple[BatchTensor, BatchNDTensor]:
+def parabolic_sag_2d(r: BatchNDTensor, A: ScalarTensor) -> SagResult:
     "Parabolic sag in 2D"
 
     r = r.squeeze(-1)
     g = torch.mul(A, torch.pow(r, 2))
     g_grad = 2.0 * A * r
-    return g, g_grad.unsqueeze(-1)
+    return SagResult(g, g_grad.unsqueeze(-1))
 
 
-def parabolic_sag_3d(
-    yz: BatchNDTensor, A: ScalarTensor
-) -> tuple[BatchTensor, Batch2DTensor]:
+def parabolic_sag_3d(yz: BatchNDTensor, A: ScalarTensor) -> SagResult:
     "Parabolic sag in 3D"
 
     y, z = yz.unbind(-1)
     G = torch.mul(A, (y**2 + z**2))
     G_grad = torch.stack((2 * A * y, 2 * A * z), dim=-1)
-    return G, G_grad
+    return SagResult(G, G_grad)
 
 
-def conical_sag_2d(
-    r: BatchNDTensor, C: ScalarTensor, K: ScalarTensor
-) -> tuple[BatchTensor, BatchNDTensor]:
+def conical_sag_2d(r: BatchNDTensor, C: ScalarTensor, K: ScalarTensor) -> SagResult:
     "Conical sag in 2D"
 
     r = r.squeeze(-1)
@@ -231,12 +230,10 @@ def conical_sag_2d(
     g = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
     g_grad = safe_div(C * r, safe_sqrt(1 - (1 + K) * r2 * C2))
 
-    return g, g_grad.unsqueeze(-1)
+    return SagResult(g, g_grad.unsqueeze(-1))
 
 
-def conical_sag_3d(
-    yz: BatchNDTensor, C: ScalarTensor, K: ScalarTensor
-) -> tuple[BatchTensor, Batch2DTensor]:
+def conical_sag_3d(yz: BatchNDTensor, C: ScalarTensor, K: ScalarTensor) -> SagResult:
     "Conical sag in 3D"
 
     y, z = yz.unbind(-1)
@@ -247,12 +244,12 @@ def conical_sag_3d(
     denom = safe_sqrt(1 - (1 + K) * r2 * C2)
     G_grad = torch.stack((safe_div(C * y, denom), safe_div(C * z, denom)), dim=-1)
 
-    return G, G_grad
+    return SagResult(G, G_grad)
 
 
 def aspheric_sag_2d(
     r: BatchNDTensor, coefficients: Float[torch.Tensor, " C"]
-) -> tuple[BatchTensor, BatchNDTensor]:
+) -> SagResult:
     r = r.squeeze(-1)
     C = coefficients.shape[-1]  # number of coefficents
     alphas = bbroad(coefficients, r.dim())
@@ -262,12 +259,12 @@ def aspheric_sag_2d(
     g = torch.sum(alphas * torch.pow(r, 4 + 2 * i), dim=0)
     g_grad = torch.sum(alphas * (4 + 2 * i) * torch.pow(r, 3 + 2 * i), dim=0)
 
-    return g, g_grad.unsqueeze(-1)
+    return SagResult(g, g_grad.unsqueeze(-1))
 
 
 def aspheric_sag_3d(
     yz: BatchNDTensor, coefficients: Float[torch.Tensor, " C"]
-) -> tuple[BatchTensor, Batch2DTensor]:
+) -> SagResult:
     y, z = yz.unbind(-1)
     r2 = y**2 + z**2
     C = coefficients.shape[-1]  # number of coefficents
@@ -279,12 +276,12 @@ def aspheric_sag_3d(
     coeffs_term = torch.sum(alphas * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0)
     G_grad = torch.stack((y * coeffs_term, z * coeffs_term), dim=-1)
 
-    return G, G_grad
+    return SagResult(G, G_grad)
 
 
 def xypolynomial_sag_3d(
     yz: BatchNDTensor, coefficients: Float[torch.Tensor, "P Q"]
-) -> tuple[BatchTensor, Batch2DTensor]:
+) -> SagResult:
     r"""
     Sag function for the XY Polynomial model in 3D
 
@@ -335,34 +332,30 @@ def xypolynomial_sag_3d(
         dim=-1,
     )
 
-    return G, G_grad
+    return SagResult(G, G_grad)
 
 
 def sag_sum_2d(
     r: BatchNDTensor,
     sags: Sequence[SagFunction],
-) -> tuple[BatchTensor, BatchNDTensor]:
+) -> SagResult:
     # Call the sag function of each term
     results = [sag(r) for sag in sags]
 
     # Sum the results
-    g_sum = torch.sum(torch.stack([g for (g, _) in results], dim=0), dim=0)
-    g_grad_sum = torch.sum(
-        torch.stack([g_grad for (_, g_grad) in results], dim=0), dim=0
-    )
-    return g_sum, g_grad_sum
+    g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
+    g_grad_sum = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
+    return SagResult(g_sum, g_grad_sum)
 
 
 def sag_sum_3d(
     yz: BatchNDTensor,
     sags: Sequence[SagFunction],
-) -> tuple[BatchTensor, BatchNDTensor]:
+) -> SagResult:
     # Call the sag function of each term
     results = [sag(yz) for sag in sags]
 
     # Sum the results
-    g_sum = torch.sum(torch.stack([g for (g, _) in results], dim=0), dim=0)
-    g_grad_sum = torch.sum(
-        torch.stack([g_grad for (_, g_grad) in results], dim=0), dim=0
-    )
-    return g_sum, g_grad_sum
+    g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
+    g_grad_sum = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
+    return SagResult(g_sum, g_grad_sum)

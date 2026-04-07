@@ -207,8 +207,8 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
                 partial(aspheric_sag_2d, coefficients=alphas),
             ],
         )
-        extent_unnormalized = sag_function(anchor * diameter / 2)[0]
-        extent_normalized = diameter / 2 * sag_function(anchor)[0]
+        extent_unnormalized = sag_function(anchor * diameter / 2).val
+        extent_normalized = diameter / 2 * sag_function(anchor).val
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 

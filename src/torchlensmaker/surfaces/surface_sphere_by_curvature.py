@@ -166,8 +166,8 @@ class SphereByCurvatureOuterExtentSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = spherical_sag_2d(anchor * diameter / 2, C)[0]
-        extent_normalized = diameter / 2 * spherical_sag_2d(anchor, C)[0]
+        extent_unnormalized = spherical_sag_2d(anchor * diameter / 2, C).val
+        extent_normalized = diameter / 2 * spherical_sag_2d(anchor, C).val
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 
