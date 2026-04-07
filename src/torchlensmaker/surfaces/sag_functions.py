@@ -86,8 +86,24 @@ def sag_to_implicit_2d_raw(
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
-        f_grad = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
-        return ImplicitResult(f, f_grad, None)
+
+        f_grad = None
+        if order >= 1:
+            f_grad = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
+
+        f_hess = None
+        if order >= 2:
+            zeros = torch.zeros_like(x)
+            H_rr = g.hess.squeeze(-1).squeeze(-1) / nf
+            f_hess = torch.stack(
+                [
+                    torch.stack([zeros, zeros], dim=-1),
+                    torch.stack([zeros, H_rr], dim=-1),
+                ],
+                dim=-1,
+            )
+
+        return ImplicitResult(f, f_grad, f_hess)
 
     return implicit
 
@@ -108,25 +124,48 @@ def sag_to_implicit_2d_euclid(
         An implicit function representing the surface defined by the sag function
     """
 
+    raw_implicit = sag_to_implicit_2d_raw(sag, nf, tau)
+
     def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
-        # inner part
-        x, r = points.unbind(-1)
-        g = sag(r / nf, order=order)
-        f_inner = nf * g.val - x
-        f_grad_inner = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
+        # inner part: delegate to raw
+        F_inner = raw_implicit(points, order=order)
 
         # outer part
+        x, r = points.unbind(-1)
         r_abs = torch.abs(r)
         P = torch.stack((x, r_abs), dim=-1)  # (..., 2)
         A = torch.stack((nf * sag(tau / nf, order=0).val, tau), dim=-1)  # (2)
         f_outer = torch.linalg.vector_norm(P - A, dim=-1)
-        f_grad_outer = (P - A) / f_outer.unsqueeze(-1)
 
         mask = r_abs <= tau
-        f = torch.where(mask, f_inner, f_outer)
-        f_grad = torch.where(mask.unsqueeze(-1), f_grad_inner, f_grad_outer)
+        f = torch.where(mask, F_inner.val, f_outer)
 
-        return ImplicitResult(f, f_grad, None)
+        f_grad = None
+        if order >= 1:
+            f_grad_outer = (P - A) / f_outer.unsqueeze(-1)
+            f_grad = torch.where(mask.unsqueeze(-1), F_inner.grad, f_grad_outer)
+
+        f_hess = None
+        if order >= 2:
+            # outer: hessian of euclidean distance ‖P - A‖
+            d = P - A  # (..., 2)
+            f2 = f_outer**2
+            f3 = f_outer*f2
+            H_xx = (f2 - d[..., 0] ** 2) / f3
+            H_xr = -d[..., 0] * d[..., 1] / f3
+            H_rr = (f2 - d[..., 1] ** 2) / f3
+            f_hess_outer = torch.stack(
+                [
+                    torch.stack([H_xx, H_xr], dim=-1),
+                    torch.stack([H_xr, H_rr], dim=-1),
+                ],
+                dim=-1,
+            )
+            f_hess = torch.where(
+                mask.unsqueeze(-1).unsqueeze(-1), F_inner.hess, f_hess_outer
+            )
+
+        return ImplicitResult(f, f_grad, f_hess)
 
     return implicit
 
@@ -149,11 +188,29 @@ def sag_to_implicit_3d_raw(
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
-        grad_x = -torch.ones_like(x)
-        grad_y, grad_z = g.grad.unbind(-1)
-        f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
 
-        return ImplicitResult(f, f_grad, None)
+        f_grad = None
+        if order >= 1:
+            grad_x = -torch.ones_like(x)
+            grad_y, grad_z = g.grad.unbind(-1)
+            f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
+
+        f_hess = None
+        if order >= 2:
+            zeros = torch.zeros_like(x)
+            Gyy = g.hess[..., 0, 0] / nf
+            Gyz = g.hess[..., 0, 1] / nf
+            Gzz = g.hess[..., 1, 1] / nf
+            f_hess = torch.stack(
+                [
+                    torch.stack([zeros, zeros, zeros], dim=-1),
+                    torch.stack([zeros, Gyy, Gyz], dim=-1),
+                    torch.stack([zeros, Gyz, Gzz], dim=-1),
+                ],
+                dim=-1,
+            )
+
+        return ImplicitResult(f, f_grad, f_hess)
 
     return implicit
 
@@ -441,11 +498,11 @@ def sag_sum_2d(
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
-    
+
     g_grad = None
     if order >= 1:
         g_grad = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
-    
+
     g_hess = None
     if order >= 2:
         g_hess = torch.sum(torch.stack([res.hess for res in results], dim=0), dim=0)
@@ -463,11 +520,11 @@ def sag_sum_3d(
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
-    
+
     g_grad = None
     if order >= 1:
         g_grad = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
-    
+
     g_hess = None
     if order >= 2:
         g_hess = torch.sum(torch.stack([res.hess for res in results], dim=0), dim=0)
