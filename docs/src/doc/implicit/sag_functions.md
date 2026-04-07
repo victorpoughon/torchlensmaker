@@ -64,20 +64,23 @@ Parameterized by coefficient $A$.
 
 **In 2D:**
 
-$$
-g(r) = A r^2
-$$
+$$\boxed{g(r) = A r^2}$$
+
+Derivatives:
 
 $$
-g'(r) = 2 A r
+\begin{align}
+g'(r) &= 2 A r \\
+g''(r) &= 2A \\
+\end{align}
 $$
 
 **In 3D** with $r^2 = y^2 + z^2$:
 
+$$\boxed{G(y, z) = A r^2}$$
+
 $$
 \begin{align}
-G(y, z) &= A r^2 \\
-\\
 \nabla_y G(y,z) &= 2 A y \\
 \nabla_z G(y,z) &= 2 A z \\
 \\
@@ -104,26 +107,37 @@ conic constant $K$.
 
 **In 2D:**
 
-$$
-g(r) = \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}}
-$$
+$$\boxed{g(r) = \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}}}$$
 
-$$
-g'(r) = \frac{C r}{\sqrt{1 - (1+K) C^2 r^2}}
-$$
-
-**In 3D** with $r^2 = y^2 + z^2$:
+Derivatives:
 
 $$
 \begin{align}
-G(y, z) &= \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}} \\
-\\
-\nabla_y G(y,z) &= \frac{C y}{\sqrt{1 - (1+K) C^2 r^2}} \\
-\nabla_z G(y,z) &= \frac{C z}{\sqrt{1 - (1+K) C^2 r^2}} \\
-\\
-
+g'(r) &= \frac{C r}{\sqrt{s}} \\
+g''(r) &= \frac{C}{s\sqrt{s}} 
 \end{align}
 $$
+
+With $s = 1 - (1+K) C^2 r^2$.
+
+**In 3D** with $r^2 = y^2 + z^2$:
+
+$$\boxed{G(y, z) = \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}}}$$
+
+Derivatives:
+$$
+\begin{align}
+\\
+\nabla_y G(y,z) &= \frac{C y}{\sqrt{s}} \\
+\nabla_z G(y,z) &= \frac{C z}{\sqrt{s}} \\
+\\
+\nabla_{yy} G(y,z) &= \frac{C(s+C^2y^2(1+K))}{s\sqrt{s}} \\
+\nabla_{yz} G(y,z) &=  \frac{C^3yz(1+K)}{s\sqrt{s}}\\
+\nabla_{zz} G(y,z) &= \frac{C(s+C^2z^2(1+K))}{s\sqrt{s}}
+\end{align}
+$$
+
+With $s = 1 - (1+K) C^2 r^2$.
 
 
 
@@ -134,9 +148,9 @@ $\alpha_0, \alpha_1, \dots, \alpha_{N-1}$.
 
 **In 2D:**
 
-$$
-g(r) = \sum_{i=0}^{N-1} \alpha_i \, r^{4 + 2i}
-$$
+$$\boxed{g(r) = \sum_{i=0}^{N-1} \alpha_i \, r^{4 + 2i}}$$
+
+Derivatives:
 
 $$
 g'(r) = \sum_{i=0}^{N-1} \alpha_i \,(4 + 2i)\, r^{3 + 2i}
@@ -144,14 +158,14 @@ $$
 
 **In 3D** with $r^2 = y^2 + z^2$:
 
-$$
-G(y, z) = \sum_{i=0}^{N-1} \alpha_i \, r^{2(2+i)}
-$$
+$$\boxed{G(y, z) = \sum_{i=0}^{N-1} \alpha_i \, r^{4+2i}}$$
+
+Derivatives:
 
 $$
 \begin{align}
-\nabla_y G(y,z) &= y \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2(1+i)} \\
-\nabla_z G(y,z) &= z \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2(1+i)}
+\nabla_y G(y,z) &= y \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2+2i} \\
+\nabla_z G(y,z) &= z \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2+2i}
 \end{align}
 $$
 
@@ -164,9 +178,9 @@ matrix $C_{p,q}$ of shape $P \times Q$.
 
 **In 3D only:**
 
-$$
-G(y, z) = \sum_{p=0}^{P-1} \sum_{q=0}^{Q-1} C_{p,q}\, y^p z^q
-$$
+$$\boxed{G(y, z) = \sum_{p=0}^{P-1} \sum_{q=0}^{Q-1} C_{p,q}\, y^p z^q}$$
+
+Derivatives:
 
 $$
 \begin{align}
@@ -181,7 +195,7 @@ $$
 A sum of multiple sag functions. Given sag functions $g_1, g_2, \dots, g_M$:
 
 $$
-g(r) = \sum_{k=1}^{M} g_k(r), \qquad g'(r) = \sum_{k=1}^{M} g_k'(r)
+g(r) = \sum_{k=1}^{M} g_k(r)
 $$
 
 And equivalently in 3D. This is used to compose surface models, for example a
