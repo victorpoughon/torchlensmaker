@@ -26,28 +26,37 @@ Parameterized by curvature $C$ (with radius of curvature $R = 1/C$).
 
 **In 2D:**
 
-$$
-g(r) = \frac{C r^2}{1 + \sqrt{1 - C^2 r^2}}
-$$
+$$\boxed{g(r) = \frac{C r^2}{1 + \sqrt{1 - r^2C^2}}}$$
 
-$$
-g'(r) = \frac{C r}{\sqrt{1 - C^2 r^2}}
-$$
-
-**In 3D** with $r^2 = y^2 + z^2$:
-
-$$
-G(y, z) = \frac{C r^2}{1 + \sqrt{1 - C^2 r^2}}
-$$
+Derivatives:
 
 $$
 \begin{align}
-\nabla_y G(y,z) &= \frac{C y}{\sqrt{1 - C^2 r^2}} \\
-\nabla_z G(y,z) &= \frac{C z}{\sqrt{1 - C^2 r^2}}
+g'(r) &= \frac{C r}{\sqrt{s}}\\
+g''(r) &= \frac{C(s + C^2r^2)}{s\sqrt{s}} \\
 \end{align}
 $$
 
+With $s = 1 - r^2C^2$.
 
+**In 3D** with $r^2 = y^2 + z^2$
+
+$$\boxed{G(y, z) = \frac{C r^2}{1 + \sqrt{1 - r^2C^2}}}$$
+
+Derivatives:
+
+$$
+\begin{align}
+\nabla_y G(y,z) &= \frac{C y}{\sqrt{s}} \\
+\nabla_z G(y,z) &= \frac{C z}{\sqrt{s}} \\
+\\
+\nabla_{yy} G(y,z) &= \frac{C(s+C^2y^2)}{s\sqrt{s}} \\
+\nabla_{yz} G(y,z) &=  \frac{C^3yz}{s\sqrt{s}}\\
+\nabla_{zz} G(y,z) &= \frac{C(s+C^2z^2)}{s\sqrt{s}}
+\end{align}
+$$
+
+With $s = 1 - r^2C^2$.
 
 ## Parabolic
 
@@ -66,13 +75,15 @@ $$
 **In 3D** with $r^2 = y^2 + z^2$:
 
 $$
-G(y, z) = A r^2
-$$
-
-$$
 \begin{align}
+G(y, z) &= A r^2 \\
+\\
 \nabla_y G(y,z) &= 2 A y \\
-\nabla_z G(y,z) &= 2 A z
+\nabla_z G(y,z) &= 2 A z \\
+\\
+\nabla_{yy} G(y,z) &= 2A \\
+\nabla_{xy} G(y,z) &= 0 \\
+\nabla_{zz} G(y,z) &= 2A \\
 \end{align}
 $$
 
@@ -104,13 +115,13 @@ $$
 **In 3D** with $r^2 = y^2 + z^2$:
 
 $$
-G(y, z) = \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}}
-$$
-
-$$
 \begin{align}
+G(y, z) &= \frac{C r^2}{1 + \sqrt{1 - (1+K) C^2 r^2}} \\
+\\
 \nabla_y G(y,z) &= \frac{C y}{\sqrt{1 - (1+K) C^2 r^2}} \\
-\nabla_z G(y,z) &= \frac{C z}{\sqrt{1 - (1+K) C^2 r^2}}
+\nabla_z G(y,z) &= \frac{C z}{\sqrt{1 - (1+K) C^2 r^2}} \\
+\\
+
 \end{align}
 $$
 
