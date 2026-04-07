@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass, field
-from typing import Callable, TypeAlias
+from typing import Protocol
 
 import torch
 
@@ -27,4 +27,5 @@ class ImplicitResult:
     hess: torch.Tensor | None = field(default=None)
 
 
-ImplicitFunction: TypeAlias = Callable[[torch.Tensor], ImplicitResult]
+class ImplicitFunction(Protocol):
+    def __call__(self, points: torch.Tensor, *, order: int) -> ImplicitResult: ...

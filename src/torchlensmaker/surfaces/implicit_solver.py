@@ -20,16 +20,12 @@ import torch
 from jaxtyping import Bool, Float, Int
 from torch._higher_order_ops import while_loop
 
+from torchlensmaker.implicit import ImplicitFunction
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
 )
-
-# points -> F(points), F_grad(points)
-ImplicitFunction: TypeAlias = Callable[
-    [BatchNDTensor], tuple[BatchTensor, BatchNDTensor]
-]
 
 # (points) -> valid mask
 DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
@@ -41,6 +37,21 @@ ImplicitSolver: TypeAlias = Callable[
 
 def init_closest_origin(P: BatchNDTensor, V: BatchNDTensor) -> BatchTensor:
     return -torch.sum(P * V, dim=-1) / torch.sum(V * V, dim=-1)
+
+
+def implicit_solver_newton_step(
+    t: BatchTensor,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    implicit_function: ImplicitFunction,
+) -> BatchTensor:
+    "One step of first order newton solver"
+    points = P + t.unsqueeze(-1) * V
+    F = implicit_function(points, order=1)
+    assert F.grad is not None
+
+    delta = F.val / torch.sum(F.grad * V, dim=-1)
+    return delta
 
 
 def implicit_solver_newton(
@@ -64,19 +75,39 @@ def implicit_solver_newton(
     # Do N - 1 non differentiable steps
     with torch.no_grad():
         for i in range(num_iter - 1):
-            points = P + t.unsqueeze(-1) * V
-            F, F_grad = implicit_function(points)
-
-            delta = F / torch.sum(F_grad * V, dim=-1)
+            delta = implicit_solver_newton_step(t, P, V, implicit_function)
             t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     # One differentiable step
-    points = P + t.unsqueeze(-1) * V
-    F, F_grad = implicit_function(points)
-    delta = F / torch.sum(F_grad * V, dim=-1)
+    delta = implicit_solver_newton_step(t, P, V, implicit_function)
     t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     return t
+
+
+def implicit_solver_newton2_step(
+    t: BatchTensor,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    implicit_function: ImplicitFunction,
+) -> BatchTensor:
+    "One step of second order newton solver"
+
+    points = P + t.unsqueeze(-1) * V
+    F = implicit_function(points, order=2)
+    assert F.grad is not None
+    assert F.hess is not None
+
+    Q = F.val
+    Qp = torch.sum(F.grad * V, dim=-1)
+    R = (F.hess @ V.unsqueeze(-1)).squeeze(-1)
+    Qpp = torch.sum(V * R, dim=-1)
+
+    num = Qp * Q
+    denom = Qp**2 + Qpp * Q
+
+    delta = num / denom
+    return delta
 
 
 def implicit_solver_newton2(
@@ -100,36 +131,12 @@ def implicit_solver_newton2(
 
     # Do N - 1 non differentiable steps
     with torch.no_grad():
-        for i in range(num_iter - 1):
-            points = P + t.unsqueeze(-1) * V
-            F, F_grad, F_hess = implicit_function(points)
-
-            Q = F
-            Qp = torch.sum(F_grad * V, dim=-1)
-            R = (F_hess @ V.unsqueeze(-1)).squeeze(-1)
-            Qpp = torch.sum(V * R, dim=-1)
-
-            num = Qp * Q
-            denom = Qp**2 + Qpp * Q
-
-            delta = num / denom
+        for _ in range(num_iter - 1):
+            delta = implicit_solver_newton2_step(t, P, V, implicit_function)
             t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     # One differentiable step
-    points = P + t.unsqueeze(-1) * V
-    F, F_grad, F_hess = implicit_function(points)
-
-    Q = F
-    Qp = torch.sum(F_grad * V, dim=-1)
-
-    R = (F_hess @ V.unsqueeze(-1)).squeeze(-1)
-    Qpp = torch.sum(V * R, dim=-1)
-
-    num = Qp * Q
-    denom = Qp**2 + Qpp * Q
-
-    delta = num / denom
-
+    delta = implicit_solver_newton2_step(t, P, V, implicit_function)
     t = torch.maximum(torch.zeros_like(t), t - damping * delta)
 
     return t
@@ -160,9 +167,10 @@ def implicit_solver_newton_while_loop(
         t: BatchTensor, i: Int[torch.Tensor, ""], n: Int[torch.Tensor, ""]
     ) -> tuple[BatchTensor, Int[torch.Tensor, ""], Int[torch.Tensor, ""]]:
         points = P + t.unsqueeze(-1) * V
-        F, F_grad = implicit_function(points)
+        F = implicit_function(points, order=1)
+        assert F.grad is not None
 
-        delta = F / torch.sum(F_grad * V, dim=-1)
+        delta = F.val / torch.sum(F.grad * V, dim=-1)
         t = torch.maximum(torch.zeros_like(t), t - damping * delta)
         i = i + 1
         return t, i, n.clone()
@@ -194,17 +202,19 @@ def implicit_surface_local_raytrace(
 
     t = implicit_solver(P, V, implicit_function)
 
+    # Final evaluation after solver to compute normals, valid and rsm
     points = P + t.unsqueeze(-1) * V
-    F, Fgrad, _ = implicit_function(points)  # TODO order 1 here
+    F = implicit_function(points, order=1)
+    assert F.grad is not None
+
+    # To get the normals of an implicit surface,
+    # normalize the gradient of the implicit function
+    local_normals = torch.nn.functional.normalize(F.grad, dim=-1)
 
     with torch.no_grad():
-        # To get the normals of an implicit surface,
-        # normalize the gradient of the implicit function
-        local_normals = torch.nn.functional.normalize(Fgrad, dim=-1)
-
         # Apply the domain function to contraint to the valid domain.
         # This is required because sag functions can extend beyond the surface to be
         # modeled and also because the implicit solver can fail to converge
-        valid = domain_function(F, P + t.unsqueeze(-1) * V)
+        valid = domain_function(F.val, P + t.unsqueeze(-1) * V)
 
-    return t, local_normals, valid, F.abs()
+    return t, local_normals, valid, F.val.abs()

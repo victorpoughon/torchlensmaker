@@ -21,7 +21,7 @@ import torch
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.implicit import implicit_disk_2d, implicit_disk_3d
+from torchlensmaker.implicit import ImplicitResult, implicit_disk_2d, implicit_disk_3d
 from torchlensmaker.implicit.implicit_plane import implicit_yaxis_2d
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
@@ -56,10 +56,10 @@ def implicit_domain(
 def temp_implicit(dim: int, R: torch.Tensor):
     impf = implicit_disk_2d if dim == 2 else implicit_disk_3d
 
-    def f(points: torch.Tensor):
-        res = impf(points, R=R, order=2)
+    def f(points: torch.Tensor, *, order: int) -> ImplicitResult:
+        res = impf(points, R=R, order=order)
         assert res.grad is not None
-        return res.val, res.grad, res.hess
+        return ImplicitResult(res.val, res.grad, res.hess)
 
     return f
 

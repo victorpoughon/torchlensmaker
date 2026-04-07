@@ -14,12 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Callable, Sequence, TypeAlias
+from typing import Callable, Sequence, TypeAlias
 
 import torch
 from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import bbroad
+from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -27,8 +28,6 @@ from torchlensmaker.types import (
     BatchTensor,
     ScalarTensor,
 )
-
-from .implicit_solver import ImplicitFunction
 
 SagFunction: TypeAlias = Callable[[BatchNDTensor], tuple[BatchTensor, BatchNDTensor]]
 """
@@ -75,12 +74,12 @@ def sag_to_implicit_2d_raw(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g, g_grad = sag(points[..., 1:] / nf)
         f = nf * g - x
         f_grad = torch.stack((-torch.ones_like(x), g_grad.squeeze(-1)), dim=-1)
-        return f, f_grad
+        return ImplicitResult(f, f_grad, None)
 
     return implicit
 
@@ -101,7 +100,7 @@ def sag_to_implicit_2d_euclid(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch2DTensor) -> tuple[BatchTensor, Batch2DTensor]:
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         # inner part
         x, r = points.unbind(-1)
         g, g_grad = sag(r / nf)
@@ -119,7 +118,7 @@ def sag_to_implicit_2d_euclid(
         f = torch.where(mask, f_inner, f_outer)
         f_grad = torch.where(mask.unsqueeze(-1), f_grad_inner, f_grad_outer)
 
-        return f, f_grad
+        return ImplicitResult(f, f_grad, None)
 
     return implicit
 
@@ -138,7 +137,7 @@ def sag_to_implicit_3d_raw(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch3DTensor) -> tuple[BatchTensor, Batch3DTensor]:
+    def implicit(points: Batch3DTensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g, g_grad = sag(points[..., 1:] / nf)
         f = nf * g - x
@@ -146,7 +145,7 @@ def sag_to_implicit_3d_raw(
         grad_y, grad_z = g_grad.unbind(-1)
         f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
 
-        return f, f_grad
+        return ImplicitResult(f, f_grad, None)
 
     return implicit
 

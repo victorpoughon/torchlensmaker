@@ -26,14 +26,15 @@ from .implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
-from .types import ImplicitFunction
+from .types import ImplicitFunction, ImplicitResult
 
 __all__ = [
-    "ImplicitFunction",
     "implicit_disk_2d",
     "implicit_disk_3d",
     "implicit_yaxis_2d",
     "implicit_yzcircle_2d",
     "implicit_yzcircle_3d",
     "implicit_yzplane_3d",
+    "ImplicitFunction",
+    "ImplicitResult",
 ]

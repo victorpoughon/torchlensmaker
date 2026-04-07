@@ -155,7 +155,9 @@ def sag_surface_raytrace(
     tf_in: Tf,
     diameter: ScalarTensor,
     normalize: Bool[torch.Tensor, ""],
-) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+) -> tuple[
+    BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor, BatchTensor
+]:
     """
     Generic raytracing for a sag surface.
     Used to implement surface kernels.
