@@ -187,11 +187,13 @@ def spherical_sag_2d(r: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagRes
 
     g_grad = None
     if order >= 1:
-        g_grad = safe_div(C * r, safe_sqrt(1 - torch.pow(r, 2) * C2)).unsqueeze(-1)
+        g_grad = safe_div(C * r, safe_sqrt(1 - r2 * C2)).unsqueeze(-1)
 
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        s = 1 - r2 * C2
+        ss = safe_sqrt(s)
+        g_hess = safe_div(C * (s + C2 * r2), s * ss).unsqueeze(-1).unsqueeze(-1)
 
     return SagResult(g, g_grad, g_hess)
 
@@ -211,7 +213,16 @@ def spherical_sag_3d(yz: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagRe
 
     G_hess = None
     if order >= 2:
-        pass  # TODO
+        s = 1 - r2 * C2
+        ss = safe_sqrt(s)
+        denom = s * ss
+        Gyy = safe_div(C * (s + C2 * y**2), denom)
+        Gyz = safe_div(C * C2 * y * z, denom)
+        Gzz = safe_div(C * (s + C2 * z**2), denom)
+        G_hess = torch.stack(
+            [torch.stack([Gyy, Gyz], dim=-1), torch.stack([Gyz, Gzz], dim=-1)],
+            dim=-2,
+        )
 
     return SagResult(G, G_grad, G_hess)
 
@@ -228,7 +239,7 @@ def parabolic_sag_2d(r: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagRes
 
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        g_hess = (2.0 * A * torch.ones_like(r)).unsqueeze(-1).unsqueeze(-1)
 
     return SagResult(g, g_grad, g_hess)
 
@@ -245,7 +256,12 @@ def parabolic_sag_3d(yz: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagRe
 
     G_hess = None
     if order >= 2:
-        pass  # TODO
+        diag = 2.0 * A * torch.ones_like(y)
+        zeros = torch.zeros_like(y)
+        G_hess = torch.stack(
+            [torch.stack([diag, zeros], dim=-1), torch.stack([zeros, diag], dim=-1)],
+            dim=-2,
+        )
 
     return SagResult(G, G_grad, G_hess)
 
@@ -266,7 +282,9 @@ def conical_sag_2d(
 
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        s = 1 - (1 + K) * r2 * C2
+        ss = safe_sqrt(s)
+        g_hess = safe_div(C, s * ss).unsqueeze(-1).unsqueeze(-1)
 
     return SagResult(g, g_grad, g_hess)
 
@@ -288,7 +306,16 @@ def conical_sag_3d(
 
     G_hess = None
     if order >= 2:
-        pass  # TODO
+        s = 1 - (1 + K) * r2 * C2
+        ss = safe_sqrt(s)
+        denom = s * ss
+        Gyy = safe_div(C * (s + C2 * y**2 * (1 + K)), denom)
+        Gyz = safe_div(C * C2 * y * z * (1 + K), denom)
+        Gzz = safe_div(C * (s + C2 * z**2 * (1 + K)), denom)
+        G_hess = torch.stack(
+            [torch.stack([Gyy, Gyz], dim=-1), torch.stack([Gyz, Gzz], dim=-1)],
+            dim=-2,
+        )
 
     return SagResult(G, G_grad, G_hess)
 
@@ -414,12 +441,14 @@ def sag_sum_2d(
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
+    
     g_grad = None
     if order >= 1:
         g_grad = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
+    
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        g_hess = torch.sum(torch.stack([res.hess for res in results], dim=0), dim=0)
     return SagResult(g_sum, g_grad, g_hess)
 
 
@@ -434,10 +463,12 @@ def sag_sum_3d(
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
+    
     g_grad = None
     if order >= 1:
         g_grad = torch.sum(torch.stack([res.grad for res in results], dim=0), dim=0)
+    
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        g_hess = torch.sum(torch.stack([res.hess for res in results], dim=0), dim=0)
     return SagResult(g_sum, g_grad, g_hess)
