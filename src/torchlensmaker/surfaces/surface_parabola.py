@@ -77,6 +77,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, dim: int, solver_config: SolverConfig):
@@ -91,7 +92,14 @@ class ParabolaSurfaceKernel(FunctionalKernel):
         diameter: ScalarTensor,
         A: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         sag_function = parabolic_sag_2d if self.dim == 2 else parabolic_sag_3d
         liftf, domainf, implicit_solver = sag_solver_config(
             self.dim, self.solver_config, diameter
@@ -241,7 +249,7 @@ class Parabola(SurfaceElement):
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
-        t, normal, valid, points_local, points_global = kernel_surface.apply(
+        t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
@@ -251,7 +259,7 @@ class Parabola(SurfaceElement):
         )
 
         return SurfaceElementOutput(
-            t, normal, valid, points_local, points_global, tf_surface, tf_next
+            t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:

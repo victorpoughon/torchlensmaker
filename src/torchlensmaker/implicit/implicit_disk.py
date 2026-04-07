@@ -28,10 +28,7 @@ from torchlensmaker.implicit.types import ImplicitResult
 
 
 def implicit_disk_2d(
-    points: torch.Tensor,
-    R: float | torch.Tensor,
-    *,
-    order: int = 1,
+    points: torch.Tensor, R: float | torch.Tensor, *, order: int
 ) -> ImplicitResult:
     """
     Implicit disk in 2D.
@@ -46,30 +43,28 @@ def implicit_disk_2d(
     circleR = implicit_yzcircle_2d(points, R, order=order)
 
     F = torch.where(within_cylinder, planeR.val, circleR.val)
+
+    # --- gradient ---
+    grad = None
     if order >= 1:
         assert planeR.grad is not None
         assert circleR.grad is not None
         grad = torch.where(within_cylinder.unsqueeze(-1), planeR.grad, circleR.grad)
-    else:
-        grad = None
 
+    # --- hessian ---
+    hess = None
     if order >= 2:
         assert planeR.hess is not None
         assert circleR.hess is not None
         hess = torch.where(
             within_cylinder.unsqueeze(-1).unsqueeze(-1), planeR.hess, circleR.hess
         )
-    else:
-        hess = None
 
     return ImplicitResult(F, grad, hess)
 
 
 def implicit_disk_3d(
-    points: torch.Tensor,
-    R: float | torch.Tensor,
-    *,
-    order: int = 1,
+    points: torch.Tensor, R: float | torch.Tensor, *, order: int
 ) -> ImplicitResult:
     """
     Implicit disk in 3D.

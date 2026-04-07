@@ -48,9 +48,9 @@ def test_debug_shape2b():
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
     imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
-    f, f_grad = imp(points)
-
-    print(f.shape, f_grad.shape)
+    F = imp(points, order=1)
+    assert F.grad is not None
+    print(F.val.shape, F.grad.shape)
 
 
 def test_debug_shape2s():
@@ -58,9 +58,9 @@ def test_debug_shape2s():
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
     imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
-    f, f_grad = imp(points)
-
-    print(f.shape, f_grad.shape)
+    F = imp(points, order=1)
+    assert F.grad is not None
+    print(F.val.shape, F.grad.shape)
 
 
 def test_debug_shape1b():
@@ -68,9 +68,9 @@ def test_debug_shape1b():
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
     imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
-    f, f_grad = imp(points)
-
-    print(f.shape, f_grad.shape)
+    F = imp(points, order=1)
+    assert F.grad is not None
+    print(F.val.shape, F.grad.shape)
 
 
 def test_debug_shape1s():
@@ -78,9 +78,9 @@ def test_debug_shape1s():
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
     imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
-    f, f_grad = imp(points)
-
-    print(f.shape, f_grad.shape)
+    F = imp(points, order=1)
+    assert F.grad is not None
+    print(F.val.shape, F.grad.shape)
 
 
 def test_debug_shape0():
@@ -88,9 +88,9 @@ def test_debug_shape0():
     sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
     imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
 
-    f, f_grad = imp(points)
-
-    print(f.shape, f_grad.shape)
+    F = imp(points, order=1)
+    assert F.grad is not None
+    print(F.val.shape, F.grad.shape)
 
 
 def test_sag_functions_2d() -> None:
@@ -209,9 +209,9 @@ def test_sag_functions_2d() -> None:
                 ),
                 partial(
                     aspheric_sag_2d,
-                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample(
-                        (3,)
-                    ),
+                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((
+                        3,
+                    )),
                 ),
             ],
         ),
@@ -360,9 +360,10 @@ def test_sag_functions_3d() -> None:
                 ),
                 partial(
                     xypolynomial_sag_3d,
-                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample(
-                        (3, 3)
-                    ),
+                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((
+                        3,
+                        3,
+                    )),
                 ),
             ],
         ),

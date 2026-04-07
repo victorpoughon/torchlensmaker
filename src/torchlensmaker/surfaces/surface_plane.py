@@ -47,7 +47,7 @@ from .surface_element import SurfaceElement, SurfaceElementOutput
 def intersection_plane_2d(
     P: Batch2DTensor,
     V: Batch2DTensor,
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchTensor]:
     "2D ray intersection with the Y axis"
 
     t = -P[..., 0] / V[..., 0]
@@ -55,13 +55,14 @@ def intersection_plane_2d(
 
     zero = torch.zeros((), dtype=V.dtype, device=V.device)
     valid = torch.logical_not(torch.isclose(V[..., 0], zero))
-    return t, normals, valid
+    rsm = torch.where(valid, torch.zeros_like(t), P[:, 0])
+    return t, normals, valid, rsm
 
 
 def intersection_plane_3d(
     P: Batch2DTensor,
     V: Batch2DTensor,
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchTensor]:
     "2D ray intersection with the Y axis"
 
     t = -P[..., 0] / V[..., 0]
@@ -69,7 +70,8 @@ def intersection_plane_3d(
 
     zero = torch.zeros((), dtype=V.dtype, device=V.device)
     valid = torch.logical_not(torch.isclose(V[..., 0], zero))
-    return t, normals, valid
+    rsm = torch.where(valid, torch.zeros_like(t), P[:, 0])
+    return t, normals, valid, rsm
 
 
 class PlaneSurfaceKernel(FunctionalKernel):
@@ -91,6 +93,7 @@ class PlaneSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, dim: int):
@@ -101,12 +104,19 @@ class PlaneSurfaceKernel(FunctionalKernel):
         P: BatchNDTensor,
         V: BatchNDTensor,
         tf_in: Tf,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         local_solver = intersection_plane_2d if self.dim == 2 else intersection_plane_3d
-        t, normals, valid, points_local, points_global = surface_raytrace(
+        t, normals, valid, points_local, points_global, rsm = surface_raytrace(
             P, V, tf_in, local_solver
         )
-        return (t, normals, valid, points_local, points_global)
+        return (t, normals, valid, points_local, points_global, rsm)
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device

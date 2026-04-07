@@ -24,7 +24,7 @@ def implicit_yzcircle_2d(
     points: torch.Tensor,
     R: float | torch.Tensor,
     *,
-    order: int = 1,
+    order: int,
 ) -> ImplicitResult:
     """
     Implicit circle in 2D.
@@ -85,7 +85,7 @@ def implicit_yzcircle_3d(
     points: torch.Tensor,
     R: float | torch.Tensor,
     *,
-    order: int = 1,
+    order: int,
 ) -> ImplicitResult:
     """
     Implicit circle in 3D.

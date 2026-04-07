@@ -45,9 +45,10 @@ from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
-    return torch.cat(
-        (R.unsqueeze(0), torch.zeros((dim - 1,), dtype=R.dtype, device=R.device))
-    )
+    return torch.cat((
+        R.unsqueeze(0),
+        torch.zeros((dim - 1,), dtype=R.dtype, device=R.device),
+    ))
 
 
 def sphere_radius_normals(R: ScalarTensor, points: BatchNDTensor) -> MaskTensor:
@@ -96,7 +97,7 @@ def sphere_radius_contains(
 
 def sphere_radius_raytracing(
     P: BatchNDTensor, V: BatchNDTensor, diameter: ScalarTensor, R: ScalarTensor
-) -> tuple[BatchTensor, BatchNDTensor, MaskTensor]:
+) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]:
     N, D = P.shape
 
     dim, dtype, device = P.shape[-1], P.dtype, P.device
@@ -189,7 +190,7 @@ def sphere_radius_raytracing(
     local_normals = sphere_radius_normals(R, local_points)
     valid = number_of_valid_roots > 0
 
-    return init_t + t, local_normals, valid
+    return init_t + t, local_normals, valid, torch.zeros_like(t)
 
 
 class SphereByRadiusSurfaceKernel(FunctionalKernel):
@@ -237,7 +238,14 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
         anchors: Float[torch.Tensor, " 2"],
         scale: ScalarTensor,
     ) -> tuple[
-        BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor, Tf, Tf
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+        Tf,
+        Tf,
     ]:
         # Setup the local solver for this surface class
         local_solver = partial(sphere_radius_raytracing, diameter=diameter, R=R)
@@ -255,11 +263,11 @@ class SphereByRadiusSurfaceKernel(FunctionalKernel):
             )
 
         # Perform raytrace
-        t, normals, valid, points_local, points_global = surface_raytrace(
+        t, normals, valid, points_local, points_global, rsm = surface_raytrace(
             P, V, tf_surface, local_solver
         )
 
-        return t, normals, valid, points_local, points_global, tf_surface, tf_next
+        return t, normals, valid, points_local, points_global, rsm, tf_surface, tf_next
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device

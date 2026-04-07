@@ -48,7 +48,7 @@ def intersection_square_3d(
     P: Batch3DTensor,
     V: Batch3DTensor,
     side_length: ScalarTensor,
-) -> tuple[BatchTensor, Batch3DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchTensor]:
     "3D ray intersection with a square centered on the origin of the YZ plane"
 
     # Intersection with the YZ plane
@@ -61,7 +61,7 @@ def intersection_square_3d(
         torch.maximum(torch.abs(points[..., 1]), torch.abs(points[..., 2]))
         <= side_length / 2
     )
-    return t, normals, valid
+    return t, normals, valid, None
 
 
 class SquareSurfaceKernel(FunctionalKernel):
@@ -94,13 +94,20 @@ class SquareSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         side_length: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         solver = intersection_square_3d
         local_solver = partial(solver, side_length=side_length)
-        t, normals, valid, points_local, points_global = surface_raytrace(
+        t, normals, valid, points_local, points_global, rsm = surface_raytrace(
             P, V, tf_in, local_solver
         )
-        return t, normals, valid, points_local, points_global
+        return t, normals, valid, points_local, points_global, rsm
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -141,11 +148,11 @@ class Square(SurfaceElement):
         assert P.shape[-1] == 3, (
             "Square surface can only be raytraced in 3D because it's not axially symmetric"
         )
-        t, normal, valid, points_local, points_global = self.func3d.apply(
+        t, normal, valid, points_local, points_global, rsm = self.func3d.apply(
             P, V, tf, self.side_length
         )
         return SurfaceElementOutput(
-            t, normal, valid, points_local, points_global, tf.clone(), tf.clone()
+            t, normal, valid, points_local, points_global, rsm, tf.clone(), tf.clone()
         )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:

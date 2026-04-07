@@ -65,6 +65,7 @@ class FocalPoint(LightTarget):
                 valid=None,
                 points_local=None,
                 points_global=None,
+                rsm=None,
                 tf_surface=tf,
                 tf_next=tf,
             ),  # TODO probably need to use an actual surface for focal point, plane?

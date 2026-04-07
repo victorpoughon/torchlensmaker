@@ -82,6 +82,7 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, solver_config: SolverConfig):
@@ -97,7 +98,14 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         coefficients: Float[torch.Tensor, " P Q"],
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         # XYPolynomial is 3D only because it's freeform
         sag_function = partial(
             sag_sum_3d,
@@ -221,7 +229,7 @@ class XYPolynomial(SurfaceElement):
         zero = torch.zeros((), dtype=P.dtype, device=P.device)
         tf_surface, tf_next = kernel_anchor.apply(zero, zero, self.scale, tf)
 
-        t, normal, valid, points_local, points_global = kernel_surface.apply(
+        t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
@@ -233,7 +241,7 @@ class XYPolynomial(SurfaceElement):
         )
 
         return SurfaceElementOutput(
-            t, normal, valid, points_local, points_global, tf_surface, tf_next
+            t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 
     def render(self) -> Any:

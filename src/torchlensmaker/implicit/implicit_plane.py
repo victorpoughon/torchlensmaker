@@ -28,7 +28,7 @@ def safe_sign(x: torch.Tensor) -> torch.Tensor:
 def implicit_yaxis_2d(
     points: torch.Tensor,
     *,
-    order: int = 1,
+    order: int,
 ) -> ImplicitResult:
     """
     Implicit function for the X=0 axis in 2D
@@ -48,7 +48,7 @@ def implicit_yaxis_2d(
 def implicit_yzplane_3d(
     points: torch.Tensor,
     *,
-    order: int = 1,
+    order: int,
 ) -> ImplicitResult:
     """
     Implicit function for the X=0 plane in 3D

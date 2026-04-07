@@ -91,6 +91,7 @@ class AsphereSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, dim: int, solver_config: SolverConfig):
@@ -107,7 +108,14 @@ class AsphereSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         alphas: Float[torch.Tensor, " N"],
         normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         if self.dim == 2:
             sag_function = partial(
                 sag_sum_2d,
@@ -303,7 +311,7 @@ class Asphere(SurfaceElement):
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
-        t, normal, valid, points_local, points_global = kernel_surface.apply(
+        t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
@@ -315,7 +323,7 @@ class Asphere(SurfaceElement):
         )
 
         return SurfaceElementOutput(
-            t, normal, valid, points_local, points_global, tf_surface, tf_next
+            t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:

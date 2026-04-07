@@ -46,7 +46,7 @@ def intersection_disk_2d(
     P: Batch2DTensor,
     V: Batch2DTensor,
     diameter: ScalarTensor,
-) -> tuple[BatchTensor, Batch2DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch2DTensor, MaskTensor, BatchTensor]:
     "2D ray intersection with the Y axis"
 
     t = -P[..., 0] / V[..., 0]
@@ -54,14 +54,14 @@ def intersection_disk_2d(
 
     points = P + t.unsqueeze(-1) * V
     valid = lens_diameter_domain_2d(points, diameter)
-    return t, normals, valid
+    return t, normals, valid, torch.zeros_like(t)
 
 
 def intersection_disk_3d(
     P: Batch2DTensor,
     V: Batch2DTensor,
     diameter: ScalarTensor,
-) -> tuple[BatchTensor, Batch3DTensor, MaskTensor]:
+) -> tuple[BatchTensor, Batch3DTensor, MaskTensor, BatchTensor]:
     "3D ray intersection with the YZ plane"
 
     t = -P[..., 0] / V[..., 0]
@@ -69,7 +69,7 @@ def intersection_disk_3d(
 
     points = P + t.unsqueeze(-1) * V
     valid = lens_diameter_domain_3d(points, diameter)
-    return t, normals, valid
+    return t, normals, valid, torch.zeros_like(t)
 
 
 class DiskSurfaceKernel(FunctionalKernel):
@@ -94,6 +94,7 @@ class DiskSurfaceKernel(FunctionalKernel):
         "valid": MaskTensor,
         "points_local": BatchNDTensor,
         "points_global": BatchNDTensor,
+        "rsm": BatchTensor,
     }
 
     def __init__(self, dim: int):
@@ -105,13 +106,20 @@ class DiskSurfaceKernel(FunctionalKernel):
         V: BatchNDTensor,
         tf_in: Tf,
         diameter: ScalarTensor,
-    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor]:
+    ) -> tuple[
+        BatchTensor,
+        BatchNDTensor,
+        MaskTensor,
+        BatchNDTensor,
+        BatchNDTensor,
+        BatchTensor,
+    ]:
         solver = intersection_disk_2d if self.dim == 2 else intersection_disk_3d
         local_solver = partial(solver, diameter=diameter)
-        t, normals, valid, points_local, points_global = surface_raytrace(
+        t, normals, valid, points_local, points_global, rsm = surface_raytrace(
             P, V, tf_in, local_solver
         )
-        return (t, normals, valid, points_local, points_global)
+        return (t, normals, valid, points_local, points_global, rsm)
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
