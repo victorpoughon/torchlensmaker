@@ -80,6 +80,7 @@ def _make_lift_function_2d(config: SolverConfig) -> LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_2d_raw,
+        "abs": sag_to_implicit_2d_euclid,
         "euclid": sag_to_implicit_2d_euclid,
     }
     if lift_name not in options:

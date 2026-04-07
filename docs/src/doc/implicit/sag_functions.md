@@ -258,6 +258,29 @@ $$
 \nabla \nabla F(x, r) = \begin{pmatrix} 0 & 0 \\ 0 & \dfrac{1}{\eta}\, g''\!\left(\dfrac{r}{\eta}\right) \end{pmatrix}
 $$
 
+### Absolute (2D)
+
+The sag function is assumed defined everywhere. The associated implicit function is defined as:
+
+$$
+F(x, r) = |\eta \cdot g(r / \eta) - x|
+$$
+
+The derivatives are:
+
+$$
+\begin{align}
+\nabla_x F(x,r) &= -s \\
+\nabla_r F(x,r) &= g'(r / \eta) \cdot s \\
+\\
+\nabla_{xx} F(x, r) &= 0 \\
+\nabla_{xr} F(x, r) &= 0 \\
+\nabla_{rr} F(x, r) &= \dfrac{1}{\eta}\, g''(r / \eta) \cdot s \\
+\end{align}
+$$
+
+Where $s = \text{sgn}(\eta \cdot g(r / \eta) - x)$.
+
 ### Euclid (2D)
 
 Inside the domain $|r| \le \tau$, same as raw. Outside the domain $|r| > \tau$,

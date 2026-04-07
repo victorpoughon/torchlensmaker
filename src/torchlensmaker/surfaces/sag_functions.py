@@ -108,6 +108,54 @@ def sag_to_implicit_2d_raw(
     return implicit
 
 
+def safe_sign(x: torch.Tensor) -> torch.Tensor:
+    "Like torch.sign() but equals 1 at 0"
+    ones = torch.ones_like(x)
+    return torch.where(x >= 0, ones, -ones)
+
+
+def sag_to_implicit_2d_abs(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
+    """
+    Wrap a 2D sag function into an implicit function
+
+    Args:
+        sag: the sag function
+        nf: normalization factor, typically either 1 (no normalization) or tau (normalization enabled)
+
+    Returns:
+        An implicit function representing the surface defined by the sag function
+    """
+
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+        x = points[..., 0]
+        g = sag(points[..., 1:] / nf, order=order)
+        core = nf * g.val - x
+        f = torch.abs(core)
+        s = safe_sign(core)
+
+        f_grad = None
+        if order >= 1:
+            f_grad = torch.stack((-s, s * g.grad.squeeze(-1)), dim=-1)
+
+        f_hess = None
+        if order >= 2:
+            zeros = torch.zeros_like(x)
+            H_rr = s * g.hess.squeeze(-1).squeeze(-1) / nf
+            f_hess = torch.stack(
+                [
+                    torch.stack([zeros, zeros], dim=-1),
+                    torch.stack([zeros, H_rr], dim=-1),
+                ],
+                dim=-1,
+            )
+
+        return ImplicitResult(f, f_grad, f_hess)
+
+    return implicit
+
+
 def sag_to_implicit_2d_euclid(
     sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
 ) -> ImplicitFunction:
@@ -124,7 +172,7 @@ def sag_to_implicit_2d_euclid(
         An implicit function representing the surface defined by the sag function
     """
 
-    raw_implicit = sag_to_implicit_2d_raw(sag, nf, tau)
+    raw_implicit = sag_to_implicit_2d_abs(sag, nf, tau)
 
     def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         # inner part: delegate to raw
@@ -150,7 +198,7 @@ def sag_to_implicit_2d_euclid(
             # outer: hessian of euclidean distance ‖P - A‖
             d = P - A  # (..., 2)
             f2 = f_outer**2
-            f3 = f_outer*f2
+            f3 = f_outer * f2
             H_xx = (f2 - d[..., 0] ** 2) / f3
             H_xr = -d[..., 0] * d[..., 1] / f3
             H_rr = (f2 - d[..., 1] ** 2) / f3
