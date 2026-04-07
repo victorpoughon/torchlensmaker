@@ -108,6 +108,46 @@ def sag_to_implicit_2d_raw(
     return implicit
 
 
+
+def sag_to_implicit_2d_taylor(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
+
+    bound = sag(tau / nf, order=2)
+    assert bound.grad is not None
+    assert bound.hess is not None
+
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+        x = points[..., 0]
+        r = torch.abs(points[..., 1])
+        r_ext = bound.val + bound.grad * (r - tau) + 1/2 * bound.hess * (r - tau)**2
+        f = nf * r_ext - x
+
+        f_grad = None
+        if order >= 1:
+            g_grad_ext = bound.grad + bound.hess * (r - tau)
+            f_grad = torch.stack((-torch.ones_like(x), g_grad_ext.squeeze(-1)), dim=-1)
+
+        f_hess = None
+        if order >= 2:
+            g_hess_ext = bound.hess.expand_as(x)
+            zeros = torch.zeros_like(x)
+            H_rr = g_hess_ext.squeeze(-1).squeeze(-1) / nf
+            f_hess = torch.stack(
+                [
+                    torch.stack([zeros, zeros], dim=-1),
+                    torch.stack([zeros, H_rr], dim=-1),
+                ],
+                dim=-1,
+            )
+
+
+        return ImplicitResult(f, f_grad, f_hess)
+
+    return implicit
+
+
+
 def safe_sign(x: torch.Tensor) -> torch.Tensor:
     "Like torch.sign() but equals 1 at 0"
     ones = torch.ones_like(x)

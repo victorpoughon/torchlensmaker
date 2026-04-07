@@ -48,6 +48,7 @@ from .sag_functions import (
     sag_to_implicit_2d_euclid,
     sag_to_implicit_2d_raw,
     sag_to_implicit_3d_raw,
+    sag_to_implicit_2d_taylor,
 )
 
 SolverConfig: TypeAlias = dict[str, Any]
@@ -81,6 +82,7 @@ def _make_lift_function_2d(config: SolverConfig) -> LiftFunction:
     options = {
         "raw": sag_to_implicit_2d_raw,
         "abs": sag_to_implicit_2d_euclid,
+        "taylor": sag_to_implicit_2d_taylor,
         "euclid": sag_to_implicit_2d_euclid,
     }
     if lift_name not in options:
