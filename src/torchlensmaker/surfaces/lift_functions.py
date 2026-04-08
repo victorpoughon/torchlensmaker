@@ -196,6 +196,37 @@ def sag_to_implicit_2d_taylor_squared(
     return implicit
 
 
+def sag_to_implicit_2d_euclid_squared(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
+    """
+    Squared euclidian distance to the lens boundary
+    """
+    x_a = nf * sag(tau / nf, order=0).val
+
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+        x, r = points.unbind(-1)
+        r_abs = torch.abs(r)
+        f = (x - x_a) ** 2 + (r_abs - tau) ** 2
+        assert f.shape == points.shape[:-1]
+
+        f_grad = None
+        if order >= 1:
+            f_grad = 2 * torch.stack(((x - x_a), safe_sign(r) * (r_abs - tau)), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
+
+        f_hess = None
+        if order >= 2:
+            f_hess = (
+                2 * torch.eye(2, dtype=points.dtype, device=points.device)
+            ).expand((*points.shape[:-1], 2, 2))
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
+
+        return ImplicitResult(f, f_grad, f_hess)
+
+    return implicit
+
+
 def safe_sign(x: torch.Tensor) -> torch.Tensor:
     "Like torch.sign() but equals 1 at 0"
     ones = torch.ones_like(x)
