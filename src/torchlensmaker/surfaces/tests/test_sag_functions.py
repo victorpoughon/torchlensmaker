@@ -18,6 +18,9 @@ from functools import partial
 
 import torch
 
+from torchlensmaker.surfaces.lift_functions import (
+    sag_to_implicit_2d_raw,
+)
 from torchlensmaker.surfaces.sag_functions import (
     aspheric_sag_2d,
     aspheric_sag_3d,
@@ -27,7 +30,6 @@ from torchlensmaker.surfaces.sag_functions import (
     parabolic_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
-    sag_to_implicit_2d_raw,
     spherical_sag_2d,
     spherical_sag_3d,
     xypolynomial_sag_3d,
@@ -514,4 +516,3 @@ def test_sag_functions_3d_order2() -> None:
             assert g.val.device == g.grad.device == g.hess.device == yz.device
             # Hessian must be symmetric
             assert torch.allclose(g.hess, g.hess.transpose(-1, -2))
-

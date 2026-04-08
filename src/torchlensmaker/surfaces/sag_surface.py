@@ -41,16 +41,16 @@ from .implicit_solver import (
     implicit_solver_newton2,
     implicit_surface_local_raytrace,
 )
-from .raytrace import surface_raytrace
-from .sag_functions import (
+from .lift_functions import (
     LiftFunction,
-    SagFunction,
     sag_to_implicit_2d_euclid,
     sag_to_implicit_2d_raw,
     sag_to_implicit_2d_taylor,
     sag_to_implicit_2d_taylor_squared,
     sag_to_implicit_3d_raw,
 )
+from .raytrace import surface_raytrace
+from .sag_functions import SagFunction
 
 SolverConfig: TypeAlias = dict[str, Any]
 """

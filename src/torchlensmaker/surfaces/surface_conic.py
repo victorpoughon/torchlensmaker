@@ -45,8 +45,6 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_functions import (
     conical_sag_2d,
     conical_sag_3d,
-    sag_to_implicit_2d_raw,
-    sag_to_implicit_3d_raw,
 )
 from .sag_surface import SolverConfig, sag_solver_config, sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput

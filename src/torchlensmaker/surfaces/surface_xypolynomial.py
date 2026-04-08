@@ -24,8 +24,6 @@ from jaxtyping import Bool, Float
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.sag_geometry import lens_diameter_implicit_domain_3d
 from torchlensmaker.surfaces.sag_surface import (
     SolverConfig,
     sag_solver_config,
@@ -44,7 +42,6 @@ from .kernels_utils import example_rays_3d
 from .sag_functions import (
     conical_sag_3d,
     sag_sum_3d,
-    sag_to_implicit_3d_raw,
     xypolynomial_sag_3d,
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput

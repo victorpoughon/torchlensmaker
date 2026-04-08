@@ -54,8 +54,6 @@ from .sag_functions import (
     conical_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
-    sag_to_implicit_2d_raw,
-    sag_to_implicit_3d_raw,
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
