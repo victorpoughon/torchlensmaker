@@ -60,6 +60,7 @@ def sag_to_implicit_2d_raw(
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
+        assert f.shape == points.shape[:-1]
 
         f_grad = None
         if order >= 1:
@@ -78,6 +79,7 @@ def sag_to_implicit_2d_raw(
                 ],
                 dim=-1,
             )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
 
         return ImplicitResult(f, f_grad, f_hess)
 
@@ -123,11 +125,13 @@ def sag_to_implicit_2d_taylor(
         x = points[..., 0]
         g = sag_exp(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
+        assert f.shape == points.shape[:-1]
 
         f_grad = None
         if order >= 1:
             assert g.grad is not None
             f_grad = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
 
         f_hess = None
         if order >= 2:
@@ -141,6 +145,7 @@ def sag_to_implicit_2d_taylor(
                 ],
                 dim=-1,
             )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
 
         return ImplicitResult(f, f_grad, f_hess)
 
@@ -252,12 +257,14 @@ def sag_to_implicit_2d_abs(
         g = sag(points[..., 1:] / nf, order=order)
         core = nf * g.val - x
         f = torch.abs(core)
+        assert f.shape == points.shape[:-1]
         s = safe_sign(core)
 
         f_grad = None
         if order >= 1:
             assert g.grad is not None
             f_grad = torch.stack((-s, s * g.grad.squeeze(-1)), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
 
         f_hess = None
         if order >= 2:
@@ -271,6 +278,7 @@ def sag_to_implicit_2d_abs(
                 ],
                 dim=-1,
             )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
 
         return ImplicitResult(f, f_grad, f_hess)
 
@@ -308,12 +316,14 @@ def sag_to_implicit_2d_euclid(
 
         mask = r_abs <= tau
         f = torch.where(mask, F_inner.val, f_outer)
+        assert f.shape == points.shape[:-1]
 
         f_grad = None
         if order >= 1:
             assert F_inner.grad is not None
             f_grad_outer = (P - A) / f_outer.unsqueeze(-1)
             f_grad = torch.where(mask.unsqueeze(-1), F_inner.grad, f_grad_outer)
+            assert f_grad.shape == (*points.shape[:-1], 2)
 
         f_hess = None
         if order >= 2:
@@ -335,6 +345,7 @@ def sag_to_implicit_2d_euclid(
             f_hess = torch.where(
                 mask.unsqueeze(-1).unsqueeze(-1), F_inner.hess, f_hess_outer
             )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
 
         return ImplicitResult(f, f_grad, f_hess)
 
@@ -359,6 +370,7 @@ def sag_to_implicit_3d_raw(
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
+        assert f.shape == points.shape[:-1]
 
         f_grad = None
         if order >= 1:
@@ -366,6 +378,7 @@ def sag_to_implicit_3d_raw(
             grad_x = -torch.ones_like(x)
             grad_y, grad_z = g.grad.unbind(-1)
             f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
 
         f_hess = None
         if order >= 2:
@@ -382,6 +395,7 @@ def sag_to_implicit_3d_raw(
                 ],
                 dim=-1,
             )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
 
         return ImplicitResult(f, f_grad, f_hess)
 
