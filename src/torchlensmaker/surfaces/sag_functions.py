@@ -14,11 +14,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Callable, Sequence, TypeAlias
+from dataclasses import dataclass, field
+from typing import Callable, Protocol, Sequence, TypeAlias
 
 import torch
 from jaxtyping import Float
-from dataclasses import dataclass, field
 
 from torchlensmaker.core.tensor_manip import bbroad
 from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
@@ -111,31 +111,69 @@ def sag_to_implicit_2d_raw(
     return implicit
 
 
+def sag_taylor_expansion_2d(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> SagFunction:
+    "Extend a sag function beyond the lens diameter using taylor expansion"
+
+    bound = sag((tau / nf).unsqueeze(0), order=2)
+
+    def extended(points: torch.Tensor, *, order: int) -> SagResult:
+        assert bound.grad is not None
+        assert bound.hess is not None
+        r = torch.abs(points[..., 0])
+        within = r <= tau
+
+        g_in = sag(r, order=order)
+        g_ext = bound.val + bound.grad * (r - tau) + 1 / 2 * bound.hess * (r - tau) ** 2
+        g = torch.where(within, g_in.val, g_ext)
+        assert g.shape == r.shape
+
+        g_grad = None
+        if order >= 1:
+            assert g_in.grad is not None
+            g_grad_ext = (bound.grad + bound.hess * (r - tau)).unsqueeze(-1)
+            g_grad = torch.where(
+                within.unsqueeze(-1).expand_as(g_in.grad), g_in.grad, g_grad_ext
+            )
+            assert g_grad.shape == (*r.shape, 1)
+
+        g_hess = None
+        if order >= 2:
+            assert g_in.hess is not None
+            g_hess_ext = (bound.hess.expand_as(r)).unsqueeze(-1).unsqueeze(-1)
+            g_hess = torch.where(
+                within.unsqueeze(-1).unsqueeze(-1).expand_as(g_in.hess),
+                g_in.hess,
+                g_hess_ext,
+            )
+            assert g_hess.shape == (*r.shape, 1, 1), g_hess
+
+        return SagResult(g, g_grad, g_hess)
+
+    return extended
+
 
 def sag_to_implicit_2d_taylor(
     sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
 ) -> ImplicitFunction:
-
-    bound = sag(tau / nf, order=2)
-    assert bound.grad is not None
-    assert bound.hess is not None
+    sag_exp = sag_taylor_expansion_2d(sag, nf, tau)
 
     def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
-        r = torch.abs(points[..., 1])
-        r_ext = bound.val + bound.grad * (r - tau) + 1/2 * bound.hess * (r - tau)**2
-        f = nf * r_ext - x
+        g = sag_exp(points[..., 1:] / nf, order=order)
+        f = nf * g.val - x
 
         f_grad = None
         if order >= 1:
-            g_grad_ext = bound.grad + bound.hess * (r - tau)
-            f_grad = torch.stack((-torch.ones_like(x), g_grad_ext.squeeze(-1)), dim=-1)
+            assert g.grad is not None
+            f_grad = torch.stack((-torch.ones_like(x), g.grad.squeeze(-1)), dim=-1)
 
         f_hess = None
         if order >= 2:
-            g_hess_ext = bound.hess.expand_as(x)
+            assert g.hess is not None
             zeros = torch.zeros_like(x)
-            H_rr = g_hess_ext.squeeze(-1).squeeze(-1) / nf
+            H_rr = g.hess.squeeze(-1).squeeze(-1) / nf
             f_hess = torch.stack(
                 [
                     torch.stack([zeros, zeros], dim=-1),
@@ -144,11 +182,9 @@ def sag_to_implicit_2d_taylor(
                 dim=-1,
             )
 
-
         return ImplicitResult(f, f_grad, f_hess)
 
     return implicit
-
 
 
 def safe_sign(x: torch.Tensor) -> torch.Tensor:

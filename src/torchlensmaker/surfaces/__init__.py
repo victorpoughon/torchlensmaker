@@ -14,7 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .implicit_solver import DomainFunction, ImplicitSolver, implicit_solver_newton, implicit_solver_newton2
+from .implicit_solver import (
+    DomainFunction,
+    ImplicitSolver,
+    implicit_solver_newton,
+    implicit_solver_newton2,
+)
 from .sag_functions import (
     LiftFunction,
     SagFunction,
@@ -26,11 +31,11 @@ from .sag_functions import (
     parabolic_sag_3d,
     sag_sum_2d,
     sag_sum_3d,
+    sag_to_implicit_2d_abs,
     sag_to_implicit_2d_euclid,
     sag_to_implicit_2d_raw,
-    sag_to_implicit_2d_abs,
-    sag_to_implicit_3d_raw,
     sag_to_implicit_2d_taylor,
+    sag_to_implicit_3d_raw,
     spherical_sag_2d,
     spherical_sag_3d,
     xypolynomial_sag_3d,
