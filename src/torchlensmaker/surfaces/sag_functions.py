@@ -37,7 +37,10 @@ class SagResult:
     hess: torch.Tensor | None = field(default=None)
 
 
-SagFunction: TypeAlias = Callable[[BatchNDTensor], SagResult]
+class SagFunction(Protocol):
+    def __call__(self, points: BatchNDTensor, *, order: int) -> SagResult: ...
+
+
 """
 A sag function models a surface as a deviation from a plane. In 2D that 'plane'
 is the abstract meridional axis, in 3D it's the YZ plane.
