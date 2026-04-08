@@ -18,6 +18,7 @@ from typing import Callable, TypeAlias
 
 import torch
 from jaxtyping import Float
+from sympy.polys.galoistools import gf_value
 
 from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
 from torchlensmaker.surfaces.sag_functions import SagFunction, SagResult
@@ -86,7 +87,7 @@ def sag_to_implicit_2d_raw(
 def sag_taylor_expansion_2d(
     sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
 ) -> SagFunction:
-    "Extend a sag function beyond the lens diameter using taylor expansion"
+    "Sag function defined by the taylor expansion of another at the lens boundary"
 
     bound = sag((tau / nf).unsqueeze(0), order=2)
 
@@ -94,34 +95,21 @@ def sag_taylor_expansion_2d(
         assert bound.grad is not None
         assert bound.hess is not None
         r = torch.abs(points[..., 0])
-        within = r <= tau
 
-        g_in = sag(r, order=order)
-        g_ext = bound.val + bound.grad * (r - tau) + 1 / 2 * bound.hess * (r - tau) ** 2
-        g = torch.where(within, g_in.val, g_ext)
-        assert g.shape == r.shape
+        g_val = bound.val + bound.grad * (r - tau) + 1 / 2 * bound.hess * (r - tau) ** 2
+        assert g_val.shape == r.shape
 
         g_grad = None
         if order >= 1:
-            assert g_in.grad is not None
-            g_grad_ext = (bound.grad + bound.hess * (r - tau)).unsqueeze(-1)
-            g_grad = torch.where(
-                within.unsqueeze(-1).expand_as(g_in.grad), g_in.grad, g_grad_ext
-            )
+            g_grad = (bound.grad + bound.hess * (r - tau)).unsqueeze(-1)
             assert g_grad.shape == (*r.shape, 1)
 
         g_hess = None
         if order >= 2:
-            assert g_in.hess is not None
-            g_hess_ext = (bound.hess.expand_as(r)).unsqueeze(-1).unsqueeze(-1)
-            g_hess = torch.where(
-                within.unsqueeze(-1).unsqueeze(-1).expand_as(g_in.hess),
-                g_in.hess,
-                g_hess_ext,
-            )
+            g_hess = (bound.hess.expand_as(r)).unsqueeze(-1).unsqueeze(-1)
             assert g_hess.shape == (*r.shape, 1, 1), g_hess
 
-        return SagResult(g, g_grad, g_hess)
+        return SagResult(g_val, g_grad, g_hess)
 
     return extended
 
