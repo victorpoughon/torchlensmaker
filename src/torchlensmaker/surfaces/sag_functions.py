@@ -187,6 +187,55 @@ def sag_to_implicit_2d_taylor(
     return implicit
 
 
+def sag_to_implicit_2d_taylor_squared(
+    sag: SagFunction, nf: ScalarTensor, tau: ScalarTensor
+) -> ImplicitFunction:
+    """
+    Taylor squared lift function, aka F_in
+
+    F_in(x, r) = (x - nf * g(r / nf))^2
+
+    where g here is the taylor expanded sag function
+    """
+    sag_exp = sag_taylor_expansion_2d(sag, nf, tau)
+
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+        x = points[..., 0]
+        g = sag_exp(points[..., 1:] / nf, order=order)
+        e = x - nf * g.val
+        f = e**2
+        assert f.shape == points.shape[:-1]
+
+        f_grad = None
+        if order >= 1:
+            assert g.grad is not None
+            gp = g.grad.squeeze(-1)
+            f_grad = torch.stack((2 * e, (-2 * e * gp)), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
+
+        f_hess = None
+        if order >= 2:
+            assert g.grad is not None
+            assert g.hess is not None
+            gp = g.grad.squeeze(-1)
+            gpp = g.hess.squeeze(-1).squeeze(-1)
+            H_xx = 2 * torch.ones_like(x)
+            H_rx = -2 * gp
+            H_rr = 2 * gp**2 - (2 * e / nf) * gpp
+            f_hess = torch.stack(
+                [
+                    torch.stack([H_xx, H_rx], dim=-1),
+                    torch.stack([H_rx, H_rr], dim=-1),
+                ],
+                dim=-1,
+            )
+            assert f_hess.shape == (*points.shape[:-1], 2, 2)
+
+        return ImplicitResult(f, f_grad, f_hess)
+
+    return implicit
+
+
 def safe_sign(x: torch.Tensor) -> torch.Tensor:
     "Like torch.sign() but equals 1 at 0"
     ones = torch.ones_like(x)
