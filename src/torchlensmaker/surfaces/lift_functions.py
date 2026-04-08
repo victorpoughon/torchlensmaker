@@ -232,6 +232,119 @@ def sag_to_implicit_2d_euclid_squared(
     return implicit
 
 
+def sag_to_implicit_2d_squared_blend(
+    sag: SagFunction,
+    nf: ScalarTensor,
+    tau: ScalarTensor,
+) -> ImplicitFunction:
+    """
+    Smooth C^2 blend of the Taylor-squared lift (F_in) and the Euclidean-squared
+    lift (F_out), using a quintic smooth step sigma(u) = 6u^5 - 15u^4 + 10u^3
+    over the transition parameter u = (|r| - tau) / w.
+
+    - For |r| <= tau:       F_blend = F_in  (exactly, via sigma clamped to 0)
+    - For |r| >= tau + w:   F_blend = F_out (exactly, via sigma clamped to 1)
+    - In between:           smooth C^2 interpolation
+
+    The result is a C^2 scalar field on the full 2D ambient space, zero on the
+    lens surface and equal to the squared distance to the rim point outside.
+    """
+    f_in = sag_to_implicit_2d_taylor_squared(sag, nf, tau)
+    f_out = sag_to_implicit_2d_euclid_squared(sag, nf, tau)
+
+    w = 2.5  # TODO argument
+
+    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+        r = points[..., 1]
+
+        # Evaluate both sub-lifts at the requested order
+        res_in = f_in(points, order=order)
+        res_out = f_out(points, order=order)
+
+        # Transition parameter, clamped to [0, 1]
+        u = ((r.abs() - tau) / w).clamp(0.0, 1.0)
+
+        # Smooth step and derivatives (with respect to u)
+        u2 = u * u
+        u3 = u2 * u
+        u4 = u3 * u
+        u5 = u4 * u
+        alpha = 6 * u5 - 15 * u4 + 10 * u3
+
+        # Blend value: F = F_in + alpha * (F_out - F_in)
+        delta_val = res_out.val - res_in.val
+        f = res_in.val + alpha * delta_val
+        assert f.shape == points.shape[:-1]
+
+        f_grad = None
+        f_hess = None
+        if order >= 1:
+            assert res_in.grad is not None
+            assert res_out.grad is not None
+
+            sigma_p = 30 * u4 - 60 * u3 + 30 * u2  # sigma'(u)
+
+            # Chain rule: d/dr of alpha = sigma'(u) * sgn(r) / w.
+            # alpha has no dependence on x.
+            s = safe_sign(r)
+            alpha_r = sigma_p * s / w  # shape: batch
+
+            # Gradient of delta = F_out - F_in
+            delta_grad = res_out.grad - res_in.grad  # shape: (..., 2)
+
+            # Blend gradient:
+            #   d_x F = (1 - alpha) d_x F_in + alpha d_x F_out
+            #   d_r F = (1 - alpha) d_r F_in + alpha d_r F_out + alpha_r * delta_val
+            f_grad = res_in.grad + alpha.unsqueeze(-1) * delta_grad
+            # Add the alpha_r * delta_val contribution to the r-component only
+            extra_r = alpha_r * delta_val
+            f_grad = f_grad + torch.stack((torch.zeros_like(extra_r), extra_r), dim=-1)
+            assert f_grad.shape == (*points.shape[:-1], 2)
+
+            if order >= 2:
+                assert res_in.grad is not None
+                assert res_out.grad is not None
+                assert res_in.hess is not None
+                assert res_out.hess is not None
+
+                sigma_pp = 120 * u3 - 180 * u2 + 60 * u  # sigma''(u)
+
+                # alpha_rr = sigma''(u) / w^2  (since (d|r|/dr)^2 = 1 and d^2|r|/dr^2 = 0
+                # away from r = 0, which never occurs in the transition band)
+                alpha_rr = sigma_pp / (w * w)
+
+                # Gradient of delta (needed for the symmetrized cross term)
+                delta_grad_x = delta_grad[..., 0]
+                delta_grad_r = delta_grad[..., 1]
+
+                # Hessian of delta
+                delta_hess = res_out.hess - res_in.hess  # shape: (..., 2, 2)
+
+                # Blend Hessian formula:
+                #   H = H_in + alpha * H_delta
+                #     + [ 0,                  alpha_r * delta_grad_x ]
+                #       [ alpha_r * dgx,      2 alpha_r * dgr + alpha_rr * delta_val ]
+                f_hess = res_in.hess + alpha.unsqueeze(-1).unsqueeze(-1) * delta_hess
+
+                H_xx_extra = torch.zeros_like(alpha)
+                H_xr_extra = alpha_r * delta_grad_x
+                H_rr_extra = 2 * alpha_r * delta_grad_r + alpha_rr * delta_val
+
+                extra = torch.stack(
+                    [
+                        torch.stack([H_xx_extra, H_xr_extra], dim=-1),
+                        torch.stack([H_xr_extra, H_rr_extra], dim=-1),
+                    ],
+                    dim=-2,
+                )
+                f_hess = f_hess + extra
+                assert f_hess.shape == (*points.shape[:-1], 2, 2)
+
+        return ImplicitResult(f, f_grad, f_hess)
+
+    return implicit
+
+
 def safe_sign(x: torch.Tensor) -> torch.Tensor:
     "Like torch.sign() but equals 1 at 0"
     ones = torch.ones_like(x)
