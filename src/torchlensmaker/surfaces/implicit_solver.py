@@ -60,14 +60,19 @@ def implicit_solver_newton(
     implicit_function: ImplicitFunction,
     num_iter: int,
     damping: float,
+    init: float | str,
+    clamp_positive: bool,
 ) -> BatchTensor:
     """
     Newton's method, diffentiable over the last iteration
     This version exports with static loop unrolling
     """
 
-    # Initialize t at the point closest to the origin
-    t = torch.maximum(torch.zeros_like(P[..., -1]), init_closest_origin(P, V))
+    # Initialize t
+    if init == "closest":
+        t = init_closest_origin(P, V)
+    else:
+        t = torch.full_like(P[..., -1], float(init))
 
     if num_iter == 0:
         return t
@@ -76,11 +81,15 @@ def implicit_solver_newton(
     with torch.no_grad():
         for i in range(num_iter - 1):
             delta = implicit_solver_newton_step(t, P, V, implicit_function)
-            t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+            t = t - damping * delta
+            if clamp_positive:
+                t = torch.maximum(torch.zeros_like(t), t)
 
     # One differentiable step
     delta = implicit_solver_newton_step(t, P, V, implicit_function)
-    t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+    t = t - damping * delta
+    if clamp_positive:
+        t = torch.maximum(torch.zeros_like(t), t)
 
     return t
 
@@ -116,6 +125,8 @@ def implicit_solver_newton2(
     implicit_function: ImplicitFunction,
     num_iter: int,
     damping: float,
+    init: float | str,
+    clamp_positive: bool,
 ) -> BatchTensor:
     """
     Second order Newton's method, diffentiable over the last iteration
@@ -123,8 +134,11 @@ def implicit_solver_newton2(
     Requires hessian of the implicit function
     """
 
-    # Initialize t at the point closest to the origin
-    t = torch.maximum(torch.zeros_like(P[..., -1]), init_closest_origin(P, V))
+    # Initialize t
+    if init == "closest":
+        t = init_closest_origin(P, V)
+    else:
+        t = torch.full_like(P[..., -1], float(init))
 
     if num_iter == 0:
         return t
@@ -133,11 +147,15 @@ def implicit_solver_newton2(
     with torch.no_grad():
         for _ in range(num_iter - 1):
             delta = implicit_solver_newton2_step(t, P, V, implicit_function)
-            t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+            t = t - damping * delta
+            if clamp_positive:
+                t = torch.maximum(torch.zeros_like(t), t)
 
     # One differentiable step
     delta = implicit_solver_newton2_step(t, P, V, implicit_function)
-    t = torch.maximum(torch.zeros_like(t), t - damping * delta)
+    t = t - damping * delta
+    if clamp_positive:
+        t = torch.maximum(torch.zeros_like(t), t)
 
     return t
 

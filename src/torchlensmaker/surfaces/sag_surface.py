@@ -58,22 +58,26 @@ Static configuration for raytracing sag surfaces using
 an implicit solver
 
 Possible values:
-    * implicit_solver: implicit solver algorithm, supported values: "newton"
+    * implicit_solver: implicit solver algorithm, supported values: "newton", "newton2"
     * num_iter: number of iterations of the solver
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance for the domain function
     * lift_function: "raw" or "euclid"
+    * init: how to initialize t before Newton iterations, float or "closest"
+    * clamp_positive: if True, clamp t >= 0 after each Newton update step
 """
 
 
 def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
+    init: float | str = config["init"]
+    clamp_positive: bool = config["clamp_positive"]
     solver_name: str = config["implicit_solver"]
     if solver_name == "newton":
-        return partial(implicit_solver_newton, num_iter=num_iter, damping=damping)
+        return partial(implicit_solver_newton, num_iter=num_iter, damping=damping, init=init, clamp_positive=clamp_positive)
     elif solver_name == "newton2":
-        return partial(implicit_solver_newton2, num_iter=num_iter, damping=damping)
+        return partial(implicit_solver_newton2, num_iter=num_iter, damping=damping, init=init, clamp_positive=clamp_positive)
     else:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 

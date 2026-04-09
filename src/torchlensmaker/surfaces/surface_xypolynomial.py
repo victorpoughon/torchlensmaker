@@ -173,6 +173,8 @@ class XYPolynomial(SurfaceElement):
         damping=0.95,
         tol=1e-4,
         lift_function="raw",
+        init="closest",
+        clamp_positive=True,
     )
 
     def __init__(
