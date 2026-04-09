@@ -38,6 +38,7 @@ from torchlensmaker.surfaces.surface_parabola import (
     ParabolaSurfaceKernel,
 )
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
+from torchlensmaker.surfaces.surface_point import PointSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
     SphereByCurvatureSurfaceKernel,
@@ -52,9 +53,15 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_export_onnx,
 )
 
-config1 = dict(num_iter=1, damping=1.0, tol=1e-3, lift_function="raw", implicit_solver="newton")
-config6 = dict(num_iter=6, damping=0.9, tol=1e-3, lift_function="raw", implicit_solver="newton")
-config12 = dict(num_iter=12, damping=0.9, tol=1e-4, lift_function="raw", implicit_solver="newton")
+config1 = dict(
+    num_iter=1, damping=1.0, tol=1e-3, lift_function="raw", implicit_solver="newton"
+)
+config6 = dict(
+    num_iter=6, damping=0.9, tol=1e-3, lift_function="raw", implicit_solver="newton"
+)
+config12 = dict(
+    num_iter=12, damping=0.9, tol=1e-4, lift_function="raw", implicit_solver="newton"
+)
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC2D-1": SphereByCurvatureSurfaceKernel(2, config1),
@@ -86,6 +93,8 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "Disk3D": DiskSurfaceKernel(3),
     "Plane2D": PlaneSurfaceKernel(2),
     "Plane3D": PlaneSurfaceKernel(3),
+    "Point2D": PointSurfaceKernel(2),
+    "Point3D": PointSurfaceKernel(3),
 }
 
 

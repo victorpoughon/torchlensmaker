@@ -53,6 +53,7 @@ from .surface_element import SurfaceElement, SurfaceElementOutput
 from .surface_implicit_disk import ImplicitDisk
 from .surface_parabola import Parabola
 from .surface_plane import Plane
+from .surface_point import PointSurface
 from .surface_sphere_by_curvature import SphereByCurvature
 from .surface_sphere_by_radius import SphereByRadius
 from .surface_square import Square
@@ -67,6 +68,7 @@ __all__ = [
     "KinematicSurface",
     "Parabola",
     "Plane",
+    "PointSurface",
     "SphereByCurvature",
     "SphereByRadius",
     "Square",

@@ -34,6 +34,7 @@ from torchlensmaker.surfaces.surface_disk import Disk
 from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.surfaces.surface_parabola import Parabola
 from torchlensmaker.surfaces.surface_plane import Plane
+from torchlensmaker.surfaces.surface_point import PointSurface
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvature,
 )
@@ -194,6 +195,50 @@ def check_surface_module_3d(
 
     # Check that surface can be cloned
     mod.clone()
+
+
+def test_point_surface_module(dtype: torch.dtype, device: torch.device) -> None:
+    # Use offset rays so that no ray passes through the origin (which would produce NaN normals)
+    N = 10
+    P2 = torch.stack(
+        (
+            torch.zeros(N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V2 = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P2)
+    tfid2 = hom_identity_2d(dtype, device)
+
+    outputs2 = check_model_eval(PointSurface(), (P2, V2, tfid2))
+    assert outputs2.t.shape == (N,)
+    assert outputs2.normals.shape == (N, 2)
+    assert outputs2.valid.shape == (N,)
+    assert not outputs2.valid.any()
+    assert outputs2.points_local.shape == (N, 2)
+    assert outputs2.points_global.shape == (N, 2)
+
+    P3 = torch.stack(
+        (
+            torch.zeros(N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V3 = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P3)
+    tfid3 = hom_identity_3d(dtype, device)
+
+    outputs3 = check_model_eval(PointSurface(), (P3, V3, tfid3))
+    assert outputs3.t.shape == (N,)
+    assert outputs3.normals.shape == (N, 3)
+    assert outputs3.valid.shape == (N,)
+    assert not outputs3.valid.any()
+    assert outputs3.points_local.shape == (N, 3)
+    assert outputs3.points_global.shape == (N, 3)
+
+    PointSurface().clone()
+    PointSurface().reverse()
 
 
 def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> None:
