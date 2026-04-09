@@ -491,7 +491,7 @@ def sag_to_implicit_3d_raw(
             grad_x = -torch.ones_like(x)
             grad_y, grad_z = g.grad.unbind(-1)
             f_grad = torch.stack((grad_x, grad_y, grad_z), dim=-1)
-            assert f_grad.shape == (*points.shape[:-1], 2)
+            assert f_grad.shape == (*points.shape[:-1], 3)
 
         f_hess = None
         if order >= 2:
@@ -508,7 +508,7 @@ def sag_to_implicit_3d_raw(
                 ],
                 dim=-1,
             )
-            assert f_hess.shape == (*points.shape[:-1], 2, 2)
+            assert f_hess.shape == (*points.shape[:-1], 3, 3)
 
         return ImplicitResult(f, f_grad, f_hess)
 
