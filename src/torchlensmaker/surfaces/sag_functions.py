@@ -340,7 +340,33 @@ def xypolynomial_sag_3d(
 
     G_hess = None
     if order >= 2:
-        pass  # TODO
+        pd2index = torch.arange(2, P, dtype=y.dtype, device=z.device)
+        qd2index = torch.arange(2, Q, dtype=y.dtype, device=z.device)
+        pd2, qd2 = bbroad(pd2index, y.dim()), bbroad(qd2index, y.dim())
+
+        # Gyy
+        Cpd2 = C[2:, :]
+        ypd2 = torch.pow(y, pd2 - 2).unsqueeze(1)
+        inner_yy = pd2.unsqueeze(1) * (pd2 - 1).unsqueeze(1) * Cpd2 * ypd2 * zq
+        Gyy = inner_yy.sum(dim=0).sum(dim=0)
+
+        # Gyz
+        Cpq = C[1:, 1:]
+        ypd = torch.pow(y, pd - 1).unsqueeze(1)
+        zqd = torch.pow(z, qd - 1).unsqueeze(0)
+        inner_yz = pd.unsqueeze(1) * qd.unsqueeze(0) * Cpq * ypd * zqd
+        Gyz = inner_yz.sum(dim=0).sum(dim=0)
+
+        # Gzz
+        Cqd2 = C[:, 2:]
+        zqd2 = torch.pow(z, qd2 - 2).unsqueeze(0)
+        inner_zz = qd2.unsqueeze(0) * (qd2 - 1).unsqueeze(0) * Cqd2 * yp * zqd2
+        Gzz = inner_zz.sum(dim=0).sum(dim=0)
+
+        G_hess = torch.stack(
+            [torch.stack([Gyy, Gyz], dim=-1), torch.stack([Gyz, Gzz], dim=-1)],
+            dim=-2,
+        )
 
     return SagResult(G, G_grad, G_hess)
 

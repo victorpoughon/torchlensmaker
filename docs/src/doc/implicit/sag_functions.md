@@ -201,7 +201,11 @@ Derivatives:
 $$
 \begin{align}
 \nabla_y G(y,z) &= \sum_{p=1}^{P-1} \sum_{q=0}^{Q-1} p\, C_{p,q}\, y^{p-1} z^q \\
-\nabla_z G(y,z) &= \sum_{p=0}^{P-1} \sum_{q=1}^{Q-1} q\, C_{p,q}\, y^p z^{q-1}
+\nabla_z G(y,z) &= \sum_{p=0}^{P-1} \sum_{q=1}^{Q-1} q\, C_{p,q}\, y^p z^{q-1} \\
+\\
+\nabla_{yy} G(y,z) &= \sum_{p=2}^{P-1} \sum_{q=0}^{Q-1} p(p-1)\, C_{p,q}\, y^{p-2} z^q \\
+\nabla_{yz} G(y,z) &= \sum_{p=1}^{P-1} \sum_{q=1}^{Q-1} p\,q\, C_{p,q}\, y^{p-1} z^{q-1} \\
+\nabla_{zz} G(y,z) &= \sum_{p=0}^{P-1} \sum_{q=2}^{Q-1} q(q-1)\, C_{p,q}\, y^p z^{q-2}
 \end{align}
 $$
 
