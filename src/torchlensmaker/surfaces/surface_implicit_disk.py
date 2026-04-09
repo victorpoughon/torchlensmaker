@@ -138,6 +138,8 @@ class ImplicitDisk(SurfaceElement):
         num_iter=2,
         damping=0.95,
         tol=1e-4,
+        init="closest",
+        clamp_positive=True,
     )
 
     def __init__(
