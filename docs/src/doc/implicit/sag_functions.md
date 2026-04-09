@@ -153,19 +153,35 @@ $$\boxed{g(r) = \sum_{i=0}^{N-1} \alpha_i \, r^{4 + 2i}}$$
 Derivatives:
 
 $$
-g'(r) = \sum_{i=0}^{N-1} \alpha_i \,(4 + 2i)\, r^{3 + 2i}
+\begin{align}
+g'(r) &= \sum_{i=0}^{N-1} \alpha_i \,(4 + 2i)\, r^{3 + 2i} \\
+g''(r) &= \sum_{i=0}^{N-1} \alpha_i \,(4 + 2i)(3 + 2i)\, r^{2 + 2i}
+\end{align}
 $$
 
 **In 3D** with $r^2 = y^2 + z^2$:
 
 $$\boxed{G(y, z) = \sum_{i=0}^{N-1} \alpha_i \, r^{4+2i}}$$
 
+Define:
+
+$$
+\begin{align}
+T &= \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,(r^2)^{1+i} \\
+T' &= \sum_{i=0}^{N-1} \alpha_i\,(4+2i)(1+i)\,(r^2)^{i}
+\end{align}
+$$
+
 Derivatives:
 
 $$
 \begin{align}
-\nabla_y G(y,z) &= y \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2+2i} \\
-\nabla_z G(y,z) &= z \sum_{i=0}^{N-1} \alpha_i\,(4+2i)\,r^{2+2i}
+\nabla_y G(y,z) &= y \cdot T \\
+\nabla_z G(y,z) &= z \cdot T \\
+\\
+\nabla_{yy} G(y,z) &= T + 2y^2 T' \\
+\nabla_{yz} G(y,z) &= 2yz\, T' \\
+\nabla_{zz} G(y,z) &= T + 2z^2 T'
 \end{align}
 $$
 

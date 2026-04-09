@@ -240,7 +240,13 @@ def aspheric_sag_2d(
 
     g_hess = None
     if order >= 2:
-        pass  # TODO
+        g_hess = (
+            torch.sum(
+                alphas * (4 + 2 * i) * (3 + 2 * i) * torch.pow(r, 2 + 2 * i), dim=0
+            )
+            .unsqueeze(-1)
+            .unsqueeze(-1)
+        )
 
     return SagResult(g, g_grad, g_hess)
 
@@ -264,7 +270,15 @@ def aspheric_sag_3d(
 
     G_hess = None
     if order >= 2:
-        pass  # TODO
+        T = torch.sum(alphas * (4 + 2 * i) * torch.pow(r2, 1 + i), dim=0)
+        Tprime = torch.sum(alphas * (4 + 2 * i) * (1 + i) * torch.pow(r2, i), dim=0)
+        Gyy = T + 2 * y**2 * Tprime
+        Gyz = 2 * y * z * Tprime
+        Gzz = T + 2 * z**2 * Tprime
+        G_hess = torch.stack(
+            [torch.stack([Gyy, Gyz], dim=-1), torch.stack([Gyz, Gzz], dim=-1)],
+            dim=-2,
+        )
 
     return SagResult(G, G_grad, G_hess)
 
