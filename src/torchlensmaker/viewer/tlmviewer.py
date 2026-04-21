@@ -381,6 +381,6 @@ def render_joint(dfk: HomMatrix) -> Any:
         {
             "type": "points",
             "data": [joint.tolist()],
-            "categories": [CATEGORY_JOINT],
+            "category": CATEGORY_JOINT,
         }
     ]
