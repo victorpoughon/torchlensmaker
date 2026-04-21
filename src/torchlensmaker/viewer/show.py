@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
+import uuid
 from typing import Any, Dict, Optional
 
 import torch
@@ -96,6 +97,11 @@ def show(
 
     scene = render_model(optics, dim, dtype, device, end, title, controls)
     tlmviewer.display_scene(scene, ndigits)
+
+    # debug: save all scenes
+    # name = "tlmscene-" + str(uuid.uuid4())[:8] + ".json"
+    # with open(name, "w") as f:
+    #     json.dump(scene, f)
 
 
 def show2d(*args, **kwargs):
