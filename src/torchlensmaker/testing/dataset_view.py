@@ -34,7 +34,9 @@ def dataset_view(surface, P, V, rays_length=100):
 
     rays_start = P - rays_length * V
     rays_end = P + rays_length * V
-    scene["data"].append(tlm.render_rays(rays_start, rays_end, layer=0))
+    scene["data"].append(
+        tlm.render_rays(rays_start, rays_end, category=tlm.CATEGORY_VALID_RAYS)
+    )
 
     assert torch.all(torch.isfinite(P))
     assert torch.all(torch.isfinite(V))

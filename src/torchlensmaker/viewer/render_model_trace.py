@@ -133,7 +133,7 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
                     input_rays.P,
                     input_rays.V,
                     t,
-                    layer=tlmviewer.LAYER_VALID_RAYS,
+                    category=tlmviewer.CATEGORY_VALID_RAYS,
                     variables=raybundle_var_dict(input_rays),
                     domain=domain,
                     default_color=tlmviewer.color_valid,
@@ -157,7 +157,7 @@ def trace_render_end_rays(
         variables=raybundle_var_dict(rays),
         domain=domain,
         default_color=tlmviewer.color_valid,
-        layer=tlmviewer.LAYER_OUTPUT_RAYS,
+        category=tlmviewer.CATEGORY_OUTPUT_RAYS,
     )
 
 

@@ -168,7 +168,7 @@ class Square(SurfaceElement):
             [0.0, 0.0, 1.0, a],
         ]
         return {
-            "type": "surface-plane",
+            "type": "surface-disk",
             "radius": max_radius.item(),
             "clip_planes": clip_planes,
         }

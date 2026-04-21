@@ -179,6 +179,6 @@ class ImplicitDisk(SurfaceElement):
 
     def render(self) -> Any:
         return {
-            "type": "surface-plane",
+            "type": "surface-disk",
             "radius": self.diameter.item() / 2,
         }

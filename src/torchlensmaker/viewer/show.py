@@ -68,8 +68,8 @@ def render_model(
     if controls is not None:
         scene["controls"] = controls
 
-    if title is not None:
-        scene["title"] = title
+    if title:
+        scene["data"].append({"type": "scene-title", "title": title})
 
     return scene
 

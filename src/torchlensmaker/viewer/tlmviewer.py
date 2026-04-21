@@ -41,10 +41,10 @@ color_spot_diagram = "coral"
 Tensor = torch.Tensor
 
 
-LAYER_VALID_RAYS = 1
-LAYER_BLOCKED_RAYS = 2
-LAYER_OUTPUT_RAYS = 3
-LAYER_JOINTS = 4
+CATEGORY_VALID_RAYS = "rays-valid"
+CATEGORY_BLOCKED_RAYS = "rays-blocked"
+CATEGORY_OUTPUT_RAYS = "rays-output"
+CATEGORY_JOINT = "kinematic-joint"
 
 
 def get_script_template() -> str:
@@ -167,7 +167,7 @@ def display_scene(scene: object, ndigits: int | None = None) -> None:
 
 def new_scene(mode: str) -> Any:
     if mode == "2D":
-        return {"mode": "2D", "camera": "XY", "data": []}
+        return {"mode": "2D", "camera": "2D", "data": []}
     elif mode == "3D":
         return {"mode": "3D", "camera": "orthographic", "data": []}
     else:
@@ -207,7 +207,7 @@ def render_surface_local(
 def render_rays(
     start: Tensor,
     end: Tensor,
-    layer: int,
+    category: str,
     variables: dict[str, Tensor] = {},
     domain: dict[str, list[float]] = {},
     default_color: str = "#ffa724",
@@ -220,18 +220,14 @@ def render_rays(
 
     variables_lists = {name: t.tolist() for name, t in variables.items()}
 
-    node = {
+    return {
         "type": "rays",
         "points": points,
         "color": default_color,
         "variables": variables_lists,
         "domain": domain,
+        "category": category,
     }
-
-    if layer is not None:
-        node.update(layers=[layer])
-
-    return node
 
 
 def render_points(
@@ -276,7 +272,7 @@ def render_rays_until(
     variables: dict[str, Tensor],
     domain: dict[str, list[float]],
     default_color: str,
-    layer: int,
+    category: str,
 ) -> list[Any]:
     "Render rays until an absolute X coordinate"
     assert end.dim() == 0
@@ -290,7 +286,7 @@ def render_rays_until(
             variables=variables,
             domain=domain,
             default_color=default_color,
-            layer=layer,
+            category=category,
         )
     ]
 
@@ -301,7 +297,7 @@ def render_rays_length(
     length: float | Tensor,
     variables: dict[str, Tensor],
     domain: dict[str, list[float]],
-    layer: int,
+    category: str,
     default_color: str = color_valid,
 ) -> list[Any]:
     "Render rays with fixed length"
@@ -319,7 +315,7 @@ def render_rays_length(
             variables=variables,
             domain=domain,
             default_color=default_color,
-            layer=layer,
+            category=category,
         )
     ]
 
@@ -347,7 +343,7 @@ def render_hit_miss_rays(
                 variables=variables_hit,
                 domain=domain,
                 default_color=color_valid,
-                layer=LAYER_VALID_RAYS,
+                category=CATEGORY_VALID_RAYS,
             )
         ]
         if hits > 0
@@ -363,7 +359,7 @@ def render_hit_miss_rays(
             variables=variables_miss,
             domain=domain,
             default_color=color_blocked,
-            layer=LAYER_BLOCKED_RAYS,
+            category=CATEGORY_BLOCKED_RAYS,
         )
         if misses > 0
         else []
@@ -385,6 +381,6 @@ def render_joint(dfk: HomMatrix) -> Any:
         {
             "type": "points",
             "data": [joint.tolist()],
-            "layers": [LAYER_JOINTS],
+            "categories": [CATEGORY_JOINT],
         }
     ]

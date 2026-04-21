@@ -169,6 +169,6 @@ class Plane(SurfaceElement):
 
     def render(self) -> Any:
         return {
-            "type": "surface-plane",
+            "type": "surface-disk",
             "radius": self.display_diameter.item() / 2,
         }
