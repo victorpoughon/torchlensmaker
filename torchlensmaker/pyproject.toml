@@ -12,7 +12,7 @@ dependencies = [
   "matplotlib>=3.9.2,<3.11.0",
   "jaxtyping>=0.3.5",
   "ipython>=8.31.0",
-  "tlmviewer==0.0.14",
+  "tlmviewer",
 ]
 
 [project.optional-dependencies]
@@ -52,3 +52,6 @@ addopts = ["--import-mode=importlib"]
 [tool.basedpyright]
 typeCheckingMode = "standard"
 reportPrivateImportUsage = "none"
+
+[tool.uv.sources]
+tlmviewer = { path = "../tlmviewer-python/", editable = true }

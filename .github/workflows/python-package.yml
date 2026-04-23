@@ -39,7 +39,7 @@ jobs:
       with:
         version: "0.10.9"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "torchlensmaker/uv.lock"
 
     - name: Set up Python
       uses: actions/setup-python@v5
