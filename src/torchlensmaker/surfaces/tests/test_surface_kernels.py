@@ -54,13 +54,31 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
 )
 
 config1 = dict(
-    num_iter=1, damping=1.0, tol=1e-3, lift_function="raw", implicit_solver="newton"
+    num_iter=1,
+    damping=1.0,
+    tol=1e-3,
+    lift_function="raw",
+    implicit_solver="newton",
+    init="closest",
+    clamp_positive=True,
 )
 config6 = dict(
-    num_iter=6, damping=0.9, tol=1e-3, lift_function="raw", implicit_solver="newton"
+    num_iter=6,
+    damping=0.9,
+    tol=1e-3,
+    lift_function="raw",
+    implicit_solver="newton",
+    init="closest",
+    clamp_positive=True,
 )
 config12 = dict(
-    num_iter=12, damping=0.9, tol=1e-4, lift_function="raw", implicit_solver="newton"
+    num_iter=12,
+    damping=0.9,
+    tol=1e-4,
+    lift_function="raw",
+    implicit_solver="newton",
+    init="closest",
+    clamp_positive=True,
 )
 
 kernels_library: Dict[str, FunctionalKernel] = {
