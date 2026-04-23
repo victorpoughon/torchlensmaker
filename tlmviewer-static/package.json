@@ -1,0 +1,16 @@
+{
+  "name": "tlmviewer-static",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "tlmviewer": "file:../tlmviewer"
+  },
+  "devDependencies": {
+    "typescript": "~5.8.3",
+    "vite": "^6.0.3"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "tlmserver",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx bin/tlmserver.ts",
+    "build": "tsc"
+  },
+  "dependencies": {
+    "tlmprotocol": "file:../tlmprotocol",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.3",
+    "typescript": "~5.8.3"
+  }
+}

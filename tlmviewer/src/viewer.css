@@ -1,0 +1,34 @@
+.tlmviewer {
+    display: inline-block;
+    position: relative;
+    box-sizing: border-box;
+}
+
+.tlmviewer .tlmviewer-title {
+    position: absolute;
+    color: white;
+    user-select: none;
+    padding: 5px;
+    line-height: normal;
+    font-size: 12px;
+
+    background-color: black;
+
+    left: 0;
+    bottom: 0;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+/* LIL-GUI */
+
+.lil-gui {
+    --width: 250px;
+	--name-width: 50%;
+}
+
+.tlmviewer .lil-gui.root {
+    position: absolute;
+    right: 0;
+    top: 0;
+}

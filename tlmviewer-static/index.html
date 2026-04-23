@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:,">
+  <title>tlmviewer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: monospace;
+      background: #111;
+    }
+
+    #viewer {
+      display: block;
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10;
+      transition: background 0.2s;
+    }
+
+    #overlay.drag-active {
+      background: rgba(30, 60, 120, 0.92);
+    }
+
+    #overlay.loaded {
+      inset: auto;
+      bottom: 1rem;
+      right: 1rem;
+      width: auto;
+      height: auto;
+      background: transparent;
+    }
+
+    #drop-zone {
+      border: 2px dashed #666;
+      border-radius: 12px;
+      padding: 3rem 4rem;
+      text-align: center;
+      color: #ccc;
+      pointer-events: none;
+    }
+
+    #overlay.loaded #drop-zone {
+      display: none;
+    }
+
+    #drop-zone p {
+      margin: 0.5rem 0;
+      font-size: 1.1rem;
+    }
+
+    #browse-btn, #load-another-btn {
+      margin-top: 1rem;
+      padding: 0.5rem 1.5rem;
+      font-family: monospace;
+      font-size: 1rem;
+      background: #333;
+      color: #eee;
+      border: 1px solid #666;
+      border-radius: 6px;
+      cursor: pointer;
+      pointer-events: all;
+    }
+
+    #browse-btn:hover, #load-another-btn:hover {
+      background: #444;
+    }
+
+    #load-another-btn {
+      display: none;
+    }
+
+    #overlay.loaded #load-another-btn {
+      display: block;
+    }
+
+    #error-banner {
+      display: none;
+      position: fixed;
+      bottom: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #8b0000;
+      color: #fff;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      z-index: 20;
+      max-width: 80%;
+      word-break: break-word;
+    }
+  </style>
+</head>
+<body>
+  <div id="viewer" class="tlmviewer"></div>
+
+  <div id="overlay">
+    <div id="drop-zone">
+      <p>Drop a scene JSON here</p>
+      <p style="color: #888">or</p>
+      <button id="browse-btn">Browse...</button>
+    </div>
+    <button id="load-another-btn">Load another file</button>
+  </div>
+
+  <div id="error-banner"></div>
+
+  <input type="file" id="file-input" accept=".json" style="display:none" />
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>

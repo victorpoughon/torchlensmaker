@@ -1,0 +1,41 @@
+{
+  "name": "tlmviewer",
+  "author": "Victor Poughon",
+  "version": "0.0.14",
+  "description": "3D viewer for torchlensmaker",
+  "license": "GPL-3.0",
+  "type": "module",
+  "repository": "github:victorpoughon/tlmviewer",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/tlmviewer-0.0.14.js",
+  "module": "./dist/tlmviewer-0.0.14.js",
+  "exports": {
+    ".": {
+      "import": "./dist/tlmviewer-0.0.14.js"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "prepare": "npm run build",
+    "test": "node --import tsx/esm --test **/*.test.ts"
+  },
+  "dependencies": {
+    "tlmprotocol": "file:../tlmprotocol"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/three": "^0.175.0",
+    "lil-gui": "^0.20.0",
+    "three": "^0.175.0",
+    "three-custom-shader-material": "^6.3.1",
+    "tsx": "^4.19.3",
+    "typescript": "~5.8.3",
+    "vite": "^6.0.3",
+    "vite-plugin-css-injected-by-js": "^3.5.2",
+    "vite-plugin-package-version": "^1.1.0"
+  }
+}
