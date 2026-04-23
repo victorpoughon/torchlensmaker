@@ -47,7 +47,7 @@ function render(data: ArrowsData, _dim: number): THREE.Object3D {
 const testData2D = [
     {
         type: "arrows",
-        data: [
+        arrows: [
             [1, 0, 0, 0, 3],
             [0, 1, 5, 0, 3],
             [1, 1, 10, 0, 3],
@@ -58,7 +58,7 @@ const testData2D = [
 const testData3D = [
     {
         type: "arrows",
-        data: [
+        arrows: [
             [1, 0, 0, 0, 0, 0, 3],
             [0, 1, 0, 5, 0, 0, 3],
             [0, 0, 1, 10, 0, 0, 3],
