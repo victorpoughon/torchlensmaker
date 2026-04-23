@@ -4,46 +4,49 @@
 name: package & pytest
 
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+    push:
+        branches: ["main"]
+    pull_request:
+        branches: ["main"]
 
 # Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
 # However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
 concurrency:
-  group: package
-  cancel-in-progress: false
+    group: package
+    cancel-in-progress: false
+
+defaults:
+    run:
+        working-directory: ./torchlensmaker
 
 jobs:
-  build:
+    build:
+        runs-on: ubuntu-latest
+        strategy:
+            fail-fast: false
+            matrix:
+                python-version: ["3.10", "3.11", "3.12"]
 
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        steps:
+            - uses: actions/checkout@v6
 
-    steps:
-    - uses: actions/checkout@v6
-    
-    - name: Install uv
-      uses: astral-sh/setup-uv@v7
-      with:
-        version: "0.10.9"
-        enable-cache: true
-        cache-dependency-glob: "uv.lock"
+            - name: Install uv
+              uses: astral-sh/setup-uv@v7
+              with:
+                  version: "0.10.9"
+                  enable-cache: true
+                  cache-dependency-glob: "uv.lock"
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ matrix.python-version }}
-        
-    - name: Install the project
-      run: uv sync --all-extras
-    
-    - name: Install pytorch manually
-      run: uv pip install torch==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
 
-    - name: Run tests
-      run: uv run pytest
+            - name: Install the project
+              run: uv sync --all-extras
+
+            - name: Install pytorch manually
+              run: uv pip install torch==2.5.0 --index-url https://download.pytorch.org/whl/cpu
+
+            - name: Run tests
+              run: uv run pytest
