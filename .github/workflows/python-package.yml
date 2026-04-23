@@ -3,6 +3,9 @@
 
 name: package & pytest
 
+env:
+  TLMVIEWER_PUSH_SCENE_ALLOW_FAIL: true
+
 on:
   push:
     branches: [ "main" ]

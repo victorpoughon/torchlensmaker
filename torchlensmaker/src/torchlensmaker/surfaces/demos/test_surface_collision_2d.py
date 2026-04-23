@@ -59,7 +59,6 @@ def display_hit_miss_2d(source, surface, dist):
     scene.data = [surf, hit, miss, arrows, points]
     scene.controls = {"show_axis_x": True, "show_axis_y": True, "show_axis_z": True}
 
-    print(scene.data)
     tlmv.push_scene(scene)
 
 
