@@ -1961,6 +1961,15 @@ wheels = [
 ]
 
 [[package]]
+name = "tlmviewer"
+version = "0.0.14"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/fd/2f115c2595a4a12be26ab1e7c3a8d3f7d2423ec09effef7f1c326da7fac0/tlmviewer-0.0.14.tar.gz", hash = "sha256:94ea6eba9d60f8cb022c8bf3b66b8950f7b183f440e082aef068d74b8d4e7f78", size = 2578, upload-time = "2026-04-23T10:54:09.601Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/d0/769f1401526d320a569dd2617fc3a75261f5c247019b06885c0dbf53ba69/tlmviewer-0.0.14-py3-none-any.whl", hash = "sha256:6d92e3f388c72dd9cdbe89cfea771b76a75c6413a0c2007beca197f56d8cba40", size = 4006, upload-time = "2026-04-23T10:54:10.819Z" },
+]
+
+[[package]]
 name = "torchlensmaker"
 version = "0.0.14"
 source = { editable = "." }
@@ -1968,6 +1977,7 @@ dependencies = [
     { name = "ipython" },
     { name = "jaxtyping" },
     { name = "matplotlib" },
+    { name = "tlmviewer" },
 ]
 
 [package.optional-dependencies]
@@ -2001,6 +2011,7 @@ requires-dist = [
     { name = "onnxscript", marker = "extra == 'onnx'", specifier = ">=0.5.7" },
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.3,<9.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.9" },
+    { name = "tlmviewer", specifier = "==0.0.14" },
 ]
 provides-extras = ["test", "dev", "onnx"]
 
