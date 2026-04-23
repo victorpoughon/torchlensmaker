@@ -77,9 +77,6 @@ display_hit_miss_2d(
     15,
 )
 
-# TODO support multiple scenes in viewer
-exit()
-
 # In[ ]:
 
 
