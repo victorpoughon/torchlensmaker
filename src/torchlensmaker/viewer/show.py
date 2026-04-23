@@ -15,9 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import json
-import uuid
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 
@@ -67,10 +67,10 @@ def render_model(
     scene = render_model_trace(optics, trace, end)
 
     if controls is not None:
-        scene["controls"] = controls
+        scene.controls = controls
 
     if title:
-        scene["data"].append({"type": "scene-title", "title": title})
+        scene.data.append(tlmv.SceneTitle(title=title))
 
     return scene
 
@@ -137,8 +137,9 @@ def export_json(
 
     scene = render_model(optics, dim, dtype, device, end, title, controls)
 
+    scene_dict = tlmv.scene_to_dict(scene)
     if ndigits is not None:
-        scene = tlmviewer.truncate_scene(scene, ndigits)
+        scene_dict = tlmviewer.truncate_scene(scene, ndigits)
 
     with open(filename, "w") as f:
-        json.dump(scene, f)
+        json.dump(scene_dict, f)

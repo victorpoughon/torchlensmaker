@@ -29,19 +29,19 @@ def dataset_view(surface, P, V, rays_length=100):
     local_points = P + t.unsqueeze(-1).expand_as(V) * V
 
     scene = tlm.new_scene("2D" if dim == 2 else "3D")
-    scene["data"].append(tlm.render_points(P, color="grey"))
-    scene["data"].extend(tlm.render_collisions(local_points, local_normals))
+    scene.data.append(tlm.render_points(P, color="grey"))
+    scene.data.extend(tlm.render_collisions(local_points, local_normals))
 
     rays_start = P - rays_length * V
     rays_end = P + rays_length * V
-    scene["data"].append(
+    scene.data.append(
         tlm.render_rays(rays_start, rays_end, category=tlm.CATEGORY_VALID_RAYS)
     )
 
     assert torch.all(torch.isfinite(P))
     assert torch.all(torch.isfinite(V))
 
-    scene["data"].append(tlm.render_surface_local(surface, dim))
+    scene.data.append(tlm.render_surface_local(surface, dim))
     tlm.display_scene(scene)
     # tlm.dump(scene, ndigits=2)
 

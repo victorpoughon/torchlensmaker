@@ -23,6 +23,7 @@ from importlib.metadata import version
 from pathlib import Path
 from typing import Any, Optional
 
+import tlmviewer as tlmv
 import torch
 from IPython.display import HTML, display
 
@@ -63,33 +64,33 @@ def random_id() -> str:
     return f"tlmviewer-{uuid.uuid4().hex[:8]}"
 
 
-def pprint(scene: object, ndigits: int | None = None) -> None:
+def pprint(scene: tlmv.Scene, ndigits: int | None = None) -> None:
     from pprint import pprint
 
+    data = tlmv.scene_to_dict(scene)
     if ndigits is not None:
-        json_data = json.dumps(scene, allow_nan=False)
-        scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+        json_data = json.dumps(data, allow_nan=False)
+        data = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
 
-    pprint(scene)
+    pprint(data)
 
 
-def dump(scene: object, ndigits: int | None = None) -> None:
+def dump(scene: tlmv.Scene, ndigits: int | None = None) -> None:
+    data = tlmv.scene_to_dict(scene)
     if ndigits is not None:
-        json_data = json.dumps(scene, allow_nan=False)
-        scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
+        json_data = json.dumps(data, allow_nan=False)
+        data = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
 
-    print(json.dumps(scene))
+    print(json.dumps(data))
 
 
-def truncate_scene(scene, ndigits: int) -> Any:
-    json_data = json.dumps(scene, allow_nan=False)
-    scene = json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
-
-    return scene
+def truncate_scene(scene: tlmv.Scene, ndigits: int) -> Any:
+    json_data = json.dumps(tlmv.scene_to_dict(scene), allow_nan=False)
+    return json.loads(json_data, parse_float=lambda x: round(float(x), ndigits))
 
 
 def ipython_display(
-    data: object,
+    data: tlmv.Scene,
     ndigits: int | None = None,
 ) -> None:
     div_id = random_id()
@@ -97,10 +98,10 @@ def ipython_display(
     script_template = get_script_template()
 
     try:
-        json_data = json.dumps(data, allow_nan=False)
+        json_data = json.dumps(tlmv.scene_to_dict(data), allow_nan=False)
     except ValueError as err:
         warnings.warn(f"tlmviewer: got nan values in display data ({err})")
-        json_data = json.dumps(data, allow_nan=True)
+        json_data = json.dumps(tlmv.scene_to_dict(data), allow_nan=True)
 
     if ndigits is not None:
         json_data = json.dumps(
@@ -123,7 +124,7 @@ vitepress_global_counter = 0
 
 
 def vitepress_vue_display(
-    data: object,
+    data: tlmv.Scene,
     ndigits: int | None = None,
 ) -> None:
     global vitepress_global_counter
@@ -139,13 +140,12 @@ def vitepress_vue_display(
     rel_path = json_folder / json_name
     abs_path = output_folder / Path(json_name)
 
-    # truncate digits if requested
+    scene_dict = tlmv.scene_to_dict(data)
     if ndigits is not None:
-        data = truncate_scene(data, ndigits)
+        scene_dict = truncate_scene(data, ndigits)
 
-    # write json file
     with open(abs_path, "w") as f:
-        json.dump(data, f)
+        json.dump(scene_dict, f)
 
     # '?url' is required to workaround https://github.com/vitejs/vite-plugin-vue/issues/544
     # see also https://github.com/vuejs/vitepress/discussions/4619
@@ -158,18 +158,18 @@ def vue_format_requested() -> bool:
     return os.environ.get("TLMVIEWER_TARGET_FORMAT", None) == "vue"
 
 
-def display_scene(scene: object, ndigits: int | None = None) -> None:
+def display_scene(scene: tlmv.Scene, ndigits: int | None = None) -> None:
     if not vue_format_requested():
         ipython_display(scene, ndigits)
     else:
         vitepress_vue_display(scene, ndigits)
 
 
-def new_scene(mode: str) -> Any:
+def new_scene(mode: str) -> tlmv.Scene:
     if mode == "2D":
-        return {"mode": "2D", "camera": "2D", "data": []}
+        return tlmv.Scene(mode="2D", camera="2D")
     elif mode == "3D":
-        return {"mode": "3D", "camera": "orthographic", "data": []}
+        return tlmv.Scene(mode="3D", camera="orthographic")
     else:
         raise RuntimeError("mode should be 2D or 3D")
 
@@ -178,18 +178,11 @@ def render_surface(
     surface: SurfaceElement,
     dfk: HomMatrix,
     dim: int,
-) -> object:
+) -> Any:
     """
-    Render a surface to a json serializable object in tlmviewer format
+    Render a surface to a tlmviewer scene element
     """
-
-    # Convert the surface to a dict
-    obj = surface.render()
-
-    # Add the matrix transform
-    obj["matrix"] = dfk.tolist()
-
-    return obj
+    return surface.render(dfk)
 
 
 def render_surface_local(
@@ -211,57 +204,51 @@ def render_rays(
     variables: dict[str, Tensor] = {},
     domain: dict[str, list[float]] = {},
     default_color: str = "#ffa724",
-) -> Any:
+) -> tlmv.Rays:
     assert start.shape == end.shape
     for var in variables.values():
         assert var.shape[0] == start.shape[0]
 
     points = torch.hstack((start, end)).tolist()
-
     variables_lists = {name: t.tolist() for name, t in variables.items()}
+    dim = start.shape[-1]
 
-    return {
-        "type": "rays",
-        "points": points,
-        "color": default_color,
-        "variables": variables_lists,
-        "domain": domain,
-        "category": category,
-    }
+    return tlmv.Rays(
+        points=points,
+        color=default_color,
+        category=category,
+        dim=dim,
+        variables=variables_lists,
+        domain=domain,
+    )
 
 
 def render_points(
-    points: Tensor, color: str = "white", radius: Optional[float] = None
-) -> Any:
-    # TODO option to render points sizes in screen coordinates
+    points: Tensor,
+    color: str = "white",
+    radius: Optional[float] = None,
+    category: str = "",
+) -> tlmv.Points:
     assert points.dim() == 2
-    return {
-        "type": "points",
-        "data": points.tolist(),
-        "color": color,
-        **({"radius": radius} if radius is not None else {}),
-    }
+    return tlmv.Points(
+        data=points.tolist(),
+        color=color,
+        radius=radius if radius is not None else 0.0,
+        category=category,
+    )
 
 
-def render_arrows(points: Tensor, normals: Tensor) -> Any:
-    return {
-        "type": "arrows",
-        "data": [n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)],
-    }
+def render_arrows(points: Tensor, normals: Tensor) -> tlmv.Arrows:
+    return tlmv.Arrows(
+        arrows=[n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)]
+    )
 
 
-def render_collisions(points: Tensor, normals: Tensor) -> Any:
-    g1 = {
-        "type": "points",
-        "data": points.tolist(),
-        "color": "#ff0000",
-    }
-
-    g2 = {
-        "type": "arrows",
-        "data": [n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)],
-    }
-
+def render_collisions(points: Tensor, normals: Tensor) -> list[Any]:
+    g1 = tlmv.Points(data=points.tolist(), color="#ff0000", radius=0.0, category="")
+    g2 = tlmv.Arrows(
+        arrows=[n.tolist() + p.tolist() + [1.0] for p, n in zip(points, normals)]
+    )
     return [g1, g2]
 
 
@@ -273,7 +260,7 @@ def render_rays_until(
     domain: dict[str, list[float]],
     default_color: str,
     category: str,
-) -> list[Any]:
+) -> list[tlmv.Rays]:
     "Render rays until an absolute X coordinate"
     assert end.dim() == 0
     # div by zero here for vertical rays
@@ -299,7 +286,7 @@ def render_rays_length(
     domain: dict[str, list[float]],
     category: str,
     default_color: str = color_valid,
-) -> list[Any]:
+) -> list[tlmv.Rays]:
     "Render rays with fixed length"
 
     if isinstance(length, Tensor):
@@ -329,7 +316,7 @@ def render_hit_miss_rays(
     variables_hit: dict[str, Tensor] = {},
     variables_miss: dict[str, Tensor] = {},
     domain: dict[str, list[float]] = {},
-) -> Any:
+) -> list[Any]:
     collision_points = P + t.unsqueeze(1).expand_as(V) * V
     hits = valid.sum()
     misses = (~valid).sum()
@@ -368,7 +355,7 @@ def render_hit_miss_rays(
     return rays_hit + rays_miss
 
 
-def render_joint(dfk: HomMatrix) -> Any:
+def render_joint(dfk: HomMatrix) -> list[tlmv.Points]:
     dim, dtype = (
         dfk.shape[0] - 1,
         dfk.dtype,
@@ -378,9 +365,10 @@ def render_joint(dfk: HomMatrix) -> Any:
     joint = transform_points(dfk, origin)
 
     return [
-        {
-            "type": "points",
-            "data": [joint.tolist()],
-            "category": CATEGORY_JOINT,
-        }
+        tlmv.Points(
+            data=[joint.tolist()],
+            color="white",
+            radius=0.0,
+            category=CATEGORY_JOINT,
+        )
     ]

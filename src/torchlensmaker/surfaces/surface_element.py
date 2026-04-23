@@ -16,6 +16,8 @@
 
 from typing import Any, NamedTuple
 
+import torch
+
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -65,5 +67,5 @@ class SurfaceElement(BaseModule):
     def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         raise NotImplementedError
 
-    def render(self) -> Any:
+    def render(self, matrix: torch.Tensor) -> Any:
         raise NotImplementedError

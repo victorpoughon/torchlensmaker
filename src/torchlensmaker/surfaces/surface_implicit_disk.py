@@ -44,6 +44,8 @@ from .raytrace import surface_raytrace
 from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 def implicit_domain(
     F: BatchTensor,
@@ -177,8 +179,5 @@ class ImplicitDisk(SurfaceElement):
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-disk",
-            "radius": self.diameter.item() / 2,
-        }
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceDisk:
+        return tlmv.SurfaceDisk(radius=self.diameter.item() / 2, matrix=matrix.tolist())

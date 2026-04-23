@@ -57,6 +57,8 @@ from .sag_functions import (
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 class AsphereSurfaceKernel(FunctionalKernel):
     """
@@ -331,11 +333,10 @@ class Asphere(SurfaceElement):
             anchor, self.diameter, self.C, self.K, self.alphas, self.normalize
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter.item(),
-            "sag-function": {
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:
+        return tlmv.SurfaceSag(
+            diameter=self.diameter.item(),
+            sag_function={
                 "sag-type": "sum",
                 "terms": [
                     {
@@ -349,4 +350,5 @@ class Asphere(SurfaceElement):
                     },
                 ],
             },
-        }
+            matrix=matrix.tolist(),
+        )

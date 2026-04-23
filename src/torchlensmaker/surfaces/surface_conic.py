@@ -49,6 +49,8 @@ from .sag_functions import (
 from .sag_surface import SolverConfig, sag_solver_config, sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 class ConicSurfaceKernel(FunctionalKernel):
     """
@@ -284,14 +286,14 @@ class Conic(SurfaceElement):
             anchor, self.diameter, self.C, self.K, self.normalize
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter.item(),
-            "sag-function": {
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:
+        return tlmv.SurfaceSag(
+            diameter=self.diameter.item(),
+            sag_function={
                 "sag-type": "conical",
                 "C": self.C.item(),
                 "K": self.K.item(),
                 "normalize": self.normalize.item(),
             },
-        }
+            matrix=matrix.tolist(),
+        )

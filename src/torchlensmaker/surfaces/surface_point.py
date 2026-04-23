@@ -143,5 +143,5 @@ class PointSurface(SurfaceElement):
     def outer_extent(self, anchor: BatchTensor) -> BatchTensor:
         return torch.zeros_like(anchor)
 
-    def render(self) -> Any:
-        return {"type": "surface-point"}
+    def render(self, matrix: torch.Tensor) -> None:
+        return None

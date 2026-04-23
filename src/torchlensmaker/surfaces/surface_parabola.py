@@ -53,6 +53,8 @@ from .sag_functions import (
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 class ParabolaSurfaceKernel(FunctionalKernel):
     """
@@ -269,13 +271,13 @@ class Parabola(SurfaceElement):
             anchor, self.diameter, self.A, self.normalize
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter.item(),
-            "sag-function": {
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:
+        return tlmv.SurfaceSag(
+            diameter=self.diameter.item(),
+            sag_function={
                 "sag-type": "parabolic",
                 "A": self.A.item(),
                 "normalize": self.normalize.item(),
             },
-        }
+            matrix=matrix.tolist(),
+        )

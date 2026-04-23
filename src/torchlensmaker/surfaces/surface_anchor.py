@@ -117,8 +117,8 @@ class KinematicSurface(BaseModule):
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 
-    def render(self) -> Any:
-        return self.surface.render()
+    def render(self, matrix: torch.Tensor) -> Any:
+        return self.surface.render(matrix)
 
     def forward(
         self, P: BatchTensor, V: BatchTensor, tf: Tf

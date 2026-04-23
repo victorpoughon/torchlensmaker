@@ -48,6 +48,8 @@ from .sag_functions import (
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 class SphereByCurvatureSurfaceKernel(FunctionalKernel):
     """
@@ -268,13 +270,13 @@ class SphereByCurvature(SurfaceElement):
             anchor, self.diameter, self.C, self.normalize
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter.item(),
-            "sag-function": {
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:
+        return tlmv.SurfaceSag(
+            diameter=self.diameter.item(),
+            sag_function={
                 "sag-type": "spherical",
                 "C": self.C.item(),
                 "normalize": self.normalize.item(),
             },
-        }
+            matrix=matrix.tolist(),
+        )

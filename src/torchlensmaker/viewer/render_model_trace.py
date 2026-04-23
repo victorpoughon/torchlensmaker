@@ -86,9 +86,9 @@ def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
 def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
     surfaces = []
     for key, (tf, surface) in trace.surfaces.items():
-        surf = surface.render()
-        surf["matrix"] = tf.direct.tolist()
-        surfaces.append(surf)
+        surf = tlmviewer.render_surface(surface, tf.direct, dim=tf.direct.shape[0] - 1)
+        if surf is not None:
+            surfaces.append(surf)
 
     return surfaces
 
@@ -185,16 +185,14 @@ def render_model_trace(
     ray_variables_domains = get_domain(model, dim)
 
     # Render parts of the scene: surfaces, joints, rays
-    viewer_scene["data"].extend(trace_render_surfaces(trace))
-    viewer_scene["data"].extend(trace_render_joints(trace))
-    viewer_scene["data"].extend(trace_render_rays(trace, ray_variables_domains))
+    viewer_scene.data.extend(trace_render_surfaces(trace))
+    viewer_scene.data.extend(trace_render_joints(trace))
+    viewer_scene.data.extend(trace_render_rays(trace, ray_variables_domains))
 
     # Render end rays
-    viewer_scene["data"].extend(
-        trace_render_end_rays(trace, end, ray_variables_domains)
-    )
+    viewer_scene.data.extend(trace_render_end_rays(trace, end, ray_variables_domains))
 
     # Render focal point
-    viewer_scene["data"].extend(trace_render_focal_points(trace))
+    viewer_scene.data.extend(trace_render_focal_points(trace))
 
     return viewer_scene

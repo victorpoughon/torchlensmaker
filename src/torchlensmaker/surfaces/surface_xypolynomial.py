@@ -46,6 +46,8 @@ from .sag_functions import (
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 class XYPolynomialSurfaceKernel(FunctionalKernel):
     """
@@ -243,11 +245,10 @@ class XYPolynomial(SurfaceElement):
             t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sag",
-            "diameter": self.diameter.item(),
-            "sag-function": {
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:
+        return tlmv.SurfaceSag(
+            diameter=self.diameter.item(),
+            sag_function={
                 "sag-type": "sum",
                 "terms": [
                     {
@@ -261,4 +262,5 @@ class XYPolynomial(SurfaceElement):
                     },
                 ],
             },
-        }
+            matrix=matrix.tolist(),
+        )

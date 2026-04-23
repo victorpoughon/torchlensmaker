@@ -43,6 +43,8 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 def intersection_square_3d(
     P: Batch3DTensor,
@@ -158,7 +160,7 @@ class Square(SurfaceElement):
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)
 
-    def render(self) -> Any:
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceDisk:
         max_radius = math.sqrt(2) * self.side_length / 2
         a = self.side_length.item() / 2
         clip_planes = [
@@ -167,8 +169,6 @@ class Square(SurfaceElement):
             [0.0, 0.0, -1.0, a],
             [0.0, 0.0, 1.0, a],
         ]
-        return {
-            "type": "surface-disk",
-            "radius": max_radius.item(),
-            "clip_planes": clip_planes,
-        }
+        return tlmv.SurfaceDisk(
+            radius=max_radius.item(), matrix=matrix.tolist(), clip_planes=clip_planes
+        )

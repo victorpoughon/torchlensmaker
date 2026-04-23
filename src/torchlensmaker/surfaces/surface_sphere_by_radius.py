@@ -43,6 +43,8 @@ from .raytrace import surface_raytrace
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
+import tlmviewer as tlmv
+
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
     return torch.cat((
@@ -63,7 +65,8 @@ def sphere_radius_normals(R: ScalarTensor, points: BatchNDTensor) -> MaskTensor:
     normal_at_origin = torch.tile(unit, ((*batch, 1)))
 
     return torch.where(
-        torch.all(torch.isclose(center, points), dim=-1)
+        torch
+        .all(torch.isclose(center, points), dim=-1)
         .unsqueeze(-1)
         .expand_as(normals),
         normal_at_origin,
@@ -335,9 +338,7 @@ class SphereByRadius(SurfaceElement):
             *func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
         )
 
-    def render(self) -> Any:
-        return {
-            "type": "surface-sphere-r",
-            "diameter": self.diameter.item(),
-            "R": self.R.item(),
-        }
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSphereR:
+        return tlmv.SurfaceSphereR(
+            R=self.R.item(), diameter=self.diameter.item(), matrix=matrix.tolist()
+        )
