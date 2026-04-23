@@ -1,7 +1,5 @@
 import torchlensmaker as tlm
-import torch
-
-import math
+import tlmviewer as tlmv
 
 # Use half spheres to model interface boundaries
 radius = 5
@@ -47,6 +45,4 @@ tlm.set_sampling2d(model, pupil=50, field=5, wavel=10)
 
 scene = tlm.render_model(model, 2, end=50, title="Rainbow", controls=controls)
 
-from tlmviewer import push_scene
-
-push_scene(scene)
+tlmv.push_scene(scene)
