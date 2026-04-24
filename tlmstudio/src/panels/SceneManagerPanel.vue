@@ -47,7 +47,7 @@ function formatTime(date: Date): string {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: #111;
+  background: #0d0d0d;
 }
 
 .scene-list {
@@ -57,7 +57,7 @@ function formatTime(date: Date): string {
 }
 
 .scene-empty {
-  color: #555;
+  color: #666;
   font-size: 12px;
   padding: 10px 10px;
   font-style: italic;
@@ -70,16 +70,16 @@ function formatTime(date: Date): string {
   padding: 6px 10px;
   font-size: 12px;
   cursor: pointer;
-  border-bottom: 1px solid #1e1e1e;
+  border-bottom: 1px solid #222;
   gap: 8px;
 }
 
 .scene-row:hover {
-  background: #1e1e1e;
+  background: #1a1a1a;
 }
 
 .scene-topic {
-  color: #d4d4d4;
+  color: #e8e8e8;
   font-weight: bold;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,20 +87,20 @@ function formatTime(date: Date): string {
 }
 
 .scene-time {
-  color: #666;
+  color: #888;
   flex-shrink: 0;
   font-size: 11px;
 }
 
 .scene-footer {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid #333;
   padding: 6px 10px;
 }
 
 .clear-btn {
-  background: #1e1e1e;
-  border: 1px solid #444;
-  color: #b0b0b0;
+  background: #1a1a1a;
+  border: 1px solid #555;
+  color: #ccc;
   font-family: monospace;
   font-size: 11px;
   padding: 3px 10px;
@@ -109,7 +109,8 @@ function formatTime(date: Date): string {
 }
 
 .clear-btn:hover {
-  background: #2a2a2a;
-  color: #d4d4d4;
+  background: #252525;
+  color: #f0f0f0;
+  border-color: #888;
 }
 </style>

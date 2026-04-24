@@ -38,7 +38,7 @@ watch(
   height: 100%;
   overflow-y: auto;
   padding: 6px;
-  background: #111;
+  background: #0d0d0d;
 }
 
 .log-entry {
@@ -47,21 +47,21 @@ watch(
   padding: 3px 0;
   font-size: 12px;
   line-height: 1.5;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid #222;
 }
 
 .log-time {
-  color: #666;
+  color: #888;
   flex-shrink: 0;
 }
 
 .log-text {
-  color: #d4d4d4;
+  color: #e8e8e8;
   word-break: break-all;
 }
 
 .log-empty {
-  color: #555;
+  color: #666;
   font-size: 12px;
   padding: 8px 0;
   font-style: italic;
