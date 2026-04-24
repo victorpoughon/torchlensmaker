@@ -114,8 +114,8 @@ onUnmounted(() => {
 }
 
 body {
-  background: #1a1a1a;
-  color: #ccc;
+  background: #0d0d0d;
+  color: #e8e8e8;
   font-family: monospace;
   height: 100vh;
   overflow: hidden;
@@ -130,7 +130,7 @@ body {
 .panel {
   display: flex;
   flex-direction: column;
-  border: 1px solid #333;
+  border: 1px solid #444;
 }
 
 .viewport-panel {
@@ -141,17 +141,17 @@ body {
 .log-panel {
   width: 320px;
   flex-shrink: 0;
-  border-left: 1px solid #333;
+  border-left: 2px solid #444;
 }
 
 .panel-header {
-  background: #252525;
-  color: #888;
+  background: #1e1e1e;
+  color: #b0b0b0;
   font-size: 11px;
-  padding: 4px 10px;
-  border-bottom: 1px solid #333;
+  padding: 5px 10px;
+  border-bottom: 1px solid #444;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   flex-shrink: 0;
 }
 
@@ -169,29 +169,30 @@ body {
   overflow-y: auto;
   padding: 6px;
   min-height: 0;
+  background: #111;
 }
 
 .log-entry {
   display: flex;
   gap: 8px;
-  padding: 2px 0;
+  padding: 3px 0;
   font-size: 12px;
   line-height: 1.5;
-  border-bottom: 1px solid #222;
+  border-bottom: 1px solid #2a2a2a;
 }
 
 .log-time {
-  color: #555;
+  color: #666;
   flex-shrink: 0;
 }
 
 .log-text {
-  color: #aaa;
+  color: #d4d4d4;
   word-break: break-all;
 }
 
 .log-empty {
-  color: #444;
+  color: #555;
   font-size: 12px;
   padding: 8px 0;
   font-style: italic;
