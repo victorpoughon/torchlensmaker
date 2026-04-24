@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import { ref, onUnmounted } from 'vue'
 import { DockviewVue } from 'dockview-vue'
-import type { DockviewReadyEvent } from 'dockview-core'
+import type { DockviewApi, DockviewReadyEvent } from 'dockview-core'
 import 'dockview-core/dist/styles/dockview.css'
 import type { Envelope } from 'tlmprotocol'
 import LogPanel from './panels/LogPanel.vue'
-import ViewportPanel from './panels/ViewportPanel.vue'
 import type { LogEntry } from './panels/LogPanel.vue'
+import ViewportPanel from './panels/ViewportPanel.vue'
+import SceneManagerPanel from './panels/SceneManagerPanel.vue'
+import type { SceneEntry } from './types.ts'
 
 // Explicit registration so dockview-vue can find components by name and
 // so the bundler doesn't tree-shake them away (they're not in the template).
-defineOptions({ components: { ViewportPanel, LogPanel } })
+defineOptions({ components: { ViewportPanel, LogPanel, SceneManagerPanel } })
 
 const logEntries = ref<LogEntry[]>([])
-const currentScene = ref<unknown | null>(null)
+const scenes = ref<SceneEntry[]>([])
 
+let dockviewApi: DockviewApi | null = null
 let ws: WebSocket | null = null
 
 function addLog(text: string) {
@@ -22,10 +25,33 @@ function addLog(text: string) {
   logEntries.value.push({ time, text })
 }
 
+function openViewportPanel(scene: SceneEntry) {
+  if (!dockviewApi) return
+  const panelId = `viewport-${scene.id}`
+  const existing = dockviewApi.getPanel(panelId)
+  if (existing) {
+    existing.focus()
+    return
+  }
+  dockviewApi.addPanel({
+    id: panelId,
+    component: 'ViewportPanel',
+    title: `Viewport · ${scene.topic}`,
+    params: { scene: scene.payload },
+    position: { direction: 'within', referencePanel: 'viewport-live' },
+  })
+}
+
 function handleEnvelope(envelope: Envelope) {
   if (envelope.type === 'scene') {
-    addLog(`Scene received (topic: ${envelope.topic})`)
-    currentScene.value = envelope.payload
+    const scene: SceneEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      topic: envelope.topic,
+      timestamp: new Date(),
+      payload: envelope.payload,
+    }
+    scenes.value.push(scene)
+    dockviewApi?.getPanel('viewport-live')?.update({ params: { scene: scene.payload } })
   } else if (envelope.type === 'log') {
     addLog(`[log] ${envelope.payload}`)
   }
@@ -63,22 +89,34 @@ async function loadWorkspace(url: string) {
 }
 
 function onReady(event: DockviewReadyEvent) {
-  const api = event.api
+  dockviewApi = event.api
 
-  api.addPanel({
-    id: 'viewport',
+  const W = window.innerWidth
+  const H = window.innerHeight
+
+  dockviewApi.addPanel({
+    id: 'viewport-live',
     component: 'ViewportPanel',
     title: 'Viewport',
-    params: { scene: currentScene },
+    params: { scene: null },
   })
 
-  api.addPanel({
+  dockviewApi.addPanel({
+    id: 'scene-manager',
+    component: 'SceneManagerPanel',
+    title: 'Scenes',
+    params: { scenes, openViewport: openViewportPanel },
+    position: { direction: 'right', referencePanel: 'viewport-live' },
+    initialWidth: Math.round(W * 0.2),
+  })
+
+  dockviewApi.addPanel({
     id: 'log',
     component: 'LogPanel',
     title: 'Log',
     params: { entries: logEntries },
-    position: { direction: 'right', referencePanel: 'viewport' },
-    initialWidth: 320,
+    position: { direction: 'below', referencePanel: 'scene-manager' },
+    initialHeight: Math.round(H * 0.45),
   })
 
   const workspaceUrl = (document.getElementById('app') as HTMLElement | null)?.dataset.workspace
@@ -95,11 +133,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <DockviewVue
-    class="dockview-theme-dark"
-    style="height: 100vh; width: 100vw;"
-    @ready="onReady"
-  />
+  <DockviewVue class="dockview-theme-dark" style="height: 100vh; width: 100vw" @ready="onReady" />
 </template>
 
 <style>
