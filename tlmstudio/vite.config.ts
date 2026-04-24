@@ -7,14 +7,11 @@ import vueDevTools from 'vite-plugin-vue-devtools'
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [
-    vue(),
-    vueDevTools(),
-  ],
+  plugins: [vue(), vueDevTools()],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
-      'tlmprotocol': resolve(__dirname, '../tlmprotocol/src/index.ts'),
+      tlmprotocol: resolve(__dirname, '../tlmprotocol/src/index.ts'),
     },
   },
   server: {

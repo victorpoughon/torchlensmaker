@@ -17,9 +17,10 @@ const logEl = ref<HTMLElement>()
 
 watch(
   () => props.params.params.entries.value.length,
-  () => nextTick(() => {
-    if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
-  }),
+  () =>
+    nextTick(() => {
+      if (logEl.value) logEl.value.scrollTop = logEl.value.scrollHeight
+    }),
 )
 </script>
 
@@ -29,7 +30,9 @@ watch(
       <span class="log-time">{{ entry.time }}</span>
       <span class="log-text">{{ entry.text }}</span>
     </div>
-    <div v-if="params.params.entries.value.length === 0" class="log-empty">Waiting for messages…</div>
+    <div v-if="params.params.entries.value.length === 0" class="log-empty">
+      Waiting for messages…
+    </div>
   </div>
 </template>
 

@@ -29,5 +29,5 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div ref="viewportEl" class="tlmviewer" style="width: 100%; height: 100%;"></div>
+  <div ref="viewportEl" class="tlmviewer" style="width: 100%; height: 100%"></div>
 </template>
