@@ -1,4 +1,5 @@
 import { fileURLToPath, URL } from 'node:url'
+import { resolve } from 'node:path'
 
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -12,7 +13,16 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+      'tlmprotocol': resolve(__dirname, '../tlmprotocol/src/index.ts'),
+    },
+  },
+  server: {
+    proxy: {
+      '/ws': {
+        target: 'ws://localhost:8765',
+        ws: true,
+      },
     },
   },
 })
