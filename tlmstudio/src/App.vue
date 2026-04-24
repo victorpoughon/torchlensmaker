@@ -22,154 +22,154 @@ let dockviewApi: DockviewApi | null = null
 let ws: WebSocket | null = null
 
 function addLog(text: string) {
-  const time = new Date().toLocaleTimeString()
-  logEntries.value.push({ time, text })
+    const time = new Date().toLocaleTimeString()
+    logEntries.value.push({ time, text })
 }
 
 function openSourcePanel(entry: SourceEntry) {
-  if (!dockviewApi) return
-  const panelId = `source-${entry.id}`
-  dockviewApi.addPanel({
-    id: panelId,
-    component: 'SourcePanel',
-    title: entry.filename,
-    params: { source: entry },
-    position: { direction: 'within', referencePanel: 'viewport-live' },
-  })
+    if (!dockviewApi) return
+    const panelId = `source-${entry.id}`
+    dockviewApi.addPanel({
+        id: panelId,
+        component: 'SourcePanel',
+        title: entry.filename,
+        params: { source: entry },
+        position: { direction: 'within', referencePanel: 'viewport-live' },
+    })
 }
 
 function openViewportPanel(scene: SceneEntry) {
-  if (!dockviewApi) return
-  const panelId = `viewport-${scene.id}`
-  const existing = dockviewApi.getPanel(panelId)
-  if (existing) {
-    existing.focus()
-    return
-  }
-  dockviewApi.addPanel({
-    id: panelId,
-    component: 'ViewportPanel',
-    title: `Viewport · ${scene.topic}`,
-    params: { scene: scene.payload },
-    position: { direction: 'within', referencePanel: 'viewport-live' },
-  })
+    if (!dockviewApi) return
+    const panelId = `viewport-${scene.id}`
+    const existing = dockviewApi.getPanel(panelId)
+    if (existing) {
+        existing.focus()
+        return
+    }
+    dockviewApi.addPanel({
+        id: panelId,
+        component: 'ViewportPanel',
+        title: `Viewport · ${scene.topic}`,
+        params: { scene: scene.payload },
+        position: { direction: 'within', referencePanel: 'viewport-live' },
+    })
 }
 
 function handleEnvelope(envelope: Envelope) {
-  if (envelope.type === 'scene') {
-    const scene: SceneEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      topic: envelope.topic,
-      timestamp: new Date(),
-      payload: envelope.payload,
+    if (envelope.type === 'scene') {
+        const scene: SceneEntry = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            topic: envelope.topic,
+            timestamp: new Date(),
+            payload: envelope.payload,
+        }
+        scenes.value.push(scene)
+        dockviewApi?.getPanel('viewport-live')?.update({ params: { scene: scene.payload } })
+    } else if (envelope.type === 'source') {
+        const payload = envelope.payload as { filename: string; language: string; content: string }
+        const entry: SourceEntry = {
+            id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            filename: payload.filename,
+            language: payload.language,
+            content: payload.content,
+            timestamp: new Date(),
+        }
+        openSourcePanel(entry)
+    } else if (envelope.type === 'log') {
+        addLog(`[log] ${envelope.payload}`)
     }
-    scenes.value.push(scene)
-    dockviewApi?.getPanel('viewport-live')?.update({ params: { scene: scene.payload } })
-  } else if (envelope.type === 'source') {
-    const payload = envelope.payload as { filename: string; language: string; content: string }
-    const entry: SourceEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      filename: payload.filename,
-      language: payload.language,
-      content: payload.content,
-      timestamp: new Date(),
-    }
-    openSourcePanel(entry)
-  } else if (envelope.type === 'log') {
-    addLog(`[log] ${envelope.payload}`)
-  }
 }
 
 function connectWebSocket() {
-  const wsUrl = `ws://${location.host}/ws`
-  ws = new WebSocket(wsUrl)
-  ws.onopen = () => addLog('Connected to tlmserver')
-  ws.onmessage = (event) => {
-    let envelope: Envelope
-    try {
-      envelope = JSON.parse(event.data as string)
-    } catch {
-      addLog('Failed to parse message')
-      return
+    const wsUrl = `ws://${location.host}/ws`
+    ws = new WebSocket(wsUrl)
+    ws.onopen = () => addLog('Connected to tlmserver')
+    ws.onmessage = (event) => {
+        let envelope: Envelope
+        try {
+            envelope = JSON.parse(event.data as string)
+        } catch {
+            addLog('Failed to parse message')
+            return
+        }
+        handleEnvelope(envelope)
     }
-    handleEnvelope(envelope)
-  }
-  ws.onerror = () => addLog('WebSocket error')
-  ws.onclose = () => addLog('Disconnected from tlmserver')
+    ws.onerror = () => addLog('WebSocket error')
+    ws.onclose = () => addLog('Disconnected from tlmserver')
 }
 
 async function loadWorkspace(url: string) {
-  addLog(`Loading workspace: ${url}`)
-  try {
-    const envelopes: Envelope[] = await fetch(url).then((r) => r.json())
-    for (const envelope of envelopes) {
-      handleEnvelope(envelope)
+    addLog(`Loading workspace: ${url}`)
+    try {
+        const envelopes: Envelope[] = await fetch(url).then((r) => r.json())
+        for (const envelope of envelopes) {
+            handleEnvelope(envelope)
+        }
+        addLog(`Workspace loaded (${envelopes.length} messages)`)
+    } catch (err) {
+        addLog(`Failed to load workspace: ${err}`)
     }
-    addLog(`Workspace loaded (${envelopes.length} messages)`)
-  } catch (err) {
-    addLog(`Failed to load workspace: ${err}`)
-  }
 }
 
 function onReady(event: DockviewReadyEvent) {
-  dockviewApi = event.api
+    dockviewApi = event.api
 
-  const W = window.innerWidth
-  const H = window.innerHeight
+    const W = window.innerWidth
+    const H = window.innerHeight
 
-  dockviewApi.addPanel({
-    id: 'viewport-live',
-    component: 'ViewportPanel',
-    title: 'Viewport',
-    params: { scene: null },
-  })
+    dockviewApi.addPanel({
+        id: 'viewport-live',
+        component: 'ViewportPanel',
+        title: 'Viewport',
+        params: { scene: null },
+    })
 
-  dockviewApi.addPanel({
-    id: 'scene-manager',
-    component: 'SceneManagerPanel',
-    title: 'Scenes',
-    params: { scenes, openViewport: openViewportPanel },
-    position: { direction: 'right', referencePanel: 'viewport-live' },
-    initialWidth: Math.round(W * 0.2),
-  })
+    dockviewApi.addPanel({
+        id: 'scene-manager',
+        component: 'SceneManagerPanel',
+        title: 'Scenes',
+        params: { scenes, openViewport: openViewportPanel },
+        position: { direction: 'right', referencePanel: 'viewport-live' },
+        initialWidth: Math.round(W * 0.2),
+    })
 
-  dockviewApi.addPanel({
-    id: 'log',
-    component: 'LogPanel',
-    title: 'Log',
-    params: { entries: logEntries },
-    position: { direction: 'below', referencePanel: 'scene-manager' },
-    initialHeight: Math.round(H * 0.45),
-  })
+    dockviewApi.addPanel({
+        id: 'log',
+        component: 'LogPanel',
+        title: 'Log',
+        params: { entries: logEntries },
+        position: { direction: 'below', referencePanel: 'scene-manager' },
+        initialHeight: Math.round(H * 0.45),
+    })
 
-  const workspaceUrl = (document.getElementById('app') as HTMLElement | null)?.dataset.workspace
-  if (workspaceUrl) {
-    loadWorkspace(workspaceUrl)
-  } else {
-    connectWebSocket()
-  }
+    const workspaceUrl = (document.getElementById('app') as HTMLElement | null)?.dataset.workspace
+    if (workspaceUrl) {
+        loadWorkspace(workspaceUrl)
+    } else {
+        connectWebSocket()
+    }
 }
 
 onUnmounted(() => {
-  ws?.close()
+    ws?.close()
 })
 </script>
 
 <template>
-  <DockviewVue class="dockview-theme-dark" style="height: 100vh; width: 100vw" @ready="onReady" />
+    <DockviewVue class="dockview-theme-dark" style="height: 100vh; width: 100vw" @ready="onReady" />
 </template>
 
 <style>
 * {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
 }
 
 body {
-  background: #0d0d0d;
-  font-family: monospace;
-  height: 100vh;
-  overflow: hidden;
+    background: #0d0d0d;
+    font-family: monospace;
+    height: 100vh;
+    overflow: hidden;
 }
 </style>
