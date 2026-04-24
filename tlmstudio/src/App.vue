@@ -8,11 +8,12 @@ import LogPanel from './panels/LogPanel.vue'
 import type { LogEntry } from './panels/LogPanel.vue'
 import ViewportPanel from './panels/ViewportPanel.vue'
 import SceneManagerPanel from './panels/SceneManagerPanel.vue'
-import type { SceneEntry } from './types.ts'
+import SourcePanel from './panels/SourcePanel.vue'
+import type { SceneEntry, SourceEntry } from './types.ts'
 
 // Explicit registration so dockview-vue can find components by name and
 // so the bundler doesn't tree-shake them away (they're not in the template).
-defineOptions({ components: { ViewportPanel, LogPanel, SceneManagerPanel } })
+defineOptions({ components: { ViewportPanel, LogPanel, SceneManagerPanel, SourcePanel } })
 
 const logEntries = ref<LogEntry[]>([])
 const scenes = ref<SceneEntry[]>([])
@@ -23,6 +24,18 @@ let ws: WebSocket | null = null
 function addLog(text: string) {
   const time = new Date().toLocaleTimeString()
   logEntries.value.push({ time, text })
+}
+
+function openSourcePanel(entry: SourceEntry) {
+  if (!dockviewApi) return
+  const panelId = `source-${entry.id}`
+  dockviewApi.addPanel({
+    id: panelId,
+    component: 'SourcePanel',
+    title: entry.filename,
+    params: { source: entry },
+    position: { direction: 'within', referencePanel: 'viewport-live' },
+  })
 }
 
 function openViewportPanel(scene: SceneEntry) {
@@ -52,6 +65,16 @@ function handleEnvelope(envelope: Envelope) {
     }
     scenes.value.push(scene)
     dockviewApi?.getPanel('viewport-live')?.update({ params: { scene: scene.payload } })
+  } else if (envelope.type === 'source') {
+    const payload = envelope.payload as { filename: string; language: string; content: string }
+    const entry: SourceEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      filename: payload.filename,
+      language: payload.language,
+      content: payload.content,
+      timestamp: new Date(),
+    }
+    openSourcePanel(entry)
   } else if (envelope.type === 'log') {
     addLog(`[log] ${envelope.payload}`)
   }

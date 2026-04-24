@@ -20,6 +20,7 @@ from .types import (
 )
 from .serialize import scene_to_dict, scene_to_json, save_scene
 from .push import push_scene
+from .source import push_source
 
 __all__ = [
     "Scene",
@@ -44,4 +45,5 @@ __all__ = [
     "scene_to_json",
     "save_scene",
     "push_scene",
+    "push_source",
 ]

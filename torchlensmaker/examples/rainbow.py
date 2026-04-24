@@ -46,3 +46,5 @@ tlmv.push_scene(scene2d)
 tlm.set_sampling3d(model, pupil=200, field=15, wavel=10)
 scene3d = tlm.render_model(model, 3, end=50, title="Rainbow", controls=controls)
 tlmv.push_scene(scene3d)
+
+tlmv.push_source(__file__)

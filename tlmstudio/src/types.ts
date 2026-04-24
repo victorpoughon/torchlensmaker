@@ -5,3 +5,12 @@ export interface SceneEntry {
   timestamp: Date
   payload: unknown
 }
+
+// One source file received from tlmserver, displayed in a Source panel.
+export interface SourceEntry {
+  id: string
+  filename: string
+  language: string
+  content: string
+  timestamp: Date
+}

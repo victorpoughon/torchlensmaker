@@ -16,6 +16,7 @@
   "dependencies": {
     "dockview-vue": "^5.2.0",
     "lil-gui": "^0.20.0",
+    "shiki": "^4.0.2",
     "three": "^0.175.0",
     "vue": "^3.5.32"
   },
