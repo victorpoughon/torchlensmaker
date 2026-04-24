@@ -24,7 +24,19 @@ function addLog(text: string) {
   })
 }
 
-onMounted(() => {
+function handleEnvelope(envelope: Envelope) {
+  if (envelope.type === 'scene') {
+    addLog(`Scene received (topic: ${envelope.topic})`)
+    if (viewportEl.value) {
+      handle?.dispose()
+      handle = renderScene(viewportEl.value, envelope.payload)
+    }
+  } else if (envelope.type === 'log') {
+    addLog(`[log] ${envelope.payload}`)
+  }
+}
+
+function connectWebSocket() {
   const wsUrl = `ws://${location.host}/ws`
   ws = new WebSocket(wsUrl)
 
@@ -38,20 +50,35 @@ onMounted(() => {
       addLog('Failed to parse message')
       return
     }
-
-    if (envelope.type === 'scene') {
-      addLog(`Scene received (topic: ${envelope.topic})`)
-      if (viewportEl.value) {
-        handle?.dispose()
-        handle = renderScene(viewportEl.value, envelope.payload)
-      }
-    } else if (envelope.type === 'log') {
-      addLog(`[log] ${envelope.payload}`)
-    }
+    handleEnvelope(envelope)
   }
 
   ws.onerror = () => addLog('WebSocket error')
   ws.onclose = () => addLog('Disconnected from tlmserver')
+}
+
+async function loadWorkspace(url: string) {
+  addLog(`Loading workspace: ${url}`)
+  try {
+    const envelopes: Envelope[] = await fetch(url).then((r) => r.json())
+    for (const envelope of envelopes) {
+      handleEnvelope(envelope)
+    }
+    addLog(`Workspace loaded (${envelopes.length} messages)`)
+  } catch (err) {
+    addLog(`Failed to load workspace: ${err}`)
+  }
+}
+
+onMounted(() => {
+  const workspaceUrl = (document.getElementById('app') as HTMLElement | null)
+    ?.dataset.workspace
+
+  if (workspaceUrl) {
+    loadWorkspace(workspaceUrl)
+  } else {
+    connectWebSocket()
+  }
 })
 
 onUnmounted(() => {

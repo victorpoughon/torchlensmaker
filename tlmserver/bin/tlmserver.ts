@@ -26,20 +26,33 @@ for (let i = 0; i < args.length; i++) {
     }
 }
 
-// ── Locate built tlmviewer ────────────────────────────────────────────────────
+// ── Locate built tlmstudio ────────────────────────────────────────────────────
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const distDir = path.resolve(__dirname, "../../tlmviewer/dist");
+const studioDistDir = path.resolve(__dirname, "../../tlmstudio/dist");
 
-function findTlmviewerUmd(): string | null {
-    try {
-        const files = fs.readdirSync(distDir);
-        const umd = files.find((f) => f.endsWith(".umd.js"));
-        return umd ? path.join(distDir, umd) : null;
-    } catch {
-        return null;
+const mimeTypes: Record<string, string> = {
+    ".html": "text/html",
+    ".js":   "application/javascript",
+    ".css":  "text/css",
+    ".ico":  "image/x-icon",
+};
+
+function serveStatic(urlPath: string, res: http.ServerResponse): boolean {
+    const filePath = path.join(studioDistDir, urlPath);
+    // Prevent path traversal outside studioDistDir
+    if (!filePath.startsWith(studioDistDir + path.sep) && filePath !== studioDistDir) {
+        return false;
     }
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+        return false;
+    }
+    const ext = path.extname(filePath);
+    const contentType = mimeTypes[ext] ?? "application/octet-stream";
+    res.writeHead(200, { "Content-Type": contentType });
+    fs.createReadStream(filePath).pipe(res);
+    return true;
 }
 
 // ── WebSocket clients ─────────────────────────────────────────────────────────
@@ -53,26 +66,6 @@ function broadcast(raw: string): void {
         }
     }
 }
-
-// ── HTML page ─────────────────────────────────────────────────────────────────
-
-const indexHtml = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>tlmserver</title>
-  <style>body { margin: 0; overflow: hidden; }</style>
-</head>
-<body>
-  <div id="viewer" class="tlmviewer" style="width:100vw;height:100vh;"></div>
-  <script src="/tlmviewer.js"></script>
-  <script>
-    const wsUrl = "ws://" + location.host + "/ws";
-    tlmviewer.connect(document.getElementById("viewer"), wsUrl);
-  </script>
-</body>
-</html>`;
 
 // ── HTTP server ───────────────────────────────────────────────────────────────
 
@@ -125,24 +118,20 @@ const server = http.createServer((req, res) => {
         return;
     }
 
-    if (req.method === "GET" && url === "/") {
-        res.writeHead(200, { "Content-Type": "text/html" });
-        res.end(indexHtml);
-        return;
-    }
-
-    if (req.method === "GET" && url === "/tlmviewer.js") {
-        const umdPath = findTlmviewerUmd();
-        if (!umdPath) {
-            res.writeHead(503, { "Content-Type": "text/plain" });
-            res.end(
-                `tlmviewer UMD build not found in ${distDir}\nRun: npm run build -w tlmviewer`,
-            );
+    if (req.method === "GET") {
+        if (url === "/") {
+            const indexPath = path.join(studioDistDir, "index.html");
+            if (!fs.existsSync(indexPath)) {
+                res.writeHead(503, { "Content-Type": "text/plain" });
+                res.end(`tlmstudio build not found in ${studioDistDir}\nRun: npm run build -w tlmstudio`);
+                return;
+            }
+            res.writeHead(200, { "Content-Type": "text/html" });
+            fs.createReadStream(indexPath).pipe(res);
             return;
         }
-        res.writeHead(200, { "Content-Type": "application/javascript" });
-        fs.createReadStream(umdPath).pipe(res);
-        return;
+
+        if (serveStatic(url, res)) return;
     }
 
     res.writeHead(404);
