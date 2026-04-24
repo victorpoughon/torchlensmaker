@@ -82,6 +82,9 @@ export class TLMViewerApp {
         this.rig.dispose();
         this.cameraType = type;
         this.rig = this.createRig(type);
+        const rect = this.viewport.getBoundingClientRect();
+        this.renderer.setSize(rect.width, rect.height);
+        this.rig.onResize(rect.width, rect.height);
         this.resetView();
     }
 
