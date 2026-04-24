@@ -1,5 +1,6 @@
-import torchlensmaker as tlm
 import tlmviewer as tlmv
+
+import torchlensmaker as tlm
 
 # Use half spheres to model interface boundaries
 radius = 5
@@ -37,12 +38,11 @@ controls = {
     "output_rays": "wavelength (true color)",
 }
 
-# tlm.show2d(model, pupil=50, field=5, wavelength=10, end=50, controls=controls)
-
-# tlm.show3d(model, pupil=200, field=15, wavelength=10, end=30, controls=controls)
-
+# Push 2D and 3D scenes to tlmserver
 tlm.set_sampling2d(model, pupil=50, field=5, wavel=10)
+scene2d = tlm.render_model(model, 2, end=50, title="Rainbow", controls=controls)
+tlmv.push_scene(scene2d)
 
-scene = tlm.render_model(model, 2, end=50, title="Rainbow", controls=controls)
-
-tlmv.push_scene(scene)
+tlm.set_sampling3d(model, pupil=200, field=15, wavel=10)
+scene3d = tlm.render_model(model, 3, end=50, title="Rainbow", controls=controls)
+tlmv.push_scene(scene3d)
