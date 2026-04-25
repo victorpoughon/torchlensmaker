@@ -68,12 +68,11 @@ function handleEnvelope(envelope: Envelope) {
         scenes.value.push(scene)
         dockviewApi?.getPanel('viewport-live')?.update({ params: { scene: scene.payload } })
     } else if (envelope.type === 'source') {
-        const payload = envelope.payload as { filename: string; language: string; content: string }
         const entry: SourceEntry = {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            filename: payload.filename,
-            language: payload.language,
-            content: payload.content,
+            filename: envelope.payload.filename,
+            language: envelope.payload.language,
+            content: envelope.payload.content,
             timestamp: new Date(),
         }
         openSourcePanel(entry)

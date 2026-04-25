@@ -1,11 +1,11 @@
-import type { Envelope, SceneData } from 'tlmprotocol'
+import type { Envelope } from 'tlmprotocol'
 import { createHighlighterCore } from 'shiki/core'
 import { createOnigurumaEngine } from 'shiki/engine/oniguruma'
 import pythonLang from 'shiki/langs/python.mjs'
 import githubDarkTheme from 'shiki/themes/github-dark.mjs'
 
 export function getSceneName(envelope: Envelope & { type: 'scene' }) {
-    const elements = (envelope.payload as SceneData).data
+    const elements = envelope.payload.data
 
     const firstTitle = elements.find((el) => el.type === 'scene-title')
 
