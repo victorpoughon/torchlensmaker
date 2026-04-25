@@ -9,14 +9,14 @@ import torch.nn as nn
 import torchlensmaker as tlm
 
 
-def display_hit_miss_3d(title, source, surface, dist):
+def display_hit_miss_3d(title, source, surface, dist, pupil=50, field=10, wavel=3):
     """
     Given a light source (sequential system) and a surface
     position the surface after the light source and show hit / miss rays in tlmviewer
     """
 
     # Sample the light source
-    source.set_sampling3d(pupil=500)
+    tlm.set_sampling3d(source, pupil, field, wavel)
     data = source(tlm.SequentialData.empty(dim=3))
 
     # Raytrace the surface
@@ -68,108 +68,123 @@ def display_hit_miss_3d(title, source, surface, dist):
     tlmv.push_scene(scene)
 
 
+# display_hit_miss_3d(
+#     "ImplicitDisk",
+#     tlm.Sequential(
+#         tlm.Gap(-6),
+#         tlm.PointSource(50),
+#         tlm.Gap(10),
+#     ),
+#     tlm.ImplicitDisk(5, solver_config=dict(num_iter=7, damping=1.0)),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "XYPolynomial",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSourceAtInfinity(10),
+#         tlm.Gap(2),
+#     ),
+#     tlm.XYPolynomial(
+#         5,
+#         C=0,
+#         K=0,
+#         coefficients=[[1, 0.5, 0.1], [0.2, -0.3, 0.01]],
+#         solver_config=dict(num_iter=12),
+#     ),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "Asphere",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSourceAtInfinity(10),
+#         tlm.Gap(2),
+#     ),
+#     tlm.Asphere(5, C=0, K=0, alphas=[-0.1, 0.02], solver_config=dict(num_iter=12)),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "Disk",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSource(80),
+#         tlm.Gap(5),
+#     ),
+#     tlm.Disk(5),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "SphereByCurvature",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSource(80),
+#         tlm.Gap(5),
+#     ),
+#     tlm.SphereByCurvature(5, 0.30),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "SphereByRadius",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSourceAtInfinity(10),
+#         tlm.Gap(2),
+#         # tlm.Rotate((10, 0)),
+#     ),
+#     tlm.SphereByRadius(5, 2.5),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "Parabola",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSourceAtInfinity(10),
+#         tlm.Gap(2),
+#         tlm.RotateMixed(10),
+#     ),
+#     tlm.Parabola(5, 0.5, solver_config=dict(num_iter=12)),
+#     10,
+# )
+
+
+# display_hit_miss_3d(
+#     "Conic",
+#     tlm.Sequential(
+#         tlm.Gap(-1),
+#         tlm.PointSourceAtInfinity(10),
+#         tlm.Gap(2),
+#     ),
+#     tlm.Conic(5, C=0.15, K=0, solver_config=dict(num_iter=12)),
+#     10,
+# )
+
 display_hit_miss_3d(
-    "ImplicitDisk",
+    "Rainbow",
     tlm.Sequential(
-        tlm.Gap(-6),
-        tlm.PointSource(50),
-        tlm.Gap(10),
+        tlm.SubChain(
+            tlm.Translate(y=5.001),
+            tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+        ),
+        tlm.Gap(50),
     ),
-    tlm.ImplicitDisk(5, solver_config=dict(num_iter=7, damping=1.0)),
-    10,
+    tlm.SphereByRadius(diameter=2 * 5, R=5),
+    80,
+    pupil=100,
+    field=1,
+    wavel=1,
 )
-
-
-display_hit_miss_3d(
-    "XYPolynomial",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSourceAtInfinity(10),
-        tlm.Gap(2),
-    ),
-    tlm.XYPolynomial(
-        5,
-        C=0,
-        K=0,
-        coefficients=[[1, 0.5, 0.1], [0.2, -0.3, 0.01]],
-        solver_config=dict(num_iter=12),
-    ),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "Asphere",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSourceAtInfinity(10),
-        tlm.Gap(2),
-    ),
-    tlm.Asphere(5, C=0, K=0, alphas=[-0.1, 0.02], solver_config=dict(num_iter=12)),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "Disk",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSource(80),
-        tlm.Gap(5),
-    ),
-    tlm.Disk(5),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "SphereByCurvature",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSource(80),
-        tlm.Gap(5),
-    ),
-    tlm.SphereByCurvature(5, 0.30),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "SphereByRadius",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSourceAtInfinity(10),
-        tlm.Gap(2),
-        # tlm.Rotate((10, 0)),
-    ),
-    tlm.SphereByRadius(5, 2.5),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "Parabola",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSourceAtInfinity(10),
-        tlm.Gap(2),
-        tlm.RotateMixed(10),
-    ),
-    tlm.Parabola(5, 0.5, solver_config=dict(num_iter=12)),
-    10,
-)
-
-
-display_hit_miss_3d(
-    "Conic",
-    tlm.Sequential(
-        tlm.Gap(-1),
-        tlm.PointSourceAtInfinity(10),
-        tlm.Gap(2),
-    ),
-    tlm.Conic(5, C=0.15, K=0, solver_config=dict(num_iter=12)),
-    10,
-)
-
 
 tlmv.push_source(__file__)
