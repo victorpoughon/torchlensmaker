@@ -19,8 +19,8 @@ from typing import Callable, TypeAlias
 import torch
 from jaxtyping import Float
 from sympy.polys.galoistools import gf_value
+from torchimplicit import ImplicitFunction, ImplicitResult
 
-from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
 from torchlensmaker.surfaces.sag_functions import SagFunction, SagResult
 from torchlensmaker.types import (
     Batch2DTensor,

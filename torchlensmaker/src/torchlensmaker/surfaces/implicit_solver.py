@@ -19,8 +19,8 @@ from typing import Callable, TypeAlias
 import torch
 from jaxtyping import Bool, Float, Int
 from torch._higher_order_ops import while_loop
+from torchimplicit import ImplicitFunction
 
-from torchlensmaker.implicit import ImplicitFunction
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

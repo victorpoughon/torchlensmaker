@@ -19,9 +19,9 @@ from typing import Callable, Protocol, Sequence, TypeAlias
 
 import torch
 from jaxtyping import Float
+from torchimplicit import ImplicitFunction, ImplicitResult
 
 from torchlensmaker.core.tensor_manip import bbroad
-from torchlensmaker.implicit import ImplicitFunction, ImplicitResult
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -241,9 +241,8 @@ def aspheric_sag_2d(
     g_hess = None
     if order >= 2:
         g_hess = (
-            torch.sum(
-                alphas * (4 + 2 * i) * (3 + 2 * i) * torch.pow(r, 2 + 2 * i), dim=0
-            )
+            torch
+            .sum(alphas * (4 + 2 * i) * (3 + 2 * i) * torch.pow(r, 2 + 2 * i), dim=0)
             .unsqueeze(-1)
             .unsqueeze(-1)
         )

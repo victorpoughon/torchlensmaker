@@ -172,7 +172,7 @@ def display_hit_miss_3d(title, source, surface, dist, pupil=50, field=10, wavel=
 # )
 
 display_hit_miss_3d(
-    "Rainbow",
+    "Rainbow - sphere by radius",
     tlm.Sequential(
         tlm.SubChain(
             tlm.Translate(y=5.001),
@@ -181,6 +181,49 @@ display_hit_miss_3d(
         tlm.Gap(50),
     ),
     tlm.SphereByRadius(diameter=2 * 5, R=5),
+    80,
+    pupil=100,
+    field=1,
+    wavel=1,
+)
+
+
+display_hit_miss_3d(
+    "Rainbow - sphere newton1",
+    tlm.Sequential(
+        tlm.SubChain(
+            tlm.Translate(y=5.001),
+            tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+        ),
+        tlm.Gap(50),
+    ),
+    tlm.Sphere(R=5),
+    80,
+    pupil=100,
+    field=1,
+    wavel=1,
+)
+
+display_hit_miss_3d(
+    "Rainbow - sphere newton2",
+    tlm.Sequential(
+        tlm.SubChain(
+            tlm.Translate(y=5.001),
+            tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+        ),
+        tlm.Gap(50),
+    ),
+    tlm.Sphere(
+        R=5,
+        solver_config=dict(
+            implicit_solver="newton2",
+            num_iter=12,
+            damping=0.95,
+            tol=1e-4,
+            init="0",
+            clamp_positive=True,
+        ),
+    ),
     80,
     pupil=100,
     field=1,

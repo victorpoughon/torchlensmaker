@@ -20,14 +20,14 @@ from typing import Any, Self
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
-
-from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.implicit import (
+from torchimplicit import (
     ImplicitFunction,
     implicit_sphere_2d,
     implicit_sphere_3d,
 )
+
+from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,

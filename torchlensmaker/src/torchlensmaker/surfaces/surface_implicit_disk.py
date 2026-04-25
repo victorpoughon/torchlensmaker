@@ -17,12 +17,13 @@
 from functools import partial
 from typing import Any, Self
 
+import tlmviewer as tlmv
 import torch
+from torchimplicit import ImplicitResult, implicit_disk_2d, implicit_disk_3d
+from torchimplicit.implicit_plane import implicit_yaxis_2d
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.implicit import ImplicitResult, implicit_disk_2d, implicit_disk_3d
-from torchlensmaker.implicit.implicit_plane import implicit_yaxis_2d
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -39,10 +40,12 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
-from .sag_geometry import implicit_domain, lens_diameter_domain_2d, lens_diameter_domain_3d
+from .sag_geometry import (
+    implicit_domain,
+    lens_diameter_domain_2d,
+    lens_diameter_domain_3d,
+)
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 def temp_implicit(dim: int, R: torch.Tensor):
