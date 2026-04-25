@@ -70,7 +70,7 @@ def main():
     points = torch.stack([XX.flatten(), YY.flatten()], dim=-1)
 
     with torch.no_grad():
-        result = fn(points, order=1)
+        result = fn(points, order=2)
 
     # F[i,j] = f(x[j], y[i]) — matches pcolormesh(x, y, F) convention
     F = result.val.reshape(N, N).numpy()
@@ -80,6 +80,10 @@ def main():
     G = np.nan_to_num(G, nan=0.0, posinf=0.0, neginf=0.0)
     GX, GY = G[..., 0], G[..., 1]
     grad_mag = np.sqrt(GX**2 + GY**2)
+
+    H = result.hess.reshape(N, N, 2, 2).numpy()
+    H = np.nan_to_num(H, nan=0.0, posinf=0.0, neginf=0.0)
+    frob = np.sqrt(H[..., 0, 0] ** 2 + 2 * H[..., 0, 1] ** 2 + H[..., 1, 1] ** 2)
 
     x_np = x.numpy()
     y_np = y.numpy()
@@ -94,7 +98,7 @@ def main():
 
     plt.style.use("dark_background")
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+    fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(15, 5))
     fig.suptitle(title)
 
     step = N // 20
@@ -136,6 +140,12 @@ def main():
     )
     ax2.set_title("— ∇ F")
     ax2.set_aspect("equal")
+
+    # Right: Frobenius norm of Hessian — magnitude of total second-order variation
+    vmax_frob = float(np.percentile(frob, 99)) * 1.5
+    ax3.pcolormesh(x_np, y_np, frob, cmap="plasma", shading="auto", vmin=0, vmax=vmax_frob)
+    ax3.set_title("‖H‖  [Frobenius norm]")
+    ax3.set_aspect("equal")
 
     plt.tight_layout()
 
