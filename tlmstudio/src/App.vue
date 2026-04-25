@@ -93,6 +93,7 @@ function connectWebSocket() {
             addLog('Failed to parse message')
             return
         }
+        addLog(`Received '${envelope.type}' message from ${wsUrl}`)
         handleEnvelope(envelope)
     }
     ws.onerror = () => addLog('WebSocket error')
