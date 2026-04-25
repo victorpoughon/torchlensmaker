@@ -16,21 +16,12 @@
 
 from functools import partial
 
+import pytest
 import torch
 
-from torchlensmaker.implicit.implicit_circle import (
-    implicit_yzcircle_2d,
-    implicit_yzcircle_3d,
-)
-from torchlensmaker.implicit.implicit_plane import (
-    implicit_yaxis_2d,
-    implicit_yzplane_3d,
-)
-from torchlensmaker.implicit.implicit_sphere import (
-    implicit_sphere_2d,
-    implicit_sphere_3d,
-)
 from torchlensmaker.implicit.types import ImplicitFunction
+
+from .conftest import cases_2d, cases_3d
 
 
 def _fd_grad(
@@ -169,57 +160,16 @@ def check_implicit_finite_difference(
         raise RuntimeError(f"Unknown default dtype for test {dtype}")
 
 
-def test_fd_circle_2d():
-    points_2d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 2))
-    points_2d[:, 1] = points_2d[:, 1].clamp(min=0.2)  # avoid r = 0
 
-    f_2d = partial(implicit_yzcircle_2d, R=1.5)
-    check_implicit_finite_difference(f_2d, points_2d)
-    check_shape_dtype_device_correctness(f_2d, points_2d)
-
-
-def test_fd_circle_3d():
-    points_3d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 3))
-    points_3d[:, 1:] = points_3d[:, 1:].clamp(min=0.2)  # avoid r = 0
-
-    f_3d = partial(implicit_yzcircle_3d, R=1.5)
-    check_implicit_finite_difference(f_3d, points_3d)
-    check_shape_dtype_device_correctness(f_3d, points_3d)
+@pytest.mark.parametrize("implicit_fn, make_points", cases_2d)
+def test_implicit_2d(implicit_fn, make_points):
+    points = make_points()
+    check_implicit_finite_difference(implicit_fn, points)
+    check_shape_dtype_device_correctness(implicit_fn, points)
 
 
-def test_fd_sphere_2d():
-    points_2d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 2))
-    # avoid origin where function is singular
-    mask = (points_2d**2).sum(dim=-1).sqrt() < 0.2
-    points_2d[mask] = torch.tensor([0.5, 0.5])
-
-    f_2d = partial(implicit_sphere_2d, R=1.5)
-    check_implicit_finite_difference(f_2d, points_2d)
-    check_shape_dtype_device_correctness(f_2d, points_2d)
-
-
-def test_fd_sphere_3d():
-    points_3d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 3))
-    # avoid origin where function is singular
-    mask = (points_3d**2).sum(dim=-1).sqrt() < 0.2
-    points_3d[mask] = torch.tensor([0.5, 0.5, 0.5])
-
-    f_3d = partial(implicit_sphere_3d, R=1.5)
-    check_implicit_finite_difference(f_3d, points_3d)
-    check_shape_dtype_device_correctness(f_3d, points_3d)
-
-
-def test_fd_yplane_2d():
-    points_2d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 2))
-
-    f_2d = partial(implicit_yaxis_2d)
-    check_implicit_finite_difference(f_2d, points_2d)
-    check_shape_dtype_device_correctness(f_2d, points_2d)
-
-
-def test_fd_yplane_3d():
-    points_3d = torch.distributions.uniform.Uniform(-20.0, 20.0).sample((10000, 3))
-
-    f_3d = partial(implicit_yzplane_3d)
-    check_implicit_finite_difference(f_3d, points_3d)
-    check_shape_dtype_device_correctness(f_3d, points_3d)
+@pytest.mark.parametrize("implicit_fn, make_points", cases_3d)
+def test_implicit_3d(implicit_fn, make_points):
+    points = make_points()
+    check_implicit_finite_difference(implicit_fn, points)
+    check_shape_dtype_device_correctness(implicit_fn, points)
