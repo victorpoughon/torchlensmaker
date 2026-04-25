@@ -29,11 +29,20 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
+    BatchNDTensor,
     BatchTensor,
     MaskTensor,
     ScalarTensor,
     Tf,
 )
+
+
+def implicit_domain(
+    F: BatchTensor,
+    points: BatchNDTensor,
+    tol: float,
+) -> MaskTensor:
+    return torch.abs(F) <= tol
 
 
 def lens_diameter_domain_2d(

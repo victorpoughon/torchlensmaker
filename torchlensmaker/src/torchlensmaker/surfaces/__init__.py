@@ -55,6 +55,7 @@ from .surface_parabola import Parabola
 from .surface_plane import Plane
 from .surface_point import PointSurface
 from .surface_sphere_by_curvature import SphereByCurvature
+from .surface_sphere import Sphere
 from .surface_sphere_by_radius import SphereByRadius
 from .surface_square import Square
 from .surface_xypolynomial import XYPolynomial
@@ -70,6 +71,7 @@ __all__ = [
     "Plane",
     "PointSurface",
     "SphereByCurvature",
+    "Sphere",
     "SphereByRadius",
     "Square",
     "SurfaceElement",
