@@ -13,6 +13,7 @@ dependencies = [
   "jaxtyping>=0.3.5",
   "ipython>=8.31.0",
   "tlmviewer",
+  "torchimplicit",
 ]
 
 [project.optional-dependencies]
@@ -55,3 +56,4 @@ reportPrivateImportUsage = "none"
 
 [tool.uv.sources]
 tlmviewer = { path = "../tlmviewer-python/", editable = true }
+torchimplicit = { path ="../torchimplicit", editable = true }

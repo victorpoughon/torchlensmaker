@@ -1974,6 +1974,22 @@ dev = [
 ]
 
 [[package]]
+name = "torchimplicit"
+version = "0.1.0"
+source = { editable = "../torchimplicit" }
+
+[package.metadata]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "basedpyright", specifier = ">=1.39.3" },
+    { name = "matplotlib", specifier = ">=3.10.9" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "ruff", specifier = ">=0.15.12" },
+    { name = "scikit-image", specifier = ">=0.26.0" },
+]
+
+[[package]]
 name = "torchlensmaker"
 version = "0.0.14"
 source = { editable = "." }
@@ -1982,6 +1998,7 @@ dependencies = [
     { name = "jaxtyping" },
     { name = "matplotlib" },
     { name = "tlmviewer" },
+    { name = "torchimplicit" },
 ]
 
 [package.optional-dependencies]
@@ -2016,6 +2033,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'test'", specifier = ">=8.3.3,<9.1.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.9" },
     { name = "tlmviewer", editable = "../tlmviewer-python" },
+    { name = "torchimplicit", editable = "../torchimplicit" },
 ]
 provides-extras = ["test", "dev", "onnx"]
 
