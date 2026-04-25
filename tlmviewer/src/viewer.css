@@ -20,6 +20,25 @@
     font-weight: bold;
 }
 
+.tlmviewer .tlmviewer-fps {
+    display: none;
+    position: absolute;
+    color: white;
+    user-select: none;
+    padding: 5px;
+    line-height: normal;
+    font-size: 12px;
+    background-color: black;
+    left: 0;
+    top: 0;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.tlmviewer .tlmviewer-fps.visible {
+    display: block;
+}
+
 /* LIL-GUI */
 
 .lil-gui {

@@ -90,17 +90,18 @@ export class TLMGui {
             },
             backgroundColor: { r: 0, g: 0, b: 0 },
             surfacesColor: { r: 0, g: 1, b: 1 },
-
+            
             showAxisX: false,
             showAxisY: false,
             showAxisZ: false,
-
+            
             showValidRays: true,
             showBlockedRays: false,
             showOutputRays: true,
             showSurfaces: true,
             showKinematicJoints: false,
             showBcyl: false,
+            showFps: false,
         };
 
         // If 'field' variable is available, default to it for valid and output rays
@@ -306,6 +307,14 @@ export class TLMGui {
                     visible: value,
                 });
             });
+
+        this.gui
+            .add(this.controller, "showFps")
+            .name("Show FPS")
+            .onChange((value: boolean) => {
+                app.showFps(value);
+            });
+
         // Initialize this.controllers
         this.controllers = {
             colors: {

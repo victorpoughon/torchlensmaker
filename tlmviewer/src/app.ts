@@ -100,11 +100,32 @@ export class TLMViewerApp {
         this.renderer.dispose();
     }
 
+    public showFps(visible: boolean): void {
+        const el = this.viewport.parentElement?.querySelector(".tlmviewer-fps");
+        el?.classList.toggle("visible", visible);
+    }
+
     public animate(): () => void {
         let animId: number;
+        let frameCount = 0;
+        let lastFpsTime = performance.now();
+
+        const fpsEl = this.viewport.parentElement?.querySelector(".tlmviewer-fps");
+
         const loop = () => {
             this.rig.controls.update();
             this.renderer.render(this.scene.scene, this.rig.camera);
+
+            frameCount++;
+            const now = performance.now();
+            const elapsed = now - lastFpsTime;
+            if (elapsed >= 500) {
+                const fps = Math.round(frameCount * 1000 / elapsed);
+                if (fpsEl) fpsEl.textContent = `${fps} fps`;
+                frameCount = 0;
+                lastFpsTime = now;
+            }
+
             animId = requestAnimationFrame(loop);
         };
         animId = requestAnimationFrame(loop);
