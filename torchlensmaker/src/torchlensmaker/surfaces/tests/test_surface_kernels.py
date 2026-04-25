@@ -15,13 +15,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from pathlib import Path
-from typing import Dict
 
 import onnxruntime
 import pytest
 import torch
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.surfaces.surface_asphere import (
     AsphereOuterExtentSurfaceKernel,
     AsphereSurfaceKernel,
@@ -30,20 +28,18 @@ from torchlensmaker.surfaces.surface_conic import (
     ConicOuterExtentSurfaceKernel,
     ConicSurfaceKernel,
 )
-from torchlensmaker.surfaces.surface_disk import (
-    DiskSurfaceKernel,
-)
+from torchlensmaker.surfaces.surface_disk import DiskSurfaceKernel
 from torchlensmaker.surfaces.surface_parabola import (
     ParabolaOuterExtentSurfaceKernel,
     ParabolaSurfaceKernel,
 )
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
 from torchlensmaker.surfaces.surface_point import PointSurfaceKernel
+from torchlensmaker.surfaces.surface_sphere import SphereSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
     SphereByCurvatureSurfaceKernel,
 )
-from torchlensmaker.surfaces.surface_sphere import SphereSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
@@ -90,65 +86,65 @@ config_sphere = dict(
     clamp_positive=True,
 )
 
-kernels_library: Dict[str, FunctionalKernel] = {
-    "SphereC2D-1": SphereByCurvatureSurfaceKernel(2, config1),
-    "SphereC2D-6": SphereByCurvatureSurfaceKernel(2, config6),
-    "SphereC2D-12": SphereByCurvatureSurfaceKernel(2, config12),
-    "SphereC3D-1": SphereByCurvatureSurfaceKernel(3, config1),
-    "SphereC3D-6": SphereByCurvatureSurfaceKernel(3, config6),
-    "SphereC3D-12": SphereByCurvatureSurfaceKernel(3, config12),
-    "SphereCOuterExtent": SphereByCurvatureOuterExtentSurfaceKernel(),
-    "Parabola2D-1": ParabolaSurfaceKernel(2, config1),
-    "Parabola2D-6": ParabolaSurfaceKernel(2, config1),
-    "Parabola3D-1": ParabolaSurfaceKernel(3, config1),
-    "Parabola3D-6": ParabolaSurfaceKernel(3, config6),
-    "ParabolaOuterExtent": ParabolaOuterExtentSurfaceKernel(),
-    "Conic2D-1": ConicSurfaceKernel(2, config1),
-    "Conic2D-6": ConicSurfaceKernel(2, config6),
-    "Conic3D-1": ConicSurfaceKernel(3, config1),
-    "Conic3D-6": ConicSurfaceKernel(3, config6),
-    "ConicOuterExtent": ConicOuterExtentSurfaceKernel(),
-    "Asphere2D-1": AsphereSurfaceKernel(2, config1),
-    "Asphere2D-6": AsphereSurfaceKernel(2, config6),
-    "Asphere3D-1": AsphereSurfaceKernel(3, config1),
-    "Asphere3D-6": AsphereSurfaceKernel(3, config6),
-    "AsphereOuterExtent": AsphereOuterExtentSurfaceKernel(),
-    "XYPolynomial3D-1": XYPolynomialSurfaceKernel(config6),
-    "XYPolynomial3D-2": XYPolynomialSurfaceKernel(config6),
-    # "SphereR2D": SphereByRadius2DSurfaceKernel(),
-    "Sphere2D": SphereSurfaceKernel(2, config_sphere),
-    "Sphere3D": SphereSurfaceKernel(3, config_sphere),
-    "Disk2D": DiskSurfaceKernel(2),
-    "Disk3D": DiskSurfaceKernel(3),
-    "Plane2D": PlaneSurfaceKernel(2),
-    "Plane3D": PlaneSurfaceKernel(3),
-    "Point2D": PointSurfaceKernel(2),
-    "Point3D": PointSurfaceKernel(3),
-}
+kernels_cases = [
+    pytest.param(SphereByCurvatureSurfaceKernel(2, config1), id="SphereC2D-1"),
+    pytest.param(SphereByCurvatureSurfaceKernel(2, config6), id="SphereC2D-6"),
+    pytest.param(SphereByCurvatureSurfaceKernel(2, config12), id="SphereC2D-12"),
+    pytest.param(SphereByCurvatureSurfaceKernel(3, config1), id="SphereC3D-1"),
+    pytest.param(SphereByCurvatureSurfaceKernel(3, config6), id="SphereC3D-6"),
+    pytest.param(SphereByCurvatureSurfaceKernel(3, config12), id="SphereC3D-12"),
+    pytest.param(SphereByCurvatureOuterExtentSurfaceKernel(), id="SphereCOuterExtent"),
+    pytest.param(ParabolaSurfaceKernel(2, config1), id="Parabola2D-1"),
+    pytest.param(ParabolaSurfaceKernel(2, config6), id="Parabola2D-6"),
+    pytest.param(ParabolaSurfaceKernel(3, config1), id="Parabola3D-1"),
+    pytest.param(ParabolaSurfaceKernel(3, config6), id="Parabola3D-6"),
+    pytest.param(ParabolaOuterExtentSurfaceKernel(), id="ParabolaOuterExtent"),
+    pytest.param(ConicSurfaceKernel(2, config1), id="Conic2D-1"),
+    pytest.param(ConicSurfaceKernel(2, config6), id="Conic2D-6"),
+    pytest.param(ConicSurfaceKernel(3, config1), id="Conic3D-1"),
+    pytest.param(ConicSurfaceKernel(3, config6), id="Conic3D-6"),
+    pytest.param(ConicOuterExtentSurfaceKernel(), id="ConicOuterExtent"),
+    pytest.param(AsphereSurfaceKernel(2, config1), id="Asphere2D-1"),
+    pytest.param(AsphereSurfaceKernel(2, config6), id="Asphere2D-6"),
+    pytest.param(AsphereSurfaceKernel(3, config1), id="Asphere3D-1"),
+    pytest.param(AsphereSurfaceKernel(3, config6), id="Asphere3D-6"),
+    pytest.param(AsphereOuterExtentSurfaceKernel(), id="AsphereOuterExtent"),
+    pytest.param(XYPolynomialSurfaceKernel(config6), id="XYPolynomial3D-1"),
+    pytest.param(XYPolynomialSurfaceKernel(config6), id="XYPolynomial3D-2"),
+    # pytest.param(SphereByRadiusSurfaceKernel(...),          id="SphereR2D"),
+    pytest.param(SphereSurfaceKernel(2, config_sphere), id="Sphere2D"),
+    pytest.param(SphereSurfaceKernel(3, config_sphere), id="Sphere3D"),
+    pytest.param(DiskSurfaceKernel(2), id="Disk2D"),
+    pytest.param(DiskSurfaceKernel(3), id="Disk3D"),
+    pytest.param(PlaneSurfaceKernel(2), id="Plane2D"),
+    pytest.param(PlaneSurfaceKernel(3), id="Plane3D"),
+    pytest.param(PointSurfaceKernel(2), id="Point2D"),
+    pytest.param(PointSurfaceKernel(3), id="Point3D"),
+]
 
 
+@pytest.mark.parametrize("kernel", kernels_cases)
 def test_surface_kernels_inputs_and_params(
-    dtype: torch.dtype, device: torch.device
+    kernel, dtype: torch.dtype, device: torch.device
 ) -> None:
-    # Export, load, compare eval on example inputs
-    for name, kernel in kernels_library.items():
-        check_kernels_example_inputs_and_params(name, kernel, dtype, device)
+    check_kernels_example_inputs_and_params("kernel", kernel, dtype, device)
 
 
-def test_surface_kernels_eval(dtype: torch.dtype, device: torch.device) -> None:
-    # Export, load, compare eval on example inputs
-    for name, kernel in kernels_library.items():
-        check_kernels_eval(name, kernel, dtype, device)
+@pytest.mark.parametrize("kernel", kernels_cases)
+def test_surface_kernels_eval(kernel, dtype: torch.dtype, device: torch.device) -> None:
+    check_kernels_eval("kernel", kernel, dtype, device)
 
 
+@pytest.mark.parametrize("kernel", kernels_cases)
 def test_surface_kernels_export_onnx(
-    dtype: torch.dtype, device: torch.device, tmp_path: Path
+    kernel,
+    dtype: torch.dtype,
+    device: torch.device,
+    tmp_path: Path,
+    request: pytest.FixtureRequest,
 ) -> None:
     # Note this test only works in float32 as of Jan 2026
     # because onnxruntime cpu doesn't seem to support cos() in float64...
     if dtype == torch.float64:
         return
-
-    # Export, load, compare eval on example inputs
-    for name, kernel in kernels_library.items():
-        check_kernels_export_onnx(name, kernel, tmp_path, dtype, device)
+    check_kernels_export_onnx(request.node.callspec.id, kernel, tmp_path, dtype, device)
