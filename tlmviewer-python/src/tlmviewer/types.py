@@ -82,6 +82,13 @@ class SurfaceLathe:
 
 
 @dataclass
+class SurfaceSphere:
+    R: float
+    matrix: Matrix
+    clip_planes: list[ClipPlane] = field(default_factory=list)
+
+
+@dataclass
 class SurfaceSphereR:
     R: float
     diameter: float
@@ -120,6 +127,7 @@ SceneElement = (
     | Cylinder
     | SurfaceDisk
     | SurfaceLathe
+    | SurfaceSphere
     | SurfaceSphereR
     | SurfaceSag
     | SurfaceBSpline

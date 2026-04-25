@@ -10,6 +10,7 @@ import { cylinderDescriptor } from "../elements_basic/Cylinder.ts";
 import { raysDescriptor } from "../elements_basic/RaysElement.ts";
 import { surfaceDiskDescriptor } from "../elements_surfaces/SurfaceDisk.ts";
 import { surfaceLatheDescriptor } from "../elements_surfaces/SurfaceLathe.ts";
+import { surfaceSphereDescriptor } from "../elements_surfaces/SurfaceSphere.ts";
 import { surfaceSphereRDescriptor } from "../elements_surfaces/SurfaceSphereR.ts";
 import { surfaceSagDescriptor } from "../elements_surfaces/SurfaceSag.ts";
 import { surfaceBSplineDescriptor } from "../elements_surfaces/SurfaceBSpline.ts";
@@ -31,6 +32,7 @@ export const allDescriptors = [
     surfaceLatheDescriptor,
     surfaceDiskDescriptor,
     surfaceSagDescriptor,
+    surfaceSphereDescriptor,
     surfaceSphereRDescriptor,
     surfaceBSplineDescriptor,
 ] as const;

@@ -91,6 +91,11 @@ export type SurfaceSphereRData = SurfaceBaseData & {
     diameter: number;
 };
 
+export type SurfaceSphereData = SurfaceBaseData & {
+    type: "surface-sphere";
+    R: number;
+};
+
 export type SurfaceBSplineData = SurfaceBaseData & {
     type: "surface-bspline";
     points: number[][][];
@@ -114,6 +119,7 @@ export type SceneElementData =
     | SurfaceDiskData
     | SurfaceSagData
     | SurfaceSphereRData
+    | SurfaceSphereData
     | SurfaceBSplineData;
 
 export type SceneData = {

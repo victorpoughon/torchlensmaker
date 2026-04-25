@@ -169,9 +169,8 @@ class Sphere(SurfaceElement):
             *func.apply(P, V, tf, self.R), tf.clone(), tf.clone()
         )
 
-    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSphereR:
-        return tlmv.SurfaceSphereR(
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSphere:
+        return tlmv.SurfaceSphere(
             R=self.R.item(),
-            diameter=2 * abs(self.R.item()),
             matrix=matrix.tolist(),
         )
