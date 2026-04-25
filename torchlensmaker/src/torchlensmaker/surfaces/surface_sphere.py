@@ -42,7 +42,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .kernels_utils import example_rays_2d, example_rays_3d
+from .kernels_utils import example_rays_2d_offset, example_rays_3d_offset
 from .raytrace import surface_raytrace
 from .sag_geometry import implicit_domain
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -104,11 +104,12 @@ class SphereSurfaceKernel(FunctionalKernel):
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
+        # Rays must start outside the sphere (R=5 in example_params), so use x=-10
         if self.dim == 2:
-            P, V = example_rays_2d(10, dtype, device)
+            P, V = example_rays_2d_offset(10, dtype, device, x=-10.0)
             tf = hom_identity_2d(dtype, device)
         else:
-            P, V = example_rays_3d(10, dtype, device)
+            P, V = example_rays_3d_offset(10, dtype, device, x=-10.0)
             tf = hom_identity_3d(dtype, device)
         return P, V, tf
 

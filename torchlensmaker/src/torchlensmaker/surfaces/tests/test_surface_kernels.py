@@ -43,6 +43,7 @@ from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
     SphereByCurvatureSurfaceKernel,
 )
+from torchlensmaker.surfaces.surface_sphere import SphereSurfaceKernel
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
@@ -80,6 +81,14 @@ config12 = dict(
     init="closest",
     clamp_positive=True,
 )
+config_sphere = dict(
+    num_iter=6,
+    damping=0.95,
+    tol=1e-4,
+    implicit_solver="newton",
+    init="0",
+    clamp_positive=True,
+)
 
 kernels_library: Dict[str, FunctionalKernel] = {
     "SphereC2D-1": SphereByCurvatureSurfaceKernel(2, config1),
@@ -107,6 +116,8 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "XYPolynomial3D-1": XYPolynomialSurfaceKernel(config6),
     "XYPolynomial3D-2": XYPolynomialSurfaceKernel(config6),
     # "SphereR2D": SphereByRadius2DSurfaceKernel(),
+    "Sphere2D": SphereSurfaceKernel(2, config_sphere),
+    "Sphere3D": SphereSurfaceKernel(3, config_sphere),
     "Disk2D": DiskSurfaceKernel(2),
     "Disk3D": DiskSurfaceKernel(3),
     "Plane2D": PlaneSurfaceKernel(2),

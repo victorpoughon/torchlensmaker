@@ -50,3 +50,38 @@ def example_rays_3d(
     V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
 
     return P, V
+
+
+def example_rays_2d_offset(
+    N: int, dtype: torch.dtype, device: torch.device, x: float
+) -> tuple[BatchNDTensor, BatchNDTensor]:
+    "Rays starting at x offset from origin, pointing in +x direction"
+    P = torch.stack(
+        (
+            torch.full((N,), x, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+
+    V = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+
+    return P, V
+
+
+def example_rays_3d_offset(
+    N: int, dtype: torch.dtype, device: torch.device, x: float
+) -> tuple[BatchNDTensor, BatchNDTensor]:
+    "Rays starting at x offset from origin, pointing in +x direction"
+    P = torch.stack(
+        (
+            torch.full((N,), x, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+
+    return P, V
