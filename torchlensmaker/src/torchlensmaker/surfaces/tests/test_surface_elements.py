@@ -15,11 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from itertools import chain
-from pathlib import Path
-from typing import Any, Dict
-
-import onnxruntime
 import pytest
 import torch
 import torch.nn as nn
@@ -35,12 +30,202 @@ from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 from torchlensmaker.surfaces.surface_parabola import Parabola
 from torchlensmaker.surfaces.surface_plane import Plane
 from torchlensmaker.surfaces.surface_point import PointSurface
-from torchlensmaker.surfaces.surface_sphere_by_curvature import (
-    SphereByCurvature,
-)
+from torchlensmaker.surfaces.surface_sphere import Sphere
+from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
 from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
 from torchlensmaker.types import BatchNDTensor, Tf
+
+# --- ray generators: (N, dtype, device) -> (P, V) ---
+
+
+def _rays_2d_at_origin(N: int, dtype: torch.dtype, device: torch.device):
+    P = torch.zeros((N, 2), dtype=dtype, device=device)
+    V = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+def _rays_3d_at_origin(N: int, dtype: torch.dtype, device: torch.device):
+    P = torch.zeros((N, 3), dtype=dtype, device=device)
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+def _rays_2d_outside_r5(N: int, dtype: torch.dtype, device: torch.device):
+    # Rays starting outside a sphere of radius 5 centered at origin
+    P = torch.stack(
+        (
+            torch.full((N,), -10.0, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V = torch.tensor([[1.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+def _rays_3d_outside_r5(N: int, dtype: torch.dtype, device: torch.device):
+    # Rays starting outside a sphere of radius 5 centered at origin
+    P = torch.stack(
+        (
+            torch.full((N,), -10.0, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+            torch.linspace(-1, 1, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+# --- test case lists ---
+
+
+cases_2d = [
+    pytest.param(
+        Disk(10.0),
+        _rays_2d_at_origin,
+        id="disk",
+    ),
+    pytest.param(
+        Plane(10.0),
+        _rays_2d_at_origin,
+        id="plane",
+    ),
+    pytest.param(
+        SphereByCurvature(10.0, C=0.0),
+        _rays_2d_at_origin,
+        id="sphere_by_curvature_flat",
+    ),
+    pytest.param(
+        SphereByCurvature(10.0, C=0.5),
+        _rays_2d_at_origin,
+        id="sphere_by_curvature_pos",
+    ),
+    pytest.param(
+        SphereByCurvature(10.0, C=-0.5),
+        _rays_2d_at_origin,
+        id="sphere_by_curvature_neg",
+    ),
+    pytest.param(
+        SphereByRadius(10, 5),
+        _rays_2d_at_origin,
+        id="sphere_by_radius",
+    ),
+    pytest.param(
+        Parabola(10.0, A=0.0),
+        _rays_2d_at_origin,
+        id="parabola_flat",
+    ),
+    pytest.param(
+        Parabola(10.0, A=0.5),
+        _rays_2d_at_origin,
+        id="parabola_pos",
+    ),
+    pytest.param(
+        Parabola(10.0, A=-0.5),
+        _rays_2d_at_origin,
+        id="parabola_neg",
+    ),
+    pytest.param(
+        Conic(10, C=0.1, K=0.1),
+        _rays_2d_at_origin,
+        id="conic_pos",
+    ),
+    pytest.param(
+        Conic(10, C=-0.1, K=-0.1),
+        _rays_2d_at_origin,
+        id="conic_neg",
+    ),
+    pytest.param(
+        Asphere(10, C=0.1, K=0.1, alphas=[0.1, 0.01, 0.002]),
+        _rays_2d_at_origin,
+        id="asphere_pos",
+    ),
+    pytest.param(
+        Asphere(10, C=-0.1, K=-0.1, alphas=[0.1, 0.01, 0.002]),
+        _rays_2d_at_origin,
+        id="asphere_neg",
+    ),
+    pytest.param(
+        Sphere(5.0),
+        _rays_2d_outside_r5,
+        id="sphere",
+    ),
+]
+
+cases_3d = [
+    pytest.param(
+        Disk(10.0),
+        _rays_3d_at_origin,
+        id="disk",
+    ),
+    pytest.param(
+        Plane(10.0),
+        _rays_3d_at_origin,
+        id="plane",
+    ),
+    pytest.param(
+        SphereByCurvature(10, 0.05),
+        _rays_3d_at_origin,
+        id="sphere_by_curvature",
+    ),
+    pytest.param(
+        SphereByRadius(10, 5),
+        _rays_3d_at_origin,
+        id="sphere_by_radius",
+    ),
+    pytest.param(
+        Parabola(10.0, A=0.0),
+        _rays_3d_at_origin,
+        id="parabola_flat",
+    ),
+    pytest.param(
+        Parabola(10.0, A=0.5),
+        _rays_3d_at_origin,
+        id="parabola_pos",
+    ),
+    pytest.param(
+        Parabola(10.0, A=-0.5),
+        _rays_3d_at_origin,
+        id="parabola_neg",
+    ),
+    pytest.param(
+        Conic(10, C=0.1, K=0.1),
+        _rays_3d_at_origin,
+        id="conic_pos",
+    ),
+    pytest.param(
+        Conic(10, C=-0.1, K=-0.1),
+        _rays_3d_at_origin,
+        id="conic_neg",
+    ),
+    pytest.param(
+        Asphere(10, C=0.1, K=0.1, alphas=[0.1, 0.01, 0.002]),
+        _rays_3d_at_origin,
+        id="asphere_pos",
+    ),
+    pytest.param(
+        Asphere(10, C=-0.1, K=-0.1, alphas=[0.1, 0.01, 0.002]),
+        _rays_3d_at_origin,
+        id="asphere_neg",
+    ),
+    pytest.param(
+        XYPolynomial(
+            10, C=0.1, K=-0.1, coefficients=[[0.1, 0.2, 0.0], [0.01, 0.0, 0.01]]
+        ),
+        _rays_3d_at_origin,
+        id="xypolynomial",
+    ),
+    pytest.param(
+        Sphere(5.0),
+        _rays_3d_outside_r5,
+        id="sphere",
+    ),
+]
+
+
+# --- check helpers ---
 
 
 def check_model_eval(
@@ -108,12 +293,11 @@ def check_surface_module_2d(
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
+    make_rays,
     allow_none_grad: bool = False,
 ) -> None:
-    # Check that surface model can be evaluated and differentiated
     N = 10
-    P = torch.zeros((N, 2), dtype=dtype, device=device)
-    V = torch.tensor([1.0, 0.0], dtype=dtype, device=device).expand_as(P)
+    P, V = make_rays(N, dtype, device)
     tfid = hom_identity_2d(dtype, device)
 
     if trainable:
@@ -155,12 +339,11 @@ def check_surface_module_3d(
     trainable: bool,
     dtype: torch.dtype,
     device: torch.device,
+    make_rays,
     allow_none_grad: bool = False,
 ) -> None:
-    # Check that surface model can be evaluated and differentiated
     N = 10
-    P = torch.zeros((N, 3), dtype=dtype, device=device)
-    V = torch.tensor([1.0, 0.0, 0.0], dtype=dtype, device=device).expand_as(P)
+    P, V = make_rays(N, dtype, device)
     tfid = hom_identity_3d(dtype, device)
 
     if trainable:
@@ -195,6 +378,28 @@ def check_surface_module_3d(
 
     # Check that surface can be cloned
     mod.clone()
+
+
+# --- parametrized tests ---
+
+
+@pytest.mark.parametrize("module, make_rays", cases_2d)
+def test_surface_modules_2d(
+    module: nn.Module, make_rays, dtype: torch.dtype, device: torch.device
+) -> None:
+    check_surface_module_2d(module, False, dtype, device, make_rays)
+    check_surface_module_2d(module.reverse(), False, dtype, device, make_rays)
+
+
+@pytest.mark.parametrize("module, make_rays", cases_3d)
+def test_surface_modules_3d(
+    module: nn.Module, make_rays, dtype: torch.dtype, device: torch.device
+) -> None:
+    check_surface_module_3d(module, False, dtype, device, make_rays)
+    check_surface_module_3d(module.reverse(), False, dtype, device, make_rays)
+
+
+# --- standalone tests ---
 
 
 def test_point_surface_module(dtype: torch.dtype, device: torch.device) -> None:
@@ -239,48 +444,3 @@ def test_point_surface_module(dtype: torch.dtype, device: torch.device) -> None:
 
     PointSurface().clone()
     PointSurface().reverse()
-
-
-def test_sag_surfaces_modules_2d(dtype: torch.dtype, device: torch.device) -> None:
-    surfaces_2d = [
-        Disk(10.0),
-        Plane(10.0),
-        SphereByCurvature(10.0, C=0.0),
-        SphereByCurvature(10.0, C=0.5),
-        SphereByCurvature(10.0, C=-0.5),
-        SphereByRadius(10, 5),
-        Parabola(10.0, A=-0.0),
-        Parabola(10.0, A=0.5),
-        Parabola(10.0, A=-0.5),
-        Conic(10, C=0.1, K=0.1),
-        Conic(10, C=-0.1, K=-0.1),
-        Asphere(10, C=0.1, K=0.1, alphas=[0.1, 0.01, 0.002]),
-        Asphere(10, C=-0.1, K=-0.1, alphas=[0.1, 0.01, 0.002]),
-    ]
-
-    for module in surfaces_2d:
-        check_surface_module_2d(module, False, dtype, device)
-        check_surface_module_2d(module.reverse(), False, dtype, device)
-
-
-def test_sag_surfaces_modules_3d(dtype: torch.dtype, device: torch.device) -> None:
-    surfaces_3d = [
-        Disk(10.0),
-        Plane(10.0),
-        SphereByCurvature(10, 0.05),
-        SphereByRadius(10, 5),
-        Parabola(10.0, A=-0.0),
-        Parabola(10.0, A=0.5),
-        Parabola(10.0, A=-0.5),
-        Conic(10, C=0.1, K=0.1),
-        Conic(10, C=-0.1, K=-0.1),
-        Asphere(10, C=0.1, K=0.1, alphas=[0.1, 0.01, 0.002]),
-        Asphere(10, C=-0.1, K=-0.1, alphas=[0.1, 0.01, 0.002]),
-        XYPolynomial(
-            10, C=0.1, K=-0.1, coefficients=[[0.1, 0.2, 0.0], [0.01, 0.0, 0.01]]
-        ),
-    ]
-
-    for module in surfaces_3d:
-        check_surface_module_3d(module, False, dtype, device)
-        check_surface_module_3d(module.reverse(), False, dtype, device)
