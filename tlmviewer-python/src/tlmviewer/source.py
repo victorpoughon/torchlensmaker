@@ -1,7 +1,8 @@
 import json
 import os
 import urllib.request
-import urllib.error
+
+from .http import execute_push
 
 PROTOCOL_VERSION = 2
 
@@ -20,8 +21,6 @@ def push_source(
     topic: str = "main",
 ) -> None:
     """Push a source file to a running tlmserver to display in tlmstudio."""
-    allow_fail = "TLMVIEWER_PUSH_SCENE_ALLOW_FAIL" in os.environ
-
     filepath = os.path.abspath(filepath)
     filename = os.path.basename(filepath)
     ext = os.path.splitext(filename)[1].lower()
@@ -50,24 +49,4 @@ def push_source(
         method="POST",
     )
 
-    try:
-        with urllib.request.urlopen(req) as resp:
-            result = json.loads(resp.read())
-            if not result.get("ok"):
-                raise RuntimeError(f"tlmserver returned unexpected response: {result}")
-    except urllib.error.HTTPError as e:
-        if allow_fail:
-            return
-        try:
-            detail = json.loads(e.read()).get("error", e.reason)
-        except Exception:
-            detail = e.reason
-        raise ValueError(
-            f"tlmserver rejected the push (HTTP {e.code}): {detail}"
-        ) from e
-    except urllib.error.URLError as e:
-        if allow_fail:
-            return
-        raise ConnectionRefusedError(
-            f"Could not connect to tlmserver at {url}: {e.reason}"
-        ) from e
+    execute_push(req, url)
