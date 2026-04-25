@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from 'vue'
 import type { SceneEntry } from '../types.ts'
+import { formatTime } from '../utils.ts'
 
 defineOptions({ name: 'SceneManagerPanel' })
 
@@ -14,10 +15,6 @@ defineProps<{
         containerApi: unknown
     }
 }>()
-
-function formatTime(date: Date): string {
-    return date.toLocaleTimeString()
-}
 </script>
 
 <template>

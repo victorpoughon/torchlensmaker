@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { codeToHtml } from 'shiki'
 import type { SourceEntry } from '../types.ts'
+import { highlightCode } from '../utils.ts'
 
 defineOptions({ name: 'SourcePanel' })
 
@@ -12,21 +12,8 @@ const props = defineProps<{
 const highlighted = ref('')
 
 onMounted(async () => {
-    const { filename, language, content } = props.params.params.source
-    try {
-        highlighted.value = await codeToHtml(content, {
-            lang: language,
-            theme: 'github-dark',
-        })
-    } catch {
-        // Fall back to plain text if language is unrecognised
-        highlighted.value = await codeToHtml(content, {
-            lang: 'text',
-            theme: 'github-dark',
-        })
-    }
-    // Set document title hint in the panel — the tab title comes from addPanel options
-    void filename
+    const { language, content } = props.params.params.source
+    highlighted.value = await highlightCode(content, language)
 })
 </script>
 

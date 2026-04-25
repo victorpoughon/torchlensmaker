@@ -158,7 +158,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <DockviewVue class="dockview-theme-dark" style="height: 100vh; width: 100vw" @ready="onReady" />
+    <DockviewVue
+        class="dockview-theme-dracula"
+        style="height: 100vh; width: 100vw"
+        @ready="onReady"
+    />
 </template>
 
 <style>
