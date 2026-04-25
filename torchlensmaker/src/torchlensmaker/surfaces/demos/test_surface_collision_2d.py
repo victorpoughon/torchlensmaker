@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
 
-
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 
 import torchlensmaker as tlm
-import tlmviewer as tlmv
 
-def display_hit_miss_2d(source, surface, dist):
+
+def display_hit_miss_2d(title: str, source, surface, dist):
     """
     Given a light source (sequential system) and a surface
     position the surface after the light source and show hit / miss rays in tlmviewer
@@ -21,10 +20,14 @@ def display_hit_miss_2d(source, surface, dist):
     data = source(tlm.SequentialData.empty(dim=2))
 
     # Raytrace the surface
-    outs = surface(
-        data.rays.P, data.rays.V, data.fk
+    outs = surface(data.rays.P, data.rays.V, data.fk)
+    t, normals, valid, stf, ntf = (
+        outs.t,
+        outs.normals,
+        outs.valid,
+        outs.tf_surface,
+        outs.tf_next,
     )
-    t, normals, valid, stf, ntf = (outs.t, outs.normals, outs.valid, outs.tf_surface, outs.tf_next)
 
     if not t.isfinite().all():
         print("Warning: surface collision returned some non-finite t values")
@@ -56,56 +59,63 @@ def display_hit_miss_2d(source, surface, dist):
 
     # Build scene
     scene = tlm.new_scene("2D")
-    scene.data = [surf, hit, miss, arrows, points]
-    scene.controls = {"show_axis_x": True, "show_axis_y": True, "show_axis_z": True}
+    scene.data = [surf, hit, miss, arrows, points, tlmv.SceneTitle(title=title)]
+    scene.controls = {
+        "show_axis_x": True,
+        "show_axis_y": True,
+        "show_axis_z": True,
+        "show_blocked_rays": True,
+    }
 
     tlmv.push_scene(scene)
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "ImplicitDisk",
     tlm.Sequential(
         tlm.Gap(-4),
         tlm.PointSource(180),
         tlm.Gap(10),
         tlm.Rotate2D(40),
     ),
-    tlm.ImplicitDisk(5, solver_config=dict(num_iter=12, damping=0.9, implicit_solver="newton2")),
+    tlm.ImplicitDisk(
+        5, solver_config=dict(num_iter=12, damping=0.9, implicit_solver="newton2")
+    ),
     15,
 )
 
-# In[ ]:
-
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-4),
         tlm.PointSource(180),
         tlm.Gap(10),
         tlm.Rotate2D(40),
     ),
-    tlm.SphereByCurvature(5, 0.1, solver_config={"implicit_solver": "newton", "lift_function": "raw"}),
+    tlm.SphereByCurvature(
+        5, 0.1, solver_config={"implicit_solver": "newton", "lift_function": "raw"}
+    ),
     15,
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-4),
         tlm.PointSource(180),
         tlm.Gap(10),
         tlm.Rotate2D(40),
     ),
-    tlm.SphereByCurvature(5, 0.1, solver_config={"implicit_solver": "newton2", "lift_function": "euclid"}),
+    tlm.SphereByCurvature(
+        5, 0.1, solver_config={"implicit_solver": "newton2", "lift_function": "euclid"}
+    ),
     15,
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "Asphere",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -116,10 +126,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByRadius",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Rotate2D(85),
@@ -132,10 +140,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -148,6 +154,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByRadius",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -160,10 +167,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -176,6 +181,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -188,6 +194,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -200,6 +207,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -213,6 +221,7 @@ display_hit_miss_2d(
 
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -225,12 +234,10 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 # lift function: raw vs euclid
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -243,6 +250,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSource(50),
@@ -250,15 +258,15 @@ display_hit_miss_2d(
         tlm.Translate2D(y=-2),
         tlm.Rotate2D(100),
     ),
-    tlm.SphereByCurvature(5, 0.12, solver_config=dict(num_iter=6, damping=0.8, lift_function="euclid")),
+    tlm.SphereByCurvature(
+        5, 0.12, solver_config=dict(num_iter=6, damping=0.8, lift_function="euclid")
+    ),
     10,
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Rotate2D(85),
@@ -271,10 +279,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(3),
@@ -285,12 +291,8 @@ display_hit_miss_2d(
 )
 
 
-# ## inner case
-
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Translate2D(y=-2),
@@ -300,15 +302,22 @@ display_hit_miss_2d(
         tlm.Translate2D(y=2),
         tlm.Gap(2),
     ),
-    tlm.SphereByCurvature(5, -0.39, solver_config={"init": 20, "damping": 0.5, "lift_function": "raw", "num_iter": 20}),
+    tlm.SphereByCurvature(
+        5,
+        -0.39,
+        solver_config={
+            "init": 20,
+            "damping": 0.5,
+            "lift_function": "raw",
+            "num_iter": 20,
+        },
+    ),
     10,
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Translate2D(y=-6),
@@ -318,11 +327,14 @@ display_hit_miss_2d(
         tlm.Translate2D(y=6),
         tlm.Gap(2),
     ),
-    tlm.SphereByCurvature(5, -0.39, solver_config=dict(num_iter=1, damping=0.5, tol=1e-3)),
+    tlm.SphereByCurvature(
+        5, -0.39, solver_config=dict(num_iter=1, damping=0.5, tol=1e-3)
+    ),
     10,
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Translate2D(y=-6),
@@ -332,11 +344,14 @@ display_hit_miss_2d(
         tlm.Translate2D(y=6),
         tlm.Gap(2),
     ),
-    tlm.SphereByCurvature(5, -0.39, solver_config=dict(num_iter=2, damping=0.5, tol=1e-3)),
+    tlm.SphereByCurvature(
+        5, -0.39, solver_config=dict(num_iter=2, damping=0.5, tol=1e-3)
+    ),
     10,
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.Translate2D(y=-6),
@@ -346,15 +361,15 @@ display_hit_miss_2d(
         tlm.Translate2D(y=6),
         tlm.Gap(2),
     ),
-    tlm.SphereByCurvature(5, -0.39, solver_config=dict(num_iter=12, damping=0.5, tol=1e-3)),
+    tlm.SphereByCurvature(
+        5, -0.39, solver_config=dict(num_iter=12, damping=0.5, tol=1e-3)
+    ),
     10,
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -365,6 +380,7 @@ display_hit_miss_2d(
 )
 
 display_hit_miss_2d(
+    "SphereByCurvature",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -375,10 +391,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "Parabola",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -391,10 +405,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "Conic",
     tlm.Sequential(
         tlm.Gap(-1),
         tlm.PointSourceAtInfinity(10),
@@ -405,10 +417,8 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
 display_hit_miss_2d(
+    "Parabola",
     tlm.Sequential(
         tlm.Gap(-5),
         tlm.PointSource(10),
@@ -419,8 +429,4 @@ display_hit_miss_2d(
 )
 
 
-# In[ ]:
-
-
-
-
+tlmv.push_source(__file__)
