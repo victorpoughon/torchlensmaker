@@ -17,7 +17,7 @@
 
 import torch
 
-from torchlensmaker.implicit.implicit_plane import safe_sign
+from torchlensmaker.implicit.math import safe_sign
 from torchlensmaker.implicit.types import ImplicitResult
 
 

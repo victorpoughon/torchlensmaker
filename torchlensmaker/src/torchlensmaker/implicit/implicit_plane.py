@@ -16,13 +16,8 @@
 
 import torch
 
+from torchlensmaker.implicit.math import safe_sign
 from torchlensmaker.implicit.types import ImplicitResult
-
-
-def safe_sign(x: torch.Tensor) -> torch.Tensor:
-    "Like torch.sign() but equals 1 at 0"
-    ones = torch.ones_like(x)
-    return torch.where(x >= 0, ones, -ones)
 
 
 def implicit_yaxis_2d(
