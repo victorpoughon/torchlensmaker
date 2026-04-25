@@ -15,25 +15,23 @@ function parse(raw: any, _dim: number): PointsData {
 
 function render(data: PointsData, _dim: number): THREE.Object3D {
     const { vertices, color, radius } = data;
+    const count = vertices.length;
+
+    const geometry = new THREE.SphereGeometry(radius, 8, 8);
+    const material = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 });
+    const mesh = new THREE.InstancedMesh(geometry, material, count);
+
+    const dummy = new THREE.Object3D();
+    for (let i = 0; i < count; i++) {
+        const point = vertices[i];
+        dummy.position.set(point[0], point[1], point.length === 2 ? 2.0 : point[2]);
+        dummy.updateMatrix();
+        mesh.setMatrixAt(i, dummy.matrix);
+    }
+    mesh.instanceMatrix.needsUpdate = true;
 
     const group = new THREE.Group();
-    for (const point of vertices) {
-        const geometry = new THREE.SphereGeometry(radius, 8, 8);
-        const material = new THREE.MeshBasicMaterial({ color: color });
-        material.transparent = true;
-        material.opacity = 0.8;
-        const sphere = new THREE.Mesh(geometry, material);
-
-        const dim = point.length;
-        if (dim == 2) {
-            sphere.position.set(point[0], point[1], 2.0);
-        } else {
-            sphere.position.set(point[0], point[1], point[2]);
-        }
-
-        group.add(sphere);
-    }
-
+    group.add(mesh);
     return group;
 }
 
