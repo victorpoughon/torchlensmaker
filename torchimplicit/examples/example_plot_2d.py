@@ -116,7 +116,7 @@ def main():
     ax1.pcolormesh(
         x_np, y_np, inv_F, cmap=cmap_cyan, shading="auto", vmin=0, vmax=vmax_inv
     )
-    ax1.set_title("1/f(x, y)")
+    ax1.set_title("1 / F")
     ax1.set_aspect("equal")
 
     # Right: gradient magnitude (plasma) + unit direction arrows
@@ -127,14 +127,14 @@ def main():
     ax2.quiver(
         XX_np[::step, ::step],
         YY_np[::step, ::step],
-        GX_norm[::step, ::step],
-        GY_norm[::step, ::step],
+        -GX_norm[::step, ::step],
+        -GY_norm[::step, ::step],
         color="k",
         alpha=0.6,
         pivot="tail",
         scale=30,
     )
-    ax2.set_title("|∇f(x, y)|")
+    ax2.set_title("— ∇ F")
     ax2.set_aspect("equal")
 
     plt.tight_layout()
