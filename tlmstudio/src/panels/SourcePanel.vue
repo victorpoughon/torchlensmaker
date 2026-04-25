@@ -12,8 +12,7 @@ const props = defineProps<{
 const highlighted = ref('')
 
 onMounted(async () => {
-    const { language, content } = props.params.params.source
-    highlighted.value = await highlightCode(content, language)
+    highlighted.value = await highlightCode(props.params.params.source.content)
 })
 </script>
 
