@@ -26,11 +26,17 @@ from .implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
+from .implicit_sphere import (
+    implicit_sphere_2d,
+    implicit_sphere_3d,
+)
 from .types import ImplicitFunction, ImplicitResult
 
 __all__ = [
     "implicit_disk_2d",
     "implicit_disk_3d",
+    "implicit_sphere_2d",
+    "implicit_sphere_3d",
     "implicit_yaxis_2d",
     "implicit_yzcircle_2d",
     "implicit_yzcircle_3d",
