@@ -10,6 +10,7 @@ import ViewportPanel from './panels/ViewportPanel.vue'
 import SceneManagerPanel from './panels/SceneManagerPanel.vue'
 import SourcePanel from './panels/SourcePanel.vue'
 import type { SceneEntry, SourceEntry } from './types.ts'
+import { getSceneName } from './utils.ts'
 
 // Explicit registration so dockview-vue can find components by name and
 // so the bundler doesn't tree-shake them away (they're not in the template).
@@ -59,6 +60,7 @@ function handleEnvelope(envelope: Envelope) {
     if (envelope.type === 'scene') {
         const scene: SceneEntry = {
             id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+            name: getSceneName(envelope),
             topic: envelope.topic,
             timestamp: new Date(),
             payload: envelope.payload,

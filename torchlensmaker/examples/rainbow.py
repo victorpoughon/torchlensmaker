@@ -40,11 +40,11 @@ controls = {
 
 # Push 2D and 3D scenes to tlmserver
 tlm.set_sampling2d(model, pupil=50, field=5, wavel=10)
-scene2d = tlm.render_model(model, 2, end=50, title="Rainbow", controls=controls)
+scene2d = tlm.render_model(model, 2, end=50, title="Rainbow (2D)", controls=controls)
 tlmv.push_scene(scene2d)
 
 tlm.set_sampling3d(model, pupil=200, field=15, wavel=10)
-scene3d = tlm.render_model(model, 3, end=50, title="Rainbow", controls=controls)
+scene3d = tlm.render_model(model, 3, end=50, title="Rainbow (3D)", controls=controls)
 tlmv.push_scene(scene3d)
 
 tlmv.push_source(__file__)

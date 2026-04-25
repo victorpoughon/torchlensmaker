@@ -32,7 +32,7 @@ function formatTime(date: Date): string {
                 class="scene-row"
                 @click="params.params.openViewport(scene)"
             >
-                <span class="scene-topic">{{ scene.topic }}</span>
+                <span class="scene-topic">{{ scene.name }}</span>
                 <span class="scene-time">{{ formatTime(scene.timestamp) }}</span>
             </div>
         </div>

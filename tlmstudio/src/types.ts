@@ -2,6 +2,7 @@
 export interface SceneEntry {
     id: string
     topic: string
+    name: string
     timestamp: Date
     payload: unknown
 }
