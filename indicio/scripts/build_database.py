@@ -268,7 +268,15 @@ def build():
     quantity_collisions: list[tuple[str, str, str]] = []
     kind_counter: Counter[str] = Counter()
 
-    for shelf, book, page, name, data_path in catalog_entries:
+    total = len(catalog_entries)
+    is_tty = sys.stderr.isatty()
+    for i, (shelf, book, page, name, data_path) in enumerate(catalog_entries, start=1):
+        if is_tty:
+            sys.stderr.write(f"\r[{i:>4}/{total}] {shelf}/{book}/{page}\033[K")
+            sys.stderr.flush()
+        elif i % 500 == 0 or i == total:
+            print(f"  [{i}/{total}] {shelf}/{book}/{page}", flush=True)
+
         if not data_path.is_file():
             skipped_missing_file += 1
             continue
@@ -317,6 +325,10 @@ def build():
                 (shelf, book, page, quantity, kind, payload, npts, wmn, wmx)
             )
             kind_counter[kind] += 1
+
+    if is_tty:
+        sys.stderr.write("\r\033[K")
+        sys.stderr.flush()
 
     with conn:
         conn.executemany(
