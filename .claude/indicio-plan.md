@@ -52,12 +52,12 @@ Responsibilities:
 
 1. Locate the upstream clone (default: `../refractiveindex.info-database` relative to the script — already in `indicio/refractiveindex.info-database/`).
 2. Record the upstream commit hash (`git -C <clone> rev-parse HEAD`) for embedding into the package later.
-3. Walk `catalog-nk.yml` to enumerate `(shelf, book, page) → data file` plus the human-readable `name`. Catalogues also carry `DIVIDER` entries — those are display hints and can be discarded. **`catalog-n2.yml` is skipped entirely** (n2 out of scope for v0.1).
+3. Walk `catalog-nk.yml` to enumerate `(shelf, book, page) → data file` plus the human-readable `name`. Catalogues also carry `DIVIDER` entries — those are display hints and can be discarded. **`catalog-n2.yml` is skipped entirely** (n2 out of scope for v0.1). The catalog has 17 exact-duplicate entries (same key, same data file, listed under two DIVIDERs) which are silently collapsed; if upstream ever introduces a duplicate with conflicting paths the build aborts.
 4. For each material:
    - Load the YAML data file.
-   - Extract `REFERENCES`, `COMMENTS` (verbatim strings).
+   - Extract `REFERENCES` (interned via the `refs` table — one row per unique citation string) and `COMMENTS` (stored verbatim per material).
    - Convert each `DATA` block to a `(quantity, model_kind, payload_bytes, n_points, wl_min, wl_max)` row, splitting `tabulated nk` blocks into one `n` row and one `k` row sharing the wavelength array.
-   - At most one `n` row and one `k` row per material (the survey confirmed no upstream entry has more). Assert this; if a future upstream version introduces multi-piece descriptions, the build aborts loudly rather than silently picking one.
+   - At most one `n` row and one `k` row per material. The survey identified one upstream file (`organic/.../polyvinylpyrrolidone/nk/Konig.yml`) that supplies both a formula and a tabulated representation of the same `n`; the build script logs and applies "first wins" (formula kept). All other potential collisions abort.
 5. Write everything into a fresh SQLite file using the schema from the design doc. Open with `journal_mode=OFF`, `synchronous=OFF` and one transaction around the whole insert for speed.
 6. After insertion, run `VACUUM` to tighten file size, then print the byte size.
 
@@ -65,21 +65,17 @@ Responsibilities:
 
 For each model kind, define a small encode function. The payload is consumed only by the loader in step 4, so the format is internal — the only constraint is round-trippability and stdlib-decodability.
 
-Encoding plan (option A — generic for formulas, refined into typed dataclasses at load time in step 4):
+All numeric data is packed as **little-endian IEEE 754 float32**. Float32 gives ~7 significant decimal digits, which exceeds the precision of the source YAML (typically 4–6 digits) and halves tabulated payload size relative to float64.
 
-| `model_kind`    | Payload layout                                              |
-|-----------------|-------------------------------------------------------------|
-| `tabulated_n`   | concat of `wavelength_um` blob + `n` blob, `n_points` set   |
-| `tabulated_k`   | concat of `wavelength_um` blob + `k` blob, `n_points` set   |
-| `formula_1`     | packed float64 array of raw upstream coefficients           |
-| `formula_2`     | packed float64 array of raw upstream coefficients           |
-| `formula_3`     | packed float64 array of raw upstream coefficients           |
-| `formula_4`     | packed float64 array of raw upstream coefficients           |
-| `formula_5`     | packed float64 array of raw upstream coefficients           |
-| `formula_6`     | packed float64 array of raw upstream coefficients           |
-| `formula_7`     | packed float64 array of raw upstream coefficients           |
-| `formula_8`     | packed float64 array of raw upstream coefficients           |
-| `formula_9`     | packed float64 array of raw upstream coefficients           |
+Tabulated payloads are additionally **zlib-compressed at level 9** before being stored. Formula payloads are stored raw (a handful of coefficients each — compression overhead would dwarf any gain). The discriminator column `model_kind` tells the loader whether to inflate.
+
+Encoding plan (option A — generic `formula_N` rows, refined into typed dataclasses at load time in step 4):
+
+| `model_kind`    | Payload layout                                                                  |
+|-----------------|---------------------------------------------------------------------------------|
+| `tabulated_n`   | zlib(concat of `wavelength_um` blob + `n` blob), `n_points` set                 |
+| `tabulated_k`   | zlib(concat of `wavelength_um` blob + `k` blob), `n_points` set                 |
+| `formula_1`–`formula_9` | packed float32 array of raw upstream coefficients, no compression       |
 
 `tabulated_n2` is dropped from the input (not encoded).
 
@@ -89,24 +85,32 @@ The build script does **not** know which formula number corresponds to Sellmeier
 
 - Total material count printed at the end matches the catalogue count.
 - For one well-known entry (e.g. `main / SiO2 / Malitson`), pretty-print the rows so we can eyeball that coefficients survive the round trip.
-- Final on-disk size of the `.db` file is printed.
-- Optional: print size with and without `VACUUM`, and with payloads zlib-compressed, so we have data for the "compress or not" decision in step 2.
+- Final on-disk size of the `.db` file is printed, plus a payload-size breakdown by `model_kind`.
 
-### 1.5 — Run it
+### 1.5 — Run it ✅ DONE
 
-Add a dev script entry or just `uv run python scripts/build_database.py`. Inspect the output. **Decision point: do we need zlib compression of payloads to hit the 15 MB target?**
+`uv run python scripts/build_database.py`. Final size after VACUUM: **15.24 MiB**, on target.
 
 ---
 
-## Step 2 — Lock in storage decisions
+## Step 2 — Lock in storage decisions ✅ DONE
 
-Based on the size measured in step 1:
+Three iterations measured during step 1:
 
-- Confirm float64 across the board (or relax `k`-side tabulated to float32 if size is a problem).
-- Decide on zlib compression of `BLOB` payloads (yes/no). If yes, record this in `_loader.py` and add a per-row `compressed BOOLEAN` flag so future migrations can mix.
-- Pin the upstream commit hash and write it to a generated `src/indicio/_database_version.py` from the build script.
+| format | DB size after VACUUM |
+|---|---|
+| float64, no compression | 36.49 MiB |
+| float32, zlib on tabulated only | 15.89 MiB |
+| float32, zlib on tabulated, interned `refs` table | **15.24 MiB** |
 
-No code change here unless 15 MB is missed; this is a checkpoint, not a deliverable.
+Decisions locked in (and reflected in `indicio.md`):
+
+- **Float32 little-endian** for every numeric value in payloads. Source YAML rarely has more than 5 significant figures; float32's ~7 digits is plenty.
+- **Tabulated payloads only are zlib(level 9)-compressed.** Formula payloads stored raw — they are tiny and compression overhead would dwarf gains. The `model_kind` discriminator already tells the loader whether to inflate, so no extra `compressed` flag column is needed.
+- **References interned in a separate `refs` table.** 3,543 materials → 721 unique citation strings (the dominant repeat is the OHARA Zemax catalog citation, ×413). Interning saves ~0.65 MiB and keeps the public `MaterialEntry.references` field unchanged thanks to a join in the loader.
+- **Pin the upstream commit hash** by writing it to the `meta` table (already done) and generating `src/indicio/_database_version.py` at build time so it can be imported as `indicio.__database_version__`.
+
+No further iteration on the storage format unless future upstream growth pushes us back over budget.
 
 ---
 

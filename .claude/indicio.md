@@ -52,9 +52,13 @@ The database is shipped as a single **SQLite file** embedded in the package via 
 - It compresses tabulated numeric data well when stored as binary blobs.
 - It is a single file, simple to bundle and reason about.
 
-Tabulated (n, k) data is stored as `BLOB` columns containing packed `float64` arrays in native byte order. Float64 is used uniformly throughout the database: the simplification of having a single precision is worth the modest size cost over a mixed float32/float64 scheme, and float64 eliminates any concern about losing precision relative to the source YAML. Decoding uses `struct` or `array` from the standard library — no numpy required.
+All numeric data is stored as packed **IEEE 754 float32** in little-endian byte order. Float32 gives ~7 significant decimal digits, which exceeds the precision of the source YAML (typically 4–6 digits) and brings tabulated payloads down by 2× compared to float64. Decoding uses `struct` or `array` from the standard library — no numpy required.
 
-Estimated final size: **10–15 MB** for the bundled database. Optional zlib compression on the blobs (using stdlib `zlib`) can claw back several MB if needed, at the cost of a small per-lookup decompression step.
+Tabulated payloads are additionally **zlib-compressed** (level 9) before being stored in the `BLOB` column. The dominant cost in the database is tabulated arrays, and zlib gives roughly 35% extra compression on top of float32. Formula payloads are stored raw — they are tiny (a handful of coefficients each), so compression overhead would dwarf any gain. The discriminator column `model_kind` tells the loader whether to inflate.
+
+Citation strings are heavily duplicated in the upstream YAML (the same vendor-catalog reference is cited verbatim by hundreds of glasses). They are stored once each in a separate `refs` table and joined back at lookup time. This pattern saves ~1 MB on the bundled file.
+
+Resulting bundled size: **~15 MB**.
 
 ### Build pipeline
 
@@ -71,14 +75,20 @@ The pinned upstream commit hash is recorded in the package as `indicio.__databas
 ### Schema
 
 ```sql
+CREATE TABLE refs (
+    ref_id  INTEGER PRIMARY KEY,
+    text    TEXT NOT NULL UNIQUE     -- citation text, preserved verbatim
+);
+
 CREATE TABLE materials (
     shelf       TEXT NOT NULL,
     book        TEXT NOT NULL,
     page        TEXT NOT NULL,
     name        TEXT,
-    references_ TEXT,    -- citation text, preserved verbatim
+    ref_id      INTEGER,              -- FK to refs.ref_id, NULL if upstream gives no REFERENCES
     comments    TEXT,
-    PRIMARY KEY (shelf, book, page)
+    PRIMARY KEY (shelf, book, page),
+    FOREIGN KEY (ref_id) REFERENCES refs(ref_id)
 );
 
 CREATE TABLE models (
@@ -86,8 +96,8 @@ CREATE TABLE models (
     book        TEXT NOT NULL,
     page        TEXT NOT NULL,
     quantity    TEXT NOT NULL,        -- 'n' or 'k'
-    model_kind  TEXT NOT NULL,        -- discriminator: 'sellmeier', 'cauchy', 'tabulated_n', ...
-    payload     BLOB NOT NULL,        -- model-specific serialized fields
+    model_kind  TEXT NOT NULL,        -- discriminator: 'tabulated_n', 'tabulated_k', 'formula_1', ...
+    payload     BLOB NOT NULL,        -- packed float32; zlib-compressed for tabulated_*, raw for formula_*
     n_points    INTEGER,              -- number of samples for tabulated rows, NULL otherwise
     wl_min      REAL,
     wl_max      REAL,
@@ -97,6 +107,8 @@ CREATE TABLE models (
 
 CREATE INDEX idx_book ON materials(book);
 ```
+
+The `materials` table never exposes citations to consumers directly — the loader joins `materials.ref_id` against `refs.text` so the public `MaterialEntry.references` field still receives the verbatim string.
 
 A single material entry has at most one model for `n` and one for `k`. Either side may be absent when the upstream entry only describes one of the two quantities. Combined `tabulated nk` blocks from upstream are split by the build script into one `n` row and one `k` row.
 
@@ -114,18 +126,18 @@ Each model carries its own validity range as a `WavelengthRange` instance.
 
 Tabulated entries store their numeric arrays as **raw `bytes`** rather than as Python tuples or lists. This is the most efficient way to expose the data when consumers will likely feed it directly to numpy or another array library, and it avoids materializing potentially-large lists of Python floats just to throw them away.
 
-The binary layout is fixed: **packed IEEE 754 float64 values in native byte order**. This is documented in the dataclass docstrings and is part of the API contract — consumers can rely on it without inspecting any per-instance metadata.
+The binary layout is fixed: **packed IEEE 754 float32 values in little-endian byte order**. This is documented in the dataclass docstrings and is part of the API contract — consumers can rely on it without inspecting any per-instance metadata. The loader handles zlib decompression internally, so by the time the bytes reach a `TabulatedN` / `TabulatedK` instance they are already inflated; consumers do not see the on-disk compressed form.
 
 Consumers decode the bytes with whichever tool they prefer:
 
 ```python
 # With numpy:
 import numpy as np
-wls = np.frombuffer(piece.wavelength_um, dtype=np.float64)
+wls = np.frombuffer(piece.wavelength_um, dtype=np.float32)
 
 # Without numpy, using stdlib only:
 import array
-wls = array.array("d")
+wls = array.array("f")
 wls.frombytes(piece.wavelength_um)
 ```
 
