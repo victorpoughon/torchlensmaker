@@ -18,25 +18,37 @@ import torch
 
 
 def interp1d(X: torch.Tensor, Y: torch.Tensor, newX: torch.Tensor) -> torch.Tensor:
-    "torch version of np.interp"
+    """
+    Linear interpolation of 1D data, equivalent to np.interp, but torch-native and differentiable.
+
+    X and Y must be 1D tensors of the same length, with X strictly increasing.
+    newX must lie within the closed interval [X[0], X[-1]]; values outside this
+    range will trigger an assertion error.
+
+    Args:
+        X: 1D tensor of sample positions, strictly increasing.
+        Y: 1D tensor of sample values, same length as X.
+        newX: 1D tensor of query positions.
+
+    Returns:
+        1D tensor of interpolated values at each position in newX.
+    """
 
     assert X.ndim == Y.ndim == 1
 
-    # find intervals
+    # Find intervals, with special case for newX == X[0]
     indices = torch.searchsorted(X, newX)
-
-    # special case for newX == X[0]
     indices = torch.where(newX == X[0], 1, indices)
 
-    # -1 here because we want the start of the interval
+    # Subtract 1 because we want the start of the interval
     indices = indices - 1
 
-    # make sure all newX are within the X domain
+    # Make sure all newX are within the X domain
     assert torch.min(indices) >= 0
     assert torch.max(indices) <= X.numel() - 1
 
-    # compute slopes
-    # careful potential div by zero here
+    # Compute slopes
+    # Careful potential div by zero here
     slopes = torch.diff(Y) / torch.diff(X)
 
     return Y[indices] + slopes[indices] * (newX - X[indices])
