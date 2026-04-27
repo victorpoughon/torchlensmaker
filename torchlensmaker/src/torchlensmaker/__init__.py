@@ -90,6 +90,7 @@ from torchlensmaker.light_targets.focal_point import FocalPoint
 from torchlensmaker.light_targets.image_plane import ImagePlane, linear_magnification
 from torchlensmaker.materials.material_elements import (
     CauchyMaterial,
+    LinearSegmentedMaterial,
     MaterialModel,
     NonDispersiveMaterial,
     SellmeierMaterial,
@@ -260,6 +261,7 @@ __all__ = [
     "linear_magnification",
     # Materials
     "CauchyMaterial",
+    "LinearSegmentedMaterial",
     "MaterialModel",
     "NonDispersiveMaterial",
     "SellmeierMaterial",

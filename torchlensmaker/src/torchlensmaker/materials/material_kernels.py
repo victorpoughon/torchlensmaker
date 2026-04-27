@@ -19,6 +19,7 @@ import torch
 from jaxtyping import Float
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
+from torchlensmaker.core.interp1d import interp1d
 from torchlensmaker.types import BatchTensor, ScalarTensor
 
 
@@ -138,4 +139,38 @@ class SellmeierMaterialKernel(FunctionalKernel):
             torch.tensor(0.00467914825, dtype=dtype),
             torch.tensor(0.01351206307, dtype=dtype),
             torch.tensor(97.9340025379, dtype=dtype),
+        )
+
+
+class LinearSegmentedMaterialKernel(FunctionalKernel):
+    "Material model using piecewise linear interpolation of refractive index vs. wavelength"
+
+    inputs = {"wavelength": BatchTensor}
+    params = {"wavelengths": BatchTensor, "indices": BatchTensor}
+    outputs = {"index": BatchTensor}
+
+    # torch.searchsorted is not supported by onnx export yet, see:
+    # https://github.com/pytorch/pytorch/issues/151648
+    # https://github.com/pytorch/pytorch/issues/151793
+    export_onnx = False
+
+    def apply(
+        self,
+        wavelength: Float[torch.Tensor, " N"],
+        wavelengths: Float[torch.Tensor, " K"],
+        indices: Float[torch.Tensor, " K"],
+    ) -> Float[torch.Tensor, " N"]:
+        return interp1d(wavelengths, indices, wavelength)
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return (torch.tensor([400, 401, 402, 403], dtype=dtype, device=device),)
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[torch.Tensor, ...]:
+        return (
+            torch.tensor([380.0, 550.0, 780.0], dtype=dtype, device=device),
+            torch.tensor([1.52, 1.50, 1.49], dtype=dtype, device=device),
         )

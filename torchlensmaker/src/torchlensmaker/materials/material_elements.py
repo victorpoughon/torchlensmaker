@@ -25,12 +25,10 @@ from torchlensmaker.core.tensor_manip import init_param
 
 from .material_kernels import (
     CauchyMaterialKernel,
+    LinearSegmentedMaterialKernel,
     NonDispersiveMaterialKernel,
     SellmeierMaterialKernel,
 )
-
-# TODO add:
-# LinearSegmentedMaterial
 
 
 class MaterialModel(BaseModule):
@@ -141,3 +139,35 @@ class SellmeierMaterial(MaterialModel):
         return self.kernel.apply(
             wavelength, self.B1, self.B2, self.B3, self.C1, self.C2, self.C3
         )
+
+
+class LinearSegmentedMaterial(MaterialModel):
+    def __init__(
+        self,
+        wavelengths: Float[torch.Tensor, " K"] | list,
+        indices: Float[torch.Tensor, " K"] | list,
+        trainable: bool = False,
+    ):
+        super().__init__()
+        self.wavelengths = init_param(self, "wavelengths", wavelengths, trainable)
+        self.indices = init_param(self, "indices", indices, trainable)
+        self.kernel = LinearSegmentedMaterialKernel()
+
+    def clone(self, **overrides) -> Self:
+        kwargs: dict[str, Any] = dict(
+            wavelengths=self.wavelengths,
+            indices=self.indices,
+        )
+        return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return (
+            f"{self._get_name()}("
+            f"wavelengths={self.wavelengths.tolist()}, "
+            f"indices={self.indices.tolist()})"
+        )
+
+    def forward(
+        self, wavelength: Float[torch.Tensor, " N"]
+    ) -> Float[torch.Tensor, " N"]:
+        return self.kernel.apply(wavelength, self.wavelengths, self.indices)

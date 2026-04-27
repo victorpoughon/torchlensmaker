@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import itertools
+import warnings
 from dataclasses import is_dataclass
 from itertools import chain
 from pathlib import Path
@@ -135,6 +136,13 @@ def check_kernels_export_onnx(
     dtype: torch.dtype,
     device: torch.device,
 ) -> None:
+
+    if not kernel.export_onnx:
+        warnings.warn(
+            f"Kernel {kernel.__class__.__qualname__} does not support onnx export, skipping"
+        )
+        return
+
     # Export model to ONNX file
     model_path = tmp_path / f"{name}.onnx"
     export_onnx(model_path, kernel, dtype, device)

@@ -69,6 +69,7 @@ class FunctionalKernel:
         False  # true if the kernel forward() function takes dtype and device arguments
     )
     export_legacy: bool = False  # true if onnx export must use legacy torch script (instead of default dynamo)
+    export_onnx: bool = True  # False to disable onnx export entirely
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device

@@ -23,6 +23,7 @@ import torch
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.materials.material_kernels import (
     CauchyMaterialKernel,
+    LinearSegmentedMaterialKernel,
     NonDispersiveMaterialKernel,
     SellmeierMaterialKernel,
 )
@@ -36,6 +37,7 @@ kernels_library: Dict[str, FunctionalKernel] = {
     "NonDispersiveMaterial": NonDispersiveMaterialKernel(),
     "CauchyMaterial": CauchyMaterialKernel(),
     "SellmeirMaterial": SellmeierMaterialKernel(),
+    "LinearSegmentedMaterial": LinearSegmentedMaterialKernel(),
 }
 
 
