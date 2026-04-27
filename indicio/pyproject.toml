@@ -1,0 +1,22 @@
+[project]
+name = "indicio"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Victor Poughon", email = "victor.poughon@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = []
+
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "matplotlib>=3.10.9",
+    "numpy>=2.4.4",
+    "pytest>=9.0.3",
+    "pyyaml>=6.0.3",
+]
