@@ -81,24 +81,26 @@ CREATE TABLE materials (
     PRIMARY KEY (shelf, book, page)
 );
 
-CREATE TABLE model_pieces (
+CREATE TABLE models (
     shelf       TEXT NOT NULL,
     book        TEXT NOT NULL,
     page        TEXT NOT NULL,
     quantity    TEXT NOT NULL,        -- 'n' or 'k'
-    piece_idx   INTEGER NOT NULL,     -- order within the quantity
-    model_kind  TEXT NOT NULL,        -- discriminator: 'sellmeier', 'cauchy', 'tabulated', ...
+    model_kind  TEXT NOT NULL,        -- discriminator: 'sellmeier', 'cauchy', 'tabulated_n', ...
     payload     BLOB NOT NULL,        -- model-specific serialized fields
+    n_points    INTEGER,              -- number of samples for tabulated rows, NULL otherwise
     wl_min      REAL,
     wl_max      REAL,
-    PRIMARY KEY (shelf, book, page, quantity, piece_idx),
+    PRIMARY KEY (shelf, book, page, quantity),
     FOREIGN KEY (shelf, book, page) REFERENCES materials(shelf, book, page)
 );
 
 CREATE INDEX idx_book ON materials(book);
 ```
 
-A single material entry typically has one piece for `n` and one for `k`, but either side may have multiple pieces (a piecewise description across wavelength windows) or be empty (when the upstream entry only describes one of the two quantities). Combined `tabulated nk` blocks from upstream are split by the build script into one `n` piece and one `k` piece.
+A single material entry has at most one model for `n` and one for `k`. Either side may be absent when the upstream entry only describes one of the two quantities. Combined `tabulated nk` blocks from upstream are split by the build script into one `n` row and one `k` row.
+
+The current upstream dataset contains no piecewise multi-window descriptions for a single quantity; if the upstream ever introduces them, the schema gains a `piece_idx` column and the corresponding dataclass fields become tuples. Until then, the simpler one-row-per-quantity layout is sufficient.
 
 ## Public API
 
@@ -216,7 +218,7 @@ KModel = (
 
 ### Material entries
 
-A material entry separates the description of the real part `n(λ)` from the imaginary part `k(λ)`. Each is held as a tuple of model pieces — one element in the common case, more if the upstream entry describes the quantity piecewise across multiple wavelength windows.
+A material entry separates the description of the real part `n(λ)` from the imaginary part `k(λ)`. Each is `None` when upstream does not provide that quantity, otherwise a single dispersion-model dataclass.
 
 ```python
 @dataclass(frozen=True)
@@ -227,18 +229,15 @@ class MaterialEntry:
     name: str | None
     references: str | None
     comments: str | None
-    n: tuple[NModel, ...]   # may be empty if upstream provides only k
-    k: tuple[KModel, ...]   # may be empty if upstream provides only n
+    n: NModel | None   # None if upstream provides only k
+    k: KModel | None   # None if upstream provides only n
 ```
 
 #### Why separate `n` and `k` rather than a flat list of segments?
 
-The upstream YAML format permits a list of `DATA` entries per material, and a single material commonly contains both an `n` description (often a formula) and a `k` description (usually tabulated). A flat list conflates two distinct concerns:
+The upstream YAML format permits a list of `DATA` entries per material, and a single material commonly contains both an `n` description (often a formula) and a `k` description (usually tabulated). A flat list would force every consumer to write the same filter logic to pick out "the n part" or "the k part" before doing anything else. Splitting `n` and `k` at the API level removes that boilerplate and makes intent explicit.
 
-- **Different quantities** (n vs k) — these are complementary, not alternatives. Consumers almost always want to filter by quantity before doing anything else.
-- **Different wavelength windows for the same quantity** — a genuinely piecewise description, which is rare but real.
-
-If the library exposed a flat `segments: tuple[...]` field, every consumer would have to write the same filter logic to pick out "the n part" or "the k part." Splitting `n` and `k` at the API level removes that boilerplate and makes intent explicit. The piecewise-window case is still handled naturally by the tuple having more than one element.
+Why a single `NModel | None` rather than a tuple of pieces? A survey of the current upstream dataset shows that no material has more than one description for a given quantity — piecewise multi-window descriptions are theoretically possible in the YAML format but do not occur in practice. An `Optional` keeps the common case clean (`if entry.n is not None: ...`) without forcing every consumer to iterate over a tuple they know is at most one element long. If upstream ever introduces multi-piece descriptions, this field becomes a `tuple[NModel, ...]` in a major version bump.
 
 #### Handling combined nk tabulated entries
 
@@ -257,24 +256,26 @@ from indicio.models import Sellmeier, TabulatedN, TabulatedK
 entry = get_material("main", "SiO2", "Malitson")
 
 # Build an evaluator for the real part:
-for piece in entry.n:
-    match piece:
-        case Sellmeier(coefficients=coeffs, wavelength_range=wr):
-            def n(wavelength_um: float) -> float:
-                return math.sqrt(1 + sum(
-                    B * wavelength_um**2 / (wavelength_um**2 - C)
-                    for B, C in coeffs
-                ))
-        case TabulatedN(wavelength_um=wl_bytes, n=n_bytes, length=n_pts):
-            wls = array.array("d"); wls.frombytes(wl_bytes)
-            ns  = array.array("d"); ns.frombytes(n_bytes)
-            # ...consumer interpolates however they like.
+match entry.n:
+    case Sellmeier(coefficients=coeffs, wavelength_range=wr):
+        def n(wavelength_um: float) -> float:
+            return math.sqrt(1 + sum(
+                B * wavelength_um**2 / (wavelength_um**2 - C)
+                for B, C in coeffs
+            ))
+    case TabulatedN(wavelength_um=wl_bytes, n=n_bytes, length=n_pts):
+        wls = array.array("d"); wls.frombytes(wl_bytes)
+        ns  = array.array("d"); ns.frombytes(n_bytes)
+        # ...consumer interpolates however they like.
+    case None:
+        ...  # upstream provides no n description for this entry
 
 # Build an evaluator for the imaginary part if one is provided:
-for piece in entry.k:
-    match piece:
-        case TabulatedK(wavelength_um=wl_bytes, k=k_bytes, length=n_pts):
-            ...
+match entry.k:
+    case TabulatedK(wavelength_um=wl_bytes, k=k_bytes, length=n_pts):
+        ...
+    case None:
+        ...
 ```
 
 This is the central design decision of the library. The library tells you *what the model is*; you decide *how to evaluate it*.
