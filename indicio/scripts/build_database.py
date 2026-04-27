@@ -395,40 +395,8 @@ def build():
     for kind, n in bytes_by_kind.most_common():
         print(f"  {kind:<{width}}  {n / 1024**2:7.2f} MiB  ({n} bytes)")
 
-    # Spot check: SiO2/Malitson
     print()
-    print("=== spot check: main / SiO2 / Malitson ===")
-    conn3 = sqlite3.connect(DB_PATH)
-    mat = conn3.execute(
-        "SELECT m.shelf, m.book, m.page, m.name, r.text"
-        " FROM materials m LEFT JOIN refs r ON m.ref_id = r.ref_id"
-        " WHERE m.shelf=? AND m.book=? AND m.page=?",
-        ("main", "SiO2", "Malitson"),
-    ).fetchone()
-    print(f"  material row: shelf={mat[0]} book={mat[1]} page={mat[2]}")
-    print(f"  name: {mat[3]}")
-    ref_text = mat[4]
-    print(f"  reference (joined from refs): {ref_text[:80] if ref_text else None!r}...")
-    for row in conn3.execute(
-        "SELECT quantity, model_kind, n_points, wl_min, wl_max, length(payload)"
-        " FROM models WHERE shelf=? AND book=? AND page=?",
-        ("main", "SiO2", "Malitson"),
-    ):
-        quantity, kind, npts, wmn, wmx, plen = row
-        print(
-            f"  model: quantity={quantity} kind={kind} n_points={npts} "
-            f"wl=[{wmn}, {wmx}] payload={plen}B"
-        )
-        # decode payload coefficients (formula payloads are raw float32)
-        if kind.startswith("formula_"):
-            n_floats = plen // 4
-            coeffs = struct.unpack(f"<{n_floats}f", conn3.execute(
-                "SELECT payload FROM models WHERE shelf=? AND book=? AND page=? AND quantity=?",
-                ("main", "SiO2", "Malitson", quantity),
-            ).fetchone()[0])
-            print(f"    decoded coefficients: {coeffs}")
-    conn3.close()
-
+    print("Run `uv run pytest` to verify integrity and spot-check materials.")
     return 0
 
 
