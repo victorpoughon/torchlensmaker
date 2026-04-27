@@ -159,7 +159,7 @@ class TabulatedN:
     upstream convention but the library does not perform it.
 
     `wavelength_um` and `n` are raw bytes containing `length` packed
-    float64 values each, in native byte order."""
+    little-endian float32 values each."""
     wavelength_um: bytes
     n: bytes
     length: int
@@ -172,45 +172,67 @@ class TabulatedK:
     length: int
     wavelength_range: WavelengthRange
 
+# All closed-form models share the upstream encoding "leading constant + pairs".
+# The leading constant is held as `c1` (matching the 1-indexed naming of the
+# upstream "Dispersion formulas" document); the pair-structured rest of the
+# coefficient list lives in a `coefficients` or `terms` field depending on the
+# model.
+
 @dataclass(frozen=True)
 class Sellmeier:
-    """Standard Sellmeier: n²-1 = Σ Bᵢ λ² / (λ² - Cᵢ)."""
+    """Formula 1 — Sellmeier (preferred):
+        n² − 1 = C₁ + Σᵢ Bᵢ λ² / (λ² − Cᵢ²)
+    Note that Cᵢ is squared in the denominator (this is what distinguishes
+    formula 1 from formula 2)."""
+    c1: float
     coefficients: tuple[tuple[float, float], ...]   # list of (B, C) pairs
     wavelength_range: WavelengthRange
 
 @dataclass(frozen=True)
 class Sellmeier2:
-    """Alternative Sellmeier form used by refractiveindex.info (formula 2)."""
-    coefficients: tuple[tuple[float, float], ...]
+    """Formula 2 — Sellmeier-2:
+        n² − 1 = C₁ + Σᵢ Bᵢ λ² / (λ² − Cᵢ)
+    Like Sellmeier but Cᵢ is **not** squared."""
+    c1: float
+    coefficients: tuple[tuple[float, float], ...]   # list of (B, C) pairs
     wavelength_range: WavelengthRange
 
 @dataclass(frozen=True)
 class Polynomial:
-    """n² = c₀ + Σ cᵢ λ^(eᵢ)."""
+    """Formula 3 — Polynomial: n² = C₁ + Σᵢ cᵢ λ^(eᵢ)."""
+    c1: float
     terms: tuple[tuple[float, float], ...]   # list of (coefficient, exponent)
     wavelength_range: WavelengthRange
 
 @dataclass(frozen=True)
-class RefractiveIndexInfoFormula:
-    """Generic container for the numbered formulas (1 through 9) defined
-    by refractiveindex.info, when no more specific dataclass applies."""
-    formula_number: int
-    coefficients: tuple[float, ...]
-    wavelength_range: WavelengthRange
-
-@dataclass(frozen=True)
 class Cauchy:
-    """n = A + B/λ² + C/λ⁴ + ..."""
-    coefficients: tuple[float, ...]   # [A, B, C, ...]
+    """Formula 5 — Cauchy: n = C₁ + Σᵢ cᵢ λ^(eᵢ).
+    Same `(coef, exp)` shape as Polynomial but applied directly to n."""
+    c1: float
+    terms: tuple[tuple[float, float], ...]
     wavelength_range: WavelengthRange
 
 @dataclass(frozen=True)
 class Gases:
-    """Gas formula: n-1 = Σ Bᵢ / (Cᵢ - λ⁻²)."""
-    coefficients: tuple[tuple[float, float], ...]
+    """Formula 6 — Gases: n − 1 = C₁ + Σᵢ Bᵢ / (Cᵢ − λ⁻²)."""
+    c1: float
+    coefficients: tuple[tuple[float, float], ...]   # list of (B, C) pairs
     wavelength_range: WavelengthRange
 
-# ... one dataclass per upstream formula type ...
+@dataclass(frozen=True)
+class RefractiveIndexInfoFormula:
+    """Generic container for the numbered formulas defined by
+    refractiveindex.info that do not have their own dataclass — currently
+    formula 4 (`RefractiveIndex.INFO` mixed-form), formula 7 (Herzberger),
+    formula 8 (Retro), formula 9 (Exotic). Combined upstream count is small
+    (~140 entries) so a single generic shape is preferable to four bespoke
+    dataclasses.
+
+    `coefficients` is the raw upstream list with no per-formula reshaping;
+    consumers dispatch on `formula_number` to interpret it."""
+    formula_number: int
+    coefficients: tuple[float, ...]
+    wavelength_range: WavelengthRange
 
 # Models that describe the real part n(λ).
 NModel = (
@@ -219,14 +241,30 @@ NModel = (
     | Cauchy | Gases | RefractiveIndexInfoFormula
 )
 
-# Models that describe the imaginary part k(λ). In practice k is almost
-# always tabulated upstream, but the union allows for formula-based k
-# entries without an API change.
+# Models that describe the imaginary part k(λ). In practice k is always
+# tabulated in the current upstream, but the union allows for formula-based
+# k entries without an API change.
 KModel = (
     TabulatedK
     | RefractiveIndexInfoFormula
 )
 ```
+
+The mapping from upstream `formula N` to dataclass is:
+
+| upstream formula | dataclass |
+|---|---|
+| 1 | `Sellmeier` |
+| 2 | `Sellmeier2` |
+| 3 | `Polynomial` |
+| 4 | `RefractiveIndexInfoFormula(formula_number=4, ...)` |
+| 5 | `Cauchy` |
+| 6 | `Gases` |
+| 7 | `RefractiveIndexInfoFormula(formula_number=7, ...)` |
+| 8 | `RefractiveIndexInfoFormula(formula_number=8, ...)` |
+| 9 | `RefractiveIndexInfoFormula(formula_number=9, ...)` |
+
+The mapping is implemented in `_loader.py`; the bundled DB stores raw `formula_N` rows so reshipping the loader is enough to fix taxonomy mistakes.
 
 ### Material entries
 
@@ -269,15 +307,15 @@ entry = get_material("main", "SiO2", "Malitson")
 
 # Build an evaluator for the real part:
 match entry.n:
-    case Sellmeier(coefficients=coeffs, wavelength_range=wr):
+    case Sellmeier(c1=c1, coefficients=coeffs):
         def n(wavelength_um: float) -> float:
-            return math.sqrt(1 + sum(
-                B * wavelength_um**2 / (wavelength_um**2 - C)
+            return math.sqrt(1 + c1 + sum(
+                B * wavelength_um**2 / (wavelength_um**2 - C * C)
                 for B, C in coeffs
             ))
     case TabulatedN(wavelength_um=wl_bytes, n=n_bytes, length=n_pts):
-        wls = array.array("d"); wls.frombytes(wl_bytes)
-        ns  = array.array("d"); ns.frombytes(n_bytes)
+        wls = array.array("f"); wls.frombytes(wl_bytes)
+        ns  = array.array("f"); ns.frombytes(n_bytes)
         # ...consumer interpolates however they like.
     case None:
         ...  # upstream provides no n description for this entry

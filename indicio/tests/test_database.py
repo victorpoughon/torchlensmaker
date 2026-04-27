@@ -13,7 +13,6 @@ import zlib
 
 import pytest
 
-
 # --- payload decoders ---------------------------------------------------
 
 
@@ -89,7 +88,7 @@ def test_no_orphan_ref_ids(conn):
 def test_known_model_kinds(conn):
     """Every model_kind matches the expected set."""
     kinds = {row[0] for row in conn.execute("SELECT DISTINCT model_kind FROM models")}
-    expected = {"tabulated_n", "tabulated_k"} | {f"formula_{i}" for i in range(1, 10)}
+    expected = {"tabulated"} | {f"formula_{i}" for i in range(1, 10)}
     extra = kinds - expected
     assert not extra, f"unexpected model kinds: {extra}"
 
@@ -189,7 +188,7 @@ def test_n_bk7_formula2_plus_tabulated_k(conn):
     ).fetchone()
     assert k_row is not None
     kind, npts, payload, wmn, wmx = k_row
-    assert kind == "tabulated_k"
+    assert kind == "tabulated"
     assert npts > 0
     wls, ks = decode_tabulated(payload, npts)
     assert len(wls) == npts
@@ -213,8 +212,8 @@ def test_h2o_hale_tabulated_nk(conn):
     assert set(rows) == {"n", "k"}
     n_kind, n_pts, n_payload = rows["n"]
     k_kind, k_pts, k_payload = rows["k"]
-    assert n_kind == "tabulated_n"
-    assert k_kind == "tabulated_k"
+    assert n_kind == "tabulated"
+    assert k_kind == "tabulated"
     assert n_pts == k_pts > 0
 
     n_wls, n_vals = decode_tabulated(n_payload, n_pts)
@@ -227,6 +226,7 @@ def test_h2o_hale_tabulated_nk(conn):
     assert math.isclose(n_wls[0], 0.200, rel_tol=F32_REL_TOL)
     assert math.isclose(n_vals[0], 1.396, rel_tol=F32_REL_TOL)
     assert math.isclose(k_vals[0], 1.10e-7, rel_tol=1e-4)
+
 
 # --- catalog count guards -----------------------------------------------
 

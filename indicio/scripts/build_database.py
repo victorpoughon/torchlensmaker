@@ -152,8 +152,8 @@ def encode_block(block: dict):
         npts = len(wl)
         wl_min, wl_max = min(wl), max(wl)
         return [
-            ("n", "tabulated_n", compress_tabulated(wl_blob + n_blob), npts, wl_min, wl_max),
-            ("k", "tabulated_k", compress_tabulated(wl_blob + k_blob), npts, wl_min, wl_max),
+            ("n", "tabulated", compress_tabulated(wl_blob + n_blob), npts, wl_min, wl_max),
+            ("k", "tabulated", compress_tabulated(wl_blob + k_blob), npts, wl_min, wl_max),
         ]
 
     if t == "tabulated n":
@@ -162,7 +162,7 @@ def encode_block(block: dict):
         return [
             (
                 "n",
-                "tabulated_n",
+                "tabulated",
                 compress_tabulated(pack_floats(wl) + pack_floats(n_)),
                 npts,
                 min(wl),
@@ -176,7 +176,7 @@ def encode_block(block: dict):
         return [
             (
                 "k",
-                "tabulated_k",
+                "tabulated",
                 compress_tabulated(pack_floats(wl) + pack_floats(k_)),
                 npts,
                 min(wl),
