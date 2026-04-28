@@ -28,7 +28,9 @@ def main() -> int:
         return 1
 
     yaml_files = sorted(DATA_DIR.rglob("*.yml"))
-    print(f"scanning {len(yaml_files)} yaml files under {DATA_DIR.relative_to(REPO_ROOT)}")
+    print(
+        f"scanning {len(yaml_files)} yaml files under {DATA_DIR.relative_to(REPO_ROOT)}"
+    )
 
     type_counts: Counter[str] = Counter()
     type_examples: dict[str, list[str]] = defaultdict(list)
@@ -46,7 +48,9 @@ def main() -> int:
             continue
 
         if not isinstance(doc, dict):
-            parse_failures.append((path, f"top-level is {type(doc).__name__}, expected dict"))
+            parse_failures.append(
+                (path, f"top-level is {type(doc).__name__}, expected dict")
+            )
             continue
 
         data = doc.get("DATA")
@@ -55,7 +59,9 @@ def main() -> int:
             continue
 
         if not isinstance(data, list):
-            parse_failures.append((path, f"DATA is {type(data).__name__}, expected list"))
+            parse_failures.append(
+                (path, f"DATA is {type(data).__name__}, expected list")
+            )
             continue
 
         blocks_per_file[len(data)] += 1
