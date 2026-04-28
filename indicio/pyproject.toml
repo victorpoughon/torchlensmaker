@@ -1,7 +1,7 @@
 [project]
 name = "indicio"
 version = "1.0.0"
-description = "Add your description here"
+description = "Python interface to refractiveindex.info that ships the database"
 readme = "README.md"
 authors = [
     { name = "Victor Poughon", email = "victor.poughon@gmail.com" }
