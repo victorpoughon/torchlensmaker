@@ -1,11 +1,11 @@
-"""Step 1.2 — Build the bundled SQLite database from the upstream YAML clone.
+"""Build the bundled SQLite database from the upstream YAML clone.
 
 Reads `refractiveindex.info-database/database/catalog-nk.yml`, parses every
 referenced material YAML, and writes a SQLite file at
 `src/indicio/data/refractiveindex.db`.
 
 `tabulated n2` blocks (Kerr nonlinear index) are skipped — out of scope for
-v0.1. Materials whose only DATA blocks are n2 are dropped entirely.
+now. Materials whose only DATA blocks are n2 are dropped entirely.
 
 Run:
     uv run python scripts/build_database.py
@@ -21,7 +21,6 @@ from collections import Counter
 from pathlib import Path
 
 import yaml
-
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 UPSTREAM = REPO_ROOT / "refractiveindex.info-database"
@@ -114,9 +113,7 @@ def parse_tabulated(text: str, ncols: int) -> list[list[float]]:
             continue
         parts = line.split()
         if len(parts) != ncols:
-            raise ValueError(
-                f"expected {ncols} columns, got {len(parts)}: {line!r}"
-            )
+            raise ValueError(f"expected {ncols} columns, got {len(parts)}: {line!r}")
         for i, p in enumerate(parts):
             cols[i].append(float(p))
     return cols
@@ -152,8 +149,22 @@ def encode_block(block: dict):
         npts = len(wl)
         wl_min, wl_max = min(wl), max(wl)
         return [
-            ("n", "tabulated", compress_tabulated(wl_blob + n_blob), npts, wl_min, wl_max),
-            ("k", "tabulated", compress_tabulated(wl_blob + k_blob), npts, wl_min, wl_max),
+            (
+                "n",
+                "tabulated",
+                compress_tabulated(wl_blob + n_blob),
+                npts,
+                wl_min,
+                wl_max,
+            ),
+            (
+                "k",
+                "tabulated",
+                compress_tabulated(wl_blob + k_blob),
+                npts,
+                wl_min,
+                wl_max,
+            ),
         ]
 
     if t == "tabulated n":
@@ -246,8 +257,10 @@ def build():
             continue
         seen[key] = entry
     catalog_entries = list(seen.values())
-    print(f"catalog entries: {len(raw_entries)} raw, "
-          f"{len(catalog_entries)} unique ({duplicate_count} duplicates merged)")
+    print(
+        f"catalog entries: {len(raw_entries)} raw, "
+        f"{len(catalog_entries)} unique ({duplicate_count} duplicates merged)"
+    )
 
     materials_rows: list[tuple] = []
     model_rows: list[tuple] = []
@@ -378,8 +391,12 @@ def build():
 
     print()
     print("=== file size ===")
-    print(f"after insert:   {size_before_vacuum / 1024**2:7.2f} MiB  ({size_before_vacuum:>10} bytes)")
-    print(f"after VACUUM:   {size_after_vacuum / 1024**2:7.2f} MiB  ({size_after_vacuum:>10} bytes)")
+    print(
+        f"after insert:   {size_before_vacuum / 1024**2:7.2f} MiB  ({size_before_vacuum:>10} bytes)"
+    )
+    print(
+        f"after VACUUM:   {size_after_vacuum / 1024**2:7.2f} MiB  ({size_after_vacuum:>10} bytes)"
+    )
 
     # Payload-size breakdown by kind (tabulated rows are already zlib-compressed).
     conn2 = sqlite3.connect(DB_PATH)
@@ -390,7 +407,9 @@ def build():
         bytes_by_kind[kind] += payload_len
     conn2.close()
     total_payload = sum(bytes_by_kind.values())
-    print(f"total payload bytes: {total_payload / 1024**2:7.2f} MiB ({total_payload} bytes)")
+    print(
+        f"total payload bytes: {total_payload / 1024**2:7.2f} MiB ({total_payload} bytes)"
+    )
     width = max((len(k) for k in bytes_by_kind), default=10)
     for kind, n in bytes_by_kind.most_common():
         print(f"  {kind:<{width}}  {n / 1024**2:7.2f} MiB  ({n} bytes)")

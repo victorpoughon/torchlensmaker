@@ -25,16 +25,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
-@dataclass(frozen=True)
-class WavelengthRange:
-    """Closed wavelength interval over which a dispersion model is valid."""
-
-    min_um: float
-    max_um: float
-
-
-# --- tabulated quantity ----------------------------------------------------
+# Closed wavelength interval (min_um, max_um) over which a dispersion model
+# is valid.
+WavelengthRange = tuple[float, float]
 
 
 @dataclass(frozen=True)
@@ -115,8 +108,8 @@ class RefractiveIndexInfoFormula4:
     """
 
     c1: float
-    rational_terms: tuple[tuple[float, float, float, float], ...]   # (B, eB, C, eC)
-    polynomial_terms: tuple[tuple[float, float], ...]               # (coef, exp)
+    rational_terms: tuple[tuple[float, float, float, float], ...]  # (B, eB, C, eC)
+    polynomial_terms: tuple[tuple[float, float], ...]  # (coef, exp)
     wavelength_range: WavelengthRange
 
 
