@@ -63,9 +63,9 @@ class MaterialEntry:
 ```
 
 * For the dispersion model n, there are 10 possible cases: 9 closed-form
-  formulas (following the upstream [refractiveindex.info dispersion-formula
-  spec](https://refractiveindex.info/database/doc/Dispersion%20formulas.pdf)),
-  or tabulated data.
+  formulas (following the upstream [dispersion-formula
+  doc](https://refractiveindex.info/database/doc/Dispersion%20formulas.pdf)), or
+  tabulated data.
 
 * For the extinction coefficient k, the data is always tabulated.
 
@@ -84,9 +84,9 @@ formula type:
   matplotlib to plot n(λ) and k(λ) over the validity range.
 
 ```bash
-uv run python examples/example_evaluation_stdlib.py main SiO2 Malitson
-uv run python examples/example_evaluation_numpy.py main Au Johnson
-uv run python examples/example_plot.py main BaF2 Bosomworth-300K
+python examples/example_evaluation_stdlib.py main SiO2 Malitson
+python examples/example_evaluation_numpy.py main Au Johnson
+python examples/example_plot.py main BaF2 Bosomworth-300K
 ```
 
 ## Conventions
@@ -94,15 +94,15 @@ uv run python examples/example_plot.py main BaF2 Bosomworth-300K
 - Wavelengths are micrometers everywhere, matching the convention of
   [refractiveindex.info](https://refractiveindex.info).
 - Tabulated arrays are raw bytes, packed as little-endian IEEE 754
-  float32. See examples below for decoding.
+  float32. See examples above for decoding.
 
 ## Licensing and attribution
 
-The refractiveindex.info database is distributed under
-[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/) (public
-domain). When publishing results that rely on a particular material entry,
-cite the original authors — their citation strings are preserved verbatim
-in `MaterialEntry.references`.
+The refractiveindex.info database is distributed under [CC0
+1.0](https://creativecommons.org/publicdomain/zero/1.0/) (public domain). When
+publishing results that rely on a particular material entry, please cite the
+original authors. Their citation strings are preserved verbatim in
+`MaterialEntry.references`.
 
 ```python
 print(indicio.get_material("main", "SiO2", "Malitson").references)
