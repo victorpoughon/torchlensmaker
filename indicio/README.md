@@ -62,22 +62,25 @@ class MaterialEntry:
     k: KModel | None              # imaginary part — None if upstream has only n
 ```
 
-For detailed data description of each model see
-[src/indicio/models.py](src/indicio/models.py).
+* For the dispersion model n, there are 10 possible cases: 9 closed-form
+  formulas (following the upstream [refractiveindex.info dispersion-formula
+  spec](https://refractiveindex.info/database/doc/Dispersion%20formulas.pdf)),
+  or tabulated data.
 
-Models are either tabulated or closed-form formulas, following the upstream
-[refractiveindex.info dispersion-formula spec](https://refractiveindex.info/database/doc/Dispersion%20formulas.pdf).
+* For the extinction coefficient k, the data is always tabulated.
+
+For detailed data description of each model see
+[src/indicio/models.py](src/indicio/models.py). 
+
 
 ## Examples
 
-The `examples/` directory contains complete evaluator scripts covering every
-formula type, including pattern-match dispatch on `entry.n` / `entry.k`.
+The `examples/` directory contains complete evaluation scripts covering every
+formula type:
 
-- [`examples/example_evaluation_stdlib.py`](examples/example_evaluation_stdlib.py)
-  — uses only the standard library (`math`, `array`, `bisect`).
-- [`examples/example_evaluation_numpy.py`](examples/example_evaluation_numpy.py)
-  — uses numpy; evaluators are vectorized over a wavelength array.
-- [`examples/example_plot.py`](examples/example_plot.py) — uses numpy +
+- [`examples/example_evaluation_stdlib.py`](examples/example_evaluation_stdlib.py): uses only the standard library (`math`, `array`, `bisect`).
+- [`examples/example_evaluation_numpy.py`](examples/example_evaluation_numpy.py): uses numpy; evaluators are vectorized over a wavelength array.
+- [`examples/example_plot.py`](examples/example_plot.py): uses numpy +
   matplotlib to plot n(λ) and k(λ) over the validity range.
 
 ```bash
@@ -92,19 +95,6 @@ uv run python examples/example_plot.py main BaF2 Bosomworth-300K
   [refractiveindex.info](https://refractiveindex.info).
 - Tabulated arrays are raw bytes, packed as little-endian IEEE 754
   float32. See examples below for decoding.
-
-## Versioning
-
-`indicio` follows semantic versioning for its API. The bundled database is
-identified independently:
-
-```python
-indicio.__version__               # API/library version
-indicio.__database_version__      # upstream refractiveindex.info commit hash
-```
-
-API-breaking changes to the dataclasses bump the major version.
-Database-only updates bump the patch version.
 
 ## Licensing and attribution
 
