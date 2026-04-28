@@ -7,10 +7,10 @@ inside the package, so there is no need to download it separately: just `pip
 install indicio` and you are ready to go.
 
 `indicio` has zero runtime dependency, not even YAML because the database is
-shipped in a custom sqlite format that python can decode natively. This also
-reduces the size of the database to ~16MB.
+stored internally in a custom sqlite format that python can decode natively.
+This also reduces the size of the database to ~16MB.
 
-`indicio` returns **structured descriptions of dispersion models**. It does
+`indicio` returns structured descriptions of dispersion models. It does
 **not** implement formulas to compute `n(λ)` or `k(λ)`. That job is left to the
 consumer, who can pick whatever numerical stack suits the use case (numpy, jax,
 torch, etc.).
@@ -31,13 +31,6 @@ print(SiO2.n)
 
 >>> Sellmeier(c1=0.0, coefficients=((0.6961662769317627, 0.06840430200099945), (0.40794259309768677, 0.11624140292406082), (0.8974794149398804, 9.896161079406738)), wavelength_range=(0.21, 6.7))
 ```
-
-## Conventions
-
-- Wavelengths are micrometers everywhere, matching the convention of
-  [refractiveindex.info](https://refractiveindex.info).
-- Tabulated arrays are raw bytes, packed as little-endian IEEE 754
-  float32. See examples below for decoding.
 
 ## API
 
@@ -92,6 +85,13 @@ uv run python examples/example_evaluation_stdlib.py main SiO2 Malitson
 uv run python examples/example_evaluation_numpy.py main Au Johnson
 uv run python examples/example_plot.py main BaF2 Bosomworth-300K
 ```
+
+## Conventions
+
+- Wavelengths are micrometers everywhere, matching the convention of
+  [refractiveindex.info](https://refractiveindex.info).
+- Tabulated arrays are raw bytes, packed as little-endian IEEE 754
+  float32. See examples below for decoding.
 
 ## Versioning
 
