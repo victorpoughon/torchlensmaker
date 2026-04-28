@@ -11,7 +11,7 @@ shipped in a custom sqlite format that python can decode natively. This also
 reduces the size of the database to ~16MB.
 
 `indicio` returns **structured descriptions of dispersion models**. It does
-implement formulas to compute `n(λ)` or `k(λ)`. That job is left to the
+**not** implement formulas to compute `n(λ)` or `k(λ)`. That job is left to the
 consumer, who can pick whatever numerical stack suits the use case (numpy, jax,
 torch, etc.).
 
@@ -34,24 +34,21 @@ print(SiO2.n)
 
 ## Conventions
 
-- **Wavelengths are micrometers everywhere**, matching the convention of
+- Wavelengths are micrometers everywhere, matching the convention of
   [refractiveindex.info](https://refractiveindex.info).
-- **Tabulated arrays are raw bytes**, packed as little-endian IEEE 754
-  float32. Decode with numpy or with the standard library `array` module
-  (recipe below).
-- **One model per quantity per material.** A material has at most one
-  description for `n` and one for `k`; either may be `None`.
+- Tabulated arrays are raw bytes, packed as little-endian IEEE 754
+  float32. See examples below for decoding.
 
-## Lookup and browsing API
+## API
 
 ```python
-indicio.get_material(shelf, book, page) -> MaterialEntry
-indicio.has_material(shelf, book, page) -> bool
+indicio.get_material(shelf: str, book: str, page: str) -> MaterialEntry
+indicio.has_material(shelf: str, book: str, page: str) -> bool
 indicio.shelves() -> tuple[str, ...]
-indicio.books(shelf) -> tuple[str, ...]
-indicio.pages(shelf, book) -> tuple[str, ...]
+indicio.books(shelf: str) -> tuple[str, ...]
+indicio.pages(shelf: str, book: str) -> tuple[str, ...]
 indicio.iter_materials() -> Iterator[MaterialEntry]
-indicio.search(query) -> tuple[tuple[str, str, str], ...]
+indicio.search(query: str) -> tuple[tuple[str, str, str], ...]
 
 indicio.__version__               # library version, e.g. "1.0.0"
 indicio.__database_version__      # upstream commit hash baked into the data
@@ -95,13 +92,6 @@ uv run python examples/example_evaluation_stdlib.py main SiO2 Malitson
 uv run python examples/example_evaluation_numpy.py main Au Johnson
 uv run python examples/example_plot.py main BaF2 Bosomworth-300K
 ```
-
-### Numeric precision
-
-All numeric data is stored as float32. This gives ~7 significant decimal
-digits, which exceeds the precision of the source YAML (typically 4–6
-digits) and halves the size of tabulated payloads. Consumers who need
-float64 should cast at evaluation time.
 
 ## Versioning
 
