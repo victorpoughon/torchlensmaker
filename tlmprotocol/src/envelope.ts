@@ -9,3 +9,5 @@ export type Envelope =
     | { v: number; type: 'log';    topic: string; payload: string }
     | { v: number; type: 'plot';   topic: string; payload: unknown }
     | { v: number; type: 'image';  topic: string; payload: unknown }
+
+export type MessageType = Envelope['type'];

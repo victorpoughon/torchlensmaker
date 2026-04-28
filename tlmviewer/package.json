@@ -9,11 +9,12 @@
   "files": [
     "dist"
   ],
-  "main": "./dist/tlmviewer-0.0.14.js",
-  "module": "./dist/tlmviewer-0.0.14.js",
+  "main": "./dist/tlmviewer-0.0.14.umd.js",
+  "module": "./dist/tlmviewer-0.0.14.es.js",
   "exports": {
     ".": {
-      "import": "./dist/tlmviewer-0.0.14.js"
+      "import": "./dist/tlmviewer-0.0.14.es.js",
+      "require": "./dist/tlmviewer-0.0.14.umd.js"
     }
   },
   "scripts": {
