@@ -72,56 +72,11 @@ class MaterialEntry:
     k: KModel | None              # imaginary part — None if upstream has only n
 ```
 
-### Tabulated samples
+For detailed data description of each model see
+[src/indicio/models.py](src/indicio/models.py).
 
-```python
-@dataclass(frozen=True)
-class Tabulated:
-    wavelength_um: bytes          # length × 4 bytes, little-endian float32
-    values: bytes                 # length × 4 bytes, little-endian float32
-    length: int
-    wavelength_range: WavelengthRange
-```
-
-Used for both n and k. Linear interpolation is the upstream convention; the
-library does not interpolate for you. See the recipe below.
-
-### Closed-form formulas
-
-The closed-form models follow the upstream
+Models are either tabulated or closed-form formulas, following the upstream
 [refractiveindex.info dispersion-formula spec](https://refractiveindex.info/database/doc/Dispersion%20formulas.pdf).
-Naming matches the 1-indexed coefficient labels in that document: `c1` is
-the leading constant, and the rest of the upstream coefficient list is
-either pair-structured (Sellmeier/Polynomial/Cauchy/Gases shapes) or
-fixed-shape (Herzberger/Retro/Exotic).
-
-| Formula | Dataclass                     | Form                                                                  |
-| ------- | ----------------------------- | --------------------------------------------------------------------- |
-| 1       | `Sellmeier`                   | `n² − 1 = c₁ + Σᵢ Bᵢ λ² / (λ² − Cᵢ²)`                                 |
-| 2       | `Sellmeier2`                  | `n² − 1 = c₁ + Σᵢ Bᵢ λ² / (λ² − Cᵢ)`                                  |
-| 3       | `Polynomial`                  | `n² = c₁ + Σᵢ cᵢ λ^eᵢ`                                                |
-| 4       | `RefractiveIndexInfoFormula4` | mixed rational + polynomial — see recipe                              |
-| 5       | `Cauchy`                      | `n = c₁ + Σᵢ cᵢ λ^eᵢ`                                                 |
-| 6       | `Gases`                       | `n − 1 = c₁ + Σᵢ Bᵢ / (Cᵢ − λ⁻²)`                                     |
-| 7       | `Herzberger`                  | `n = c₁ + c₂/(λ²−0.028) + c₃ (1/(λ²−0.028))² + c₄ λ² + c₅ λ⁴ + c₆ λ⁶` |
-| 8       | `Retro`                       | `(n²−1)/(n²+2) = c₁ + c₂ λ²/(λ²−c₃) + c₄ λ²`                          |
-| 9       | `Exotic`                      | `n² = c₁ + c₂/(λ²−c₃) + c₄ (λ−c₅) / ((λ−c₅)² + c₆)`                   |
-
-The upstream coefficient list is sometimes shorter than the canonical full
-length (a Sellmeier-2 entry with 4 coefficients, a Herzberger entry with 5).
-Missing trailing coefficients are zero-padded by `indicio` so the dataclass
-shape is uniform and your evaluator never has to special-case length.
-
-For `RefractiveIndexInfoFormula4`, rational-term slots whose leading
-multiplier `B` is zero are dropped at load time, so `len(rational_terms)`
-reflects what the entry actually models (0, 1, or 2 terms).
-
-### Numeric precision
-
-All numeric data is stored as float32. This gives ~7 significant decimal
-digits, which exceeds the precision of the source YAML (typically 4–6
-digits) and halves the size of tabulated payloads. Consumers who need
-float64 should cast at evaluation time.
 
 ## Examples
 
@@ -140,6 +95,13 @@ uv run python examples/example_evaluation_stdlib.py main SiO2 Malitson
 uv run python examples/example_evaluation_numpy.py main Au Johnson
 uv run python examples/example_plot.py main BaF2 Bosomworth-300K
 ```
+
+### Numeric precision
+
+All numeric data is stored as float32. This gives ~7 significant decimal
+digits, which exceeds the precision of the source YAML (typically 4–6
+digits) and halves the size of tabulated payloads. Consumers who need
+float64 should cast at evaluation time.
 
 ## Versioning
 
