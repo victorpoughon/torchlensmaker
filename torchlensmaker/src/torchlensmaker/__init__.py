@@ -50,6 +50,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_vectors,
 )
 from torchlensmaker.kinematics.kinematics_elements import (
+    AbsolutePosition2D,
     AbsolutePosition3D,
     Gap,
     KinematicElement,
@@ -65,6 +66,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
 from torchlensmaker.lens.lens import Lens
 from torchlensmaker.lens.lens_thickness import (
     lens_inner_thickness,
+    lens_minimal_diameter,
     lens_outer_thickness,
 )
 from torchlensmaker.lens.position_gap import (
@@ -211,6 +213,7 @@ __all__ = [
     "meshgrid2d_flat3",
     # Kinematics
     "AbsolutePosition3D",
+    "AbsolutePosition2D",
     "Gap",
     "KinematicElement",
     "Rotate2D",
@@ -239,6 +242,7 @@ __all__ = [
     "Lens",
     "lens_inner_thickness",
     "lens_outer_thickness",
+    "lens_minimal_diameter",
     "InnerGap",
     "OuterGap",
     "PositionGap",

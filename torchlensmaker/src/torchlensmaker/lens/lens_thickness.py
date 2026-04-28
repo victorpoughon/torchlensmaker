@@ -29,6 +29,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
 from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
@@ -128,11 +129,10 @@ def lens_minimal_diameter(lens: "Lens") -> Float[torch.Tensor, ""]:
     out of all the surfaces in the lens
     """
 
-    mini = lens[0].surface.diameter
-    for mod in lens:
-        if isinstance(mod, RefractiveSurface):
-            diam = mod.surface.diameter
-            if diam < mini:
-                mini = diam
+    all_diameters: list[float] = []
 
-    return mini
+    for mod in get_elements_by_type(lens, RefractiveSurface):
+        diam = mod.surface.diameter
+        all_diameters.append(diam)
+
+    return min(all_diameters)

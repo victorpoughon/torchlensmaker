@@ -226,3 +226,16 @@ def is_integral(dtype: torch.dtype) -> bool:
         torch.int32,
         torch.int64,
     }
+
+
+def default_dtype_device(
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
+):
+    if dtype is None:
+        dtype = torch.get_default_dtype()
+
+    if device is None:
+        device = torch.get_default_device()
+
+    return dtype, device

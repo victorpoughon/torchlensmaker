@@ -21,7 +21,7 @@ from jaxtyping import Float
 
 import torchlensmaker as tlm
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
-
+from torchlensmaker.core.tensor_manip import default_dtype_device
 
 def equivalent_locus_2d(
     Pa: Float[torch.Tensor, "N 2"],
@@ -183,14 +183,16 @@ def front_principal_point(
 
 
 def focal_point_with_light_source(
-    lens: tlm.Lens, light_source: tlm.BaseModule
+    lens: tlm.Lens,
+    light_source: tlm.BaseModule,
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
 ) -> Float[torch.Tensor, ""]:
     """
     Compute focal point with a paraxial light source
     """
 
-    # Infer dtype, device from the first gap element
-    dtype, device = lens.dtype, lens.device
+    dtype, device = default_dtype_device(dtype, device)
 
     # Evaluate the light source and the model to get output ray
     inputs = light_source(tlm.SequentialData.empty(dim=2, dtype=dtype, device=device))
@@ -221,7 +223,7 @@ def rear_focal_point(
     """
 
     # Get the lens minimal diameter and setup the light source
-    mdiam = lens.minimal_diameter()
+    mdiam = tlm.lens_minimal_diameter(lens)
     light_source = tlm.SubChain(
         tlm.Translate2D(y=h * mdiam),
         tlm.RaySource(
@@ -237,6 +239,8 @@ def front_focal_point(
     lens: tlm.Lens,
     wavelength: float,
     h: float,
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
 ) -> Float[torch.Tensor, ""]:
     """
     Compute front focal length of a lens using a paraxial ray
@@ -260,4 +264,4 @@ def front_focal_point(
         ).reverse(),
     )
 
-    return focal_point_with_light_source(lens.reverse(), light_source)
+    return focal_point_with_light_source(lens.reverse(), light_source, dtype, device)
