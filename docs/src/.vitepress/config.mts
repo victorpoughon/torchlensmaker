@@ -104,6 +104,10 @@ export default defineConfig({
               text: "Focal length",
               link: "/examples/paraxial_focal_length",
             },
+            {
+              text: "Refractive Index Database",
+              link: "/examples/refractive_index_database",
+            },
             { text: "Dev notebooks", link: "/dev_notebooks" },
           ],
         },
