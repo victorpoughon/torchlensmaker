@@ -42,13 +42,13 @@ model = tlm.Sequential(
 
     # Second interface: half sphere (pointing right), reflective
     tlm.SubChain(
-        tlm.Rotate((-180, 0)),
+        tlm.RotateMixed(-180),
         tlm.ReflectiveSurface(halfsphere.clone(anchors=(1, 1))),
     ),
     
     # Third interface: half sphere (pointing down), refractive water to air
     tlm.SubChain(
-        tlm.Rotate((60, 0)),
+        tlm.RotateMixed(60),
         tlm.RefractiveSurface(
             halfsphere.clone(anchors=(1, 0)), materials=("water", "air")
         ),

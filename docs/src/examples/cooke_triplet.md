@@ -98,24 +98,24 @@ tlm.optimize(optics,
 print("Final parameter value:", focal_gap.x.item())
 ```
 
-    [  1/50] L= 8.62343 | grad norm= 41.4187
-    [  4/50] L= 3.72262 | grad norm= 22.0571
-    [  7/50] L= 2.73193 | grad norm= 15.3608
-    [ 10/50] L= 2.34053 | grad norm= 11.7596
-    [ 13/50] L= 2.65256 | grad norm= 14.8277
-    [ 16/50] L= 1.78277 | grad norm= 1.9357
-    [ 19/50] L= 2.30070 | grad norm= 11.7482
-    [ 22/50] L= 1.80703 | grad norm= 4.0979
-    [ 25/50] L= 1.91281 | grad norm= 6.8505
-    [ 28/50] L= 1.85314 | grad norm= 5.9687
-    [ 31/50] L= 1.72583 | grad norm= 2.7381
-    [ 34/50] L= 1.79855 | grad norm= 5.4317
-    [ 37/50] L= 1.66621 | grad norm= 0.5663
-    [ 40/50] L= 1.71704 | grad norm= 4.1166
-    [ 43/50] L= 1.63740 | grad norm= 1.0189
-    [ 46/50] L= 1.65059 | grad norm= 2.8755
-    [ 49/50] L= 1.60760 | grad norm= 1.2539
-    [ 50/50] L= 1.59692 | grad norm= 0.5003
+    [  1/50] L= 8.62346 | grad norm= 3.2334
+    [  4/50] L= 7.68735 | grad norm= 3.0126
+    [  7/50] L= 6.82151 | grad norm= 2.7928
+    [ 10/50] L= 6.02847 | grad norm= 2.5750
+    [ 13/50] L= 5.30988 | grad norm= 2.3605
+    [ 16/50] L= 4.66620 | grad norm= 2.1501
+    [ 19/50] L= 4.09679 | grad norm= 1.9452
+    [ 22/50] L= 3.59977 | grad norm= 1.7469
+    [ 25/50] L= 3.17225 | grad norm= 1.5561
+    [ 28/50] L= 2.81023 | grad norm= 1.3740
+    [ 31/50] L= 2.50883 | grad norm= 1.2016
+    [ 34/50] L= 2.26252 | grad norm= 1.0396
+    [ 37/50] L= 2.06524 | grad norm= 0.8888
+    [ 40/50] L= 1.91067 | grad norm= 0.7498
+    [ 43/50] L= 1.79252 | grad norm= 0.6230
+    [ 46/50] L= 1.70460 | grad norm= 0.5084
+    [ 49/50] L= 1.64121 | grad norm= 0.4063
+    [ 50/50] L= 1.62461 | grad norm= 0.3750
 
 
 
@@ -124,7 +124,7 @@ print("Final parameter value:", focal_gap.x.item())
     
 
 
-    Final parameter value: 84.44952392578125
+    Final parameter value: 81.0801773071289
 
 
 

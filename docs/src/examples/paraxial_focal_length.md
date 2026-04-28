@@ -43,7 +43,7 @@ print("Lens front focal length:", front_focal_length.detach().item())
 
 ### REAR ILLUSTRATION ###
 
-controls = {"show_principal_axis": True, "show_other_axes": True}
+controls = {"show_x_axis": True, "show_y_axis": True, "show_z_axis": True}
 
 # Add a simple light source for illustration
 # Keep the lens vertex at the origin so we can display the points in the correct reference frame
@@ -62,8 +62,8 @@ cosmetic_points_rear = torch.tensor([
 ])
 
 scene_rear = tlm.render_model(optics_rear, 2, end=15)
-scene_rear["data"].append(tlm.render_points(cosmetic_points_rear, radius=0.05))
-scene_rear["controls"] = controls
+scene_rear.data.append(tlm.render_points(cosmetic_points_rear, radius=0.05))
+scene_rear.controls = controls
 tlm.display_scene(scene_rear)
 
 ### FRONT ILLUSTRATION ###
@@ -85,8 +85,8 @@ cosmetic_points_front = torch.tensor([
 ])
 
 scene_front = tlm.render_model(optics_front, 2, end=15)
-scene_front["data"].append(tlm.render_points(cosmetic_points_front, radius=0.05))
-scene_front["controls"] = controls
+scene_front.data.append(tlm.render_points(cosmetic_points_front, radius=0.05))
+scene_front.controls = controls
 tlm.display_scene(scene_front)
 ```
 
@@ -129,7 +129,7 @@ t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.
 CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
 
 scene = tlm.render_model(optics_rear, 2, end=4)
-scene["data"].append(tlm.render_points(CP, radius=0.01))
+scene.data.append(tlm.render_points(CP, radius=0.01))
 tlm.display_scene(scene)
 
 f, ax = plt.subplots(1, 1, figsize=(10, 5))
@@ -168,7 +168,7 @@ t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.
 CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
 
 scene = tlm.render_model(optics_front, 2, end=4)
-scene["data"].append(tlm.render_points(CP, radius=0.01))
+scene.data.append(tlm.render_points(CP, radius=0.01))
 tlm.display_scene(scene)
 
 f, ax = plt.subplots(1, 1, figsize=(10, 5))
@@ -206,7 +206,7 @@ t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
 CP = outputs.rays.points_at(t)
 
 scene = tlm.render_model(optics_rear, 2, end=12)
-scene["data"].append(tlm.render_points(CP, radius=0.001))
+scene.data.append(tlm.render_points(CP, radius=0.001))
 tlm.display_scene(scene)
 
 f, ax = plt.subplots(1, 1, figsize=(10, 5))

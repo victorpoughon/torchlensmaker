@@ -88,7 +88,7 @@ print("Inner thickness:", lens1.inner_thickness().item())
 ```
 
     Final parabola parameter: 0.0036443897988647223
-    Outer thickness: -22.15216064453125
+    Outer thickness: 0.5
     Inner thickness: 0.9099938869476318
 
 

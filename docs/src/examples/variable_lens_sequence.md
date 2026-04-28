@@ -137,8 +137,8 @@ def print_lens(lens_name, lens):
     outer = lens.outer_thickness().item()
     print(f"    inner: {inner:.3f} outer: {outer:.3f}")
     
-    a1 = dict(lens.sequence[0].surface.named_parameters())
-    a2 = dict(lens.sequence[-1].surface.named_parameters())
+    a1 = dict(lens[0].surface.named_parameters())
+    a2 = dict(lens[-1].surface.named_parameters())
     print("    surface1", [p.tolist() for p in a1.values()])
     print("    surface2", [p.tolist() for p in a2.values()])
 
@@ -178,15 +178,15 @@ print_lens("Reverse plano-convex", lenses_rplano[0])
 
 
     Plano-convex
-        inner: 2.714 outer: -678.432
+        inner: 2.714 outer: 1.200
         surface1 []
         surface2 [-0.0033636821899563074]
     Bi-convex
-        inner: 2.716 outer: -679.337
+        inner: 2.716 outer: 1.200
         surface1 [0.0016840794123709202]
         surface2 [0.0016840794123709202]
     Reverse plano-convex
-        inner: 2.714 outer: -678.432
+        inner: 2.714 outer: 1.200
         surface1 [-0.0033636821899563074]
         surface2 []
 

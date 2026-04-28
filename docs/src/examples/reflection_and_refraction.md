@@ -308,23 +308,23 @@ def demo_light(a, b, alpha_n, beta_n, function):
     outcident_display = torch.column_stack((torch.zeros_like(outcident), outcident))
 
     scene = tlm.new_scene("3D")
-    scene["data"].append(tlm.render_surface_local(surface, dim=3))
+    scene.data.append(tlm.render_surface_local(surface, dim=3))
 
-    scene["data"].append(
+    scene.data.append(
         tlm.render_rays(
             incident_display[:, :3],
             incident_display[:, :3] + 1 * incident_display[:, 3:6],
             default_color="orange",
-            layer=0,
+            category="rays-valid",
         )
     )
 
-    scene["data"].append(
+    scene.data.append(
         tlm.render_rays(
             outcident_display[:, :3],
             outcident_display[:, :3] + 1 * outcident_display[:, 3:6],
             default_color="red",
-            layer=0,
+            category="rays-valid",
         )
     )
 

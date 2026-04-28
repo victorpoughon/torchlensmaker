@@ -22,7 +22,7 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, pupil=100)
 ```
 
-    2.sequence.0.propagator.surface.C Parameter containing:
+    2.0.surface.C Parameter containing:
     tensor(0.0400, requires_grad=True)
 
 
@@ -83,7 +83,7 @@ tlm.show(optics, dim=3, pupil=100)
 
 
     Final arc radius: 33.372520476664235
-    Outer thickness: tensor(-186.4135, grad_fn=<SelectBackward0>)
+    Outer thickness: tensor(1.5000, grad_fn=<SelectBackward0>)
     Inner thickness: tensor(3.2074, grad_fn=<SelectBackward0>)
 
 

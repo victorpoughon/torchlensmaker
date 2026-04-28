@@ -1,3 +1,6 @@
+## Refractive index database example
+
+
 ```python
 # Example from Modern Optical Engineering figure 14.4
 
@@ -45,7 +48,7 @@ optics = tlm.Sequential(
     lens,
     #tlm.Gap(75.132),
     tlm.AbsolutePosition2D(),
-    tlm.Gap(93.2791),
+    tlm.Gap(93.4247),
     tlm.ImagePlane(20),
 )
 
