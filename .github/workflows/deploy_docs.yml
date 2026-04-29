@@ -46,8 +46,11 @@ jobs:
           cache-dependency-path: docs
       - name: Setup Pages
         uses: actions/configure-pages@v4
+      - name: Install and build tlmviewer
+        run: npm ci && npm run build
+        working-directory: ./tlmviewer
       - name: Install dependencies
-        run: npm ci # or pnpm install / yarn install / bun install
+        run: npm ci --ignore-scripts
         working-directory: ./docs
       - name: Build with VitePress
         run: npm run docs:build # or pnpm docs:build / yarn docs:build / bun run docs:build
