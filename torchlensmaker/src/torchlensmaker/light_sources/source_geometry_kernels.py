@@ -68,8 +68,8 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     outputs = {
         "P": Batch2DTensor,  # (N, 2) rays origins
         "V": Batch2DTensor,  # (N, 2) rays direction
-        "angular_coordinates": Batch2DTensor,  # (N,) rays angular coordinates
-        "spatial_coordinates": Batch2DTensor,  # (N,) rays spatial coordinates
+        "angular_coordinates": BatchTensor,  # (N,) rays angular coordinates
+        "spatial_coordinates": BatchTensor,  # (N,) rays spatial coordinates
         "wavelength_coordinates": BatchTensor,  # (N,) rays wavelength
         "angular_idx": IndexTensor,  # (N,) index of angular samples
         "spatial_idx": IndexTensor,  # (N,) index of spatial samples
