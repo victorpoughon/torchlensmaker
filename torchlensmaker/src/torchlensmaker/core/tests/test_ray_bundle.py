@@ -162,9 +162,57 @@ def test_cat_empty_right():
     assert result.P.shape == b.P.shape
 
 
-# --- split_by ---
+# --- split_masks / split_by ---
 
-def test_split_by_single_var():
+def test_split_masks():
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    N = b.P.shape[0]
+    masks = b.split_masks("field")
+    assert len(masks) == 2
+    for m in masks:
+        assert m.dtype == torch.bool
+        assert m.shape == (N,)
+    assert sum(m.sum().item() for m in masks) == N  # every ray in exactly one cell
+    for k, m in enumerate(masks):
+        assert (b.field.idx[m] == k).all()
+
+
+def test_split_masks_combined_grid():
+    """2D grid by computing both split_masks upfront and combining with &."""
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    N = b.P.shape[0]
+    sidecar = torch.arange(N, dtype=torch.float32)
+    field_masks = b.split_masks("field")
+    wavel_masks = b.split_masks("wavel")
+    total = 0
+    for ki, m1 in enumerate(field_masks):
+        for kj, m2 in enumerate(wavel_masks):
+            m = m1 & m2
+            assert (b.field.idx[m] == ki).all()
+            assert (b.wavel.idx[m] == kj).all()
+            assert sidecar[m].shape == (m.sum(),)
+            total += m.sum().item()
+    assert total == N
+
+
+def test_split_masks_chained_grid():
+    """2D grid via two chained split_masks calls; sidecar stays aligned."""
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    N = b.P.shape[0]
+    sidecar = torch.arange(N, dtype=torch.float32)
+    total = 0
+    for ki, m1 in enumerate(b.split_masks("field")):
+        sub = b.mask(m1)
+        sub_sidecar = sidecar[m1]
+        for kj, m2 in enumerate(sub.split_masks("wavel")):
+            assert (sub.field.idx[m2] == ki).all()
+            assert (sub.wavel.idx[m2] == kj).all()
+            assert sub_sidecar[m2].shape == (m2.sum(),)
+            total += m2.sum().item()
+    assert total == N
+
+
+def test_split_by():
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
     parts = b.split_by("field")
     assert len(parts) == 2  # one per field domain entry
@@ -179,26 +227,10 @@ def test_split_by_single_var():
         assert torch.allclose(part.field.domain_values, b.field.domain_values)
 
 
-def test_split_by_two_vars():
-    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
-    grid = b.split_by("field", "wavel")
-    assert len(grid) == 2        # n_field
-    assert len(grid[0]) == 2     # n_wavel
-    assert len(grid[1]) == 2
-    # all rays accounted for
-    assert sum(cell.P.shape[0] for row in grid for cell in row) == b.P.shape[0]
-    # each cell contains only matching rays
-    for ki, row in enumerate(grid):
-        for kj, cell in enumerate(row):
-            assert (cell.field.idx == ki).all()
-            assert (cell.wavel.idx == kj).all()
-
 
 def test_split_by_empty_cell_domain_preserved():
-    """Empty cells still carry domain info for labelling."""
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
-    b_filtered = b.mask(b.field.idx != 1)
-    parts = b_filtered.split_by("field")
+    parts = b.mask(b.field.idx != 1).split_by("field")
     # Both domain positions still present
     assert len(parts) == 2
     # Second cell is empty but domain intact
@@ -208,9 +240,8 @@ def test_split_by_empty_cell_domain_preserved():
 
 
 def test_split_by_unknown_var_raises():
-    b = _make_bundle_2d()
     with pytest.raises(ValueError):
-        b.split_by("blah")
+        _make_bundle_2d().split_by("unknown")
 
 
 # --- domain invariant ---

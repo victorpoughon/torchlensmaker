@@ -68,7 +68,12 @@ class RayBundle:
         return cls(P, V, pupil, field, wavel, source)
 
     @classmethod
-    def empty(cls, dim: int, dtype: torch.dtype | None = None, device: torch.device | None = None) -> Self:
+    def empty(
+        cls,
+        dim: int,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+    ) -> Self:
         coords_shape: tuple[int, ...] = () if dim == 2 else (2,)
         return cls.create(
             P=torch.empty((0, dim), dtype=dtype, device=device),
@@ -117,34 +122,34 @@ class RayBundle:
     def points_at(self, t: BatchTensor) -> BatchNDTensor:
         "Points on rays at parametric distance t"
         return self.P + t.unsqueeze(-1) * self.V
-    
+
     def _sv_by_name(self, name: str) -> SampledVariable:
         allowed = ["pupil", "field", "wavel", "source"]
         if name not in allowed:
             raise ValueError(f"ray bundle var must be one of {allowed}")
         return getattr(self, name)
 
-    def split_by(
-        self,
-        name1: str,
-        name2: str | None = None,
-    ) -> "list[RayBundle] | list[list[RayBundle]]":
-        """Partition the bundle by one or two SampledVariable fields.
-
-        Each cell in the returned list (or grid) contains the rays whose
-        var1.idx (and var2.idx) match that cell's domain key. Cells where
-        all rays were filtered out are empty RayBundles whose domain tensors
-        are still intact, so callers can label them from domain_values.
+    def split_masks(self, name: str) -> "list[MaskTensor]":
         """
+        Partition rays by a specific variable.
 
-        var1 = self._sv_by_name(name1)
+        Returns masks that index into the original batch dimension, so they can
+        be applied to any tensor that shares it: RayBundle,
+        SurfaceElementOutput, etc. For a 2D grid, call split_masks twice and
+        compose the results.
 
-        if name2 is None:
-            return [self.mask(var1.idx == k) for k in var1.domain_idx]
+        Args:
+            name: name of the variable to split along
 
-        result = []
-        for k1 in var1.domain_idx:
-            sub = self.mask(var1.idx == k1)
-            sub_var2 = sub._sv_by_name(name2)
-            result.append([sub.mask(sub_var2.idx == k2) for k2 in sub_var2.domain_idx])
-        return result
+        Returns:
+            list of masks. The i-th mask indicates which ray belong the the i-th
+            entry in the domain of the requested variable
+        """
+        var = self._sv_by_name(name)
+        return [var.idx == k for k in var.domain_idx]
+
+    def split_by(self, name: str) -> "list[RayBundle]":
+        """
+        Like split_mask but applies the masking and returns a list of RayBundle
+        """
+        return [self.mask(m) for m in self.split_masks(name)]
