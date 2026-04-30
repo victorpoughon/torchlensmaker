@@ -32,6 +32,7 @@ from torchlensmaker.core.geometry import (
 )
 from torchlensmaker.core.parameter import parameter
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.core.tensor_manip import meshgrid2d_flat3, to_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity,
@@ -208,6 +209,7 @@ __all__ = [
     "unit_vector",
     "parameter",
     "RayBundle",
+    "SampledVariable",
     "to_tensor",
     "rotate_x_zy",
     "rotate_x_zx",
