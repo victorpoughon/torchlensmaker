@@ -51,6 +51,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_vectors,
 )
 from torchlensmaker.kinematics.kinematics_elements import (
+    AbsolutePosition,
     AbsolutePosition2D,
     AbsolutePosition3D,
     Gap,
@@ -215,6 +216,7 @@ __all__ = [
     "rotate_x_zx",
     "meshgrid2d_flat3",
     # Kinematics
+    "AbsolutePosition",
     "AbsolutePosition3D",
     "AbsolutePosition2D",
     "Gap",

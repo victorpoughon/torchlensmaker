@@ -22,6 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import (
@@ -280,6 +281,25 @@ class Rotate2D(KinematicElement):
             joint = joint.flip()
 
         return self.kernel_fk2d.apply(fk, joint)
+
+
+class AbsolutePosition(KinematicElement):
+    def __init__(
+        self,
+        reversed: bool = False,
+    ):
+        if reversed:
+            raise RuntimeError("AbsolutePosition cannot be reversed")
+        super().__init__(reversed)
+
+    def clone(self, **overrides: Any) -> Self:
+        return type(self)()
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}()"
+
+    def forward(self, fk: Tf) -> Tf:
+        return hom_identity(dim=fk.direct.shape[0] - 1)
 
 
 class AbsolutePosition2D(KinematicElement):
