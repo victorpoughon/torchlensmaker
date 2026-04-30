@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from dataclasses import astuple, fields, is_dataclass
+from dataclasses import fields, is_dataclass
 from typing import Any, Type, TypeAlias, cast
 
 import torch
@@ -39,12 +39,13 @@ def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
 def kernel_flat_io(
     t: KernelIOType | tuple[KernelIOType, ...],
 ) -> tuple[torch.Tensor, ...]:
-    "Transform a tree of kernel inputs or outputs into a flat tupl of tensors"
+    "Transform a tree of kernel inputs or outputs into a flat tuple of tensors"
 
     if isinstance(t, torch.Tensor):
         return (t,)
     if is_dataclass(t):
-        return astuple(t)
+        # Use getattr instead of astuple to avoid copy.deepcopy, which breaks under tracing
+        return tuple(e for f in fields(t) for e in kernel_flat_io(getattr(t, f.name)))
     if isinstance(t, tuple):
         return tuple(e for elem in t for e in kernel_flat_io(elem))
     else:
@@ -197,8 +198,13 @@ def export_onnx_legacy(
 
     # TODO support dynamic_axes in legacy export
 
+    # TorchScript tracing only supports flat tuples of tensors as outputs,
+    # so we wrap to flatten any dataclass outputs before tracing.
+    def flat_kernel_forward(*args):
+        return kernel_flat_io(kernel_forward(*args))
+
     torch.onnx.export(
-        FuncModule(kernel_forward),
+        FuncModule(flat_kernel_forward),
         example_inputs,
         input_names=flat_input_names + flat_param_names,
         output_names=flat_output_names,

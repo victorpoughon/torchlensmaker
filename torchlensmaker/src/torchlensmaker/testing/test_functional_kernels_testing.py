@@ -16,7 +16,7 @@
 
 import itertools
 import warnings
-from dataclasses import is_dataclass
+from dataclasses import astuple, is_dataclass
 from itertools import chain
 from pathlib import Path
 from typing import Type, TypeAlias
@@ -33,6 +33,7 @@ from torchlensmaker.core.functional_kernel import (
     kernel_flat_names,
     kernel_names,
 )
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.types import IndexTensor, MaskTensor
 
 
@@ -42,13 +43,30 @@ def kernel_output_typecheck(
     expected_float_dtype: torch.dtype,
     expected_device: torch.device,
 ):
-    if expected_type == MaskTensor:
+    if isinstance(expected_type, type) and is_dataclass(expected_type):
+        assert isinstance(output, expected_type)
+        for t in astuple(output):
+            if isinstance(t, torch.Tensor) and t.is_floating_point():
+                assert t.dtype == expected_float_dtype, (
+                    f"Expected kernel output dtype {expected_float_dtype}, got {t.dtype}"
+                )
+            if isinstance(t, torch.Tensor):
+                assert t.device == expected_device, (
+                    f"Expected kernel output device {expected_device}, got {t.device}"
+                )
+    elif expected_type == MaskTensor:
         assert output.dtype == torch.bool, (
             f"Expected kernel output dtype bool, got {output.dtype}"
+        )
+        assert output.device == expected_device, (
+            f"Expected kernel output device {expected_device}, got {output.device}"
         )
     elif expected_type == IndexTensor:
         assert output.dtype == torch.int64, (
             f"Expected kernel output dtype int64, got {output.dtype}"
+        )
+        assert output.device == expected_device, (
+            f"Expected kernel output device {expected_device}, got {output.device}"
         )
     else:
         # Floating point tensor types
@@ -56,10 +74,9 @@ def kernel_output_typecheck(
         assert output.dtype == expected_float_dtype, (
             f"Expected kernel output dtype {expected_float_dtype}, got {output.dtype}"
         )
-
-    assert output.device == expected_device, (
-        f"Expected kernel output dtype {expected_device}, got {output.device}"
-    )
+        assert output.device == expected_device, (
+            f"Expected kernel output device {expected_device}, got {output.device}"
+        )
 
 
 def check_kernels_example_inputs_and_params(

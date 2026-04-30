@@ -108,19 +108,9 @@ class GenericLightSource(LightSourceBase):
         wavel_samples = sampler_wavel(dtype, device)
 
         # Compute rays with the object geometry
-        (
-            P,
-            V,
-            pupil_coords,
-            field_coords,
-            wavel_coords,
-            pupil_idx,
-            field_idx,
-            wavel_idx,
-        ) = geometry(tf, pupil_samples, field_samples, wavel_samples)
-
-        Nrays = P.shape[0]
-        assert wavel_coords.shape == (Nrays,), wavel_coords.shape
+        P, V, pupil_sv, field_sv, wavel_sv = geometry(
+            tf, pupil_samples, field_samples, wavel_samples
+        )
 
         # If reversed, flip rays traveling direction
         if self.reversed:
@@ -128,18 +118,18 @@ class GenericLightSource(LightSourceBase):
 
         # Source idx is user provided
         source_idx = torch.full(
-            pupil_idx.shape, self.source_idx, dtype=torch.int64, device=device
+            (P.shape[0],), self.source_idx, dtype=torch.int64, device=device
         )
 
         return RayBundle.create(
             P=P,
             V=V,
-            pupil=pupil_coords,
-            field=field_coords,
-            wavel=wavel_coords,
-            pupil_idx=pupil_idx,
-            field_idx=field_idx,
-            wavel_idx=wavel_idx,
+            pupil=pupil_sv.values,
+            field=field_sv.values,
+            wavel=wavel_sv.values,
+            pupil_idx=pupil_sv.idx,
+            field_idx=field_sv.idx,
+            wavel_idx=wavel_sv.idx,
             source_idx=source_idx,
         )
 
@@ -180,9 +170,10 @@ class Object(GenericLightSource):
         kwargs: dict[str, Any] = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
             object_diameter=self.geometry_2d.object_diameter,
-            wavelength=torch.stack(
-                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
-            ),
+            wavelength=torch.stack((
+                self.geometry_2d.wavelength_lower,
+                self.geometry_2d.wavelength_upper,
+            )),
             sampler_pupil_2d=self.sampler_pupil_2d,
             sampler_field_2d=self.sampler_field_2d,
             sampler_wavel_2d=self.sampler_wavel_2d,
@@ -231,9 +222,10 @@ class ObjectAtInfinity(GenericLightSource):
         kwargs: dict[str, Any] = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
             angular_size=self.geometry_2d.angular_size,
-            wavelength=torch.stack(
-                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
-            ),
+            wavelength=torch.stack((
+                self.geometry_2d.wavelength_lower,
+                self.geometry_2d.wavelength_upper,
+            )),
             sampler_pupil_2d=self.sampler_pupil_2d,
             sampler_field_2d=self.sampler_field_2d,
             sampler_wavel_2d=self.sampler_wavel_2d,
@@ -282,9 +274,10 @@ class PointSource(GenericLightSource):
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
             beam_angular_size=self.geometry_2d.beam_angular_size,
-            wavelength=torch.stack(
-                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
-            ),
+            wavelength=torch.stack((
+                self.geometry_2d.wavelength_lower,
+                self.geometry_2d.wavelength_upper,
+            )),
             sampler_pupil_2d=self.sampler_pupil_2d,
             sampler_wavel_2d=self.sampler_wavel_2d,
             sampler_pupil_3d=self.sampler_pupil_3d,
@@ -331,9 +324,10 @@ class PointSourceAtInfinity(GenericLightSource):
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
             beam_diameter=self.geometry_2d.beam_diameter,
-            wavelength=torch.stack(
-                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
-            ),
+            wavelength=torch.stack((
+                self.geometry_2d.wavelength_lower,
+                self.geometry_2d.wavelength_upper,
+            )),
             sampler_pupil_2d=self.sampler_pupil_2d,
             sampler_wavel_2d=self.sampler_wavel_2d,
             sampler_pupil_3d=self.sampler_pupil_3d,
@@ -376,9 +370,10 @@ class RaySource(GenericLightSource):
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
-            wavelength=torch.stack(
-                (self.geometry_2d.wavelength_lower, self.geometry_2d.wavelength_upper)
-            ),
+            wavelength=torch.stack((
+                self.geometry_2d.wavelength_lower,
+                self.geometry_2d.wavelength_upper,
+            )),
             sampler_wavel_2d=self.sampler_wavel_2d,
             sampler_wavel_3d=self.sampler_wavel_3d,
             reversed=self.reversed,

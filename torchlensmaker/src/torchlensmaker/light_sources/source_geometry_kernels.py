@@ -21,6 +21,7 @@ from jaxtyping import Float, Int
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import rotate_x_zy
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.core.tensor_manip import (
     meshgrid2d_flat3,
     meshgrid_flat,
@@ -68,12 +69,9 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     outputs = {
         "P": Batch2DTensor,  # (N, 2) rays origins
         "V": Batch2DTensor,  # (N, 2) rays direction
-        "angular_coordinates": BatchTensor,  # (N,) rays angular coordinates
-        "spatial_coordinates": BatchTensor,  # (N,) rays spatial coordinates
-        "wavelength_coordinates": BatchTensor,  # (N,) rays wavelength
-        "angular_idx": IndexTensor,  # (N,) index of angular samples
-        "spatial_idx": IndexTensor,  # (N,) index of spatial samples
-        "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
+        "angular": SampledVariable,
+        "spatial": SampledVariable,
+        "wavelength": SampledVariable,
     }
 
     dynamic_shapes = {
@@ -99,12 +97,9 @@ class ObjectGeometry2DKernel(FunctionalKernel):
     ) -> tuple[
         Float[torch.Tensor, "N 2"],
         Float[torch.Tensor, "N 2"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, " N"],
-        IndexTensor,
-        IndexTensor,
-        IndexTensor,
+        SampledVariable,
+        SampledVariable,
+        SampledVariable,
     ]:
         device = tf.device
         # angular coordinates are the angular samples over the angular domain
@@ -146,12 +141,24 @@ class ObjectGeometry2DKernel(FunctionalKernel):
         return (
             P,
             V,
-            angular_coords_full,
-            spatial_coords_full,
-            wavel_coords_full,
-            angular_idx_full,
-            spatial_idx_full,
-            wavel_idx_full,
+            SampledVariable(
+                values=angular_coords_full,
+                idx=angular_idx_full,
+                domain_values=angular_coords,
+                domain_idx=angular_idx,
+            ),
+            SampledVariable(
+                values=spatial_coords_full,
+                idx=spatial_idx_full,
+                domain_values=spatial_coords,
+                domain_idx=spatial_idx,
+            ),
+            SampledVariable(
+                values=wavel_coords_full,
+                idx=wavel_idx_full,
+                domain_values=wavel_coords,
+                domain_idx=wavel_idx,
+            ),
         )
 
     def example_inputs(
@@ -201,12 +208,9 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     outputs = {
         "P": Batch3DTensor,  # (N, 3) rays origins
         "V": Batch3DTensor,  # (N, 3) rays direction
-        "angular_coordinates": Batch2DTensor,  # (N, 2) rays angular coordinates
-        "spatial_coordinates": Batch2DTensor,  # (N, 2) rays spatial coordinates
-        "wavelength_coordinates": BatchTensor,  # (N,) rays wavelength
-        "angular_idx": IndexTensor,  # (N,) index of angular samples
-        "spatial_idx": IndexTensor,  # (N,) index of spatial samples
-        "wavelength_idx": IndexTensor,  # (N,) index of wavelength samples
+        "angular": SampledVariable,
+        "spatial": SampledVariable,
+        "wavelength": SampledVariable,
     }
 
     dynamic_shapes = {
@@ -232,12 +236,9 @@ class ObjectGeometry3DKernel(FunctionalKernel):
     ) -> tuple[
         Float[torch.Tensor, "N 3"],
         Float[torch.Tensor, "N 3"],
-        Float[torch.Tensor, " N"],
-        Float[torch.Tensor, "N 2"],
-        Float[torch.Tensor, "N 2"],
-        IndexTensor,
-        IndexTensor,
-        IndexTensor,
+        SampledVariable,
+        SampledVariable,
+        SampledVariable,
     ]:
         device = tf.device
         # angular coordinates are the angular samples over the angular domain
@@ -280,12 +281,24 @@ class ObjectGeometry3DKernel(FunctionalKernel):
         return (
             P,
             V,
-            angular_coords_full,
-            spatial_coords_full,
-            wavel_coords_full,
-            angular_idx_full,
-            spatial_idx_full,
-            wavel_idx_full,
+            SampledVariable(
+                values=angular_coords_full,
+                idx=angular_idx_full,
+                domain_values=angular_coords,
+                domain_idx=angular_idx,
+            ),
+            SampledVariable(
+                values=spatial_coords_full,
+                idx=spatial_idx_full,
+                domain_values=spatial_coords,
+                domain_idx=spatial_idx,
+            ),
+            SampledVariable(
+                values=wavel_coords_full,
+                idx=wavel_idx_full,
+                domain_values=wavel_coords,
+                domain_idx=wavel_idx,
+            ),
         )
 
     def example_inputs(
