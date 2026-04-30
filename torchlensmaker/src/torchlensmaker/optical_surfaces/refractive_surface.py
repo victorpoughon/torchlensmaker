@@ -71,8 +71,8 @@ class RefractiveSurface(OpticalSurfaceElement):
         sout = self.surface(rays.P, rays.V, tf)
 
         # Compute indices of refraction
-        n1 = self.material_in(rays.wavel)
-        n2 = self.material_out(rays.wavel)
+        n1 = self.material_in(rays.wavel.values)
+        n2 = self.material_out(rays.wavel.values)
         assert n1.shape == n2.shape == (rays.batch_size)
         assert n1.device == n2.device
 

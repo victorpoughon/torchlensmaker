@@ -22,6 +22,7 @@ from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectAtInfinityGeometry2D,
     ObjectAtInfinityGeometry3D,
@@ -108,7 +109,7 @@ class GenericLightSource(LightSourceBase):
         wavel_samples = sampler_wavel(dtype, device)
 
         # Compute rays with the object geometry
-        P, V, pupil_sv, field_sv, wavel_sv = geometry(
+        P, V, pupil, field, wavel = geometry(
             tf, pupil_samples, field_samples, wavel_samples
         )
 
@@ -116,21 +117,20 @@ class GenericLightSource(LightSourceBase):
         if self.reversed:
             V = -V
 
-        # Source idx is user provided
-        source_idx = torch.full(
-            (P.shape[0],), self.source_idx, dtype=torch.int64, device=device
+        N = P.shape[0]
+        source = SampledVariable(
+            values=torch.full((N,), float(self.source_idx), dtype=dtype, device=device),
+            idx=torch.full((N,), self.source_idx, dtype=torch.int64, device=device),
+            domain_values=torch.tensor(
+                [float(self.source_idx)], dtype=dtype, device=device
+            ),
+            domain_idx=torch.tensor(
+                [self.source_idx], dtype=torch.int64, device=device
+            ),
         )
 
         return RayBundle.create(
-            P=P,
-            V=V,
-            pupil=pupil_sv.values,
-            field=field_sv.values,
-            wavel=wavel_sv.values,
-            pupil_idx=pupil_sv.idx,
-            field_idx=field_sv.idx,
-            wavel_idx=wavel_sv.idx,
-            source_idx=source_idx,
+            P=P, V=V, pupil=pupil, field=field, wavel=wavel, source=source
         )
 
 

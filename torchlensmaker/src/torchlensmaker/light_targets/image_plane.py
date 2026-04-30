@@ -95,7 +95,7 @@ class ImagePlane(LightTarget):
         # For a plane it's easy though
 
         rays_image = sout.points_local[:, 1]
-        rays_object = rays_propagated.field
+        rays_object = rays_propagated.field.values
 
         # Compute loss
         assert rays_object.shape == rays_image.shape, (

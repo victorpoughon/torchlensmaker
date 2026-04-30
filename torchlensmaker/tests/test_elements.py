@@ -30,23 +30,23 @@ def test_show_dtype_device(dtype: torch.dtype, device: torch.device):
 def assert_ray_bundle_dtype(rays: tlm.RayBundle, expected_dtype: torch.dtype) -> None:
     assert rays.P.dtype == expected_dtype
     assert rays.V.dtype == expected_dtype
-    assert rays.pupil.dtype == expected_dtype
-    assert rays.field.dtype == expected_dtype
-    assert rays.wavel.dtype == expected_dtype
-    assert rays.pupil_idx.dtype == torch.int64
-    assert rays.field_idx.dtype == torch.int64
-    assert rays.wavel_idx.dtype == torch.int64
+    assert rays.pupil.values.dtype == expected_dtype
+    assert rays.field.values.dtype == expected_dtype
+    assert rays.wavel.values.dtype == expected_dtype
+    assert rays.pupil.idx.dtype == torch.int64
+    assert rays.field.idx.dtype == torch.int64
+    assert rays.wavel.idx.dtype == torch.int64
 
 
 def assert_ray_bundle_device(rays: tlm.RayBundle, expected_device: torch.dtype) -> None:
     assert rays.P.device == expected_device
     assert rays.V.device == expected_device
-    assert rays.pupil.device == expected_device
-    assert rays.field.device == expected_device
-    assert rays.wavel.device == expected_device
-    assert rays.pupil_idx.device == expected_device
-    assert rays.field_idx.device == expected_device
-    assert rays.wavel_idx.device == expected_device
+    assert rays.pupil.values.device == expected_device
+    assert rays.field.values.device == expected_device
+    assert rays.wavel.values.device == expected_device
+    assert rays.pupil.idx.device == expected_device
+    assert rays.field.idx.device == expected_device
+    assert rays.wavel.idx.device == expected_device
 
 
 def check_sample_and_render_2d(
@@ -315,5 +315,5 @@ def test_multiple_light_sources() -> None:
     assert output.rays.batch_size == (54,)
 
     # We expect 2 light source ids
-    assert torch.sum(output.rays.source_idx == 0) == 27
-    assert torch.sum(output.rays.source_idx == 1) == 27
+    assert torch.sum(output.rays.source.idx == 0) == 27
+    assert torch.sum(output.rays.source.idx == 1) == 27

@@ -19,10 +19,10 @@ from typing import Any, Self
 
 import torch
 
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
-    IndexTensor,
     MaskTensor,
 )
 
@@ -30,77 +30,53 @@ from torchlensmaker.types import (
 @dataclass
 class RayBundle:
     """
-    A bundle of parametric light rays in either 2D or 3D
+    A bundle of parametric light rays in either 2D or 3D.
     All rays are in the same medium.
     """
 
     P: BatchNDTensor
     V: BatchNDTensor
-    pupil: BatchNDTensor
-    field: BatchNDTensor
-    wavel: BatchTensor
-    pupil_idx: IndexTensor
-    field_idx: IndexTensor
-    wavel_idx: IndexTensor
-    source_idx: IndexTensor
+    pupil: SampledVariable
+    field: SampledVariable
+    wavel: SampledVariable
+    source: SampledVariable
 
     @classmethod
     def create(
         cls,
         P: BatchNDTensor,
         V: BatchNDTensor,
-        pupil: BatchNDTensor,
-        field: BatchNDTensor,
-        wavel: BatchTensor,
-        pupil_idx: IndexTensor,
-        field_idx: IndexTensor,
-        wavel_idx: IndexTensor,
-        source_idx: IndexTensor,
+        pupil: SampledVariable,
+        field: SampledVariable,
+        wavel: SampledVariable,
+        source: SampledVariable,
     ) -> Self:
         float_dtype = P.dtype
         assert float_dtype == V.dtype
-        assert float_dtype == pupil.dtype
-        assert float_dtype == field.dtype
-        assert float_dtype == wavel.dtype
-        assert pupil_idx.dtype == torch.int64
-        assert field_idx.dtype == torch.int64
-        assert wavel_idx.dtype == torch.int64
-        assert source_idx.dtype == torch.int64
+        assert float_dtype == pupil.values.dtype
+        assert float_dtype == field.values.dtype
+        assert float_dtype == wavel.values.dtype
+        assert float_dtype == source.values.dtype
 
         device = P.device
         assert device == V.device
-        assert device == pupil.device
-        assert device == field.device
-        assert device == wavel.device
-        assert device == pupil_idx.device
-        assert device == field_idx.device
-        assert device == wavel_idx.device
+        assert device == pupil.values.device
+        assert device == field.values.device
+        assert device == wavel.values.device
+        assert device == source.values.device
 
-        return cls(
-            P,
-            V,
-            pupil,
-            field,
-            wavel,
-            pupil_idx,
-            field_idx,
-            wavel_idx,
-            source_idx,
-        )
+        return cls(P, V, pupil, field, wavel, source)
 
     @classmethod
-    def empty(cls, dim: int, dtype: torch.dtype, device: torch.device) -> Self:
-        coords_shape = (0,) if dim == 2 else (0, 2)
+    def empty(cls, dim: int, dtype: torch.dtype | None = None, device: torch.device | None = None) -> Self:
+        coords_shape: tuple[int, ...] = () if dim == 2 else (2,)
         return cls.create(
-            P=torch.empty((0, dim), dtype=dtype),
-            V=torch.empty((0, dim), dtype=dtype),
-            pupil=torch.empty(coords_shape, dtype=dtype),
-            field=torch.empty(coords_shape, dtype=dtype),
-            wavel=torch.empty((0,), dtype=dtype),
-            pupil_idx=torch.empty((0,), dtype=torch.int64),
-            field_idx=torch.empty((0,), dtype=torch.int64),
-            wavel_idx=torch.empty((0,), dtype=torch.int64),
-            source_idx=torch.empty((0,), dtype=torch.int64),
+            P=torch.empty((0, dim), dtype=dtype, device=device),
+            V=torch.empty((0, dim), dtype=dtype, device=device),
+            pupil=SampledVariable.empty(coords_shape, dtype, device),
+            field=SampledVariable.empty(coords_shape, dtype, device),
+            wavel=SampledVariable.empty((), dtype, device),
+            source=SampledVariable.empty((), dtype, device),
         )
 
     @property
@@ -122,26 +98,20 @@ class RayBundle:
         return type(self)(
             P=self.P[valid],
             V=self.V[valid],
-            pupil=self.pupil[valid],
-            field=self.field[valid],
-            wavel=self.wavel[valid],
-            pupil_idx=self.pupil_idx[valid],
-            field_idx=self.field_idx[valid],
-            wavel_idx=self.wavel_idx[valid],
-            source_idx=self.source_idx[valid],
+            pupil=self.pupil.mask(valid),
+            field=self.field.mask(valid),
+            wavel=self.wavel.mask(valid),
+            source=self.source.mask(valid),
         )
 
     def cat(self, other: Self) -> Self:
         return type(self)(
             P=torch.cat((self.P, other.P)),
             V=torch.cat((self.V, other.V)),
-            pupil=torch.cat((self.pupil, other.pupil)),
-            field=torch.cat((self.field, other.field)),
-            wavel=torch.cat((self.wavel, other.wavel)),
-            pupil_idx=torch.cat((self.pupil_idx, other.pupil_idx)),
-            field_idx=torch.cat((self.field_idx, other.field_idx)),
-            wavel_idx=torch.cat((self.wavel_idx, other.wavel_idx)),
-            source_idx=torch.cat((self.source_idx, other.source_idx)),
+            pupil=self.pupil.cat(other.pupil),
+            field=self.field.cat(other.field),
+            wavel=self.wavel.cat(other.wavel),
+            source=self.source.cat(other.source),
         )
 
     def points_at(self, t: BatchTensor) -> BatchNDTensor:

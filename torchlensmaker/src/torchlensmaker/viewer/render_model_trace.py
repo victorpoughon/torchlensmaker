@@ -39,16 +39,16 @@ def raybundle_var_dict(rays: RayBundle) -> dict[str, torch.Tensor]:
         d[name] = t
 
     if dim == 2:
-        add("pupil", rays.pupil)
-        add("field", rays.field)
+        add("pupil", rays.pupil.values)
+        add("field", rays.field.values)
     if dim == 3:
-        add("pupil0", rays.pupil[:, 0])
-        add("pupil1", rays.pupil[:, 1])
-        add("field0", rays.field[:, 0])
-        add("field1", rays.field[:, 1])
+        add("pupil0", rays.pupil.values[:, 0])
+        add("pupil1", rays.pupil.values[:, 1])
+        add("field0", rays.field.values[:, 0])
+        add("field1", rays.field.values[:, 1])
 
-    add("wavelength", rays.wavel)
-    add("source", rays.source_idx)
+    add("wavelength", rays.wavel.values)
+    add("source", rays.source.idx)
 
     return d
 

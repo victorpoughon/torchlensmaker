@@ -72,7 +72,10 @@ class SampledVariable:
 
     @classmethod
     def empty(
-        cls, value_shape: tuple[int, ...], dtype: torch.dtype, device: torch.device
+        cls,
+        value_shape: tuple[int, ...],
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
     ) -> Self:
         return cls(
             values=torch.empty((0, *value_shape), dtype=dtype, device=device),
