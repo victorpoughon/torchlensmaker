@@ -19,9 +19,12 @@ import pytest
 import torch
 
 from torchlensmaker.core.functional_kernel import (
+    FunctionalKernel,
+    export_onnx,
     kernel_flat_io,
     kernel_flat_names,
 )
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
@@ -101,3 +104,37 @@ def test_flatten_kernel_names() -> None:
         "b.inverse",
         "c",
     ]
+
+
+def test_flatten_kernel_names_sampled_variable() -> None:
+    assert kernel_flat_names({"var": SampledVariable}) == [
+        "var.values",
+        "var.idx",
+        "var.domain_values",
+        "var.domain_idx",
+    ]
+
+    # Mix with tensor and SampledVariable
+    assert kernel_flat_names({"x": torch.Tensor, "sv": SampledVariable}) == [
+        "x",
+        "sv.values",
+        "sv.idx",
+        "sv.domain_values",
+        "sv.domain_idx",
+    ]
+
+
+def test_flatten_kernel_io_sampled_variable() -> None:
+    sv = SampledVariable.create(
+        values=torch.tensor([1.0, 2.0]),
+        idx=torch.tensor([0, 1], dtype=torch.int64),
+        domain_values=torch.tensor([1.0, 2.0]),
+        domain_idx=torch.tensor([0, 1], dtype=torch.int64),
+    )
+    flat = kernel_flat_io(sv)
+    assert len(flat) == 4
+    assert torch.equal(flat[0], sv.values)
+    assert torch.equal(flat[1], sv.idx)
+    assert torch.equal(flat[2], sv.domain_values)
+    assert torch.equal(flat[3], sv.domain_idx)
+

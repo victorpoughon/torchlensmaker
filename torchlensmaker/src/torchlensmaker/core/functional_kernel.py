@@ -22,12 +22,14 @@ import torch
 import torch.nn as nn
 from torch.onnx import ONNXProgram
 
+from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.types import Tf
 
-KernelIOType: TypeAlias = torch.Tensor | Tf
+KernelIOType: TypeAlias = torch.Tensor | Tf | SampledVariable
 
 
 torch.export.register_dataclass(Tf)
+torch.export.register_dataclass(SampledVariable)
 
 
 def kernel_names(args: list[tuple[str, Type[KernelIOType]]]) -> list[str]:
