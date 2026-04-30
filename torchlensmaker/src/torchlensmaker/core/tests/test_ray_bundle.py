@@ -162,6 +162,57 @@ def test_cat_empty_right():
     assert result.P.shape == b.P.shape
 
 
+# --- split_by ---
+
+def test_split_by_single_var():
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    parts = b.split_by("field")
+    assert len(parts) == 2  # one per field domain entry
+    # all rays accounted for
+    assert sum(p.P.shape[0] for p in parts) == b.P.shape[0]
+    # each part contains only rays for its field idx
+    for k, part in enumerate(parts):
+        assert (part.field.idx == k).all()
+    # domain preserved in every part
+    for part in parts:
+        assert torch.equal(part.field.domain_idx, b.field.domain_idx)
+        assert torch.allclose(part.field.domain_values, b.field.domain_values)
+
+
+def test_split_by_two_vars():
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    grid = b.split_by("field", "wavel")
+    assert len(grid) == 2        # n_field
+    assert len(grid[0]) == 2     # n_wavel
+    assert len(grid[1]) == 2
+    # all rays accounted for
+    assert sum(cell.P.shape[0] for row in grid for cell in row) == b.P.shape[0]
+    # each cell contains only matching rays
+    for ki, row in enumerate(grid):
+        for kj, cell in enumerate(row):
+            assert (cell.field.idx == ki).all()
+            assert (cell.wavel.idx == kj).all()
+
+
+def test_split_by_empty_cell_domain_preserved():
+    """Empty cells still carry domain info for labelling."""
+    b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
+    b_filtered = b.mask(b.field.idx != 1)
+    parts = b_filtered.split_by("field")
+    # Both domain positions still present
+    assert len(parts) == 2
+    # Second cell is empty but domain intact
+    assert parts[1].P.shape[0] == 0
+    assert torch.equal(parts[1].field.domain_idx, b.field.domain_idx)
+    assert torch.allclose(parts[1].field.domain_values, b.field.domain_values)
+
+
+def test_split_by_unknown_var_raises():
+    b = _make_bundle_2d()
+    with pytest.raises(ValueError):
+        b.split_by("blah")
+
+
 # --- domain invariant ---
 
 def test_domain_invariant():
