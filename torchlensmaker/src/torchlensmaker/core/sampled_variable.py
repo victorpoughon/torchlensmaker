@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from dataclasses import dataclass
-from typing import Self
+from typing import Callable, Self
 
 import torch
 
@@ -86,6 +86,15 @@ class SampledVariable:
             values=self.values[valid],
             idx=self.idx[valid],
             domain_values=self.domain_values,
+            domain_idx=self.domain_idx,
+        )
+
+    def map(self, fn: Callable[[torch.Tensor], torch.Tensor]) -> Self:
+        "Apply a unary function to values"
+        return type(self)(
+            values=fn(self.values),
+            idx=self.idx,
+            domain_values=fn(self.domain_values),
             domain_idx=self.domain_idx,
         )
 
