@@ -84,6 +84,14 @@ class SampledVariable:
             domain_idx=torch.empty((0,), dtype=torch.int64, device=device),
         )
 
+    @property
+    def dtype(self) -> torch.dtype:
+        return self.values.dtype
+
+    @property
+    def device(self) -> torch.device:
+        return self.values.device
+
     def mask(self, valid: MaskTensor) -> Self:
         return type(self)(
             values=self.values[valid],
@@ -93,7 +101,7 @@ class SampledVariable:
         )
 
     def map(self, fn: Callable[[torch.Tensor], torch.Tensor]) -> Self:
-        "Apply a unary function to values"
+        "Apply a unary function to both values and domain_values, leaving idx tensors unchanged."
         return type(self)(
             values=fn(self.values),
             idx=self.idx,

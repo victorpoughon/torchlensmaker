@@ -21,20 +21,11 @@ import torchlensmaker as tlm
 from torchlensmaker.core.sampled_variable import SampledVariable
 
 
-def make_scalar(values_list, idx_list, domain_values_list, domain_idx_list):
+def make_sv(values_list, idx_list, domain_values_list, domain_idx_list):
     return SampledVariable.create(
-        values=torch.tensor(values_list, dtype=torch.float32),
+        values=torch.tensor(values_list),
         idx=torch.tensor(idx_list, dtype=torch.int64),
-        domain_values=torch.tensor(domain_values_list, dtype=torch.float32),
-        domain_idx=torch.tensor(domain_idx_list, dtype=torch.int64),
-    )
-
-
-def make_2d(values_list, idx_list, domain_values_list, domain_idx_list):
-    return SampledVariable.create(
-        values=torch.tensor(values_list, dtype=torch.float32),
-        idx=torch.tensor(idx_list, dtype=torch.int64),
-        domain_values=torch.tensor(domain_values_list, dtype=torch.float32),
+        domain_values=torch.tensor(domain_values_list),
         domain_idx=torch.tensor(domain_idx_list, dtype=torch.int64),
     )
 
@@ -123,7 +114,7 @@ def test_create_domain_idx_not_unique():
 
 
 def test_create_valid_scalar():
-    sv = make_scalar([1.0, 2.0, 1.0], [0, 1, 0], [1.0, 2.0], [0, 1])
+    sv = make_sv([1.0, 2.0, 1.0], [0, 1, 0], [1.0, 2.0], [0, 1])
     assert sv.values.shape == (3,)
     assert sv.idx.shape == (3,)
     assert sv.domain_values.shape == (2,)
@@ -131,7 +122,7 @@ def test_create_valid_scalar():
 
 
 def test_create_valid_2d():
-    sv = make_2d(
+    sv = make_sv(
         [[1.0, 0.0], [0.0, 1.0]],
         [0, 1],
         [[1.0, 0.0], [0.0, 1.0]],
@@ -165,7 +156,7 @@ def test_empty_2d():
 
 
 def test_mask_filters_values_and_idx():
-    sv = make_scalar([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
+    sv = make_sv([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
     mask = torch.tensor([True, False, True])
     result = sv.mask(mask)
     assert torch.allclose(result.values, torch.tensor([1.0, 3.0]))
@@ -173,7 +164,7 @@ def test_mask_filters_values_and_idx():
 
 
 def test_mask_preserves_domain():
-    sv = make_scalar([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
+    sv = make_sv([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
     mask = torch.tensor([True, False, False])
     result = sv.mask(mask)
     # Domain unchanged even though indices 1 and 2 are filtered
@@ -182,7 +173,7 @@ def test_mask_preserves_domain():
 
 
 def test_mask_all_false_preserves_domain():
-    sv = make_scalar([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
+    sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
     mask = torch.tensor([False, False])
     result = sv.mask(mask)
     assert result.values.shape == (0,)
@@ -194,8 +185,8 @@ def test_mask_all_false_preserves_domain():
 
 
 def test_cat_disjoint_domains():
-    sv_a = make_scalar([1.0], [0], [1.0], [0])
-    sv_b = make_scalar([5.0], [5], [5.0], [5])
+    sv_a = make_sv([1.0], [0], [1.0], [0])
+    sv_b = make_sv([5.0], [5], [5.0], [5])
     result = sv_a.cat(sv_b)
     assert torch.equal(result.domain_idx, torch.tensor([0, 5], dtype=torch.int64))
     assert torch.allclose(result.domain_values, torch.tensor([1.0, 5.0]))
@@ -204,8 +195,8 @@ def test_cat_disjoint_domains():
 
 
 def test_cat_overlapping_matching_domain():
-    sv_a = make_scalar([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
-    sv_b = make_scalar([1.0, 3.0], [0, 2], [1.0, 3.0], [0, 2])
+    sv_a = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
+    sv_b = make_sv([1.0, 3.0], [0, 2], [1.0, 3.0], [0, 2])
     result = sv_a.cat(sv_b)
     # Domain should be union {0, 1, 2}
     assert torch.equal(result.domain_idx, torch.tensor([0, 1, 2], dtype=torch.int64))
@@ -214,29 +205,29 @@ def test_cat_overlapping_matching_domain():
 
 
 def test_cat_overlapping_mismatched_domain_raises():
-    sv_a = make_scalar([1.0], [0], [1.0], [0])
-    sv_b = make_scalar([9.0], [0], [9.0], [0])  # same idx=0 but different value
+    sv_a = make_sv([1.0], [0], [1.0], [0])
+    sv_b = make_sv([9.0], [0], [9.0], [0])  # same idx=0 but different value
     with pytest.raises(AssertionError):
         sv_a.cat(sv_b)
 
 
 def test_cat_empty_left():
     empty = SampledVariable.empty((), torch.float32, torch.device("cpu"))
-    sv = make_scalar([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
+    sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
     result = empty.cat(sv)
     assert result is sv
 
 
 def test_cat_empty_right():
-    sv = make_scalar([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
+    sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
     empty = SampledVariable.empty((), torch.float32, torch.device("cpu"))
     result = sv.cat(empty)
     assert result is sv
 
 
 def test_cat_2d_disjoint_domains():
-    sv_a = make_2d([[1.0, 0.0]], [0], [[1.0, 0.0]], [0])
-    sv_b = make_2d([[0.0, 1.0]], [5], [[0.0, 1.0]], [5])
+    sv_a = make_sv([[1.0, 0.0]], [0], [[1.0, 0.0]], [0])
+    sv_b = make_sv([[0.0, 1.0]], [5], [[0.0, 1.0]], [5])
     result = sv_a.cat(sv_b)
     assert torch.equal(result.domain_idx, torch.tensor([0, 5], dtype=torch.int64))
     assert result.domain_values.shape == (2, 2)
