@@ -14,218 +14,202 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Optional
+import itertools
+from typing import Any
 
 import matplotlib.pyplot as plt
 import torch
-import torch.nn as nn
+from matplotlib.axes import Axes
+from matplotlib.colors import Colormap, LinearSegmentedColormap
 
-from torchlensmaker.analysis.colors import (
-    LinearSegmentedColormap,
-    color_rays,
-    default_colormap,
-)
+from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.sequential.sequential import Sequential
+from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
 
-Tensor = torch.Tensor
+from .CET_I2 import isoluminant_cgo_80_c38
 
-color_spot_diagram = "coral"
+# default colormap for spot diagrams
+default_colormap = LinearSegmentedColormap.from_list("CET_I2", isoluminant_cgo_80_c38)
+
+_COLOR_VARS = ("pupil", "field", "wavel", "source")
 
 
-def make_var_label(name: str, value: float | list[float], precision: int):
-    if isinstance(value, float):
-        return f"{name}\n{value:.{precision}f}"
-    elif isinstance(value, list):
-        list_str = "[" + ", ".join([f"{val:.{precision}f}" for val in value]) + "]"
-        return f"{name}\n{list_str}"
-    else:
-        return ""
+def _make_cell_label(sv_values: torch.Tensor) -> str:
+    "Format a domain_values entry as a short axis label."
+    vals = sv_values.tolist()
+    if isinstance(vals, float):
+        return f"{vals:.3g}"
+    return "[" + ", ".join(f"{v:.3g}" for v in vals) + "]"
 
 
 def spot_diagram(
-    optics: nn.Module,
-    sampling: dict[str, Any],
-    row: Optional[str] = None,
-    col: Optional[str] = None,
-    scale: bool = True,
+    model: BaseModule,
+    row: str | None = None,
+    col: str | None = None,
+    color: str | None = None,
+    colormap: Colormap = default_colormap,
     grid: bool = False,
-    color_dim: Optional[str] = None,
-    colormap: LinearSegmentedColormap = default_colormap,
-    dtype: torch.dtype = torch.float64,
+    dtype: torch.dtype | None = None,
     **fig_kw: Any,
-) -> None:
+) -> tuple:
     """
     Compute and plot a spot diagram for an optical model.
 
     Args:
-        optics: the optical model to analyse
-
-        sampling: sampling configuration
-
-        row: string (optional, default None)
-            variable to use for the rows of the diagrams
-
-        col: string (optional, default None)
-            variable to use for the columns of the diagram
-
-        scale: bool (optional, default True)
-            Use the same scale for all spots
-
-        grid: bool (optional, default False)
-            show a grid
-
-        **fig_kw:
-            All additional keyword arguments are passed to the pyplot.figure call
+        model: optical model to evaluate, the last element should be a light target
+        row: ray variable to lay out as rows ("pupil", "field", "wavel", "source")
+        col: ray variable to lay out as columns
+        color: ray variable to use for point color
+        colormap: matplotlib colormap for the color dimension
+        grid: show axes grid lines
+        dtype: floating-point dtype for the simulation
     """
+    if not isinstance(model, Sequential):
+        raise ValueError("model must be a Sequential")
 
-    # Process shortcut definitions in the sampling dict
-    # sampling = init_sampling(sampling)
-    sampling = {}  # TODO
+    if dtype is None:
+        tensor = next(itertools.chain(model.parameters(), model.buffers()), None)
+        dtype = tensor.dtype if tensor is not None else torch.get_default_dtype()
 
-    # Setup rows and cols, with convenience generators for iteration
-    nrows = sampling[row].size() if row is not None else 1
-    ncols = sampling[col].size() if col is not None else 1
+    head = model[:-1]
+    target = model[-1]
 
-    def rows():
-        yield from range(nrows)
+    # Run the head to get rays arriving at the image plane
+    with torch.no_grad():
+        data = head(SequentialData.empty(dim=3, dtype=dtype))
+        rays = data.rays
+        output = target(rays, data.fk)
 
-    def cols():
-        yield from range(ncols)
+    sout: SurfaceElementOutput = output.surface_outputs
 
-    def spots():
-        for ir in rows():
-            for ic in cols():
-                yield ir, ic
+    # Image plane coordinates: columns 1 and 2 of points_local (YZ in plane frame)
+    # Shape (N, 2) for valid rays, (N, 2) overall (invalid rays land outside the disk)
+    image_coords = sout.points_local[:, 1:].detach()  # (N, 2)
+    valid = sout.valid.detach()  # (N,) bool
 
-    # Get the "non cartesian producted" sampling variables
-    # by evaluating the stack
-    output_full: tlm.SequentialData = optics(
-        tlm.SequentialData.empty(sampling, dim=3, dtype=dtype)
-    )
-    var_row = output_full.get_rays(row) if row is not None else None
-    var_col = output_full.get_rays(col) if col is not None else None
+    # Build row / col mask lists (single all-true mask when not partitioning)
+    N = rays.P.shape[0]
+    all_true = torch.ones(N, dtype=torch.bool, device=rays.device)
+    row_masks = rays.split_masks(row) if row is not None else [all_true]
+    col_masks = rays.split_masks(col) if col is not None else [all_true]
 
-    # Some error checking
-    if row is not None and var_row is None:
-        raise RuntimeError(
-            f"Requested row={repr(row)} but variable {repr(row)} is not available in the optical model"
-        )
-    if col is not None and var_col is None:
-        raise RuntimeError(
-            f"Requested col={repr(col)} but variable {repr(col)} is not available in the optical model"
-        )
-    if output_full.dim != 3:
-        raise RuntimeError(
-            f"spot diagram requires 3D optical simulation, got dim={output_full.dim}"
-        )
-    if output_full.rays_image is None:
-        raise RuntimeError(
-            "spot diagram requires image coordinates. Does your stack have an ImagePlane?"
-        )
+    nrows, ncols = len(row_masks), len(col_masks)
 
-    # Build a sampling dictionary for each spot in the diagram, i.e. each row/col position
-    spot_sampling: list[list[dict[str, tlm.Sampler]]] = [
-        [{} for index_col in range(ncols)] for index_row in range(nrows)
-    ]
-    for ir, ic in spots():
-        for name, sampler in sampling.items():
-            if row is not None and var_row is not None and name == row:
-                spot_sampling[ir][ic][name] = tlm.sampling.exact(
-                    var_row[ir].unsqueeze(0)
-                )
-            elif col is not None and var_col is not None and name == col:
-                spot_sampling[ir][ic][name] = tlm.sampling.exact(
-                    var_col[ic].unsqueeze(0)
-                )
+    # Gather per-cell image coordinates (valid hits only) for range computation
+    cell_coords: list[list[torch.Tensor]] = []
+    for m_row in row_masks:
+        row_cells = []
+        for m_col in col_masks:
+            m = m_row & m_col & valid
+            row_cells.append(image_coords[m])
+        cell_coords.append(row_cells)
+
+    # Per-cell centers; common radius = max spread of any cell around its own center
+    cell_centers: list[list[torch.Tensor]] = []
+    max_spread = 0.0
+    for row_cells in cell_coords:
+        row_centers = []
+        for coords in row_cells:
+            if coords.shape[0] > 0:
+                center = coords.mean(dim=0)
+                spread = float((coords - center).abs().max())
             else:
-                spot_sampling[ir][ic][name] = sampler
+                center = torch.zeros(2, dtype=image_coords.dtype)
+                spread = 0.0
+            row_centers.append(center)
+            max_spread = max(max_spread, spread)
+        cell_centers.append(row_centers)
+    range_radius = max(max_spread * 1.1, 1e-9)
 
-    # Compute image coordinates, and color data for each spot
-    spot_coords: list[list[Tensor]] = []
-    spot_colors: list[list[Tensor]] = []
-    for ir in rows():
-        spot_coords.append([])
-        spot_colors.append([])
-        for ic in cols():
-            # Evaluate model with the current row/col spot sampling dict
-            output = optics(
-                tlm.SequentialData.empty(spot_sampling[ir][ic], dim=3, dtype=dtype)
-            )
-
-            # Get 2D image plane coordinates
-            coords = output.rays_image.detach()
-            assert coords.ndim == 2
-            assert coords.shape[1] == 2
-            spot_coords[-1].append(coords)
-
-            # Get color data
-            spot_colors[-1].append(
-                color_rays(output, color_dim, colormap)
-                if color_dim is not None
-                else color_spot_diagram
-            )
-    del coords
-    del output
-
-    # TODO display the number of rays per spot on the figure
-
-    # Each tensor in spot_coords has shape [..., 2], where:
-    # - the first dimension is the number of points in the spot, which beween 0
-    #   (if all rays are blocked) and the product of the sizes of all non
-    #   row/col dimensions
-    # - the second dimension is 2 for the Y and Z axes of the image plane
-
-    # Compute spot centers and range
-    centers: list[list[Tensor]] = [
-        [spot_coords[ir][ic].mean(dim=0) for ic in cols()] for ir in rows()
-    ]
-
-    centered_spots: list[list[Tensor]] = [
-        [spot_coords[ir][ic] - centers[ir][ic] for ic in cols()] for ir in rows()
-    ]
-
-    # Range radius is the common display range that will be used for all spots
-    range_radius = 1.1 * max(
-        [torch.max(torch.abs(centered_spots[ir][ic])) for ir, ic in spots()]
-    )
-
+    # Build figure
     fig, axes = plt.subplots(nrows, ncols, squeeze=False, **fig_kw)
-
     fig.suptitle("Spot Diagram")
 
-    # Plot image coordinate as points
-    for ir, ic in spots():
-        coords = spot_coords[ir][ic]
+    for ir, m_row in enumerate(row_masks):
+        for ic, m_col in enumerate(col_masks):
+            m = m_row & m_col & valid
+            cell_rays = rays.mask(m)
+            coords = image_coords[m]
 
-        # Plot image coordinates as points
-        ax = axes[ir][ic]
-        ax.scatter(
-            coords[:, 1],
-            coords[:, 0],
-            s=0.5,
-            c=spot_colors[ir][ic],
-            marker=".",
-        )
+            ax: Axes = axes[ir][ic]
+            plot_spot_diagram_cell(
+                ax,
+                cell_rays,
+                coords,
+                color=color,
+                cmap=colormap,
+            )
 
-        centerZ, centerY = centers[ir][ic]
-        ax.set_xlim([centerY - range_radius, centerY + range_radius])
-        ax.set_ylim([centerZ - range_radius, centerZ + range_radius])
+            cy, cz = cell_centers[ir][ic].tolist()
+            ax.set_xlim(cz - range_radius, cz + range_radius)
+            ax.set_ylim(cy - range_radius, cy + range_radius)
+            ax.set_aspect("equal")
+            if grid:
+                ax.grid()
 
-    # Set the row / col titles
-    if col is not None and var_col is not None:
-        for ic, ax in enumerate(axes[0]):
-            label = make_var_label(col, var_col[ic].tolist(), precision=2)
-            ax.set_title(label, size="medium")
-
-    if row is not None and var_row is not None:
-        for ir, ax in zip(range(nrows), axes[:, 0]):
-            label = make_var_label(row, var_row[ir].tolist(), precision=2)
+    # Row labels (left axis ylabel)
+    if row is not None:
+        sv = getattr(rays, row)
+        for ir, ax in enumerate(axes[:, 0]):
+            label = f"{row}\n{_make_cell_label(sv.domain_values[ir])}"
             ax.set_ylabel(label, rotation=0, ha="right", size="medium")
 
-    for ax in axes.flatten():
-        ax.set_aspect("equal")
-        if grid:
-            ax.grid()
+    # Col labels (top title)
+    if col is not None:
+        sv = getattr(rays, col)
+        for ic, ax in enumerate(axes[0]):
+            label = f"{col}\n{_make_cell_label(sv.domain_values[ic])}"
+            ax.set_title(label, size="medium")
 
     fig.tight_layout()
-
     return fig, axes
+
+
+def plot_spot_diagram_cell(
+    ax: Axes,
+    rays: RayBundle,
+    coords: torch.Tensor,
+    *,
+    color: str | None = None,
+    cmap: Colormap | str | None = None,
+    limit: int | None = None,
+) -> None:
+    """
+    Plot one cell of a spot diagram on a matplotlib Axes.
+
+    Args:
+        ax: matplotlib Axes object to draw on
+        rays: RayBundle for the rays in this cell (same batch size as coords)
+        coords: (N, 2) image plane coordinates (Y, Z) for each ray
+        color: ray variable to color by ("pupil"/"field"/"wavel"/"source")
+        cmap: colormap for the color variable
+        limit: if set, use [-limit, limit] for both axes
+    """
+    if coords.shape[0] == 0:
+        return
+
+    y = coords[:, 0].float().numpy()
+    z = coords[:, 1].float().numpy()
+
+    if color is not None and color in _COLOR_VARS:
+        sv = getattr(rays, color)
+        var = sv.values
+        # Reduce 2D variables (e.g. 3D pupil/field) to a scalar norm for coloring
+        if var.ndim == 2:
+            var = torch.linalg.vector_norm(var, dim=1)
+        var = var.float().detach()
+        denom = var.max() - var.min()
+        c = (
+            ((var - var.min()) / denom).numpy()
+            if denom > 1e-4
+            else torch.full_like(var, 0.5).numpy()
+        )
+        ax.scatter(z, y, s=0.5, c=c, cmap=cmap, marker=".", vmin=0, vmax=1)
+    else:
+        ax.scatter(z, y, s=0.5, c="coral", marker=".")
+
+    if limit is not None:
+        ax.set_xlim(-limit, limit)
+        ax.set_ylim(-limit, limit)
