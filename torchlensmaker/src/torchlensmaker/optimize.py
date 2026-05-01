@@ -62,26 +62,27 @@ class OptimizationRecord:
 
 
 class ImagingModel(nn.Module):
-    def __init__(self, optics, image_plane):
+    def __init__(self, optics, target):
         super().__init__()
         self.optics = optics
-        self.image_plane = image_plane
+        self.target = target
 
     def forward(self, data: SequentialData) -> ScalarTensor:
         outputs = self.optics(data)
-        out = self.image_plane(outputs.rays, outputs.fk)
+        out = self.target(outputs.rays, outputs.fk)
         return out.loss
 
 
 def optimize(
-    optics: nn.Module,
+    model: nn.Module,
+    input_rays: SequentialData,
+    target: nn.Module,
     optimizer: optim.Optimizer,
     num_iter: int,
     dtype: torch.dtype | None = None,
     device: torch.device | None = None,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
-    dim: int = 2,
 ) -> OptimizationRecord:
     if dtype is None:
         dtype = torch.get_default_dtype()
@@ -91,17 +92,12 @@ def optimize(
 
     # Record values for analysis
     parameters_record: dict[str, list[Tensor]] = {
-        n: [] for n, _ in optics.named_parameters()
+        n: [] for n, _ in model.named_parameters()
     }
     loss_record = torch.zeros(num_iter)
 
     # We assume the last element is the loss element
-    source, core, image_plane = optics[0], optics[1:-1], optics[-1]
-    model = ImagingModel(core, image_plane)
-
-    input_tf = hom_identity(dim, dtype, device)
-    input_rays = source(input_tf.direct)
-    inputs = SequentialData(rays=input_rays, fk=input_tf)
+    imaging_model = ImagingModel(model, target)
 
     show_every = math.ceil(num_iter / nshow)
 
@@ -109,11 +105,11 @@ def optimize(
         optimizer.zero_grad()
 
         # Evaluate the model
-        loss = model(inputs)
+        loss = imaging_model(input_rays)
 
         # Add regularization function term
         if regularization is not None:
-            loss = loss + regularization(optics)
+            loss = loss + regularization(model)
 
         if not loss.requires_grad:
             raise RuntimeError(
@@ -126,12 +122,12 @@ def optimize(
         loss_record[i] = loss.detach()
 
         # Record parameter values
-        for n, param in optics.named_parameters():
+        for n, param in model.named_parameters():
             parameters_record[n].append(param.detach().clone())
 
         # Compute gradients for gradient magnitude
         # and sanity check that gradient isn't nan or inf
-        grad = get_all_gradients(optics)
+        grad = get_all_gradients(model)
         if torch.isnan(grad).any():
             print("ERROR: nan in grad", grad)
             raise RuntimeError(
@@ -147,7 +143,7 @@ def optimize(
             )
             print(f"{iter_str} {L_str}")
 
-    return OptimizationRecord(num_iter, parameters_record, loss_record, optics)
+    return OptimizationRecord(num_iter, parameters_record, loss_record, model)
 
 
 def plot_optimization_record(record: OptimizationRecord) -> None:
