@@ -73,6 +73,32 @@ class ImagingModel(nn.Module):
         return out.loss
 
 
+def simple_optimize(
+    optics: nn.Module,
+    optimizer: optim.Optimizer,
+    num_iter: int,
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
+    regularization: Optional[RegularizationFunction] = None,
+    nshow: int = 20,
+    dim: int = 2,
+):
+
+    source, model, target = optics[0], optics[1:-1], optics[-1]
+    input_rays = source.sequential(SequentialData.empty(dim=dim))
+    return optimize(
+        model,
+        input_rays,
+        target,
+        optimizer,
+        num_iter,
+        dtype,
+        device,
+        regularization,
+        nshow,
+    )
+
+
 def optimize(
     model: nn.Module,
     input_rays: SequentialData,

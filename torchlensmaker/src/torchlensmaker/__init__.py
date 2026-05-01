@@ -107,6 +107,7 @@ from torchlensmaker.optimize import (
     OptimizationRecord,
     optimize,
     plot_optimization_record,
+    simple_optimize,
 )
 from torchlensmaker.physics.physics import reflection, refraction
 from torchlensmaker.sampling.sampler_elements import (
@@ -282,6 +283,7 @@ __all__ = [
     # Optimization
     "OptimizationRecord",
     "optimize",
+    "simple_optimize",
     "plot_optimization_record",
     # Paraxial
     "paraxial",
