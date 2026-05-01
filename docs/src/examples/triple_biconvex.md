@@ -43,7 +43,7 @@ tlm.show(optics, dim=3)
 
 ```python
 optics.set_sampling2d(pupil=10)
-tlm.optimize(
+tlm.simple_optimize(
     optics,
     optimizer = optim.Adam(optics.parameters(), lr=1e-4),
     dim = 2,

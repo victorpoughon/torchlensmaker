@@ -44,10 +44,10 @@ lens = tlm.Sequential(
 )
 
 optics = tlm.Sequential(
-    tlm.ObjectAtInfinity(0.9*D, 2.0),
+    tlm.ObjectAtInfinity(0.9*D, 2.0, wavelength=(400, 600)),
     lens,
     #tlm.Gap(75.132),
-    tlm.AbsolutePosition2D(),
+    tlm.AbsolutePosition(),
     tlm.Gap(93.4247),
     tlm.ImagePlane(20),
 )
@@ -57,6 +57,8 @@ tlm.show2d(optics, end=10)
 
 rfp = tlm.paraxial.rear_focal_point(lens, 500, 0.01)
 print(rfp)
+
+tlm.show3d(optics)
 ```
 
     SellmeierMaterial(B1=1.0396121740341187, B2=0.23179234564304352, B3=1.0104694366455078, C1=0.006000698544085026, C2=0.020017914474010468, C3=103.56065368652344)
@@ -68,4 +70,8 @@ print(rfp)
 
 
     tensor([93.4247])
+
+
+
+<TLMViewer src="./refractive_index_database_files/refractive_index_database_1.json?url" />
 

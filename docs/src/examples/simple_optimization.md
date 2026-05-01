@@ -38,7 +38,7 @@ tlm.show(optics, dim=3, pupil=100)
 ```python
 optics.set_sampling2d(pupil=10)
 
-tlm.optimize(
+tlm.simple_optimize(
     optics,
     optimizer = tlm.optim.Adam(optics.parameters(), lr=1e-3),
     dim = 2,

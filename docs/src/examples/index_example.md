@@ -21,7 +21,7 @@ optics = tlm.Sequential(
     tlm.ImagePlane(50),
 )
 
-tlm.optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), 100)
+tlm.simple_optimize(optics, tlm.optim.Adam(optics.parameters(), lr=5e-4), 100)
 
 tlm.show2d(optics, title="Landscape Lens")
 ```
@@ -51,28 +51,4 @@ tlm.show2d(optics, title="Landscape Lens")
 
 
 <TLMViewer src="./index_example_files/index_example_0.json?url" />
-
-
-
-```python
-import numpy as np
-
-# Spot diaggram at 0, 5 and 10 and 15 degrees incidence angles
-"""
-{"base":1000, "object": [
-    [np.deg2rad(0), 0.],
-    [np.deg2rad(5), 0.],
-    [np.deg2rad(10), 0.]]
-}
-"""
-
-# TODO fix spot diagram
-# _ = tlm.spot_diagram(optics, sampling, col="object", figsize=(12, 12))
-```
-
-
-
-
-    '\n{"base":1000, "object": [\n    [np.deg2rad(0), 0.],\n    [np.deg2rad(5), 0.],\n    [np.deg2rad(10), 0.]]\n}\n'
-
 

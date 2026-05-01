@@ -37,12 +37,13 @@ tlm.show3d(optics, title="Landscape Lens")
 
 
 ```python
-# TODO fix spot diagram
-# f, _ = tlm.spot_diagram(optics, {"base":1000, "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
+# Spot diagram by field / wavel
+tlm.set_sampling3d(optics, pupil=1000, field=3, wavel=[400, 500, 600])
+f, axes = tlm.spot_diagram(optics, row="field", col="wavel",  color="wavel", figsize=(12, 12))
 ```
 
 
-```python
-# TODO fix spot diagram
-# f, _ = tlm.spot_diagram(optics, {"base": tlm.sampling.random_uniform(1000), "object": 4, "wavelength": [400, 500, 600]}, row="object", col="wavelength", figsize=(12, 12))
-```
+    
+![png](landscape_files/landscape_3_0.png)
+    
+

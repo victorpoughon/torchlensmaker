@@ -73,12 +73,19 @@ tlm.show2d(optics)
 
 ```python
 tlm.show3d(optics, pupil=100, wavelength=4)
-# TODO fix spot diagram
-# f, _ = tlm.spot_diagram(optics, row="object", figsize=(12, 12))
+
+tlm.set_sampling3d(optics, pupil=100, field=5, wavel=3)
+f, _ = tlm.spot_diagram(optics, row="field", col="wavel", figsize=(12, 12))
 ```
 
 
 <TLMViewer src="./cooke_triplet_files/cooke_triplet_1.json?url" />
+
+
+
+    
+![png](cooke_triplet_files/cooke_triplet_12_1.png)
+    
 
 
 Looking at the spot diagram, we can see that rays are not focused at all. We can now optimize the parameter we created before, to try to find the best value for the image plane distance.
@@ -88,10 +95,14 @@ Looking at the spot diagram, we can see that rays are not focused at all. We can
 import torch.optim as optim
 
 optics.set_sampling2d(pupil=5, field=10, wavel=3)
-tlm.optimize(optics,
-             dim=2,
+
+source, model, target = optics[0], optics[1:-1], optics[-1]
+input_rays = source.sequential(tlm.SequentialData.empty(dim=2))
+
+tlm.optimize(model,
+             input_rays,
+             target,
              optimizer = optim.Adam(optics.parameters(), lr=1e-1),
-             
              num_iter=50,
 ).plot()
 
@@ -131,10 +142,16 @@ print("Final parameter value:", focal_gap.x.item())
 ```python
 tlm.show2d(optics)
 
-# TODO fix spot diagram
-# f, _ = tlm.spot_diagram(optics, row="object", figsize=(12, 12))
+tlm.set_sampling3d(optics, pupil=100, field=5, wavel=3)
+f, _ = tlm.spot_diagram(optics, row="field", col="wavel", figsize=(12, 12))
 ```
 
 
 <TLMViewer src="./cooke_triplet_files/cooke_triplet_2.json?url" />
+
+
+
+    
+![png](cooke_triplet_files/cooke_triplet_15_1.png)
+    
 
