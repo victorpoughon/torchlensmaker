@@ -21,210 +21,65 @@ import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 import torchimplicit as ti
-from jaxtyping import Bool, Float
+from jaxtyping import Float
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity_2d,
-    hom_identity_3d,
-)
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.sag_geometry import (
-    lens_diameter_implicit_domain_2d,
-    lens_diameter_implicit_domain_3d,
-)
 from torchlensmaker.surfaces.sag_surface import (
     SolverConfig,
-    sag_solver_config,
-    sag_surface_raytrace,
 )
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
-    BatchNDTensor,
     BatchTensor,
-    MaskTensor,
     ScalarTensor,
     Tf,
 )
 
-from .kernels_utils import example_rays_2d, example_rays_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_sag import SagOuterExtentSurfaceKernel, SagSurfaceKernel
 
 
-class AsphereSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 2D or 3D asphere surface parameterized by:
-        - signed curvature coefficient C
-        - conic constant K
-        - aspheric coefficients alpha_i
-        - lens diameter
+def asphere_sag_2d_eval(points: torch.Tensor, params: torch.Tensor, *, order: int):
+    CK = params[0:2]
+    alphas = params[2:]
 
-    with support for anchors and scale.
-    """
-
-    inputs = {
-        "P": BatchNDTensor,
-        "V": BatchNDTensor,
-        "tf_in": Tf,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "K": ScalarTensor,
-        "alphas": Float[torch.Tensor, " N"],
-        "normalize": Bool[torch.Tensor, ""],
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": BatchNDTensor,
-        "valid": MaskTensor,
-        "points_local": BatchNDTensor,
-        "points_global": BatchNDTensor,
-        "rsm": BatchTensor,
-    }
-
-    def __init__(self, dim: int, solver_config: SolverConfig):
-        self.dim = dim
-        self.solver_config = solver_config
-
-    def apply(
-        self,
-        P: BatchNDTensor,
-        V: BatchNDTensor,
-        tf_in: Tf,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        K: ScalarTensor,
-        alphas: Float[torch.Tensor, " N"],
-        normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        BatchNDTensor,
-        BatchNDTensor,
-        BatchTensor,
-    ]:
-        if self.dim == 2:
-            sag_function = partial(
-                ti.sag_sum_2d,
-                sags=[
-                    partial(ti.conical_sag_2d, params=torch.stack([C, K])),
-                    partial(ti.aspheric_sag_2d, params=alphas),
-                ],
-            )
-        else:
-            sag_function = partial(
-                ti.sag_sum_3d,
-                sags=[
-                    partial(ti.conical_sag_3d, params=torch.stack([C, K])),
-                    partial(ti.aspheric_sag_3d, params=alphas),
-                ],
-            )
-
-        liftf, domainf, implicit_solver = sag_solver_config(
-            self.dim, self.solver_config, diameter
-        )
-
-        return sag_surface_raytrace(
-            sag_function,
-            liftf,
-            domainf,
-            implicit_solver,
-            P,
-            V,
-            tf_in,
-            diameter,
-            normalize,
-        )
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
-        tf: Tf
-        if self.dim == 2:
-            P, V = example_rays_2d(10, dtype, device)
-            tf = hom_identity_2d(dtype, device)
-        else:
-            P, V = example_rays_3d(10, dtype, device)
-            tf = hom_identity_3d(dtype, device)
-
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        ScalarTensor,
-        ScalarTensor,
-        ScalarTensor,
-        Float[torch.Tensor, " N"],
-        Bool[torch.Tensor, ""],
-    ]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(1.0, dtype=dtype, device=device),
-            torch.tensor([0.1, 0.001, 0.002], dtype=dtype, device=device),
-            torch.tensor(False, dtype=torch.bool, device=device),
-        )
+    return ti.sag_sum_2d(
+        points,
+        sags=[
+            partial(ti.conical_sag_2d, params=CK),
+            partial(ti.aspheric_sag_2d, params=alphas),
+        ],
+        order=order,
+    )
 
 
-class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
-    inputs = {"anchor": ScalarTensor}
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "K": ScalarTensor,
-        "alphas": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-    outputs = {"extent": ScalarTensor}
+asphere_sag_2d = ti.SagFunction(
+    name="asphere_2d",
+    dim=2,
+    func=asphere_sag_2d_eval,
+    example_params=ti.example_vector([1 / 50, 0.1, 1.0, 0.1, 0.001]),
+)
 
-    def apply(
-        self,
-        anchor: ScalarTensor,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        K: ScalarTensor,
-        alphas: Float[torch.Tensor, " N"],
-        normalize: Bool[torch.Tensor, ""],
-    ) -> ScalarTensor:
-        sag_function = partial(
-            ti.sag_sum_2d,
-            sags=[
-                partial(ti.conical_sag_2d, params=torch.stack([C, K])),
-                partial(ti.aspheric_sag_2d, params=alphas),
-            ],
-        )
-        extent_unnormalized = sag_function(anchor * diameter / 2, order=0).val
-        extent_normalized = diameter / 2 * sag_function(anchor, order=0).val
-        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
-        return extent
 
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor]:
-        return (torch.tensor(1.0, dtype=dtype, device=device),)
+def asphere_sag_3d_eval(points: torch.Tensor, params: torch.Tensor, *, order: int):
+    CK = params[0:2]
+    alphas = params[2:]
 
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        ScalarTensor,
-        ScalarTensor,
-        ScalarTensor,
-        Float[torch.Tensor, " N"],
-        Bool[torch.Tensor, ""],
-    ]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor((0.5, 0.0, 0.0), dtype=dtype, device=device),
-            torch.tensor(True, dtype=torch.bool, device=device),
-        )
+    return ti.sag_sum_3d(
+        points,
+        sags=[
+            partial(ti.conical_sag_3d, params=CK),
+            partial(ti.aspheric_sag_3d, params=alphas),
+        ],
+        order=order,
+    )
+
+
+asphere_sag_3d = ti.SagFunction(
+    name="asphere_3d",
+    dim=3,
+    func=asphere_sag_3d_eval,
+    example_params=ti.example_vector([1 / 50, 0.1, 1.0, 0.1, 0.001]),
+)
 
 
 class Asphere(SurfaceElement):
@@ -273,9 +128,9 @@ class Asphere(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = AsphereSurfaceKernel(2, self.solver_config)
-        self.func3d = AsphereSurfaceKernel(3, self.solver_config)
-        self.kernel_outer_extent = AsphereOuterExtentSurfaceKernel()
+        self.func2d = SagSurfaceKernel(2, asphere_sag_2d, self.solver_config)
+        self.func3d = SagSurfaceKernel(3, asphere_sag_3d, self.solver_config)
+        self.kernel_outer_extent = SagOuterExtentSurfaceKernel(asphere_sag_2d)
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
@@ -305,15 +160,15 @@ class Asphere(SurfaceElement):
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
+        params = torch.cat([self.C.unsqueeze(0), self.K.unsqueeze(0), self.alphas])
+
         t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
             self.diameter,
-            self.C,
-            self.K,
-            self.alphas,
             self.normalize,
+            params,
         )
 
         return SurfaceElementOutput(
@@ -321,8 +176,12 @@ class Asphere(SurfaceElement):
         )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
+        params = torch.cat([self.C.unsqueeze(0), self.K.unsqueeze(0), self.alphas])
         return self.kernel_outer_extent.apply(
-            anchor, self.diameter, self.C, self.K, self.alphas, self.normalize
+            anchor,
+            self.diameter,
+            self.normalize,
+            params,
         )
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:

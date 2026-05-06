@@ -4,7 +4,12 @@ import torch
 
 from torchimplicit.math import bbroad, safe_div, safe_sqrt
 from torchimplicit.registry import example_matrix, example_scalar, example_vector
-from torchimplicit.types import BoundSagFunction, SagFunction, SagResult
+from torchimplicit.types import (
+    BoundSagFunction,
+    EvalSagFunction,
+    SagFunction,
+    SagResult,
+)
 
 
 def spherical_sag_2d_eval(

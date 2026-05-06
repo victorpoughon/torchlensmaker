@@ -14,183 +14,28 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
 from typing import Any, Self
 
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
-from jaxtyping import Bool, Float
-from torchimplicit.sag_functions import (
-    conical_sag_2d,
-    conical_sag_3d,
-)
+import torchimplicit as ti
+from jaxtyping import Float
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity_2d,
-    hom_identity_3d,
-)
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.sag_geometry import (
-    lens_diameter_implicit_domain_2d,
-    lens_diameter_implicit_domain_3d,
-)
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
+from torchlensmaker.surfaces.surface_sag import (
+    SagOuterExtentSurfaceKernel,
+    SagSurfaceKernel,
+)
 from torchlensmaker.types import (
-    BatchNDTensor,
     BatchTensor,
-    MaskTensor,
     ScalarTensor,
     Tf,
 )
 
-from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_surface import SolverConfig, sag_solver_config, sag_surface_raytrace
+from .sag_surface import SolverConfig
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-
-class ConicSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 2D or 3D conical arc surface parameterized by:
-        - signed curvature coefficient C
-        - conic constant K
-        - lens diameter
-
-    with support for anchors and scale.
-    """
-
-    inputs = {
-        "P": BatchNDTensor,
-        "V": BatchNDTensor,
-        "tf_in": Tf,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "K": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": BatchNDTensor,
-        "valid": MaskTensor,
-        "points_local": BatchNDTensor,
-        "points_global": BatchNDTensor,
-        "rsm": BatchTensor,
-    }
-
-    def __init__(self, dim: int, solver_config: SolverConfig):
-        self.dim = dim
-        self.solver_config = solver_config
-
-    def apply(
-        self,
-        P: BatchNDTensor,
-        V: BatchNDTensor,
-        tf_in: Tf,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        K: ScalarTensor,
-        normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        BatchNDTensor,
-        BatchNDTensor,
-        BatchTensor,
-    ]:
-        sag_function = conical_sag_2d if self.dim == 2 else conical_sag_3d
-        liftf, domainf, implicit_solver = sag_solver_config(
-            self.dim, self.solver_config, diameter
-        )
-
-        return sag_surface_raytrace(
-            partial(sag_function, params=torch.stack([C, K])),
-            liftf,
-            domainf,
-            implicit_solver,
-            P,
-            V,
-            tf_in,
-            diameter,
-            normalize,
-        )
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
-        tf: Tf
-        if self.dim == 2:
-            P, V = example_rays_2d(10, dtype, device)
-            tf = hom_identity_2d(dtype, device)
-        else:
-            P, V = example_rays_3d(10, dtype, device)
-            tf = hom_identity_3d(dtype, device)
-
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        ScalarTensor,
-        ScalarTensor,
-        ScalarTensor,
-        Bool[torch.Tensor, ""],
-    ]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(1.0, dtype=dtype, device=device),
-            torch.tensor(False, dtype=torch.bool, device=device),
-        )
-
-
-class ConicOuterExtentSurfaceKernel(FunctionalKernel):
-    inputs = {"anchor": ScalarTensor}
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "K": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-    outputs = {"extent": ScalarTensor}
-
-    def apply(
-        self,
-        anchor: ScalarTensor,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        K: ScalarTensor,
-        normalize: Bool[torch.Tensor, ""],
-    ) -> ScalarTensor:
-        extent_unnormalized = conical_sag_2d(
-            anchor * diameter / 2, torch.stack([C, K]), order=0
-        ).val
-        extent_normalized = (
-            diameter / 2 * conical_sag_2d(anchor, torch.stack([C, K]), order=0).val
-        )
-        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
-        return extent
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[(ScalarTensor)]:
-        return (torch.tensor(1.0, dtype=dtype, device=device),)
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor, ScalarTensor, Bool[torch.Tensor, ""]]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(True, dtype=torch.bool, device=device),
-        )
 
 
 class Conic(SurfaceElement):
@@ -236,9 +81,9 @@ class Conic(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = ConicSurfaceKernel(2, self.solver_config)
-        self.func3d = ConicSurfaceKernel(3, self.solver_config)
-        self.kernel_outer_extent = ConicOuterExtentSurfaceKernel()
+        self.func2d = SagSurfaceKernel(2, ti.conical_sag_2d, self.solver_config)
+        self.func3d = SagSurfaceKernel(3, ti.conical_sag_3d, self.solver_config)
+        self.kernel_outer_extent = SagOuterExtentSurfaceKernel(ti.conical_sag_2d)
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
@@ -270,14 +115,14 @@ class Conic(SurfaceElement):
 
         tf_surface, tf_next = kernel_anchor.apply(extent0, extent1, self.scale, tf)
 
+        params = torch.stack([self.C, self.K])
         t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
             self.diameter,
-            self.C,
-            self.K,
             self.normalize,
+            params,
         )
 
         return SurfaceElementOutput(
@@ -285,8 +130,9 @@ class Conic(SurfaceElement):
         )
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
+        params = torch.stack([self.C, self.K])
         return self.kernel_outer_extent.apply(
-            anchor, self.diameter, self.C, self.K, self.normalize
+            anchor, self.diameter, self.normalize, params
         )
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:

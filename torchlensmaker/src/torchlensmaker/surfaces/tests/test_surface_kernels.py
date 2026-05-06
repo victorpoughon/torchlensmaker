@@ -21,34 +21,17 @@ import pytest
 import torch
 import torchimplicit as ti
 
-from torchlensmaker.surfaces.surface_asphere import (
-    AsphereOuterExtentSurfaceKernel,
-    AsphereSurfaceKernel,
-)
-from torchlensmaker.surfaces.surface_conic import (
-    ConicOuterExtentSurfaceKernel,
-    ConicSurfaceKernel,
-)
 from torchlensmaker.surfaces.surface_disk import DiskSurfaceKernel
 from torchlensmaker.surfaces.surface_implicit import ImplicitSurfaceKernel
-from torchlensmaker.surfaces.surface_parabola import (
-    ParabolaOuterExtentSurfaceKernel,
-    ParabolaSurfaceKernel,
-)
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
 from torchlensmaker.surfaces.surface_point import PointSurfaceKernel
 from torchlensmaker.surfaces.surface_sag import (
     SagOuterExtentSurfaceKernel,
     SagSurfaceKernel,
 )
-from torchlensmaker.surfaces.surface_sphere_by_curvature import (
-    SphereByCurvatureOuterExtentSurfaceKernel,
-    SphereByCurvatureSurfaceKernel,
-)
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
-from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
 from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_eval,
     check_kernels_example_inputs_and_params,

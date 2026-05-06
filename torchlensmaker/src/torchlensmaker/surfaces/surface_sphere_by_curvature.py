@@ -14,174 +14,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
 from typing import Any, Self
 
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
-from jaxtyping import Bool, Float
-from torchimplicit.sag_functions import (
-    spherical_sag_2d,
-    spherical_sag_3d,
-)
+import torchimplicit as ti
+from jaxtyping import Float
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity_2d,
-    hom_identity_3d,
-)
-from torchlensmaker.surfaces.sag_surface import (
-    SolverConfig,
-    sag_solver_config,
-    sag_surface_raytrace,
-)
+from torchlensmaker.surfaces.sag_surface import SolverConfig
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
-    BatchNDTensor,
     BatchTensor,
-    MaskTensor,
     ScalarTensor,
     Tf,
 )
 
-from .kernels_utils import example_rays_2d, example_rays_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-
-class SphereByCurvatureSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 2D or 3D spherical arc surface parameterized by:
-        - signed surface curvature
-        - lens diameter
-
-    with support for anchors and scale.
-    """
-
-    inputs = {
-        "P": BatchNDTensor,
-        "V": BatchNDTensor,
-        "tf_in": Tf,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": BatchNDTensor,
-        "valid": MaskTensor,
-        "points_local": BatchNDTensor,
-        "points_global": BatchNDTensor,
-        "rsm": BatchTensor,
-    }
-
-    def __init__(self, dim: int, solver_config: SolverConfig):
-        self.dim = dim
-        self.solver_config = solver_config
-
-    def apply(
-        self,
-        P: BatchNDTensor,
-        V: BatchNDTensor,
-        tf_in: Tf,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        BatchNDTensor,
-        BatchNDTensor,
-        BatchTensor,
-    ]:
-        sag_function = spherical_sag_2d if self.dim == 2 else spherical_sag_3d
-        liftf, domainf, implicit_solver = sag_solver_config(
-            self.dim, self.solver_config, diameter
-        )
-
-        return sag_surface_raytrace(
-            partial(sag_function, params=torch.stack([C])),
-            liftf,
-            domainf,
-            implicit_solver,
-            P,
-            V,
-            tf_in,
-            diameter,
-            normalize,
-        )
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
-        tf: Tf
-        if self.dim == 2:
-            P, V = example_rays_2d(10, dtype, device)
-            tf = hom_identity_2d(dtype, device)
-        else:
-            P, V = example_rays_3d(10, dtype, device)
-            tf = hom_identity_3d(dtype, device)
-
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        ScalarTensor,
-        ScalarTensor,
-        Bool[torch.Tensor, ""],
-    ]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(False, dtype=torch.bool, device=device),
-        )
-
-
-class SphereByCurvatureOuterExtentSurfaceKernel(FunctionalKernel):
-    inputs = {"anchor": ScalarTensor}
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "normalize": Bool[torch.Tensor, ""],
-    }
-    outputs = {"extent": ScalarTensor}
-
-    def apply(
-        self,
-        anchor: ScalarTensor,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        normalize: Bool[torch.Tensor, ""],
-    ) -> ScalarTensor:
-        extent_unnormalized = spherical_sag_2d(
-            anchor * diameter / 2, torch.stack([C]), order=0
-        ).val
-        extent_normalized = (
-            diameter / 2 * spherical_sag_2d(anchor, torch.stack([C]), order=0).val
-        )
-        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
-        return extent
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[(ScalarTensor)]:
-        return (torch.tensor(1.0, dtype=dtype, device=device),)
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor, ScalarTensor, Bool[torch.Tensor, ""]]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(True, dtype=torch.bool, device=device),
-        )
+from .surface_sag import SagOuterExtentSurfaceKernel, SagSurfaceKernel
 
 
 class SphereByCurvature(SurfaceElement):
@@ -222,9 +73,9 @@ class SphereByCurvature(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func2d = SphereByCurvatureSurfaceKernel(2, self.solver_config)
-        self.func3d = SphereByCurvatureSurfaceKernel(3, self.solver_config)
-        self.kernel_outer_extent = SphereByCurvatureOuterExtentSurfaceKernel()
+        self.func2d = SagSurfaceKernel(2, ti.spherical_sag_2d, self.solver_config)
+        self.func3d = SagSurfaceKernel(3, ti.spherical_sag_3d, self.solver_config)
+        self.kernel_outer_extent = SagOuterExtentSurfaceKernel(ti.spherical_sag_2d)
         self.kernel_anchor2d = SurfaceScaleAnchorKernel(2)
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
@@ -260,8 +111,8 @@ class SphereByCurvature(SurfaceElement):
             V,
             tf_surface,
             self.diameter,
-            self.C,
             self.normalize,
+            self.C.unsqueeze(0),
         )
 
         return SurfaceElementOutput(
@@ -270,7 +121,7 @@ class SphereByCurvature(SurfaceElement):
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return self.kernel_outer_extent.apply(
-            anchor, self.diameter, self.C, self.normalize
+            anchor, self.diameter, self.normalize, self.C.unsqueeze(0)
         )
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSag:

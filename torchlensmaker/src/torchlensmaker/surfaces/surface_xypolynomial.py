@@ -14,146 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
 from typing import Any, Self, Sequence
 
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
-from jaxtyping import Bool, Float
-from torchimplicit.sag_functions import (
-    conical_sag_3d,
-    sag_sum_3d,
-    xypolynomial_sag_3d,
-)
+import torchimplicit as ti
+from jaxtyping import Float
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
 from torchlensmaker.surfaces.sag_surface import (
     SolverConfig,
-    sag_solver_config,
-    sag_surface_raytrace,
 )
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
+from torchlensmaker.surfaces.surface_sag import SagSumSurfaceKernel, SagSurfaceKernel
 from torchlensmaker.types import (
-    BatchNDTensor,
     BatchTensor,
-    MaskTensor,
     ScalarTensor,
     Tf,
 )
 
-from .kernels_utils import example_rays_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-
-class XYPolynomialSurfaceKernel(FunctionalKernel):
-    """
-    Functional kernel for a 3D freeform surface made of a conical base and
-    XYPolynomial coefficients. It is parameterized by:
-        - signed curvature C
-        - conic constant K
-        - XY polynomial coefficients
-        - lens diameter
-
-    with support for scale.
-    """
-
-    inputs = {
-        "P": BatchNDTensor,
-        "V": BatchNDTensor,
-        "tf_in": Tf,
-    }
-
-    params = {
-        "diameter": ScalarTensor,
-        "C": ScalarTensor,
-        "K": ScalarTensor,
-        "coefficients": Float[torch.Tensor, " P Q"],
-        "normalize": Bool[torch.Tensor, ""],
-    }
-
-    outputs = {
-        "t": BatchTensor,
-        "normals": BatchNDTensor,
-        "valid": MaskTensor,
-        "points_local": BatchNDTensor,
-        "points_global": BatchNDTensor,
-        "rsm": BatchTensor,
-    }
-
-    def __init__(self, solver_config: SolverConfig):
-        self.solver_config = solver_config
-
-    def apply(
-        self,
-        P: BatchNDTensor,
-        V: BatchNDTensor,
-        tf_in: Tf,
-        diameter: ScalarTensor,
-        C: ScalarTensor,
-        K: ScalarTensor,
-        coefficients: Float[torch.Tensor, " P Q"],
-        normalize: Bool[torch.Tensor, ""],
-    ) -> tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        BatchNDTensor,
-        BatchNDTensor,
-        BatchTensor,
-    ]:
-        # XYPolynomial is 3D only because it's freeform
-        sag_function = partial(
-            sag_sum_3d,
-            sags=[
-                partial(conical_sag_3d, params=torch.stack([C, K])),
-                partial(xypolynomial_sag_3d, params=coefficients),
-            ],
-        )
-
-        liftf, domainf, implicit_solver = sag_solver_config(
-            3, self.solver_config, diameter
-        )
-
-        return sag_surface_raytrace(
-            sag_function,
-            liftf,
-            domainf,
-            implicit_solver,
-            P,
-            V,
-            tf_in,
-            diameter,
-            normalize,
-        )
-
-    def example_inputs(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
-        P, V = example_rays_3d(10, dtype, device)
-        tf = hom_identity_3d(dtype, device)
-        return P, V, tf
-
-    def example_params(
-        self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[
-        ScalarTensor,
-        ScalarTensor,
-        ScalarTensor,
-        Float[torch.Tensor, "P Q"],
-        Bool[torch.Tensor, ""],
-    ]:
-        return (
-            torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
-            torch.tensor(1.0, dtype=dtype, device=device),
-            torch.tensor(
-                [[0.1, 0.001, 0.002], [0.1, 0.0, 0.0]], dtype=dtype, device=device
-            ),
-            torch.tensor(False, dtype=torch.bool, device=device),
-        )
 
 
 class XYPolynomial(SurfaceElement):
@@ -202,7 +83,9 @@ class XYPolynomial(SurfaceElement):
         self.normalize = init_param(
             self, "normalize", normalize, False, default_dtype=torch.bool
         )
-        self.func3d = XYPolynomialSurfaceKernel(self.solver_config)
+        self.func3d = SagSumSurfaceKernel(
+            3, ti.conical_sag_3d, ti.xypolynomial_sag_3d, self.solver_config
+        )
         self.kernel_anchor3d = SurfaceScaleAnchorKernel(3)
 
     def clone(self, **overrides: Any) -> Self:
@@ -229,15 +112,16 @@ class XYPolynomial(SurfaceElement):
         zero = torch.zeros((), dtype=P.dtype, device=P.device)
         tf_surface, tf_next = kernel_anchor.apply(zero, zero, self.scale, tf)
 
+        params1, params2 = torch.stack([self.C, self.K]), self.coefficients
+
         t, normal, valid, points_local, points_global, rsm = kernel_surface.apply(
             P,
             V,
             tf_surface,
             self.diameter,
-            self.C,
-            self.K,
-            self.coefficients,
             self.normalize,
+            params1,
+            params2,
         )
 
         return SurfaceElementOutput(
