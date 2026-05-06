@@ -8,7 +8,9 @@ import torch
 
 import torchimplicit as ti
 
-registry_2d = {k.removesuffix("_2d"): v for k, v in ti.get_functions(dim=2).items()}
+registry_2d = {
+    k.removesuffix("_2d"): v for k, v in ti.get_implicit_functions(dim=2).items()
+}
 
 
 def parse_args():

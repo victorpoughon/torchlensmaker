@@ -9,7 +9,7 @@ from torchimplicit.implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
-from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.registry import example_scalar, register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
@@ -128,7 +128,7 @@ disk_2d = ImplicitFunction(
     domain=total_domain,
 )
 
-register_function(disk_2d)
+register_implicit_function(disk_2d)
 
 disk_3d = ImplicitFunction(
     name="disk_3d",
@@ -140,4 +140,4 @@ disk_3d = ImplicitFunction(
     domain=total_domain,
 )
 
-register_function(disk_3d)
+register_implicit_function(disk_3d)

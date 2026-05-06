@@ -1,7 +1,7 @@
 import torch
 
 from torchimplicit.domain import total_domain
-from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.registry import example_scalar, register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
@@ -166,7 +166,7 @@ yzcircle_2d = ImplicitFunction(
     domain=total_domain,
 )
 
-register_function(yzcircle_2d)
+register_implicit_function(yzcircle_2d)
 
 
 yzcircle_3d = ImplicitFunction(
@@ -179,4 +179,4 @@ yzcircle_3d = ImplicitFunction(
     domain=total_domain,
 )
 
-register_function(yzcircle_3d)
+register_implicit_function(yzcircle_3d)

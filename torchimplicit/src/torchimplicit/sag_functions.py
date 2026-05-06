@@ -6,7 +6,9 @@ from torchimplicit.math import bbroad, safe_div, safe_sqrt
 from torchimplicit.types import BoundSagFunction, SagResult
 
 
-def spherical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def spherical_sag_2d(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Spherical sag in 2D, parameterized by curvature"
 
     assert params.dim() == 1 and params.shape == (1,), (
@@ -14,7 +16,7 @@ def spherical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> Sa
     )
     C = params[0]
 
-    r = r.squeeze(-1)
+    r = points.squeeze(-1)
     r2 = torch.pow(r, 2)
     C2 = torch.pow(C, 2)
     g = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
@@ -33,7 +35,7 @@ def spherical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> Sa
 
 
 def spherical_sag_3d(
-    yz: torch.Tensor, params: torch.Tensor, *, order: int
+    points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     "Spherical sag in 3D, parameterized by curvature"
 
@@ -42,7 +44,7 @@ def spherical_sag_3d(
     )
     C = params[0]
 
-    y, z = yz.unbind(-1)
+    y, z = points.unbind(-1)
     r2 = torch.pow(y, 2) + torch.pow(z, 2)
     C2 = torch.pow(C, 2)
     G = safe_div(C * r2, 1 + safe_sqrt(1 - r2 * C2))
@@ -68,7 +70,7 @@ def spherical_sag_3d(
     return SagResult(G, G_grad, G_hess)
 
 
-def parabolic_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def parabolic_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
     "Parabolic sag in 2D"
 
     assert params.dim() == 1 and params.shape == (1,), (
@@ -76,7 +78,7 @@ def parabolic_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> Sa
     )
     A = params[0]
 
-    r = r.squeeze(-1)
+    r = points.squeeze(-1)
     g = torch.mul(A, torch.pow(r, 2))
 
     g_grad = None
@@ -91,7 +93,7 @@ def parabolic_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> Sa
 
 
 def parabolic_sag_3d(
-    yz: torch.Tensor, params: torch.Tensor, *, order: int
+    points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     "Parabolic sag in 3D"
 
@@ -100,7 +102,7 @@ def parabolic_sag_3d(
     )
     A = params[0]
 
-    y, z = yz.unbind(-1)
+    y, z = points.unbind(-1)
     G = torch.mul(A, (y**2 + z**2))
 
     G_grad = None
@@ -119,7 +121,7 @@ def parabolic_sag_3d(
     return SagResult(G, G_grad, G_hess)
 
 
-def conical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def conical_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
     "Conical sag in 2D"
 
     assert params.dim() == 1 and params.shape == (2,), (
@@ -127,7 +129,7 @@ def conical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagR
     )
     C, K = params[0], params[1]
 
-    r = r.squeeze(-1)
+    r = points.squeeze(-1)
     r2 = torch.pow(r, 2)
     C2 = torch.pow(C, 2)
     g = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
@@ -145,7 +147,7 @@ def conical_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagR
     return SagResult(g, g_grad, g_hess)
 
 
-def conical_sag_3d(yz: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def conical_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
     "Conical sag in 3D"
 
     assert params.dim() == 1 and params.shape == (2,), (
@@ -153,7 +155,7 @@ def conical_sag_3d(yz: torch.Tensor, params: torch.Tensor, *, order: int) -> Sag
     )
     C, K = params[0], params[1]
 
-    y, z = yz.unbind(-1)
+    y, z = points.unbind(-1)
     r2 = y**2 + z**2
     C2 = torch.pow(C, 2)
     G = safe_div(C * r2, 1 + safe_sqrt(1 - (1 + K) * r2 * C2))
@@ -179,11 +181,11 @@ def conical_sag_3d(yz: torch.Tensor, params: torch.Tensor, *, order: int) -> Sag
     return SagResult(G, G_grad, G_hess)
 
 
-def aspheric_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def aspheric_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
     assert params.dim() == 1, (
         f"aspheric_sag_2d: expected params rank 1, got rank {params.dim()}"
     )
-    r = r.squeeze(-1)
+    r = points.squeeze(-1)
     C = params.shape[-1]  # number of coefficients
     alphas = bbroad(params, r.dim())
     index = torch.arange(C, dtype=r.dtype, device=r.device)
@@ -210,11 +212,11 @@ def aspheric_sag_2d(r: torch.Tensor, params: torch.Tensor, *, order: int) -> Sag
     return SagResult(g, g_grad, g_hess)
 
 
-def aspheric_sag_3d(yz: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+def aspheric_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
     assert params.dim() == 1, (
         f"aspheric_sag_3d: expected params rank 1, got rank {params.dim()}"
     )
-    y, z = yz.unbind(-1)
+    y, z = points.unbind(-1)
     r2 = y**2 + z**2
     C = params.shape[-1]  # number of coefficients
     alphas = bbroad(params, r2.dim())
@@ -244,7 +246,7 @@ def aspheric_sag_3d(yz: torch.Tensor, params: torch.Tensor, *, order: int) -> Sa
 
 
 def xypolynomial_sag_3d(
-    yz: torch.Tensor, params: torch.Tensor, *, order: int
+    points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     r"""
     Sag function for the XY Polynomial model in 3D
@@ -257,7 +259,7 @@ def xypolynomial_sag_3d(
     assert params.dim() == 2, (
         f"xypolynomial_sag_3d: expected params rank 2, got rank {params.dim()}"
     )
-    y, z = yz.unbind(-1)
+    y, z = points.unbind(-1)
     assert y.shape == z.shape
     P, Q = params.shape
     C = bbroad(params, y.dim())
@@ -334,13 +336,13 @@ def xypolynomial_sag_3d(
 
 
 def sag_sum_2d(
-    r: torch.Tensor,
+    points: torch.Tensor,
     sags: Sequence[BoundSagFunction],
     *,
     order: int,
 ) -> SagResult:
     # Call the sag function of each term
-    results = [sag(r, order=order) for sag in sags]
+    results = [sag(points, order=order) for sag in sags]
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)
@@ -358,13 +360,13 @@ def sag_sum_2d(
 
 
 def sag_sum_3d(
-    yz: torch.Tensor,
+    points: torch.Tensor,
     sags: Sequence[BoundSagFunction],
     *,
     order: int,
 ) -> SagResult:
     # Call the sag function of each term
-    results = [sag(yz, order=order) for sag in sags]
+    results = [sag(points, order=order) for sag in sags]
 
     # Sum the results
     g_sum = torch.sum(torch.stack([res.val for res in results], dim=0), dim=0)

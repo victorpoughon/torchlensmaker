@@ -1,6 +1,6 @@
 import torch
 
-from torchimplicit.registry import register_function
+from torchimplicit.registry import register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 

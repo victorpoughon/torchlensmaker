@@ -2,7 +2,7 @@ import torch
 
 from torchimplicit.domain import total_domain
 from torchimplicit.math import safe_sign
-from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.registry import example_scalar, register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
@@ -156,7 +156,7 @@ sphere_2d = ImplicitFunction(
     example_params=example_scalar(5.0),
     domain=total_domain,
 )
-register_function(sphere_2d)
+register_implicit_function(sphere_2d)
 
 
 sphere_3d = ImplicitFunction(
@@ -169,4 +169,4 @@ sphere_3d = ImplicitFunction(
     domain=total_domain,
 )
 
-register_function(sphere_3d)
+register_implicit_function(sphere_3d)

@@ -114,3 +114,16 @@ class EvalSagFunction(Protocol):
 
 class BoundSagFunction(Protocol):
     def __call__(self, points: torch.Tensor, *, order: int) -> SagResult: ...
+
+
+@dataclass(frozen=True)
+class SagFunction:
+    name: str
+    dim: int  # 2 or 3
+    func: EvalSagFunction
+    example_params: ExampleParamsFunction
+
+    def __call__(
+        self, points: torch.Tensor, params: torch.Tensor, *, order: int
+    ) -> SagResult:
+        return self.func(points, params, order=order)

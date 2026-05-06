@@ -4,7 +4,7 @@ import torch
 
 from torchimplicit.domain import total_domain
 from torchimplicit.math import safe_sign
-from torchimplicit.registry import example_empty, register_function
+from torchimplicit.registry import example_empty, register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
@@ -87,7 +87,7 @@ yaxis_2d = ImplicitFunction(
     example_params=example_empty(),
     domain=total_domain,
 )
-register_function(yaxis_2d)
+register_implicit_function(yaxis_2d)
 
 
 yzplane_3d = ImplicitFunction(
@@ -99,4 +99,4 @@ yzplane_3d = ImplicitFunction(
     example_params=example_empty(),
     domain=total_domain,
 )
-register_function(yzplane_3d)
+register_implicit_function(yzplane_3d)

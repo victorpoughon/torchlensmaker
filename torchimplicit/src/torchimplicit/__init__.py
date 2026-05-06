@@ -1,4 +1,4 @@
-from torchimplicit.registry import get_functions
+from torchimplicit.registry import get_implicit_functions
 from torchimplicit.types import (
     BoundImplicitFunction,
     BoundSagFunction,
@@ -53,7 +53,7 @@ __all__ = [
     "conical_sag_3d",
     "disk_2d",
     "disk_3d",
-    "get_functions",
+    "get_implicit_functions",
     "parabolic_sag_2d",
     "parabolic_sag_3d",
     "sag_sum_2d",
