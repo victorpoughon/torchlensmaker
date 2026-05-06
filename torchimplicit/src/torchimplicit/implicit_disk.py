@@ -8,8 +8,8 @@ from torchimplicit.implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
-from torchimplicit.registry import register_function
-from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 
 def implicit_disk_2d(
@@ -117,25 +117,26 @@ def implicit_disk_3d(
     return ImplicitResult(F, grad, hess)
 
 
-register_function(
-    FunctionDefinition(
-        name="disk_2d",
-        dim=2,
-        func=implicit_disk_2d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+disk_2d = ImplicitFunction(
+    name="disk_2d",
+    dim=2,
+    func=implicit_disk_2d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
 
+register_function(disk_2d)
 
-register_function(
-    FunctionDefinition(
-        name="disk_3d",
-        dim=3,
-        func=implicit_disk_3d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+disk_3d = ImplicitFunction(
+    name="disk_3d",
+    dim=3,
+    func=implicit_disk_3d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
+
+register_function(disk_3d)

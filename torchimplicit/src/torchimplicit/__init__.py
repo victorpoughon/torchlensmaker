@@ -1,33 +1,40 @@
-from torchimplicit.types import ImplicitFunction, ImplicitResult
 from torchimplicit.registry import get_functions
+from torchimplicit.types import (
+    BoundImplicitFunction,
+    EvalImplicitFunction,
+    ImplicitFunction,
+    ImplicitResult,
+)
 
 from .implicit_circle import (
-    implicit_yzcircle_2d,
-    implicit_yzcircle_3d,
+    yzcircle_2d,
+    yzcircle_3d,
 )
 from .implicit_disk import (
-    implicit_disk_2d,
-    implicit_disk_3d,
+    disk_2d,
+    disk_3d,
 )
 from .implicit_plane import (
-    implicit_yaxis_2d,
-    implicit_yzplane_3d,
+    yaxis_2d,
+    yzplane_3d,
 )
 from .implicit_sphere import (
-    implicit_sphere_2d,
-    implicit_sphere_3d,
+    sphere_2d,
+    sphere_3d,
 )
 
 __all__ = [
     "get_functions",
-    "implicit_disk_2d",
-    "implicit_disk_3d",
-    "implicit_sphere_2d",
-    "implicit_sphere_3d",
-    "implicit_yaxis_2d",
-    "implicit_yzcircle_2d",
-    "implicit_yzcircle_3d",
-    "implicit_yzplane_3d",
+    "disk_2d",
+    "disk_3d",
+    "sphere_2d",
+    "sphere_3d",
+    "yaxis_2d",
+    "yzcircle_2d",
+    "yzcircle_3d",
+    "yzplane_3d",
+    "EvalImplicitFunction",
+    "BoundImplicitFunction",
     "ImplicitFunction",
     "ImplicitResult",
 ]

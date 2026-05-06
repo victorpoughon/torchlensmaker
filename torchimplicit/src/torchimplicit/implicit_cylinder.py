@@ -1,7 +1,7 @@
 import torch
 
 from torchimplicit.registry import register_function
-from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 
 def implicit_xcylinder_2d(
@@ -17,5 +17,4 @@ def implicit_xcylinder_3d(
     params: torch.Tensor,
     *,
     order: int,
-) -> ImplicitResult:
-    ...
+) -> ImplicitResult: ...

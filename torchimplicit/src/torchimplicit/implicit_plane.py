@@ -1,8 +1,10 @@
+from multiprocessing.reduction import register
+
 import torch
 
 from torchimplicit.math import safe_sign
-from torchimplicit.registry import register_function
-from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+from torchimplicit.registry import example_empty, register_function
+from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 
 def implicit_yaxis_2d(
@@ -75,25 +77,25 @@ def implicit_yzplane_3d(
     return ImplicitResult(F, grad, hess)
 
 
-register_function(
-    FunctionDefinition(
-        name="yaxis_2d",
-        dim=2,
-        func=implicit_yaxis_2d,
-        n_params=0,
-        param_names=(),
-        domain=total_domain,
-    )
+yaxis_2d = ImplicitFunction(
+    name="yaxis_2d",
+    dim=2,
+    func=implicit_yaxis_2d,
+    n_params=0,
+    param_names=(),
+    example_params=example_empty(),
+    domain=total_domain,
 )
+register_function(yaxis_2d)
 
 
-register_function(
-    FunctionDefinition(
-        name="yzplane_3d",
-        dim=3,
-        func=implicit_yzplane_3d,
-        n_params=0,
-        param_names=(),
-        domain=total_domain,
-    )
+yzplane_3d = ImplicitFunction(
+    name="yzplane_3d",
+    dim=3,
+    func=implicit_yzplane_3d,
+    n_params=0,
+    param_names=(),
+    example_params=example_empty(),
+    domain=total_domain,
 )
+register_function(yzplane_3d)

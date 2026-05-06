@@ -4,11 +4,11 @@ import pytest
 import torch
 from conftest import cases_2d, cases_3d
 
-from torchimplicit.types import ImplicitFunction
+from torchimplicit.types import EvalImplicitFunction
 
 
 def _fd_grad(
-    implicit_function: ImplicitFunction, points: torch.Tensor, eps: float
+    implicit_function: EvalImplicitFunction, points: torch.Tensor, eps: float
 ) -> torch.Tensor:
     """
     Compute gradient by finite difference, for testing only
@@ -27,7 +27,7 @@ def _fd_grad(
 
 
 def _fd_hess(
-    implicit_function: ImplicitFunction, points: torch.Tensor, eps: float
+    implicit_function: EvalImplicitFunction, points: torch.Tensor, eps: float
 ) -> torch.Tensor:
     """
     Compute hessian by finite difference, for testing only
@@ -56,7 +56,7 @@ def _fd_hess(
 
 
 def check_shape_dtype_device_correctness(
-    implicit_function: ImplicitFunction,
+    implicit_function: EvalImplicitFunction,
     points: torch.Tensor,
 ):
     dtype, device = points.dtype, points.device
@@ -86,7 +86,7 @@ def check_shape_dtype_device_correctness(
 
 
 def check_implicit_finite_difference(
-    implicit_function: ImplicitFunction,
+    implicit_function: EvalImplicitFunction,
     points: torch.Tensor,
 ):
     """

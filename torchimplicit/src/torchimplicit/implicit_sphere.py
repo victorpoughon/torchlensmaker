@@ -1,8 +1,8 @@
 import torch
 
 from torchimplicit.math import safe_sign
-from torchimplicit.registry import register_function
-from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 
 def implicit_sphere_2d(
@@ -146,25 +146,26 @@ def implicit_sphere_3d(
     return ImplicitResult(F, grad, hess)
 
 
-register_function(
-    FunctionDefinition(
-        name="sphere_2d",
-        dim=2,
-        func=implicit_sphere_2d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+sphere_2d = ImplicitFunction(
+    name="sphere_2d",
+    dim=2,
+    func=implicit_sphere_2d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
+register_function(sphere_2d)
 
 
-register_function(
-    FunctionDefinition(
-        name="sphere_3d",
-        dim=3,
-        func=implicit_sphere_3d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+sphere_3d = ImplicitFunction(
+    name="sphere_3d",
+    dim=3,
+    func=implicit_sphere_3d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
+
+register_function(sphere_3d)

@@ -1,7 +1,7 @@
 import torch
 
-from torchimplicit.registry import register_function
-from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+from torchimplicit.registry import example_scalar, register_function
+from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
 
 
 def implicit_yzcircle_2d(
@@ -155,25 +155,27 @@ def implicit_yzcircle_3d(
     return ImplicitResult(F, grad, hess)
 
 
-register_function(
-    FunctionDefinition(
-        name="yzcircle_2d",
-        dim=2,
-        func=implicit_yzcircle_2d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+yzcircle_2d = ImplicitFunction(
+    name="yzcircle_2d",
+    dim=2,
+    func=implicit_yzcircle_2d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
 
+register_function(yzcircle_2d)
 
-register_function(
-    FunctionDefinition(
-        name="yzcircle_3d",
-        dim=3,
-        func=implicit_yzcircle_3d,
-        n_params=1,
-        param_names=("R",),
-        domain=total_domain,
-    )
+
+yzcircle_3d = ImplicitFunction(
+    name="yzcircle_3d",
+    dim=3,
+    func=implicit_yzcircle_3d,
+    n_params=1,
+    param_names=("R",),
+    example_params=example_scalar(5.0),
+    domain=total_domain,
 )
+
+register_function(yzcircle_3d)
