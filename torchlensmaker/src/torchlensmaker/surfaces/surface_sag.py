@@ -140,3 +140,47 @@ class SagSurfaceKernel(FunctionalKernel):
             torch.tensor(False, dtype=torch.bool, device=device),
             self.sag.example_params(dtype, device),
         )
+
+
+class SagOuterExtentSurfaceKernel(FunctionalKernel):
+    inputs = {"anchor": ScalarTensor}
+    params = {
+        "diameter": ScalarTensor,
+        "normalize": Bool[torch.Tensor, ""],
+        "params": torch.Tensor,
+    }
+    outputs = {"extent": ScalarTensor}
+
+    def __init__(self, sag: ti.SagFunction):
+        assert sag.dim == 2, (
+            f"SagOuterExtentSurfaceKernel requires a 2D sag function, got dim={sag.dim}"
+        )
+        self.sag = sag
+
+    def apply(
+        self,
+        anchor: ScalarTensor,
+        diameter: ScalarTensor,
+        normalize: Bool[torch.Tensor, ""],
+        params: torch.Tensor,
+    ) -> ScalarTensor:
+        extent_unnormalized = self.sag(
+            anchor * diameter / 2, params=params, order=0
+        ).val
+        extent_normalized = diameter / 2 * self.sag(anchor, params, order=0).val
+        extent = torch.where(normalize, extent_normalized, extent_unnormalized)
+        return extent
+
+    def example_inputs(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[(ScalarTensor)]:
+        return (torch.tensor(1.0, dtype=dtype, device=device),)
+
+    def example_params(
+        self, dtype: torch.dtype, device: torch.device
+    ) -> tuple[ScalarTensor, Bool[torch.Tensor, ""], torch.Tensor]:
+        return (
+            torch.tensor(10.0, dtype=dtype, device=device),
+            torch.tensor(True, dtype=torch.bool, device=device),
+            self.sag.example_params(dtype, device),
+        )

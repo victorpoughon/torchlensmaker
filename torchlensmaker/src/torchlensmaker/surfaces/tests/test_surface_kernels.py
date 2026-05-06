@@ -37,6 +37,10 @@ from torchlensmaker.surfaces.surface_parabola import (
 )
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
 from torchlensmaker.surfaces.surface_point import PointSurfaceKernel
+from torchlensmaker.surfaces.surface_sag import (
+    SagOuterExtentSurfaceKernel,
+    SagSurfaceKernel,
+)
 from torchlensmaker.surfaces.surface_sphere_by_curvature import (
     SphereByCurvatureOuterExtentSurfaceKernel,
     SphereByCurvatureSurfaceKernel,
@@ -44,7 +48,6 @@ from torchlensmaker.surfaces.surface_sphere_by_curvature import (
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
-from torchlensmaker.surfaces.surface_sag import SagSurfaceKernel
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
 from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_eval,
@@ -89,30 +92,6 @@ config_sphere = dict(
 )
 
 kernels_cases = [
-    pytest.param(SphereByCurvatureSurfaceKernel(2, config1), id="SphereC2D-1"),
-    pytest.param(SphereByCurvatureSurfaceKernel(2, config6), id="SphereC2D-6"),
-    pytest.param(SphereByCurvatureSurfaceKernel(2, config12), id="SphereC2D-12"),
-    pytest.param(SphereByCurvatureSurfaceKernel(3, config1), id="SphereC3D-1"),
-    pytest.param(SphereByCurvatureSurfaceKernel(3, config6), id="SphereC3D-6"),
-    pytest.param(SphereByCurvatureSurfaceKernel(3, config12), id="SphereC3D-12"),
-    pytest.param(SphereByCurvatureOuterExtentSurfaceKernel(), id="SphereCOuterExtent"),
-    pytest.param(ParabolaSurfaceKernel(2, config1), id="Parabola2D-1"),
-    pytest.param(ParabolaSurfaceKernel(2, config6), id="Parabola2D-6"),
-    pytest.param(ParabolaSurfaceKernel(3, config1), id="Parabola3D-1"),
-    pytest.param(ParabolaSurfaceKernel(3, config6), id="Parabola3D-6"),
-    pytest.param(ParabolaOuterExtentSurfaceKernel(), id="ParabolaOuterExtent"),
-    pytest.param(ConicSurfaceKernel(2, config1), id="Conic2D-1"),
-    pytest.param(ConicSurfaceKernel(2, config6), id="Conic2D-6"),
-    pytest.param(ConicSurfaceKernel(3, config1), id="Conic3D-1"),
-    pytest.param(ConicSurfaceKernel(3, config6), id="Conic3D-6"),
-    pytest.param(ConicOuterExtentSurfaceKernel(), id="ConicOuterExtent"),
-    pytest.param(AsphereSurfaceKernel(2, config1), id="Asphere2D-1"),
-    pytest.param(AsphereSurfaceKernel(2, config6), id="Asphere2D-6"),
-    pytest.param(AsphereSurfaceKernel(3, config1), id="Asphere3D-1"),
-    pytest.param(AsphereSurfaceKernel(3, config6), id="Asphere3D-6"),
-    pytest.param(AsphereOuterExtentSurfaceKernel(), id="AsphereOuterExtent"),
-    pytest.param(XYPolynomialSurfaceKernel(config6), id="XYPolynomial3D-1"),
-    pytest.param(XYPolynomialSurfaceKernel(config6), id="XYPolynomial3D-2"),
     # pytest.param(SphereByRadiusSurfaceKernel(...),          id="SphereR2D"),
     pytest.param(DiskSurfaceKernel(2), id="Disk2D"),
     pytest.param(DiskSurfaceKernel(3), id="Disk3D"),
@@ -128,15 +107,37 @@ kernels_cases = [
     pytest.param(
         ImplicitSurfaceKernel(3, ti.sphere_3d, config_sphere), id="ImplicitSphere3D-1"
     ),
-    pytest.param(SagSurfaceKernel(2, ti.spherical_sag_2d, config6), id="SagSpherical2D"),
-    pytest.param(SagSurfaceKernel(3, ti.spherical_sag_3d, config6), id="SagSpherical3D"),
-    pytest.param(SagSurfaceKernel(2, ti.parabolic_sag_2d, config6), id="SagParabolic2D"),
-    pytest.param(SagSurfaceKernel(3, ti.parabolic_sag_3d, config6), id="SagParabolic3D"),
+    pytest.param(
+        SagSurfaceKernel(2, ti.spherical_sag_2d, config6), id="SagSpherical2D"
+    ),
+    pytest.param(
+        SagSurfaceKernel(3, ti.spherical_sag_3d, config6), id="SagSpherical3D"
+    ),
+    pytest.param(
+        SagSurfaceKernel(2, ti.parabolic_sag_2d, config6), id="SagParabolic2D"
+    ),
+    pytest.param(
+        SagSurfaceKernel(3, ti.parabolic_sag_3d, config6), id="SagParabolic3D"
+    ),
     pytest.param(SagSurfaceKernel(2, ti.conical_sag_2d, config6), id="SagConical2D"),
     pytest.param(SagSurfaceKernel(3, ti.conical_sag_3d, config6), id="SagConical3D"),
     pytest.param(SagSurfaceKernel(2, ti.aspheric_sag_2d, config6), id="SagAspheric2D"),
     pytest.param(SagSurfaceKernel(3, ti.aspheric_sag_3d, config6), id="SagAspheric3D"),
-    pytest.param(SagSurfaceKernel(3, ti.xypolynomial_sag_3d, config6), id="SagXYPolynomial3D"),
+    pytest.param(
+        SagSurfaceKernel(3, ti.xypolynomial_sag_3d, config6), id="SagXYPolynomial3D"
+    ),
+    pytest.param(
+        SagOuterExtentSurfaceKernel(ti.spherical_sag_2d), id="SagOuterExtentSpherical2D"
+    ),
+    pytest.param(
+        SagOuterExtentSurfaceKernel(ti.parabolic_sag_2d), id="SagOuterExtentParabolic2D"
+    ),
+    pytest.param(
+        SagOuterExtentSurfaceKernel(ti.conical_sag_2d), id="SagOuterExtentConical2D"
+    ),
+    pytest.param(
+        SagOuterExtentSurfaceKernel(ti.aspheric_sag_2d), id="SagOuterExtentAspheric2D"
+    ),
 ]
 
 
@@ -164,4 +165,6 @@ def test_surface_kernels_export_onnx(
     # because onnxruntime cpu doesn't seem to support cos() in float64...
     if dtype == torch.float64:
         return
-    check_kernels_export_onnx(request.node.callspec.id, kernel, onnx_output_dir, dtype, device)
+    check_kernels_export_onnx(
+        request.node.callspec.id, kernel, onnx_output_dir, dtype, device
+    )
