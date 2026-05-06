@@ -2,7 +2,7 @@ from functools import partial
 
 import pytest
 import torch
-from conftest import cases_2d, cases_3d
+from conftest import cases_implicit_functions_2d, cases_implicit_functions_3d
 
 from torchimplicit.types import EvalImplicitFunction
 
@@ -143,14 +143,14 @@ def check_implicit_finite_difference(
         raise RuntimeError(f"Unknown default dtype for test {dtype}")
 
 
-@pytest.mark.parametrize("implicit_fn, make_points", cases_2d)
+@pytest.mark.parametrize("implicit_fn, make_points", cases_implicit_functions_2d)
 def test_implicit_2d(implicit_fn, make_points):
     points = make_points()
     check_implicit_finite_difference(implicit_fn, points)
     check_shape_dtype_device_correctness(implicit_fn, points)
 
 
-@pytest.mark.parametrize("implicit_fn, make_points", cases_3d)
+@pytest.mark.parametrize("implicit_fn, make_points", cases_implicit_functions_3d)
 def test_implicit_3d(implicit_fn, make_points):
     points = make_points()
     check_implicit_finite_difference(implicit_fn, points)

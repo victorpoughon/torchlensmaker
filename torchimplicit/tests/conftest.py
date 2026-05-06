@@ -83,7 +83,7 @@ def _make_3d_avoid_disk_boundary(R=1.5, margin=0.1):
 _R = torch.tensor([1.5])
 _empty = torch.zeros(0)
 
-cases_2d = [
+cases_implicit_functions_2d = [
     pytest.param(
         partial(implicit_yzcircle_2d, params=_R), _make_2d_avoid_r0, id="circle"
     ),
@@ -98,7 +98,7 @@ cases_2d = [
     ),
 ]
 
-cases_3d = [
+cases_implicit_functions_3d = [
     pytest.param(
         partial(implicit_yzcircle_3d, params=_R), _make_3d_avoid_yz0, id="circle"
     ),
