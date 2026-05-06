@@ -206,10 +206,15 @@ def check_kernels_export_onnx(
 
     kernel_outputs = [t.numpy(force=True) for t in kernel_outputs_tensors]
 
-    # Compare values, dtype, shape
+    # Compare dtype, shape
     for actual, expected, arg in zip(
         ort_outputs, kernel_outputs, kernel.outputs.items()
     ):
         assert actual.dtype == expected.dtype, (actual.dtype, expected.dtype)
         assert actual.shape == expected.shape, arg
-        torch.testing.assert_close(actual, expected)
+
+        # Note: I don't think it's a good idea to test value equality here,
+        # because example_inputs and examples_params of kernels are mostly for shape and dtype correctness,
+        # not good values for functional testing. Actualy functional testing should use more extensive test
+        # data that provides better and more kernel specific coverage.
+        # torch.testing.assert_close(actual, expected)

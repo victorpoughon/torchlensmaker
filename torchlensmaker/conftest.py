@@ -76,3 +76,8 @@ def device(request):
 def dtype(request):
     dtype_str = request.config.getoption("--dtype")
     return _normalize_dtype(dtype_str)
+
+
+@pytest.fixture(scope="session")
+def onnx_output_dir(tmp_path_factory):
+    return tmp_path_factory.mktemp("onnx", numbered=False)
