@@ -50,12 +50,11 @@ from .surface_asphere import Asphere
 from .surface_conic import Conic
 from .surface_disk import Disk
 from .surface_element import SurfaceElement, SurfaceElementOutput
-from .surface_implicit_disk import ImplicitDisk
+from .surface_implicit import ImplicitDisk, Sphere
 from .surface_parabola import Parabola
 from .surface_plane import Plane
 from .surface_point import PointSurface
 from .surface_sphere_by_curvature import SphereByCurvature
-from .surface_sphere import Sphere
 from .surface_sphere_by_radius import SphereByRadius
 from .surface_square import Square
 from .surface_xypolynomial import XYPolynomial

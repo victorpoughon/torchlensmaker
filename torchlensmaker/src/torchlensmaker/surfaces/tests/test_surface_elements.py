@@ -23,17 +23,20 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.surfaces.surface_asphere import Asphere
-from torchlensmaker.surfaces.surface_conic import Conic
-from torchlensmaker.surfaces.surface_disk import Disk
-from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
-from torchlensmaker.surfaces.surface_parabola import Parabola
-from torchlensmaker.surfaces.surface_plane import Plane
-from torchlensmaker.surfaces.surface_point import PointSurface
-from torchlensmaker.surfaces.surface_sphere import Sphere
-from torchlensmaker.surfaces.surface_sphere_by_curvature import SphereByCurvature
-from torchlensmaker.surfaces.surface_sphere_by_radius import SphereByRadius
-from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomial
+from torchlensmaker.surfaces import (
+    ImplicitDisk,
+    Asphere,
+    Conic,
+    Disk,
+    SurfaceElementOutput,
+    Parabola,
+    Plane,
+    PointSurface,
+    Sphere,
+    SphereByCurvature,
+    SphereByRadius,
+    XYPolynomial,
+)
 from torchlensmaker.types import BatchNDTensor, Tf
 
 # --- ray generators: (N, dtype, device) -> (P, V) ---
@@ -152,6 +155,11 @@ cases_2d = [
         _rays_2d_outside_r5,
         id="sphere",
     ),
+    pytest.param(
+        ImplicitDisk(5.0),
+        _rays_2d_at_origin,
+        id="implicit_disk",
+    ),
 ]
 
 cases_3d = [
@@ -221,6 +229,11 @@ cases_3d = [
         Sphere(5.0),
         _rays_3d_outside_r5,
         id="sphere",
+    ),
+    pytest.param(
+        ImplicitDisk(5.0),
+        _rays_3d_at_origin,
+        id="implicit_disk",
     ),
 ]
 

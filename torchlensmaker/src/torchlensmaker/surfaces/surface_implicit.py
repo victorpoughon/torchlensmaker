@@ -19,12 +19,7 @@ from typing import Any, Self
 
 import tlmviewer as tlmv
 import torch
-import torch.nn as nn
-from torchimplicit import (
-    ImplicitFunction,
-    implicit_sphere_2d,
-    implicit_sphere_3d,
-)
+import torchimplicit as ti
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
@@ -42,28 +37,22 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .kernels_utils import example_rays_2d_offset, example_rays_3d_offset
+from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
-from .sag_geometry import implicit_domain
+from .sag_geometry import (
+    implicit_domain,
+)
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
-def _make_implicit_sphere(dim: int, R: ScalarTensor) -> ImplicitFunction:
-    impf = implicit_sphere_2d if dim == 2 else implicit_sphere_3d
-
-    def f(points: torch.Tensor, *, order: int):
-        return impf(points, R=R, order=order)
-
-    return f
-
-
-class SphereSurfaceKernel(FunctionalKernel):
+class ImplicitSurfaceKernel(FunctionalKernel):
     """
-    Functional kernel for a 2D or 3D sphere centered at origin, parameterized by radius R.
+    Generic 2D/3D implicit surface kernel
     """
 
     inputs = {"P": BatchNDTensor, "V": BatchNDTensor, "tf_in": Tf}
-    params = {"R": ScalarTensor}
+    params = {"params": torch.Tensor}
+
     outputs = {
         "t": BatchTensor,
         "normals": BatchNDTensor,
@@ -73,8 +62,14 @@ class SphereSurfaceKernel(FunctionalKernel):
         "rsm": BatchTensor,
     }
 
-    def __init__(self, dim: int, solver_config: SolverConfig):
+    def __init__(
+        self,
+        dim: int,
+        func: ti.ImplicitFunction,
+        solver_config: SolverConfig,
+    ):
         self.dim = dim
+        self.func = func
         self.solver_config = solver_config
 
     def apply(
@@ -82,7 +77,7 @@ class SphereSurfaceKernel(FunctionalKernel):
         P: BatchNDTensor,
         V: BatchNDTensor,
         tf_in: Tf,
-        R: ScalarTensor,
+        params: torch.Tensor,
     ) -> tuple[
         BatchTensor,
         BatchNDTensor,
@@ -91,7 +86,11 @@ class SphereSurfaceKernel(FunctionalKernel):
         BatchNDTensor,
         BatchTensor,
     ]:
-        F = _make_implicit_sphere(self.dim, R)
+        # Bind function parameters for the solver
+        def F(points: torch.Tensor, *, order: int) -> ti.ImplicitResult:
+            res = self.func(points, params, order=order)
+            return ti.ImplicitResult(res.val, res.grad, res.hess)
+
         implicit_solver = implicit_solver_config(self.dim, self.solver_config)
         local_solver = partial(
             implicit_surface_local_raytrace,
@@ -99,24 +98,78 @@ class SphereSurfaceKernel(FunctionalKernel):
             domain_function=partial(implicit_domain, tol=self.solver_config["tol"]),
             implicit_solver=implicit_solver,
         )
+
         return surface_raytrace(P, V, tf_in, local_solver)
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[BatchNDTensor, BatchNDTensor, Tf]:
-        # Rays must start outside the sphere (R=5 in example_params), so use x=-10
         if self.dim == 2:
-            P, V = example_rays_2d_offset(10, dtype, device, x=-10.0)
+            P, V = example_rays_2d(10, dtype, device)
             tf = hom_identity_2d(dtype, device)
         else:
-            P, V = example_rays_3d_offset(10, dtype, device, x=-10.0)
+            P, V = example_rays_3d(10, dtype, device)
             tf = hom_identity_3d(dtype, device)
         return P, V, tf
 
     def example_params(
         self, dtype: torch.dtype, device: torch.device
-    ) -> tuple[ScalarTensor]:
-        return (torch.tensor(5.0, dtype=dtype, device=device),)
+    ) -> tuple[torch.Tensor]:
+        return (self.func.example_params(dtype, device),)
+
+
+class ImplicitDisk(SurfaceElement):
+    """
+    Disk surface (2D or 3D) implemented as an implicit function
+    """
+
+    default_config = SolverConfig(
+        implicit_solver="newton",
+        num_iter=2,
+        damping=0.95,
+        tol=1e-4,
+        init="closest",
+        clamp_positive=True,
+    )
+
+    def __init__(
+        self,
+        diameter: float | ScalarTensor,
+        trainable: bool = False,
+        solver_config: dict[str, Any] = {},
+    ):
+        super().__init__()
+        self.solver_config = SolverConfig(**self.default_config | solver_config)
+        self.diameter = init_param(self, "diameter", diameter, trainable)
+        self.func2d = ImplicitSurfaceKernel(2, ti.disk_2d, self.solver_config)
+        self.func3d = ImplicitSurfaceKernel(3, ti.disk_3d, self.solver_config)
+
+    def clone(self, **overrides: Any) -> Self:
+        kwargs: dict[str, Any] = dict(
+            diameter=self.diameter, solver_config=self.solver_config
+        )
+        return type(self)(**kwargs | overrides)
+
+    def __repr__(self) -> str:
+        return f"{self._get_name()}(diameter={self.diameter.item()})"
+
+    def reverse(self) -> Self:
+        return self.clone()
+
+    def forward(
+        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
+    ) -> SurfaceElementOutput:
+        func = self.func2d if P.shape[-1] == 2 else self.func3d
+        params = (self.diameter / 2).unsqueeze(0)
+        return SurfaceElementOutput(
+            *func.apply(P, V, tf, params), tf.clone(), tf.clone()
+        )
+
+    def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
+        return torch.zeros_like(anchor)
+
+    def render(self, matrix: torch.Tensor) -> tlmv.SurfaceDisk:
+        return tlmv.SurfaceDisk(radius=self.diameter.item() / 2, matrix=matrix.tolist())
 
 
 class Sphere(SurfaceElement):
@@ -135,7 +188,7 @@ class Sphere(SurfaceElement):
 
     def __init__(
         self,
-        R: float | ScalarTensor | nn.Parameter,
+        R: float | ScalarTensor | torch.nn.Parameter,
         *,
         trainable: bool = False,
         solver_config: dict[str, Any] = {},
@@ -143,8 +196,8 @@ class Sphere(SurfaceElement):
         super().__init__()
         self.solver_config = SolverConfig(**self.default_config | solver_config)
         self.R = init_param(self, "R", R, trainable)
-        self.func2d = SphereSurfaceKernel(2, self.solver_config)
-        self.func3d = SphereSurfaceKernel(3, self.solver_config)
+        self.func2d = ImplicitSurfaceKernel(2, ti.sphere_2d, self.solver_config)
+        self.func3d = ImplicitSurfaceKernel(3, ti.sphere_3d, self.solver_config)
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
@@ -165,8 +218,9 @@ class Sphere(SurfaceElement):
 
     def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
+        params = self.R.unsqueeze(0)
         return SurfaceElementOutput(
-            *func.apply(P, V, tf, self.R), tf.clone(), tf.clone()
+            *func.apply(P, V, tf, params), tf.clone(), tf.clone()
         )
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSphere:

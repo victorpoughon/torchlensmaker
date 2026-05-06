@@ -14,12 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Callable, TypeAlias
+from typing import Callable, Protocol, TypeAlias
 
 import torch
+import torchimplicit as ti
 from jaxtyping import Bool, Float, Int
 from torch._higher_order_ops import while_loop
-from torchimplicit import ImplicitFunction
 
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -30,9 +30,14 @@ from torchlensmaker.types import (
 # (points) -> valid mask
 DomainFunction: TypeAlias = Callable[[BatchTensor, BatchNDTensor], MaskTensor]
 
-ImplicitSolver: TypeAlias = Callable[
-    [BatchNDTensor, BatchNDTensor, ImplicitFunction], BatchTensor
-]
+
+class ImplicitSolver(Protocol):
+    def __call__(
+        self,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
+        implicit_function: ti.BoundImplicitFunction,
+    ) -> BatchTensor: ...
 
 
 def init_closest_origin(P: BatchNDTensor, V: BatchNDTensor) -> BatchTensor:
@@ -43,7 +48,7 @@ def implicit_solver_newton_step(
     t: BatchTensor,
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
 ) -> BatchTensor:
     "One step of first order newton solver"
     points = P + t.unsqueeze(-1) * V
@@ -57,7 +62,7 @@ def implicit_solver_newton_step(
 def implicit_solver_newton(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
     num_iter: int,
     damping: float,
     init: float | str,
@@ -98,7 +103,7 @@ def implicit_solver_newton2_step(
     t: BatchTensor,
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
 ) -> BatchTensor:
     "One step of second order newton solver"
 
@@ -122,7 +127,7 @@ def implicit_solver_newton2_step(
 def implicit_solver_newton2(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
     num_iter: int,
     damping: float,
     init: float | str,
@@ -163,7 +168,7 @@ def implicit_solver_newton2(
 def implicit_solver_newton_while_loop(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
     num_iter: Int[torch.Tensor, ""],
     damping: Float[torch.Tensor, ""],
 ) -> BatchTensor:
@@ -210,7 +215,7 @@ def implicit_solver_newton_while_loop(
 def implicit_surface_local_raytrace(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    implicit_function: ImplicitFunction,
+    implicit_function: ti.BoundImplicitFunction,
     domain_function: DomainFunction,
     implicit_solver: ImplicitSolver,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]:
