@@ -1,4 +1,5 @@
 from torchimplicit.types import ImplicitFunction, ImplicitResult
+from torchimplicit.registry import get_functions
 
 from .implicit_circle import (
     implicit_yzcircle_2d,
@@ -18,6 +19,7 @@ from .implicit_sphere import (
 )
 
 __all__ = [
+    "get_functions",
     "implicit_disk_2d",
     "implicit_disk_3d",
     "implicit_sphere_2d",

@@ -1,12 +1,13 @@
 import torch
 
 from torchimplicit.math import safe_sign
-from torchimplicit.types import ImplicitResult
+from torchimplicit.registry import register_function
+from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
 
 
 def implicit_sphere_2d(
     points: torch.Tensor,
-    R: float | torch.Tensor,
+    params: torch.Tensor,
     *,
     order: int,
 ) -> ImplicitResult:
@@ -18,17 +19,24 @@ def implicit_sphere_2d(
 
         F(x, r) = |sqrt(x^2 + r^2) - R|
 
-    Args:
-        points : (..., 2) tensor, columns are (x, r)
-        R      : sphere radius
+    Params:
+        R (scalar): sphere radius
 
-    Returns:
-        F    : (...,)      — function values
-        grad : (..., 2)    — gradient
-        hess : (..., 2, 2) — symmetric Hessian
+    Args:
+        points (Tensor): input points, shape (..., 2) where last dimension is (x, r)
+        params (Tensor): tensor of parameters
+        order: differentiation order
+
+    Returns: ImplicitResult object
 
     Note: singular at origin (x = r = 0)
     """
+
+    assert params.shape == (1,), (
+        f"sphere_2d expects parameters of shape (1,), got {params.shape}"
+    )
+    R = params[0]
+
     x = points[..., 0]
     r = points[..., 1]
 
@@ -67,7 +75,7 @@ def implicit_sphere_2d(
 
 def implicit_sphere_3d(
     points: torch.Tensor,
-    R: float | torch.Tensor,
+    params: torch.Tensor,
     *,
     order: int,
 ) -> ImplicitResult:
@@ -78,17 +86,24 @@ def implicit_sphere_3d(
 
         F(x, y, z) = |sqrt(x^2 + y^2 + z^2) - R|
 
-    Args:
-        points : (..., 3) tensor, columns are (x, y, z)
-        R      : sphere radius
+    Params:
+        R (scalar): sphere radius
 
-    Returns:
-        F    : (...,)      — function values
-        grad : (..., 3)    — gradient
-        hess : (..., 3, 3) — symmetric Hessian
+    Args:
+        points (Tensor): input points, shape (..., 3) where last dimension is (x, y, z)
+        params (Tensor): tensor of parameters
+        order: differentiation order
+
+    Returns: ImplicitResult object
 
     Note: singular at origin (x = y = z = 0)
     """
+
+    assert params.shape == (1,), (
+        f"sphere_3d expects parameters of shape (1,), got {params.shape}"
+    )
+    R = params[0]
+
     x = points[..., 0]
     y = points[..., 1]
     z = points[..., 2]
@@ -129,3 +144,27 @@ def implicit_sphere_3d(
         )  # (..., 3, 3)
 
     return ImplicitResult(F, grad, hess)
+
+
+register_function(
+    FunctionDefinition(
+        name="sphere_2d",
+        dim=2,
+        func=implicit_sphere_2d,
+        n_params=1,
+        param_names=("R",),
+        domain=total_domain,
+    )
+)
+
+
+register_function(
+    FunctionDefinition(
+        name="sphere_3d",
+        dim=3,
+        func=implicit_sphere_3d,
+        n_params=1,
+        param_names=("R",),
+        domain=total_domain,
+    )
+)

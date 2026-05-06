@@ -1,15 +1,21 @@
 import torch
 
+from torchimplicit.registry import register_function
+from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
+
 
 def implicit_xcylinder_2d(
-    points: torch.Tensor, R: float | torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]: ...
+    points: torch.Tensor,
+    params: torch.Tensor,
+    *,
+    order: int,
+) -> ImplicitResult: ...
 
 
 def implicit_xcylinder_3d(
-    points: torch.Tensor, R: float | torch.Tensor
-) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-    """
-    Implicit function for an infinite cylinder around the X axis
-    """
+    points: torch.Tensor,
+    params: torch.Tensor,
+    *,
+    order: int,
+) -> ImplicitResult:
     ...

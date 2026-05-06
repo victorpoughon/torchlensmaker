@@ -80,24 +80,35 @@ def _make_3d_avoid_disk_boundary(R=1.5, margin=0.1):
 
 # --- parametrized test cases ---
 
+_R = torch.tensor([1.5])
+_empty = torch.zeros(0)
+
 cases_2d = [
-    pytest.param(partial(implicit_yzcircle_2d, R=1.5), _make_2d_avoid_r0, id="circle"),
     pytest.param(
-        partial(implicit_disk_2d, R=1.5), _make_2d_avoid_disk_boundary, id="disk"
+        partial(implicit_yzcircle_2d, params=_R), _make_2d_avoid_r0, id="circle"
     ),
     pytest.param(
-        partial(implicit_sphere_2d, R=1.5), _make_2d_avoid_origin, id="sphere"
+        partial(implicit_disk_2d, params=_R), _make_2d_avoid_disk_boundary, id="disk"
     ),
-    pytest.param(partial(implicit_yaxis_2d), _make_2d_uniform, id="plane"),
+    pytest.param(
+        partial(implicit_sphere_2d, params=_R), _make_2d_avoid_origin, id="sphere"
+    ),
+    pytest.param(
+        partial(implicit_yaxis_2d, params=_empty), _make_2d_uniform, id="plane"
+    ),
 ]
 
 cases_3d = [
-    pytest.param(partial(implicit_yzcircle_3d, R=1.5), _make_3d_avoid_yz0, id="circle"),
     pytest.param(
-        partial(implicit_disk_3d, R=1.5), _make_3d_avoid_disk_boundary, id="disk"
+        partial(implicit_yzcircle_3d, params=_R), _make_3d_avoid_yz0, id="circle"
     ),
     pytest.param(
-        partial(implicit_sphere_3d, R=1.5), _make_3d_avoid_origin, id="sphere"
+        partial(implicit_disk_3d, params=_R), _make_3d_avoid_disk_boundary, id="disk"
     ),
-    pytest.param(partial(implicit_yzplane_3d), _make_3d_uniform, id="plane"),
+    pytest.param(
+        partial(implicit_sphere_3d, params=_R), _make_3d_avoid_origin, id="sphere"
+    ),
+    pytest.param(
+        partial(implicit_yzplane_3d, params=_empty), _make_3d_uniform, id="plane"
+    ),
 ]

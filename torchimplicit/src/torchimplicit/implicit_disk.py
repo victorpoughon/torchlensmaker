@@ -40,8 +40,9 @@ def implicit_disk_2d(
     r = points[..., 1]
     within_cylinder = torch.abs(r) <= R
 
-    planeR = implicit_yaxis_2d(points, order=order)
-    circleR = implicit_yzcircle_2d(points, R, order=order)
+    empty = torch.zeros(0, dtype=params.dtype, device=params.device)
+    planeR = implicit_yaxis_2d(points, empty, order=order)
+    circleR = implicit_yzcircle_2d(points, params, order=order)
 
     F = torch.where(within_cylinder, planeR.val, circleR.val)
 
@@ -91,8 +92,9 @@ def implicit_disk_3d(
     y, z = points[..., 1], points[..., 2]
     within_cylinder = y**2 + z**2 <= R**2
 
-    planeR = implicit_yzplane_3d(points, order=order)
-    circleR = implicit_yzcircle_3d(points, R, order=order)
+    empty = torch.zeros(0, dtype=params.dtype, device=params.device)
+    planeR = implicit_yzplane_3d(points, empty, order=order)
+    circleR = implicit_yzcircle_3d(points, params, order=order)
 
     F = torch.where(within_cylinder, planeR.val, circleR.val)
 

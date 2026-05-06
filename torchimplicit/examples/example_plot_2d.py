@@ -8,19 +8,7 @@ import torch
 
 import torchimplicit as ti
 
-implicit_functions = {
-    "disk": ti.implicit_disk_2d,
-    "yzcircle": ti.implicit_yzcircle_2d,
-    "yaxis": ti.implicit_yaxis_2d,
-    "sphere": ti.implicit_sphere_2d,
-}
-
-function_params = {
-    "disk": ["R"],
-    "yzcircle": ["R"],
-    "yaxis": [],
-    "sphere": ["R"],
-}
+registry_2d = {k.removesuffix("_2d"): v for k, v in ti.get_functions(dim=2).items()}
 
 
 def parse_args():
@@ -28,7 +16,7 @@ def parse_args():
         description="Example plot for a 2D implicit function in torchimplicit"
     )
     parser.add_argument(
-        "function", choices=list(implicit_functions.keys()), help="Function name"
+        "function", choices=list(registry_2d.keys()), help="Function name"
     )
     parser.add_argument(
         "params", nargs="*", type=float, help="Function parameters (e.g. R)"
@@ -43,16 +31,15 @@ def parse_args():
 
 
 def bind_function(name, user_params):
-    param_names = function_params[name]
-    if len(user_params) != len(param_names):
+    fdef = registry_2d[name]
+    if len(user_params) != fdef.n_params:
         raise ValueError(
-            f"'{name}' expects {len(param_names)} parameter(s)"
-            + (f" ({', '.join(param_names)})" if param_names else "")
+            f"'{name}' expects {fdef.n_params} parameter(s)"
+            + (f" ({', '.join(fdef.param_names)})" if fdef.param_names else "")
             + f", got {len(user_params)}"
         )
-    fn = implicit_functions[name]
     params = torch.tensor(user_params)
-    return functools.partial(fn, params=params)
+    return functools.partial(fdef.func, params=params)
 
 
 def main():
@@ -76,11 +63,13 @@ def main():
     F = result.val.reshape(N, N).numpy()
     F = np.nan_to_num(F, nan=0.0, posinf=0.0, neginf=0.0)
 
+    assert result.grad is not None
     G = result.grad.reshape(N, N, 2).numpy()
     G = np.nan_to_num(G, nan=0.0, posinf=0.0, neginf=0.0)
     GX, GY = G[..., 0], G[..., 1]
     grad_mag = np.sqrt(GX**2 + GY**2)
 
+    assert result.hess is not None
     H = result.hess.reshape(N, N, 2, 2).numpy()
     H = np.nan_to_num(H, nan=0.0, posinf=0.0, neginf=0.0)
     frob = np.sqrt(H[..., 0, 0] ** 2 + 2 * H[..., 0, 1] ** 2 + H[..., 1, 1] ** 2)
@@ -90,11 +79,9 @@ def main():
     XX_np = XX.numpy()
     YY_np = YY.numpy()
 
-    fn_name = implicit_functions[args.function].__name__
-    param_str = ", ".join(
-        f"{k}={v}" for k, v in zip(function_params[args.function], args.params)
-    )
-    title = f"{fn_name}({param_str})"
+    fdef = registry_2d[args.function]
+    param_str = ", ".join(f"{k}={v}" for k, v in zip(fdef.param_names, args.params))
+    title = f"{fdef.name}({param_str})"
 
     plt.style.use("dark_background")
 
