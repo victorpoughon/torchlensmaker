@@ -34,3 +34,17 @@ def example_scalar(x: float):
         return torch.tensor([x], dtype=dtype, device=device)
 
     return f
+
+
+def example_vector(values: list[float]):
+    def f(dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+        return torch.tensor(list(values), dtype=dtype, device=device)
+
+    return f
+
+
+def example_matrix(values: list[list[float]]):
+    def f(dtype: torch.dtype, device: torch.device) -> torch.Tensor:
+        return torch.tensor(values, dtype=dtype, device=device)
+
+    return f

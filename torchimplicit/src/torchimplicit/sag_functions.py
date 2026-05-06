@@ -3,10 +3,11 @@ from typing import Sequence
 import torch
 
 from torchimplicit.math import bbroad, safe_div, safe_sqrt
-from torchimplicit.types import BoundSagFunction, SagResult
+from torchimplicit.registry import example_matrix, example_scalar, example_vector
+from torchimplicit.types import BoundSagFunction, SagFunction, SagResult
 
 
-def spherical_sag_2d(
+def spherical_sag_2d_eval(
     points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     "Spherical sag in 2D, parameterized by curvature"
@@ -34,7 +35,15 @@ def spherical_sag_2d(
     return SagResult(g, g_grad, g_hess)
 
 
-def spherical_sag_3d(
+spherical_sag_2d = SagFunction(
+    name="spherical_2d",
+    dim=2,
+    func=spherical_sag_2d_eval,
+    example_params=example_scalar(5.0),
+)
+
+
+def spherical_sag_3d_eval(
     points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     "Spherical sag in 3D, parameterized by curvature"
@@ -70,7 +79,17 @@ def spherical_sag_3d(
     return SagResult(G, G_grad, G_hess)
 
 
-def parabolic_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+spherical_sag_3d = SagFunction(
+    name="spherical_3d",
+    dim=3,
+    func=spherical_sag_3d_eval,
+    example_params=example_scalar(5.0),
+)
+
+
+def parabolic_sag_2d_eval(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Parabolic sag in 2D"
 
     assert params.dim() == 1 and params.shape == (1,), (
@@ -92,7 +111,15 @@ def parabolic_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) 
     return SagResult(g, g_grad, g_hess)
 
 
-def parabolic_sag_3d(
+parabolic_sag_2d = SagFunction(
+    name="parabolic_2d",
+    dim=2,
+    func=parabolic_sag_2d_eval,
+    example_params=example_scalar(1.0),
+)
+
+
+def parabolic_sag_3d_eval(
     points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     "Parabolic sag in 3D"
@@ -121,7 +148,17 @@ def parabolic_sag_3d(
     return SagResult(G, G_grad, G_hess)
 
 
-def conical_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+parabolic_sag_3d = SagFunction(
+    name="parabolic_3d",
+    dim=3,
+    func=parabolic_sag_3d_eval,
+    example_params=example_scalar(1.0),
+)
+
+
+def conical_sag_2d_eval(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Conical sag in 2D"
 
     assert params.dim() == 1 and params.shape == (2,), (
@@ -147,7 +184,17 @@ def conical_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) ->
     return SagResult(g, g_grad, g_hess)
 
 
-def conical_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+conical_sag_2d = SagFunction(
+    name="conical_2d",
+    dim=2,
+    func=conical_sag_2d_eval,
+    example_params=example_vector([5.0, 0.0]),
+)
+
+
+def conical_sag_3d_eval(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Conical sag in 3D"
 
     assert params.dim() == 1 and params.shape == (2,), (
@@ -181,7 +228,17 @@ def conical_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) ->
     return SagResult(G, G_grad, G_hess)
 
 
-def aspheric_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+conical_sag_3d = SagFunction(
+    name="conical_3d",
+    dim=3,
+    func=conical_sag_3d_eval,
+    example_params=example_vector([5.0, 0.0]),
+)
+
+
+def aspheric_sag_2d_eval(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     assert params.dim() == 1, (
         f"aspheric_sag_2d: expected params rank 1, got rank {params.dim()}"
     )
@@ -212,7 +269,17 @@ def aspheric_sag_2d(points: torch.Tensor, params: torch.Tensor, *, order: int) -
     return SagResult(g, g_grad, g_hess)
 
 
-def aspheric_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) -> SagResult:
+aspheric_sag_2d = SagFunction(
+    name="aspheric_2d",
+    dim=2,
+    func=aspheric_sag_2d_eval,
+    example_params=example_scalar(1.0),
+)
+
+
+def aspheric_sag_3d_eval(
+    points: torch.Tensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     assert params.dim() == 1, (
         f"aspheric_sag_3d: expected params rank 1, got rank {params.dim()}"
     )
@@ -245,7 +312,15 @@ def aspheric_sag_3d(points: torch.Tensor, params: torch.Tensor, *, order: int) -
     return SagResult(G, G_grad, G_hess)
 
 
-def xypolynomial_sag_3d(
+aspheric_sag_3d = SagFunction(
+    name="aspheric_3d",
+    dim=3,
+    func=aspheric_sag_3d_eval,
+    example_params=example_scalar(1.0),
+)
+
+
+def xypolynomial_sag_3d_eval(
     points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
     r"""
@@ -333,6 +408,14 @@ def xypolynomial_sag_3d(
         )
 
     return SagResult(G, G_grad, G_hess)
+
+
+xypolynomial_sag_3d = SagFunction(
+    name="xypolynomial_3d",
+    dim=3,
+    func=xypolynomial_sag_3d_eval,
+    example_params=example_matrix([[1.0, 0.0], [0.1, 0.2]]),
+)
 
 
 def sag_sum_2d(
