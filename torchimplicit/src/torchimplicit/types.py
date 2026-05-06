@@ -87,7 +87,7 @@ class SagResult:
     hess: torch.Tensor | None = field(default=None)
 
 
-class SagFunction(Protocol):
+class EvalSagFunction(Protocol):
     """
     A sag function models a surface as a deviation from a plane. In 2D that 'plane'
     is the abstract meridional axis, in 3D it's the YZ plane.

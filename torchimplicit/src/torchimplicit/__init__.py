@@ -3,9 +3,9 @@ from torchimplicit.types import (
     BoundImplicitFunction,
     BoundSagFunction,
     EvalImplicitFunction,
+    EvalSagFunction,
     ImplicitFunction,
     ImplicitResult,
-    SagFunction,
     SagResult,
 )
 
@@ -45,7 +45,7 @@ __all__ = [
     "EvalImplicitFunction",
     "ImplicitFunction",
     "ImplicitResult",
-    "SagFunction",
+    "EvalSagFunction",
     "SagResult",
     "aspheric_sag_2d",
     "aspheric_sag_3d",
