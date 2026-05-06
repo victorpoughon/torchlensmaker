@@ -17,9 +17,15 @@
 from functools import partial
 from typing import Any, Self, Sequence
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 from jaxtyping import Bool, Float
+from torchimplicit.sag_functions import (
+    conical_sag_3d,
+    sag_sum_3d,
+    xypolynomial_sag_3d,
+)
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
@@ -39,14 +45,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_3d
-from .sag_functions import (
-    conical_sag_3d,
-    sag_sum_3d,
-    xypolynomial_sag_3d,
-)
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 class XYPolynomialSurfaceKernel(FunctionalKernel):

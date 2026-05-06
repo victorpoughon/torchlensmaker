@@ -14,13 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .implicit_solver import (
-    DomainFunction,
-    ImplicitSolver,
-    implicit_solver_newton,
-    implicit_solver_newton2,
-)
-from .lift_functions import (
+from torchimplicit.lift_functions import (
     LiftFunction,
     sag_to_implicit_2d_abs,
     sag_to_implicit_2d_euclid,
@@ -31,7 +25,7 @@ from .lift_functions import (
     sag_to_implicit_2d_taylor_squared,
     sag_to_implicit_3d_raw,
 )
-from .sag_functions import (
+from torchimplicit.sag_functions import (
     BoundSagFunction,
     aspheric_sag_2d,
     aspheric_sag_3d,
@@ -44,6 +38,13 @@ from .sag_functions import (
     spherical_sag_2d,
     spherical_sag_3d,
     xypolynomial_sag_3d,
+)
+
+from .implicit_solver import (
+    DomainFunction,
+    ImplicitSolver,
+    implicit_solver_newton,
+    implicit_solver_newton2,
 )
 from .surface_anchor import KinematicSurface
 from .surface_asphere import Asphere

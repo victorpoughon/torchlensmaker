@@ -1,7 +1,8 @@
 import torch
 
+from torchimplicit.domain import total_domain
 from torchimplicit.registry import example_scalar, register_function
-from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
+from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
 def implicit_yzcircle_2d(

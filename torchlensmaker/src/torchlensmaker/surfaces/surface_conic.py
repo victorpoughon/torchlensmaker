@@ -17,9 +17,14 @@
 from functools import partial
 from typing import Any, Self
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 from jaxtyping import Bool, Float
+from torchimplicit.sag_functions import (
+    conical_sag_2d,
+    conical_sag_3d,
+)
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.tensor_manip import init_param
@@ -42,14 +47,8 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_functions import (
-    conical_sag_2d,
-    conical_sag_3d,
-)
 from .sag_surface import SolverConfig, sag_solver_config, sag_surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 class ConicSurfaceKernel(FunctionalKernel):

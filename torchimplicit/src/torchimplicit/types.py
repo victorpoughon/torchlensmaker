@@ -57,10 +57,6 @@ class ExampleParamsFunction(Protocol):
     ) -> torch.Tensor: ...
 
 
-def total_domain(points: torch.Tensor, params: torch.Tensor) -> torch.Tensor:
-    return torch.full(points.shape[:-1], True, dtype=torch.bool, device=points.device)
-
-
 @dataclass(frozen=True)
 class ImplicitFunction:
     name: str
@@ -82,3 +78,39 @@ class ImplicitFunction:
         self, points: torch.Tensor, params: torch.Tensor, *, order: int
     ) -> ImplicitResult:
         return self.func(points, params, order=order)
+
+
+@dataclass
+class SagResult:
+    val: torch.Tensor
+    grad: torch.Tensor | None = field(default=None)
+    hess: torch.Tensor | None = field(default=None)
+
+
+class SagFunction(Protocol):
+    """
+    A sag function models a surface as a deviation from a plane. In 2D that 'plane'
+    is the abstract meridional axis, in 3D it's the YZ plane.
+
+    SagFunction :: points -> g(points), g_grad(points)
+
+    In 2D:
+        points: tensor of shape (..., 1)
+        g(points): tensor of shape (...)
+        g.grad(points): tensor of shape (..., 1)
+        g.hess(points): tensor of shape (..., 1, 1)
+
+    In 3D:
+        points: tensor of shape (..., 2)
+        g(points): tensor of shape (...)
+        g.grad(points): tensor of shape (..., 2)
+        g.hess(points): tensor of shape (..., 2, 2)
+    """
+
+    def __call__(
+        self, points: torch.Tensor, params: torch.Tensor, *, order: int
+    ) -> SagResult: ...
+
+
+class BoundSagFunction(Protocol):
+    def __call__(self, points: torch.Tensor, *, order: int) -> SagResult: ...

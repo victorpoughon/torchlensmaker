@@ -20,6 +20,7 @@ from typing import Any, Self
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
+import torchimplicit as ti
 from jaxtyping import Bool, Float
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
@@ -48,13 +49,6 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_functions import (
-    BoundSagFunction,
-    SagFunction,
-    SagResult,
-    parabolic_sag_2d,
-    parabolic_sag_3d,
-)
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -80,7 +74,7 @@ class SagSurfaceKernel(FunctionalKernel):
         "rsm": BatchTensor,
     }
 
-    def __init__(self, dim: int, sag: SagFunction, solver_config: SolverConfig):
+    def __init__(self, dim: int, sag: ti.SagFunction, solver_config: SolverConfig):
         self.dim = dim
         self.sag = sag
         self.solver_config = solver_config
@@ -106,7 +100,7 @@ class SagSurfaceKernel(FunctionalKernel):
         )
 
         # Bind sag function parameters for the solver
-        def S(points: BatchNDTensor, *, order: int) -> SagResult:
+        def S(points: BatchNDTensor, *, order: int) -> ti.SagResult:
             return self.sag(points, params=params, order=order)
 
         return sag_surface_raytrace(

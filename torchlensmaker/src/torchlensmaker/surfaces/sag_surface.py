@@ -20,6 +20,15 @@ from typing import Any, Callable, Sequence, TypeAlias, TypedDict
 
 import torch
 from jaxtyping import Bool, Float
+from torchimplicit.lift_functions import (
+    LiftFunction,
+    sag_to_implicit_2d_euclid,
+    sag_to_implicit_2d_raw,
+    sag_to_implicit_2d_taylor,
+    sag_to_implicit_2d_taylor_squared,
+    sag_to_implicit_3d_raw,
+)
+from torchimplicit.sag_functions import BoundSagFunction
 
 from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_2d,
@@ -41,16 +50,7 @@ from .implicit_solver import (
     implicit_solver_newton2,
     implicit_surface_local_raytrace,
 )
-from .lift_functions import (
-    LiftFunction,
-    sag_to_implicit_2d_euclid,
-    sag_to_implicit_2d_raw,
-    sag_to_implicit_2d_taylor,
-    sag_to_implicit_2d_taylor_squared,
-    sag_to_implicit_3d_raw,
-)
 from .raytrace import surface_raytrace
-from .sag_functions import BoundSagFunction
 
 SolverConfig: TypeAlias = dict[str, Any]
 """

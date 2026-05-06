@@ -20,6 +20,7 @@ from typing import Any, Self, Sequence
 import tlmviewer as tlmv
 import torch
 import torch.nn as nn
+import torchimplicit as ti
 from jaxtyping import Bool, Float
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
@@ -48,14 +49,6 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_functions import (
-    aspheric_sag_2d,
-    aspheric_sag_3d,
-    conical_sag_2d,
-    conical_sag_3d,
-    sag_sum_2d,
-    sag_sum_3d,
-)
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -117,18 +110,18 @@ class AsphereSurfaceKernel(FunctionalKernel):
     ]:
         if self.dim == 2:
             sag_function = partial(
-                sag_sum_2d,
+                ti.sag_sum_2d,
                 sags=[
-                    partial(conical_sag_2d, params=torch.stack([C, K])),
-                    partial(aspheric_sag_2d, params=alphas),
+                    partial(ti.conical_sag_2d, params=torch.stack([C, K])),
+                    partial(ti.aspheric_sag_2d, params=alphas),
                 ],
             )
         else:
             sag_function = partial(
-                sag_sum_3d,
+                ti.sag_sum_3d,
                 sags=[
-                    partial(conical_sag_3d, params=torch.stack([C, K])),
-                    partial(aspheric_sag_3d, params=alphas),
+                    partial(ti.conical_sag_3d, params=torch.stack([C, K])),
+                    partial(ti.aspheric_sag_3d, params=alphas),
                 ],
             )
 
@@ -200,10 +193,10 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
         sag_function = partial(
-            sag_sum_2d,
+            ti.sag_sum_2d,
             sags=[
-                partial(conical_sag_2d, params=torch.stack([C, K])),
-                partial(aspheric_sag_2d, params=alphas),
+                partial(ti.conical_sag_2d, params=torch.stack([C, K])),
+                partial(ti.aspheric_sag_2d, params=alphas),
             ],
         )
         extent_unnormalized = sag_function(anchor * diameter / 2, order=0).val

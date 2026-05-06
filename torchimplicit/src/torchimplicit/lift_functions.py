@@ -1,48 +1,30 @@
-# This file is part of Torch Lens Maker
-# Copyright (C) 2024-present Victor Poughon
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-from typing import Callable, TypeAlias
+from typing import Protocol
 
 import torch
+
 from torchimplicit import ImplicitFunction, ImplicitResult
+from torchimplicit.math import safe_sign
+from torchimplicit.sag_functions import BoundSagFunction, SagResult
+from torchimplicit.types import BoundImplicitFunction
 
-from torchlensmaker.surfaces.sag_functions import BoundSagFunction, SagResult
-from torchlensmaker.types import (
-    Batch2DTensor,
-    Batch3DTensor,
-    BatchNDTensor,
-    ScalarTensor,
-)
 
-LiftFunction: TypeAlias = Callable[
-    [BoundSagFunction, ScalarTensor, ScalarTensor],
-    ImplicitFunction,
-]
-"""
-A lift function is a transformation that turns a sag function into an implicit
-function. It is also given two extra arguments:
+class LiftFunction(Protocol):
+    """
+    A lift function is a transformation that turns a sag function into an implicit
+    function. It is also given two extra arguments:
 
-    nf: the normalization factor
-    tau: the radius of the domain of the sag function
-"""
+        nf: the normalization factor
+        tau: the radius of the domain of the sag function
+    """
+
+    def __call__(
+        self, sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+    ) -> ImplicitFunction: ...
 
 
 def sag_to_implicit_2d_raw(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Wrap a 2D sag function into an implicit function
 
@@ -54,7 +36,7 @@ def sag_to_implicit_2d_raw(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
@@ -85,7 +67,7 @@ def sag_to_implicit_2d_raw(
 
 
 def sag_taylor_expansion_2d(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
 ) -> BoundSagFunction:
     "Sag function defined by the taylor expansion of another at the lens boundary"
 
@@ -115,11 +97,11 @@ def sag_taylor_expansion_2d(
 
 
 def sag_to_implicit_2d_taylor(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     sag_exp = sag_taylor_expansion_2d(sag, nf, tau)
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g = sag_exp(points[..., 1:] / nf, order=order)
         f = nf * g.val - x
@@ -151,8 +133,8 @@ def sag_to_implicit_2d_taylor(
 
 
 def sag_to_implicit_2d_taylor_squared(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Taylor squared lift function, aka F_in
 
@@ -162,7 +144,7 @@ def sag_to_implicit_2d_taylor_squared(
     """
     sag_exp = sag_taylor_expansion_2d(sag, nf, tau)
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g = sag_exp(points[..., 1:] / nf, order=order)
         e = x - nf * g.val
@@ -200,14 +182,14 @@ def sag_to_implicit_2d_taylor_squared(
 
 
 def sag_to_implicit_2d_euclid_squared(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Squared euclidian distance to the lens boundary
     """
     x_a = nf * sag(tau / nf, order=0).val
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x, r = points.unbind(-1)
         r_abs = torch.abs(r)
         f = (x - x_a) ** 2 + (r_abs - tau) ** 2
@@ -232,9 +214,9 @@ def sag_to_implicit_2d_euclid_squared(
 
 def sag_to_implicit_2d_squared_blend(
     sag: BoundSagFunction,
-    nf: ScalarTensor,
-    tau: ScalarTensor,
-) -> ImplicitFunction:
+    nf: torch.Tensor,
+    tau: torch.Tensor,
+) -> BoundImplicitFunction:
     """
     Smooth C^2 blend of the Taylor-squared lift (F_in) and the Euclidean-squared
     lift (F_out), using a quintic smooth step sigma(u) = 6u^5 - 15u^4 + 10u^3
@@ -252,7 +234,7 @@ def sag_to_implicit_2d_squared_blend(
 
     w = 2.5  # TODO argument
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         r = points[..., 1]
 
         # Evaluate both sub-lifts at the requested order
@@ -343,15 +325,9 @@ def sag_to_implicit_2d_squared_blend(
     return implicit
 
 
-def safe_sign(x: torch.Tensor) -> torch.Tensor:
-    "Like torch.sign() but equals 1 at 0"
-    ones = torch.ones_like(x)
-    return torch.where(x >= 0, ones, -ones)
-
-
 def sag_to_implicit_2d_abs(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Wrap a 2D sag function into an implicit function
 
@@ -363,7 +339,7 @@ def sag_to_implicit_2d_abs(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         core = nf * g.val - x
@@ -397,8 +373,8 @@ def sag_to_implicit_2d_abs(
 
 
 def sag_to_implicit_2d_euclid(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Wrap a 2D sag function into an implicit function
     Enforces lens diameter bounds with the euclian distance
@@ -414,7 +390,7 @@ def sag_to_implicit_2d_euclid(
 
     raw_implicit = sag_to_implicit_2d_abs(sag, nf, tau)
 
-    def implicit(points: Batch2DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         # inner part: delegate to raw
         F_inner = raw_implicit(points, order=order)
 
@@ -464,8 +440,8 @@ def sag_to_implicit_2d_euclid(
 
 
 def sag_to_implicit_3d_raw(
-    sag: BoundSagFunction, nf: ScalarTensor, tau: ScalarTensor
-) -> ImplicitFunction:
+    sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
+) -> BoundImplicitFunction:
     """
     Wrap a 3D sag function into an implicit function
 
@@ -477,7 +453,7 @@ def sag_to_implicit_3d_raw(
         An implicit function representing the surface defined by the sag function
     """
 
-    def implicit(points: Batch3DTensor, *, order: int) -> ImplicitResult:
+    def implicit(points: torch.Tensor, *, order: int) -> ImplicitResult:
         x = points[..., 0]
         g = sag(points[..., 1:] / nf, order=order)
         f = nf * g.val - x

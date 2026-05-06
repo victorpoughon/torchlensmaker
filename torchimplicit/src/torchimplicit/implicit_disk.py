@@ -1,5 +1,6 @@
 import torch
 
+from torchimplicit.domain import total_domain
 from torchimplicit.implicit_circle import (
     implicit_yzcircle_2d,
     implicit_yzcircle_3d,
@@ -9,7 +10,7 @@ from torchimplicit.implicit_plane import (
     implicit_yzplane_3d,
 )
 from torchimplicit.registry import example_scalar, register_function
-from torchimplicit.types import ImplicitFunction, ImplicitResult, total_domain
+from torchimplicit.types import ImplicitFunction, ImplicitResult
 
 
 def implicit_disk_2d(
