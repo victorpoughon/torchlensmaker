@@ -44,6 +44,7 @@ from torchlensmaker.surfaces.surface_sphere_by_curvature import (
 from torchlensmaker.surfaces.surface_sphere_by_radius import (
     SphereByRadiusSurfaceKernel,  # TODO
 )
+from torchlensmaker.surfaces.surface_sag import SagSurfaceKernel
 from torchlensmaker.surfaces.surface_xypolynomial import XYPolynomialSurfaceKernel
 from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_eval,
@@ -127,6 +128,15 @@ kernels_cases = [
     pytest.param(
         ImplicitSurfaceKernel(3, ti.sphere_3d, config_sphere), id="ImplicitSphere3D-1"
     ),
+    pytest.param(SagSurfaceKernel(2, ti.spherical_sag_2d, config6), id="SagSpherical2D"),
+    pytest.param(SagSurfaceKernel(3, ti.spherical_sag_3d, config6), id="SagSpherical3D"),
+    pytest.param(SagSurfaceKernel(2, ti.parabolic_sag_2d, config6), id="SagParabolic2D"),
+    pytest.param(SagSurfaceKernel(3, ti.parabolic_sag_3d, config6), id="SagParabolic3D"),
+    pytest.param(SagSurfaceKernel(2, ti.conical_sag_2d, config6), id="SagConical2D"),
+    pytest.param(SagSurfaceKernel(3, ti.conical_sag_3d, config6), id="SagConical3D"),
+    pytest.param(SagSurfaceKernel(2, ti.aspheric_sag_2d, config6), id="SagAspheric2D"),
+    pytest.param(SagSurfaceKernel(3, ti.aspheric_sag_3d, config6), id="SagAspheric3D"),
+    pytest.param(SagSurfaceKernel(3, ti.xypolynomial_sag_3d, config6), id="SagXYPolynomial3D"),
 ]
 
 

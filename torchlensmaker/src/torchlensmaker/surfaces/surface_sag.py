@@ -128,7 +128,6 @@ class SagSurfaceKernel(FunctionalKernel):
 
         return P, V, tf
 
-    # TODO store example params per sag function
     def example_params(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[
@@ -138,6 +137,6 @@ class SagSurfaceKernel(FunctionalKernel):
     ]:
         return (
             torch.tensor(10.0, dtype=dtype, device=device),
-            torch.tensor(0.5, dtype=dtype, device=device),
             torch.tensor(False, dtype=torch.bool, device=device),
+            self.sag.example_params(dtype, device),
         )
