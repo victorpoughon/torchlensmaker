@@ -8,18 +8,35 @@ from torchimplicit.implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
-from torchimplicit.types import ImplicitResult
+from torchimplicit.registry import register_function
+from torchimplicit.types import FunctionDefinition, ImplicitResult, total_domain
 
 
 def implicit_disk_2d(
-    points: torch.Tensor, R: float | torch.Tensor, *, order: int
+    points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> ImplicitResult:
     """
     Implicit disk in 2D.
 
     Note that this is really the projection of a 3D disk into an abstract 2D meridional plane.
     So in practice it is actually the line segment defined between the two points (0, R) and (0, -R).
+
+    Params:
+        R (scalar): disk radius
+
+    Args:
+        points (Tensor): input points, shape (..., 2) where last dimension is (x, y)
+        params (Tensor): tensor of parameters
+        order: differentiation order
+
+    Returns: ImplicitResult object
     """
+
+    assert params.shape == (1,), (
+        f"disk_2d expects parameters of shape (1,), got {params.shape}"
+    )
+    R = params[0]
+
     r = points[..., 1]
     within_cylinder = torch.abs(r) <= R
 
@@ -48,22 +65,28 @@ def implicit_disk_2d(
 
 
 def implicit_disk_3d(
-    points: torch.Tensor, R: float | torch.Tensor, *, order: int
+    points: torch.Tensor, params: torch.Tensor, *, order: int
 ) -> ImplicitResult:
     """
     Implicit disk in 3D.
 
     The disk lies in the YZ plane, centered at the origin with radius R.
 
-    Args:
-        points : (..., 3) tensor, columns are (x, y, z)
-        R      : circle radius
+    Params:
+        R (scalar): disk radius
 
-    Returns:
-        F    : (...,)      — function values
-        grad : (..., 3)    — gradient
-        hess : (..., 3, 3) — symmetric Hessian
+    Args:
+        points (Tensor): input points, shape (..., 3) where last dimension is (x, y, z)
+        params (Tensor): tensor of parameters
+        order: differentiation order
+
+    Returns: ImplicitResult object containing function values, gradient and hessian.
     """
+
+    assert params.shape == (1,), (
+        f"disk_3d expects parameters of shape (1,), got {params.shape}"
+    )
+    R = params[0]
 
     y, z = points[..., 1], points[..., 2]
     within_cylinder = y**2 + z**2 <= R**2
@@ -90,3 +113,27 @@ def implicit_disk_3d(
         )
 
     return ImplicitResult(F, grad, hess)
+
+
+register_function(
+    FunctionDefinition(
+        name="disk_2d",
+        dim=2,
+        func=implicit_disk_2d,
+        n_params=1,
+        param_names=("R",),
+        domain=total_domain,
+    )
+)
+
+
+register_function(
+    FunctionDefinition(
+        name="disk_3d",
+        dim=3,
+        func=implicit_disk_3d,
+        n_params=1,
+        param_names=("R",),
+        domain=total_domain,
+    )
+)

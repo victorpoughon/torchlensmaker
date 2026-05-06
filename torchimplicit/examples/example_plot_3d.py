@@ -95,8 +95,8 @@ def bind_function(name, user_params):
             + f", got {len(user_params)}"
         )
     fn = implicit_functions[name]
-    kwargs = dict(zip(param_names, user_params))
-    return functools.partial(fn, **kwargs) if kwargs else fn
+    params = torch.tensor(user_params)
+    return functools.partial(fn, params=params)
 
 
 def main():

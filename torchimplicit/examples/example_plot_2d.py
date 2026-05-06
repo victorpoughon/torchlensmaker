@@ -51,8 +51,8 @@ def bind_function(name, user_params):
             + f", got {len(user_params)}"
         )
     fn = implicit_functions[name]
-    kwargs = dict(zip(param_names, user_params))
-    return functools.partial(fn, **kwargs) if kwargs else fn
+    params = torch.tensor(user_params)
+    return functools.partial(fn, params=params)
 
 
 def main():
@@ -143,7 +143,9 @@ def main():
 
     # Right: Frobenius norm of Hessian — magnitude of total second-order variation
     vmax_frob = float(np.percentile(frob, 99)) * 1.5
-    ax3.pcolormesh(x_np, y_np, frob, cmap="plasma", shading="auto", vmin=0, vmax=vmax_frob)
+    ax3.pcolormesh(
+        x_np, y_np, frob, cmap="plasma", shading="auto", vmin=0, vmax=vmax_frob
+    )
     ax3.set_title("‖H‖  [Frobenius norm]")
     ax3.set_aspect("equal")
 
