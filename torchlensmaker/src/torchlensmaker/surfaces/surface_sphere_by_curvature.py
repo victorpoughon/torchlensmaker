@@ -107,7 +107,7 @@ class SphereByCurvatureSurfaceKernel(FunctionalKernel):
         )
 
         return sag_surface_raytrace(
-            partial(sag_function, C=C),
+            partial(sag_function, params=torch.stack([C])),
             liftf,
             domainf,
             implicit_solver,
@@ -161,8 +161,12 @@ class SphereByCurvatureOuterExtentSurfaceKernel(FunctionalKernel):
         C: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = spherical_sag_2d(anchor * diameter / 2, C, order=0).val
-        extent_normalized = diameter / 2 * spherical_sag_2d(anchor, C, order=0).val
+        extent_unnormalized = spherical_sag_2d(
+            anchor * diameter / 2, torch.stack([C]), order=0
+        ).val
+        extent_normalized = (
+            diameter / 2 * spherical_sag_2d(anchor, torch.stack([C]), order=0).val
+        )
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 

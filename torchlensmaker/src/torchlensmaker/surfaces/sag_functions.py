@@ -38,25 +38,32 @@ class SagResult:
 
 
 class SagFunction(Protocol):
+    """
+    A sag function models a surface as a deviation from a plane. In 2D that 'plane'
+    is the abstract meridional axis, in 3D it's the YZ plane.
+
+    SagFunction :: points -> g(points), g_grad(points)
+
+    In 2D:
+        points: tensor of shape (..., 1)
+        g(points): tensor of shape (...)
+        g.grad(points): tensor of shape (..., 1)
+        g.hess(points): tensor of shape (..., 1, 1)
+
+    In 3D:
+        points: tensor of shape (..., 2)
+        g(points): tensor of shape (...)
+        g.grad(points): tensor of shape (..., 2)
+        g.hess(points): tensor of shape (..., 2, 2)
+    """
+
+    def __call__(
+        self, points: BatchNDTensor, params: torch.Tensor, *, order: int
+    ) -> SagResult: ...
+
+
+class BoundSagFunction(Protocol):
     def __call__(self, points: BatchNDTensor, *, order: int) -> SagResult: ...
-
-
-"""
-A sag function models a surface as a deviation from a plane. In 2D that 'plane'
-is the abstract meridional axis, in 3D it's the YZ plane.
-
-SagFunction :: points -> g(points), g_grad(points)
-
-In 2D:
-    points: tensor of shape (..., 1)
-    g(points): tensor of shape (...)
-    g_grad(points): tensor of shape (..., 1)
-
-In 3D:
-    points: tensor of shape (..., 2)
-    g(points): tensor of shape (...)
-    g_grad(points): tensor of shape (..., 2)
-"""
 
 
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:
@@ -78,8 +85,15 @@ def safe_div(dividend: torch.Tensor, divisor: torch.Tensor) -> torch.Tensor:
     return torch.div(dividend, torch.where(ok, divisor, safe))
 
 
-def spherical_sag_2d(r: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagResult:
+def spherical_sag_2d(
+    r: BatchNDTensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Spherical sag in 2D, parameterized by curvature"
+
+    assert params.dim() == 1 and params.shape == (1,), (
+        f"spherical_sag_2d: expected params shape (1,), got {params.shape}"
+    )
+    C = params[0]
 
     r = r.squeeze(-1)
     r2 = torch.pow(r, 2)
@@ -99,8 +113,15 @@ def spherical_sag_2d(r: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagRes
     return SagResult(g, g_grad, g_hess)
 
 
-def spherical_sag_3d(yz: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagResult:
+def spherical_sag_3d(
+    yz: BatchNDTensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Spherical sag in 3D, parameterized by curvature"
+
+    assert params.dim() == 1 and params.shape == (1,), (
+        f"spherical_sag_3d: expected params shape (1,), got {params.shape}"
+    )
+    C = params[0]
 
     y, z = yz.unbind(-1)
     r2 = torch.pow(y, 2) + torch.pow(z, 2)
@@ -128,8 +149,15 @@ def spherical_sag_3d(yz: BatchNDTensor, C: ScalarTensor, *, order: int) -> SagRe
     return SagResult(G, G_grad, G_hess)
 
 
-def parabolic_sag_2d(r: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagResult:
+def parabolic_sag_2d(
+    r: BatchNDTensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Parabolic sag in 2D"
+
+    assert params.dim() == 1 and params.shape == (1,), (
+        f"parabolic_sag_2d: expected params shape (1,), got {params.shape}"
+    )
+    A = params[0]
 
     r = r.squeeze(-1)
     g = torch.mul(A, torch.pow(r, 2))
@@ -145,8 +173,15 @@ def parabolic_sag_2d(r: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagRes
     return SagResult(g, g_grad, g_hess)
 
 
-def parabolic_sag_3d(yz: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagResult:
+def parabolic_sag_3d(
+    yz: BatchNDTensor, params: torch.Tensor, *, order: int
+) -> SagResult:
     "Parabolic sag in 3D"
+
+    assert params.dim() == 1 and params.shape == (1,), (
+        f"parabolic_sag_3d: expected params shape (1,), got {params.shape}"
+    )
+    A = params[0]
 
     y, z = yz.unbind(-1)
     G = torch.mul(A, (y**2 + z**2))
@@ -167,10 +202,13 @@ def parabolic_sag_3d(yz: BatchNDTensor, A: ScalarTensor, *, order: int) -> SagRe
     return SagResult(G, G_grad, G_hess)
 
 
-def conical_sag_2d(
-    r: BatchNDTensor, C: ScalarTensor, K: ScalarTensor, *, order: int
-) -> SagResult:
+def conical_sag_2d(r: BatchNDTensor, params: torch.Tensor, *, order: int) -> SagResult:
     "Conical sag in 2D"
+
+    assert params.dim() == 1 and params.shape == (2,), (
+        f"conical_sag_2d: expected params shape (2,), got {params.shape}"
+    )
+    C, K = params[0], params[1]
 
     r = r.squeeze(-1)
     r2 = torch.pow(r, 2)
@@ -190,10 +228,13 @@ def conical_sag_2d(
     return SagResult(g, g_grad, g_hess)
 
 
-def conical_sag_3d(
-    yz: BatchNDTensor, C: ScalarTensor, K: ScalarTensor, *, order: int
-) -> SagResult:
+def conical_sag_3d(yz: BatchNDTensor, params: torch.Tensor, *, order: int) -> SagResult:
     "Conical sag in 3D"
+
+    assert params.dim() == 1 and params.shape == (2,), (
+        f"conical_sag_3d: expected params shape (2,), got {params.shape}"
+    )
+    C, K = params[0], params[1]
 
     y, z = yz.unbind(-1)
     r2 = y**2 + z**2
@@ -221,12 +262,13 @@ def conical_sag_3d(
     return SagResult(G, G_grad, G_hess)
 
 
-def aspheric_sag_2d(
-    r: BatchNDTensor, coefficients: Float[torch.Tensor, " C"], *, order: int
-) -> SagResult:
+def aspheric_sag_2d(r: BatchNDTensor, params: torch.Tensor, *, order: int) -> SagResult:
+    assert params.dim() == 1, (
+        f"aspheric_sag_2d: expected params rank 1, got rank {params.dim()}"
+    )
     r = r.squeeze(-1)
-    C = coefficients.shape[-1]  # number of coefficents
-    alphas = bbroad(coefficients, r.dim())
+    C = params.shape[-1]  # number of coefficients
+    alphas = bbroad(params, r.dim())
     index = torch.arange(C, dtype=r.dtype, device=r.device)
     i = bbroad(index, r.dim())
 
@@ -251,12 +293,15 @@ def aspheric_sag_2d(
 
 
 def aspheric_sag_3d(
-    yz: BatchNDTensor, coefficients: Float[torch.Tensor, " C"], *, order: int
+    yz: BatchNDTensor, params: torch.Tensor, *, order: int
 ) -> SagResult:
+    assert params.dim() == 1, (
+        f"aspheric_sag_3d: expected params rank 1, got rank {params.dim()}"
+    )
     y, z = yz.unbind(-1)
     r2 = y**2 + z**2
-    C = coefficients.shape[-1]  # number of coefficents
-    alphas = bbroad(coefficients, r2.dim())
+    C = params.shape[-1]  # number of coefficients
+    alphas = bbroad(params, r2.dim())
     index = torch.arange(C, dtype=r2.dtype, device=r2.device)
     i = bbroad(index, r2.dim())
 
@@ -283,7 +328,7 @@ def aspheric_sag_3d(
 
 
 def xypolynomial_sag_3d(
-    yz: BatchNDTensor, coefficients: Float[torch.Tensor, "P Q"], *, order: int
+    yz: BatchNDTensor, params: Float[torch.Tensor, "P Q"], *, order: int
 ) -> SagResult:
     r"""
     Sag function for the XY Polynomial model in 3D
@@ -293,11 +338,13 @@ def xypolynomial_sag_3d(
     $$
     """
 
+    assert params.dim() == 2, (
+        f"xypolynomial_sag_3d: expected params rank 2, got rank {params.dim()}"
+    )
     y, z = yz.unbind(-1)
-    assert coefficients.dim() == 2
     assert y.shape == z.shape
-    P, Q = coefficients.shape
-    C = bbroad(coefficients, y.dim())
+    P, Q = params.shape
+    C = bbroad(params, y.dim())
 
     # We need four different indexing tensors:
     # 0 to p, 1 to p, 0 to q, 1 to q
@@ -372,7 +419,7 @@ def xypolynomial_sag_3d(
 
 def sag_sum_2d(
     r: BatchNDTensor,
-    sags: Sequence[SagFunction],
+    sags: Sequence[BoundSagFunction],
     *,
     order: int,
 ) -> SagResult:
@@ -396,7 +443,7 @@ def sag_sum_2d(
 
 def sag_sum_3d(
     yz: BatchNDTensor,
-    sags: Sequence[SagFunction],
+    sags: Sequence[BoundSagFunction],
     *,
     order: int,
 ) -> SagResult:

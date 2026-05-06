@@ -22,8 +22,8 @@ dtype, device = torch.float32, torch.device("cpu")
 sag = partial(
     tlm.sag_sum_2d,
     sags=[
-        partial(tlm.aspheric_sag_2d, coefficients=torch.tensor([0.5, -0.05])),
-        partial(tlm.conical_sag_2d, C=torch.tensor(-1 / 2.0), K=torch.tensor(0.5)),
+        partial(tlm.aspheric_sag_2d, params=torch.tensor([0.5, -0.05])),
+        partial(tlm.conical_sag_2d, params=torch.tensor([-1 / 2.0, 0.5])),
     ],
 )
 

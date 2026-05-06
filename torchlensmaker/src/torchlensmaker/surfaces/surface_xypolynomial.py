@@ -109,8 +109,8 @@ class XYPolynomialSurfaceKernel(FunctionalKernel):
         sag_function = partial(
             sag_sum_3d,
             sags=[
-                partial(conical_sag_3d, C=C, K=K),
-                partial(xypolynomial_sag_3d, coefficients=coefficients),
+                partial(conical_sag_3d, params=torch.stack([C, K])),
+                partial(xypolynomial_sag_3d, params=coefficients),
             ],
         )
 

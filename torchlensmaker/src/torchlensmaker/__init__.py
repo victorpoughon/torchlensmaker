@@ -129,6 +129,7 @@ from torchlensmaker.sequential.utils import (
 )
 from torchlensmaker.surfaces import (
     Asphere,
+    BoundSagFunction,
     Conic,
     Disk,
     DomainFunction,
@@ -139,7 +140,6 @@ from torchlensmaker.surfaces import (
     Parabola,
     Plane,
     PointSurface,
-    SagFunction,
     Sphere,
     SphereByCurvature,
     SphereByRadius,
@@ -346,7 +346,7 @@ __all__ = [
     "DomainFunction",
     "ImplicitSolver",
     "LiftFunction",
-    "SagFunction",
+    "BoundSagFunction",
     # Types
     "Batch2DTensor",
     "Batch3DTensor",

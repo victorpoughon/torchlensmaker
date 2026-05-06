@@ -50,7 +50,7 @@ from .lift_functions import (
     sag_to_implicit_3d_raw,
 )
 from .raytrace import surface_raytrace
-from .sag_functions import SagFunction
+from .sag_functions import BoundSagFunction
 
 SolverConfig: TypeAlias = dict[str, Any]
 """
@@ -75,9 +75,21 @@ def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
     clamp_positive: bool = config["clamp_positive"]
     solver_name: str = config["implicit_solver"]
     if solver_name == "newton":
-        return partial(implicit_solver_newton, num_iter=num_iter, damping=damping, init=init, clamp_positive=clamp_positive)
+        return partial(
+            implicit_solver_newton,
+            num_iter=num_iter,
+            damping=damping,
+            init=init,
+            clamp_positive=clamp_positive,
+        )
     elif solver_name == "newton2":
-        return partial(implicit_solver_newton2, num_iter=num_iter, damping=damping, init=init, clamp_positive=clamp_positive)
+        return partial(
+            implicit_solver_newton2,
+            num_iter=num_iter,
+            damping=damping,
+            init=init,
+            clamp_positive=clamp_positive,
+        )
     else:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
@@ -155,7 +167,7 @@ def implicit_solver_config(dim: int, config: SolverConfig) -> ImplicitSolver:
 
 
 def sag_surface_raytrace(
-    sag_function: SagFunction,
+    sag_function: BoundSagFunction,
     lift_function: LiftFunction,
     domain_function: DomainFunction,
     implicit_solver: ImplicitSolver,

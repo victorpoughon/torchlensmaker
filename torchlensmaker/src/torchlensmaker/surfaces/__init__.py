@@ -32,7 +32,7 @@ from .lift_functions import (
     sag_to_implicit_3d_raw,
 )
 from .sag_functions import (
-    SagFunction,
+    BoundSagFunction,
     aspheric_sag_2d,
     aspheric_sag_3d,
     conical_sag_2d,
@@ -98,7 +98,7 @@ __all__ = [
     "xypolynomial_sag_3d",
     # Sag type aliases
     "LiftFunction",
-    "SagFunction",
+    "BoundSagFunction",
     # Solver
     "implicit_solver_newton",
     "implicit_solver_newton2",

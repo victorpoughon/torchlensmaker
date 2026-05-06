@@ -108,7 +108,7 @@ class ParabolaSurfaceKernel(FunctionalKernel):
         )
 
         return sag_surface_raytrace(
-            partial(sag_function, A=A),
+            partial(sag_function, params=torch.stack([A])),
             liftf,
             domainf,
             implicit_solver,
@@ -162,8 +162,12 @@ class ParabolaOuterExtentSurfaceKernel(FunctionalKernel):
         A: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = parabolic_sag_2d(anchor * diameter / 2, A, order=0).val
-        extent_normalized = diameter / 2 * parabolic_sag_2d(anchor, A, order=0).val
+        extent_unnormalized = parabolic_sag_2d(
+            anchor * diameter / 2, torch.stack([A]), order=0
+        ).val
+        extent_normalized = (
+            diameter / 2 * parabolic_sag_2d(anchor, torch.stack([A]), order=0).val
+        )
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 

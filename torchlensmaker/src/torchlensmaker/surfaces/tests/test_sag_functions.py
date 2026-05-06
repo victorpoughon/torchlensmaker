@@ -36,162 +36,97 @@ from torchlensmaker.surfaces.sag_functions import (
 )
 
 
-def test_debug_shape_A():
-    points = torch.rand((10, 1))
-
-    g = spherical_sag_2d(points, C=torch.tensor(1 / 10), order=1)
-    print(g.val.shape, g.grad.shape)
-
-
-def test_debug_shape2b():
-    points = torch.rand((10, 10, 2))
-    sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
-
-    F = imp(points, order=1)
-    assert F.grad is not None
-    print(F.val.shape, F.grad.shape)
-
-
-def test_debug_shape2s():
-    points = torch.rand((10, 1, 2))
-    sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
-
-    F = imp(points, order=1)
-    assert F.grad is not None
-    print(F.val.shape, F.grad.shape)
-
-
-def test_debug_shape1b():
-    points = torch.rand((10, 2))
-    sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
-
-    F = imp(points, order=1)
-    assert F.grad is not None
-    print(F.val.shape, F.grad.shape)
-
-
-def test_debug_shape1s():
-    points = torch.rand((1, 2))  # fails
-    sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
-
-    F = imp(points, order=1)
-    assert F.grad is not None
-    print(F.val.shape, F.grad.shape)
-
-
-def test_debug_shape0():
-    points = torch.rand((2))
-    sag = partial(spherical_sag_2d, C=torch.tensor(1 / 10))
-    imp = sag_to_implicit_2d_raw(sag, nf=torch.tensor(1), tau=torch.tensor(1))
-
-    F = imp(points, order=1)
-    assert F.grad is not None
-    print(F.val.shape, F.grad.shape)
-
-
 def make_sags_2d(dtype, device):
     return [
-        partial(spherical_sag_2d, C=torch.tensor(1 / 15.0, dtype=dtype, device=device)),
         partial(
-            spherical_sag_2d, C=torch.tensor(1 / -15.0, dtype=dtype, device=device)
-        ),
-        partial(spherical_sag_2d, C=torch.tensor(0.0, dtype=dtype, device=device)),
-        partial(parabolic_sag_2d, A=torch.tensor(0.05, dtype=dtype, device=device)),
-        partial(parabolic_sag_2d, A=torch.tensor(-0.05, dtype=dtype, device=device)),
-        partial(parabolic_sag_2d, A=torch.tensor(0.0, dtype=dtype, device=device)),
-        partial(
-            conical_sag_2d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_2d,
+            params=torch.tensor([1 / 15.0], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_2d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_2d,
+            params=torch.tensor([1 / -15.0], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_2d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_2d, params=torch.tensor([0.0], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_2d, params=torch.tensor([0.05], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_2d, params=torch.tensor([-0.05], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_2d, params=torch.tensor([0.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -1.5], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -1.5], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_2d, params=torch.tensor([0.0, -1.5], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -1.0], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -1.0], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_2d, params=torch.tensor([0.0, -1.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -0.6], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -0.6], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_2d, params=torch.tensor([0.0, -0.6], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, 0.0], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, 0.0], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_2d, params=torch.tensor([0.0, 0.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, 0.44], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_2d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, 0.44], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_2d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
-        ),
-        partial(
-            conical_sag_2d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
+            conical_sag_2d, params=torch.tensor([0.0, 0.44], dtype=dtype, device=device)
         ),
         partial(
             aspheric_sag_2d,
-            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
+            params=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
         ),
         partial(
             sag_sum_2d,
             sags=[
                 partial(
-                    parabolic_sag_2d, A=torch.tensor(0.05, dtype=dtype, device=device)
+                    parabolic_sag_2d,
+                    params=torch.tensor([0.05], dtype=dtype, device=device),
                 ),
                 partial(
                     conical_sag_2d,
-                    C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-                    K=torch.tensor(-0.5, dtype=dtype, device=device),
+                    params=torch.tensor([1 / 15.0, -0.5], dtype=dtype, device=device),
                 ),
             ],
         ),
@@ -200,13 +135,11 @@ def make_sags_2d(dtype, device):
             sags=[
                 partial(
                     spherical_sag_2d,
-                    C=torch.tensor(1 / 2.0, dtype=dtype, device=device),
+                    params=torch.tensor([1 / 2.0], dtype=dtype, device=device),
                 ),
                 partial(
                     aspheric_sag_2d,
-                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((
-                        3,
-                    )),
+                    params=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
                 ),
             ],
         ),
@@ -215,107 +148,99 @@ def make_sags_2d(dtype, device):
 
 def make_sags_3d(dtype, device):
     return [
-        partial(spherical_sag_3d, C=torch.tensor(1 / 15.0, dtype=dtype, device=device)),
         partial(
-            spherical_sag_3d, C=torch.tensor(1 / -15.0, dtype=dtype, device=device)
-        ),
-        partial(spherical_sag_3d, C=torch.tensor(0.0, dtype=dtype, device=device)),
-        partial(parabolic_sag_3d, A=torch.tensor(0.05, dtype=dtype, device=device)),
-        partial(parabolic_sag_3d, A=torch.tensor(-0.05, dtype=dtype, device=device)),
-        partial(parabolic_sag_3d, A=torch.tensor(0.0, dtype=dtype, device=device)),
-        partial(
-            conical_sag_3d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_3d,
+            params=torch.tensor([1 / 15.0], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_3d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_3d,
+            params=torch.tensor([1 / -15.0], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_3d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.5, dtype=dtype, device=device),
+            spherical_sag_3d, params=torch.tensor([0.0], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_3d, params=torch.tensor([0.05], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_3d, params=torch.tensor([-0.05], dtype=dtype, device=device)
+        ),
+        partial(
+            parabolic_sag_3d, params=torch.tensor([0.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -1.5], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -1.5], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_3d, params=torch.tensor([0.0, -1.5], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-1.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -1.0], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -1.0], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_3d, params=torch.tensor([0.0, -1.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, -0.6], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(-0.6, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, -0.6], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_3d, params=torch.tensor([0.0, -0.6], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, 0.0], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, 0.0], dtype=dtype, device=device),
+        ),
+        partial(
+            conical_sag_3d, params=torch.tensor([0.0, 0.0], dtype=dtype, device=device)
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(0.0, dtype=dtype, device=device),
+            params=torch.tensor([1 / 15.0, 0.44], dtype=dtype, device=device),
         ),
         partial(
             conical_sag_3d,
-            C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
+            params=torch.tensor([1 / -15.0, 0.44], dtype=dtype, device=device),
         ),
         partial(
-            conical_sag_3d,
-            C=torch.tensor(1 / -15.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
-        ),
-        partial(
-            conical_sag_3d,
-            C=torch.tensor(0.0, dtype=dtype, device=device),
-            K=torch.tensor(0.44, dtype=dtype, device=device),
+            conical_sag_3d, params=torch.tensor([0.0, 0.44], dtype=dtype, device=device)
         ),
         partial(
             xypolynomial_sag_3d,
-            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3, 3)),
+            params=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3, 3)),
         ),
         partial(
             aspheric_sag_3d,
-            coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
+            params=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((3,)),
         ),
         partial(
             sag_sum_3d,
             sags=[
                 partial(
-                    parabolic_sag_3d, A=torch.tensor(0.05, dtype=dtype, device=device)
+                    parabolic_sag_3d,
+                    params=torch.tensor([0.05], dtype=dtype, device=device),
                 ),
                 partial(
                     conical_sag_3d,
-                    C=torch.tensor(1 / 15.0, dtype=dtype, device=device),
-                    K=torch.tensor(-0.5, dtype=dtype, device=device),
+                    params=torch.tensor([1 / 15.0, -0.5], dtype=dtype, device=device),
                 ),
             ],
         ),
@@ -324,11 +249,11 @@ def make_sags_3d(dtype, device):
             sags=[
                 partial(
                     spherical_sag_3d,
-                    C=torch.tensor(1 / 2.0, dtype=dtype, device=device),
+                    params=torch.tensor([1 / 2.0], dtype=dtype, device=device),
                 ),
                 partial(
                     xypolynomial_sag_3d,
-                    coefficients=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((
+                    params=torch.distributions.uniform.Uniform(-1.0, 1.0).sample((
                         3,
                         3,
                     )),

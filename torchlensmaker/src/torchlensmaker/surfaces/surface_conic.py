@@ -111,7 +111,7 @@ class ConicSurfaceKernel(FunctionalKernel):
         )
 
         return sag_surface_raytrace(
-            partial(sag_function, C=C, K=K),
+            partial(sag_function, params=torch.stack([C, K])),
             liftf,
             domainf,
             implicit_solver,
@@ -169,8 +169,12 @@ class ConicOuterExtentSurfaceKernel(FunctionalKernel):
         K: ScalarTensor,
         normalize: Bool[torch.Tensor, ""],
     ) -> ScalarTensor:
-        extent_unnormalized = conical_sag_2d(anchor * diameter / 2, C, K, order=0).val
-        extent_normalized = diameter / 2 * conical_sag_2d(anchor, C, K, order=0).val
+        extent_unnormalized = conical_sag_2d(
+            anchor * diameter / 2, torch.stack([C, K]), order=0
+        ).val
+        extent_normalized = (
+            diameter / 2 * conical_sag_2d(anchor, torch.stack([C, K]), order=0).val
+        )
         extent = torch.where(normalize, extent_normalized, extent_unnormalized)
         return extent
 

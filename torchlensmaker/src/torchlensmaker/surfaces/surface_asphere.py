@@ -17,6 +17,7 @@
 from functools import partial
 from typing import Any, Self, Sequence
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 from jaxtyping import Bool, Float
@@ -56,8 +57,6 @@ from .sag_functions import (
     sag_sum_3d,
 )
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 class AsphereSurfaceKernel(FunctionalKernel):
@@ -120,16 +119,16 @@ class AsphereSurfaceKernel(FunctionalKernel):
             sag_function = partial(
                 sag_sum_2d,
                 sags=[
-                    partial(conical_sag_2d, C=C, K=K),
-                    partial(aspheric_sag_2d, coefficients=alphas),
+                    partial(conical_sag_2d, params=torch.stack([C, K])),
+                    partial(aspheric_sag_2d, params=alphas),
                 ],
             )
         else:
             sag_function = partial(
                 sag_sum_3d,
                 sags=[
-                    partial(conical_sag_3d, C=C, K=K),
-                    partial(aspheric_sag_3d, coefficients=alphas),
+                    partial(conical_sag_3d, params=torch.stack([C, K])),
+                    partial(aspheric_sag_3d, params=alphas),
                 ],
             )
 
@@ -203,8 +202,8 @@ class AsphereOuterExtentSurfaceKernel(FunctionalKernel):
         sag_function = partial(
             sag_sum_2d,
             sags=[
-                partial(conical_sag_2d, C=C, K=K),
-                partial(aspheric_sag_2d, coefficients=alphas),
+                partial(conical_sag_2d, params=torch.stack([C, K])),
+                partial(aspheric_sag_2d, params=alphas),
             ],
         )
         extent_unnormalized = sag_function(anchor * diameter / 2, order=0).val
