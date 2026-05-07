@@ -15,31 +15,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Self
 
-import tlmviewer as tlmv
 import torch
-import torch.nn as nn
 import torchimplicit as ti
-from jaxtyping import Bool, Float
+from jaxtyping import Bool
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.surfaces.implicit_solver import implicit_solver_newton
-from torchlensmaker.surfaces.sag_geometry import (
-    lens_diameter_implicit_domain_2d,
-    lens_diameter_implicit_domain_3d,
-)
-from torchlensmaker.surfaces.sag_surface import (
-    SolverConfig,
-    sag_solver_config,
-    sag_surface_raytrace,
-)
-from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
@@ -48,8 +33,75 @@ from torchlensmaker.types import (
     Tf,
 )
 
+from .implicit_solver import (
+    ImplicitSolver,
+    implicit_surface_local_raytrace,
+)
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .raytrace import surface_raytrace
+from .solver_config import (
+    SolverConfig,
+    make_domain_function_2d,
+    make_domain_function_3d,
+    make_implicit_solver,
+    make_lift_function_2d,
+    make_lift_function_3d,
+)
+
+
+def sag_solver_config(
+    dim: int, config: SolverConfig, diameter: ScalarTensor
+) -> tuple[ti.LiftFunction, ti.DomainFunction, ImplicitSolver]:
+    """
+    Configure a sag function from static parameters
+    """
+
+    if dim == 2:
+        liftf = make_lift_function_2d(config)
+        domainf = make_domain_function_2d(config, diameter)
+        implicit_solver = make_implicit_solver(config)
+        return liftf, domainf, implicit_solver
+    else:
+        liftf = make_lift_function_3d(config)
+        domainf = make_domain_function_3d(config, diameter)
+        implicit_solver = make_implicit_solver(config)
+        return liftf, domainf, implicit_solver
+
+
+def sag_surface_raytrace(
+    sag_function: ti.BoundSagFunction,
+    lift_function: ti.LiftFunction,
+    domain_function: ti.DomainFunction,
+    implicit_solver: ImplicitSolver,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    tf_in: Tf,
+    diameter: ScalarTensor,
+    normalize: Bool[torch.Tensor, ""],
+) -> tuple[
+    BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor, BatchTensor
+]:
+    """
+    Generic raytracing for a sag surface.
+    Used to implement surface kernels.
+    """
+
+    # Setup the implicit function
+    one = torch.ones((), dtype=P.dtype, device=P.device)
+    tau = diameter / 2
+    nf = torch.where(normalize, tau, one)
+    implicit_function = lift_function(sag_function, nf, tau)
+
+    # Setup the local solver
+    local_solver = partial(
+        implicit_surface_local_raytrace,
+        implicit_function=implicit_function,
+        domain_function=domain_function,
+        implicit_solver=implicit_solver,
+    )
+
+    # Perform raytrace
+    return surface_raytrace(P, V, tf_in, local_solver)
 
 
 class SagSurfaceKernel(FunctionalKernel):

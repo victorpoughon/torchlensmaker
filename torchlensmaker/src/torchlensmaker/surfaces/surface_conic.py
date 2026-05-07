@@ -34,7 +34,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .sag_surface import SolverConfig
+from .solver_config import SolverConfig
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 

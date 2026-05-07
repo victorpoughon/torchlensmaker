@@ -8,6 +8,7 @@ from torchimplicit.registry import (
 from torchimplicit.types import (
     BoundImplicitFunction,
     BoundSagFunction,
+    DomainFunction,
     EvalImplicitFunction,
     EvalSagFunction,
     ImplicitFunction,
@@ -32,6 +33,9 @@ from .implicit_sphere import (
     sphere_2d,
     sphere_3d,
 )
+from .lift_functions import (
+    LiftFunction,
+)
 from .sag_functions import (
     aspheric_sag_2d,
     aspheric_sag_3d,
@@ -49,10 +53,12 @@ from .sag_functions import (
 __all__ = [
     "BoundImplicitFunction",
     "BoundSagFunction",
+    "DomainFunction",
     "EvalImplicitFunction",
     "EvalSagFunction",
     "ImplicitFunction",
     "ImplicitResult",
+    "LiftFunction",
     "SagFunction",
     "SagResult",
     "aspheric_sag_2d",

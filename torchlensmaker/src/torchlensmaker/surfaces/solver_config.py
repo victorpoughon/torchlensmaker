@@ -16,31 +16,23 @@
 
 
 from functools import partial
-from typing import Any, Callable, Sequence, TypeAlias, TypedDict
+from typing import Any, TypeAlias
 
-import torch
-from jaxtyping import Bool, Float
+import torchimplicit as ti
 from torchimplicit.lift_functions import (
-    LiftFunction,
     sag_to_implicit_2d_euclid,
     sag_to_implicit_2d_raw,
     sag_to_implicit_2d_taylor,
     sag_to_implicit_2d_taylor_squared,
     sag_to_implicit_3d_raw,
 )
-from torchimplicit.sag_functions import BoundSagFunction
 
 from torchlensmaker.surfaces.sag_geometry import (
     lens_diameter_implicit_domain_2d,
     lens_diameter_implicit_domain_3d,
 )
 from torchlensmaker.types import (
-    Batch2DTensor,
-    BatchNDTensor,
-    BatchTensor,
-    MaskTensor,
     ScalarTensor,
-    Tf,
 )
 
 from .implicit_solver import (
@@ -48,9 +40,7 @@ from .implicit_solver import (
     ImplicitSolver,
     implicit_solver_newton,
     implicit_solver_newton2,
-    implicit_surface_local_raytrace,
 )
-from .raytrace import surface_raytrace
 
 SolverConfig: TypeAlias = dict[str, Any]
 """
@@ -68,7 +58,7 @@ Possible values:
 """
 
 
-def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
+def make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
     init: float | str = config["init"]
@@ -94,7 +84,7 @@ def _make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
 
-def _make_lift_function_2d(config: SolverConfig) -> LiftFunction:
+def make_lift_function_2d(config: SolverConfig) -> ti.LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_2d_raw,
@@ -108,7 +98,7 @@ def _make_lift_function_2d(config: SolverConfig) -> LiftFunction:
     return options[lift_name]
 
 
-def _make_lift_function_3d(config: SolverConfig) -> LiftFunction:
+def make_lift_function_3d(config: SolverConfig) -> ti.LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_3d_raw,
@@ -119,84 +109,28 @@ def _make_lift_function_3d(config: SolverConfig) -> LiftFunction:
     return options[lift_name]
 
 
-def _make_domain_function_2d(
+def make_domain_function_2d(
     config: SolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
 
 
-def _make_domain_function_3d(
+def make_domain_function_3d(
     config: SolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
 
 
-def sag_solver_config(
-    dim: int, config: SolverConfig, diameter: ScalarTensor
-) -> tuple[LiftFunction, DomainFunction, ImplicitSolver]:
-    """
-    Configure a sag function from static parameters
-    """
-
-    if dim == 2:
-        liftf = _make_lift_function_2d(config)
-        domainf = _make_domain_function_2d(config, diameter)
-        implicit_solver = _make_implicit_solver(config)
-        return liftf, domainf, implicit_solver
-    else:
-        liftf = _make_lift_function_3d(config)
-        domainf = _make_domain_function_3d(config, diameter)
-        implicit_solver = _make_implicit_solver(config)
-        return liftf, domainf, implicit_solver
-
-
-# TODO move
 def implicit_solver_config(dim: int, config: SolverConfig) -> ImplicitSolver:
     """
     Configure implicit solver parameters from static parameters
     """
 
     if dim == 2:
-        implicit_solver = _make_implicit_solver(config)
+        implicit_solver = make_implicit_solver(config)
         return implicit_solver
     else:
-        implicit_solver = _make_implicit_solver(config)
+        implicit_solver = make_implicit_solver(config)
         return implicit_solver
-
-
-def sag_surface_raytrace(
-    sag_function: BoundSagFunction,
-    lift_function: LiftFunction,
-    domain_function: DomainFunction,
-    implicit_solver: ImplicitSolver,
-    P: BatchNDTensor,
-    V: BatchNDTensor,
-    tf_in: Tf,
-    diameter: ScalarTensor,
-    normalize: Bool[torch.Tensor, ""],
-) -> tuple[
-    BatchTensor, BatchNDTensor, MaskTensor, BatchNDTensor, BatchNDTensor, BatchTensor
-]:
-    """
-    Generic raytracing for a sag surface.
-    Used to implement surface kernels.
-    """
-
-    # Setup the implicit function
-    one = torch.ones((), dtype=P.dtype, device=P.device)
-    tau = diameter / 2
-    nf = torch.where(normalize, tau, one)
-    implicit_function = lift_function(sag_function, nf, tau)
-
-    # Setup the local solver
-    local_solver = partial(
-        implicit_surface_local_raytrace,
-        implicit_function=implicit_function,
-        domain_function=domain_function,
-        implicit_solver=implicit_solver,
-    )
-
-    # Perform raytrace
-    return surface_raytrace(P, V, tf_in, local_solver)

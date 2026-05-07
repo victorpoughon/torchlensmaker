@@ -28,7 +28,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 from torchlensmaker.surfaces.implicit_solver import implicit_surface_local_raytrace
-from torchlensmaker.surfaces.sag_surface import SolverConfig, implicit_solver_config
+from torchlensmaker.surfaces.solver_config import SolverConfig, implicit_solver_config
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

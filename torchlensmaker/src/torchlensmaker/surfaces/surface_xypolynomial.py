@@ -23,11 +23,11 @@ import torchimplicit as ti
 from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.surfaces.sag_surface import (
+from torchlensmaker.surfaces.solver_config import (
     SolverConfig,
 )
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
-from torchlensmaker.surfaces.surface_sag import SagSumSurfaceKernel, SagSurfaceKernel
+from torchlensmaker.surfaces.surface_sag import SagSumSurfaceKernel
 from torchlensmaker.types import (
     BatchTensor,
     ScalarTensor,

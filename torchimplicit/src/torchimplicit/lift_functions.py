@@ -2,7 +2,7 @@ from typing import Protocol
 
 import torch
 
-from torchimplicit import ImplicitFunction, ImplicitResult
+from torchimplicit import ImplicitResult
 from torchimplicit.math import safe_sign
 from torchimplicit.sag_functions import BoundSagFunction, SagResult
 from torchimplicit.types import BoundImplicitFunction
@@ -19,7 +19,7 @@ class LiftFunction(Protocol):
 
     def __call__(
         self, sag: BoundSagFunction, nf: torch.Tensor, tau: torch.Tensor
-    ) -> ImplicitFunction: ...
+    ) -> BoundImplicitFunction: ...
 
 
 def sag_to_implicit_2d_raw(
