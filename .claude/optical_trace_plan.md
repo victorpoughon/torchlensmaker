@@ -18,10 +18,6 @@ and adds first-class support for differentiable optical path length (OPL).
 
 ## Locked decisions
 
-- `RayBundle` becomes non-shrinking. `mask()` ANDs into a `valid` field
-  instead of indexing.
-- `RayBundle` carries `n: BatchTensor` (refractive index of the medium
-  the bundle is currently traveling in).
 - A new `OpticalTrace` data structure replaces both `SequentialData` and
   `ModelTrace`. Element-level `trace()` methods, `trace_model()`, and the
   forward-hook mechanism are removed.
@@ -45,29 +41,6 @@ and adds first-class support for differentiable optical path length (OPL).
   linear; a more general `paths()` returns a list.
 
 ## Data structures
-
-### `RayBundle` (modified)
-
-```python
-@dataclass
-class RayBundle:
-    P: BatchNDTensor          # (N, dim)
-    V: BatchNDTensor          # (N, dim)
-    valid: MaskTensor         # (N,)         NEW
-    n: BatchTensor            # (N,)         NEW: current-medium refractive index
-    pupil: SampledVariable
-    field: SampledVariable
-    wavel: SampledVariable
-    source: SampledVariable
-```
-
-Semantics:
-- Bundles never shrink. `N` is fixed for the lifetime of a bundle's
-  lineage (from source through all surfaces it traverses).
-- `mask(m)` returns a new bundle with `valid = self.valid & m`. It does
-  not index any other field.
-- All surface kernels must be NaN-safe (or use `where(valid, new, old)`
-  patterns) since they now run on rows that may be invalid.
 
 ### `ElementRecord` family
 
@@ -294,41 +267,9 @@ honest about what each kind of element actually does.
 Each step is independently shippable. After each step the codebase
 should pass tests.
 
-### Step 1 — Add `valid` and `n` to `RayBundle`, switch mask semantics
+### Step 1 — Add `valid` and `n` to `RayBundle`
 
-Files touched (primary):
-- `core/ray_bundle.py`
-- `optical_surfaces/refractive_surface.py`
-- `optical_surfaces/reflective_surface.py`
-- `optical_surfaces/aperture.py`
-- `light_sources/light_sources_elements.py` (set `valid=ones`, `n=1`
-  on emission)
-- `light_targets/focal_point.py`, `image_plane.py` (honor `valid`
-  before reducing)
-- Any kernel that branches on `valid` from a shrunk mask
-
-Substeps:
-1. Add `valid: MaskTensor` and `n: BatchTensor` fields to `RayBundle`.
-   Update `create()`, `empty()`, `mask()`, `cat()`, `replace()`. Mask
-   ANDs into valid, no indexing.
-2. Light sources emit `valid=torch.ones(N, dtype=bool)` and an `n`
-   tensor. For the source emitting into vacuum/air, `n=1`; document
-   that this is the "current medium" of the emitted bundle.
-3. Refractive surface: stop indexing the bundle on `valid`. Keep
-   `valid` updates additive. Use `where(valid, refracted, V)` to keep
-   gradients clean on invalid rays. After collision, the new bundle's
-   `n` is set to `material_out(wavel)`.
-4. Reflective surface: `n` carried unchanged on the new bundle.
-5. Aperture: produces a new bundle with `valid &= aperture_mask`, all
-   other fields the same object references.
-6. Light targets: mask before reduction. `FocalPoint.forward` divides
-   by `N`; that becomes division by `valid.sum()` (with epsilon guard
-   on fully-invalid bundles).
-7. Update tests; add tests that confirm row alignment is preserved
-   across surfaces.
-
-Risk: any kernel that assumed `rays.P.shape[0] == valid.sum()` after
-filtering. Audit by grepping for `.mask(` and `[valid]` patterns.
+DONE.
 
 ### Step 2 — Introduce `OpticalTrace` and `ElementRecord` family
 
