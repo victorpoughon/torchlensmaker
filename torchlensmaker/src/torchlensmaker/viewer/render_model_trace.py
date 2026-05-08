@@ -21,12 +21,10 @@ import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.core.tensor_manip import filter_optional_mask
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.utils import get_elements_by_type
-from torchlensmaker.types import MaskTensor
 from torchlensmaker.viewer import tlmviewer
 
 
@@ -105,36 +103,53 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
 
     for key, input_rays in trace.input_rays.items():
         input_tf = trace.input_joints[key]
+        bundle_valid = input_rays.filter(input_rays.valid)
 
         # if the input rays have a matching collision entry, use it to render rays as hit / miss
         if key in trace.collisions:
-            t, normals, valid = trace.collisions[key]
+            t, normals, collision_valid = trace.collisions[key]
 
-            ret.extend(
-                tlmviewer.render_hit_miss_rays(
-                    input_rays.P,
-                    input_rays.V,
-                    t,
-                    hom_target(input_tf.direct)[0],
-                    valid,
-                    variables_hit=raybundle_var_dict(input_rays.mask(valid)),
-                    variables_miss=raybundle_var_dict(input_rays.mask(~valid)),
+            rays_valid_coll = input_rays.filter(input_rays.valid & collision_valid)
+
+            # Render hit rays
+            ret.append(
+                tlmviewer.render_rays(
+                    rays_valid_coll.P,
+                    rays_valid_coll.points_at(t[input_rays.valid & collision_valid]),
+                    variables=raybundle_var_dict(rays_valid_coll),
                     domain=domain,
+                    default_color=tlmviewer.color_valid,
+                    category=tlmviewer.CATEGORY_VALID_RAYS,
                 )
             )
+
+            # Render miss rays: rays absorbed because not colliding
+            miss_mask = input_rays.valid & ~collision_valid
+            if miss_mask.sum() > 0:
+                ret.extend(
+                    tlmviewer.render_rays_until(
+                        input_rays.P[miss_mask],
+                        input_rays.V[miss_mask],
+                        hom_target(input_tf.direct)[0],
+                        variables=raybundle_var_dict(input_rays.filter(miss_mask)),
+                        domain=domain,
+                        default_color=tlmviewer.color_blocked,
+                        category=tlmviewer.CATEGORY_BLOCKED_RAYS,
+                    )
+                )
         else:
             # else render rays until the joint
             target = hom_target(input_tf.direct)
-            dist = torch.linalg.vector_norm(input_rays.P - target, dim=1)
+            dist = torch.linalg.vector_norm(bundle_valid.P - target, dim=1)
             # Always draw rays in their positive t direction
             t = torch.abs(dist)
             ret.extend(
                 tlmviewer.render_rays_length(
-                    input_rays.P,
-                    input_rays.V,
+                    bundle_valid.P,
+                    bundle_valid.V,
                     t,
                     category=tlmviewer.CATEGORY_VALID_RAYS,
-                    variables=raybundle_var_dict(input_rays),
+                    variables=raybundle_var_dict(bundle_valid),
                     domain=domain,
                     default_color=tlmviewer.color_valid,
                 )
@@ -150,6 +165,7 @@ def trace_render_end_rays(
         return []
 
     rays = next(reversed(trace.output_rays.values()))
+    rays = rays.filter(rays.valid)
     return tlmviewer.render_rays_length(
         rays.P,
         rays.V,

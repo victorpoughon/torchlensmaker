@@ -72,15 +72,14 @@ class ImagePlane(LightTarget):
         return self.clone()
 
     def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
-        # Collision detection
+
+        # Perform collision detection with the surface
         sout = self.surface(rays.P, rays.V, tf)
-        rays_propagated = rays.mask(sout.valid).replace(
-            P=sout.points_global[sout.valid]
-        )
+        combined = rays.valid & sout.valid
 
         # check no rays special case after we've performed surface collision
         # so we can still render the surface
-        if rays.V.shape[0] == 0:
+        if combined.sum() == 0:
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
             return LightTargetOutput(loss, sout)
 
@@ -94,8 +93,9 @@ class ImagePlane(LightTarget):
         # surface coordinates for points on a surface, for any surface
         # For a plane it's easy though
 
-        rays_image = sout.points_local[:, 1]
-        rays_object = rays_propagated.field.values
+        rays_propagated = rays.replace(P=sout.points_global)
+        rays_object = rays_propagated.filter(combined).field.values
+        rays_image = sout.points_local[combined, 1]
 
         # Compute loss
         assert rays_object.shape == rays_image.shape, (

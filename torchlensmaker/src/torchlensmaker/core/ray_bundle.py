@@ -32,10 +32,13 @@ class RayBundle:
     """
     A bundle of parametric light rays in either 2D or 3D.
     All rays are in the same medium.
+    A ray bundle never shrinks, invalid rays are combined into the valid mask
     """
 
-    P: BatchNDTensor
-    V: BatchNDTensor
+    P: BatchNDTensor  # (N, dim) rays origins
+    V: BatchNDTensor  # (N, dim) rays unit vectors
+    valid: MaskTensor  # (N,) valid mask
+    n: BatchTensor  # (N,) index of refraction
     pupil: SampledVariable
     field: SampledVariable
     wavel: SampledVariable
@@ -46,6 +49,8 @@ class RayBundle:
         cls,
         P: BatchNDTensor,
         V: BatchNDTensor,
+        valid: MaskTensor,
+        n: BatchTensor,
         pupil: SampledVariable,
         field: SampledVariable,
         wavel: SampledVariable,
@@ -53,6 +58,8 @@ class RayBundle:
     ) -> Self:
         float_dtype = P.dtype
         assert float_dtype == V.dtype
+        assert torch.bool == valid.dtype
+        assert float_dtype == n.dtype
         assert float_dtype == pupil.values.dtype
         assert float_dtype == field.values.dtype
         assert float_dtype == wavel.values.dtype
@@ -60,12 +67,14 @@ class RayBundle:
 
         device = P.device
         assert device == V.device
+        assert device == valid.device
+        assert device == n.device
         assert device == pupil.values.device
         assert device == field.values.device
         assert device == wavel.values.device
         assert device == source.values.device
 
-        return cls(P, V, pupil, field, wavel, source)
+        return cls(P, V, valid, n, pupil, field, wavel, source)
 
     @classmethod
     def empty(
@@ -78,6 +87,8 @@ class RayBundle:
         return cls.create(
             P=torch.empty((0, dim), dtype=dtype, device=device),
             V=torch.empty((0, dim), dtype=dtype, device=device),
+            valid=torch.empty((0,), dtype=torch.bool, device=device),
+            n=torch.empty((0,), dtype=dtype, device=device),
             pupil=SampledVariable.empty(coords_shape, dtype, device),
             field=SampledVariable.empty(coords_shape, dtype, device),
             wavel=SampledVariable.empty((), dtype, device),
@@ -100,9 +111,14 @@ class RayBundle:
         return replace(self, **changes)
 
     def mask(self, valid: MaskTensor) -> Self:
+        return replace(self, valid=torch.logical_and(self.valid, valid))
+
+    def filter(self, valid: MaskTensor) -> Self:
         return type(self)(
             P=self.P[valid],
             V=self.V[valid],
+            valid=self.valid[valid],
+            n=self.n[valid],
             pupil=self.pupil.mask(valid),
             field=self.field.mask(valid),
             wavel=self.wavel.mask(valid),
@@ -113,6 +129,8 @@ class RayBundle:
         return type(self)(
             P=torch.cat((self.P, other.P)),
             V=torch.cat((self.V, other.V)),
+            valid=torch.cat((self.valid, other.valid)),
+            n=torch.cat((self.n, other.n)),
             pupil=self.pupil.cat(other.pupil),
             field=self.field.cat(other.field),
             wavel=self.wavel.cat(other.wavel),
@@ -152,4 +170,4 @@ class RayBundle:
         """
         Like split_mask but applies the masking and returns a list of RayBundle
         """
-        return [self.mask(m) for m in self.split_masks(name)]
+        return [self.filter(m) for m in self.split_masks(name)]

@@ -29,6 +29,8 @@ from torchlensmaker.light_sources.source_geometry_elements import (
     ObjectGeometry2D,
     ObjectGeometry3D,
 )
+from torchlensmaker.materials.get_material_model import get_material_model
+from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.sampling.sampler_elements import (
     DiskSampler2D,
     LinspaceSampler1D,
@@ -67,6 +69,7 @@ class GenericLightSource(LightSourceBase):
         sampler_wavel_3d: nn.Module,
         geometry_2d: nn.Module,
         geometry_3d: nn.Module,
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -79,6 +82,7 @@ class GenericLightSource(LightSourceBase):
         self.sampler_wavel_3d = sampler_wavel_3d
         self.geometry_2d = geometry_2d
         self.geometry_3d = geometry_3d
+        self.material = get_material_model(material)
         self.reversed = reversed
         self.source_idx: int = source_idx
 
@@ -129,8 +133,17 @@ class GenericLightSource(LightSourceBase):
             ),
         )
 
+        n = self.material(wavel.values)
+        valid = torch.full((N,), True, device=device)
         return RayBundle.create(
-            P=P, V=V, pupil=pupil, field=field, wavel=wavel, source=source
+            P=P,
+            V=V,
+            valid=valid,
+            n=n,
+            pupil=pupil,
+            field=field,
+            wavel=wavel,
+            source=source,
         )
 
 
@@ -146,6 +159,7 @@ class Object(GenericLightSource):
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_field_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -162,6 +176,7 @@ class Object(GenericLightSource):
             geometry_3d=ObjectGeometry3D(
                 beam_angular_size, object_diameter, wavelength
             ),
+            material=material,
             reversed=reversed,
             source_idx=source_idx,
         )
@@ -180,6 +195,7 @@ class Object(GenericLightSource):
             sampler_pupil_3d=self.sampler_pupil_3d,
             sampler_field_3d=self.sampler_field_3d,
             sampler_wavel_3d=self.sampler_wavel_3d,
+            material=self.material,
             reversed=self.reversed,
             source_idx=self.source_idx,
         )
@@ -198,6 +214,7 @@ class ObjectAtInfinity(GenericLightSource):
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_field_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -214,6 +231,7 @@ class ObjectAtInfinity(GenericLightSource):
             geometry_3d=ObjectAtInfinityGeometry3D(
                 beam_diameter, angular_size, wavelength
             ),
+            material=material,
             reversed=reversed,
             source_idx=source_idx,
         )
@@ -247,6 +265,7 @@ class PointSource(GenericLightSource):
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -267,6 +286,7 @@ class PointSource(GenericLightSource):
                 object_diameter=0,
                 wavelength=wavelength,
             ),
+            material=material,
             reversed=reversed,
             source_idx=source_idx,
         )
@@ -297,6 +317,7 @@ class PointSourceAtInfinity(GenericLightSource):
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
         sampler_pupil_3d: nn.Module = DiskSampler2D(5, 5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -317,6 +338,7 @@ class PointSourceAtInfinity(GenericLightSource):
                 angular_size=0,
                 wavelength=wavelength,
             ),
+            material=material,
             reversed=reversed,
             source_idx=source_idx,
         )
@@ -344,6 +366,7 @@ class RaySource(GenericLightSource):
         wavelength: int | float | tuple[int | float, int | float] = 500,
         sampler_wavel_2d: nn.Module = LinspaceSampler1D(5),
         sampler_wavel_3d: nn.Module = LinspaceSampler1D(5),
+        material: MaterialModel | str = "vacuum",
         reversed: bool = False,
         source_idx: int = 0,
     ):
@@ -364,6 +387,7 @@ class RaySource(GenericLightSource):
                 angular_size=0,
                 wavelength=wavelength,
             ),
+            material=material,
             reversed=reversed,
             source_idx=source_idx,
         )

@@ -36,19 +36,22 @@ class FocalPoint(LightTarget):
 
     def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
         dim = rays.P.shape[-1]
-        N = rays.P.shape[0]
 
         X = hom_target(tf.direct)
-        P = rays.P
-        V = rays.V
+        P = rays.P[rays.valid]
+        V = rays.V[rays.valid]
+        N = rays.valid.sum()
+        Nint: int = int(N.item())
+
+        # TODO return if N == 0
 
         # Compute ray-point squared distance
 
         # If 2D, pad to 3D with zeros
         if dim == 2:
             X = torch.cat((X, torch.zeros(1)), dim=0)
-            P = torch.cat((P, torch.zeros((N, 1))), dim=1)
-            V = torch.cat((V, torch.zeros((N, 1))), dim=1)
+            P = torch.cat((P, torch.zeros(Nint, 1)), dim=1)
+            V = torch.cat((V, torch.zeros(Nint, 1)), dim=1)
 
         cross = torch.cross(X - P, V, dim=1)
         norm = torch.norm(V, dim=1)

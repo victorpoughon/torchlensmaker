@@ -307,54 +307,6 @@ def render_rays_length(
     ]
 
 
-def render_hit_miss_rays(
-    P: torch.Tensor,
-    V: torch.Tensor,
-    t: torch.Tensor,
-    target: torch.Tensor,
-    valid: torch.Tensor,
-    variables_hit: dict[str, Tensor] = {},
-    variables_miss: dict[str, Tensor] = {},
-    domain: dict[str, list[float]] = {},
-) -> list[Any]:
-    collision_points = P + t.unsqueeze(1).expand_as(V) * V
-    hits = valid.sum()
-    misses = (~valid).sum()
-
-    # Render hit rays
-    rays_hit = (
-        [
-            render_rays(
-                P[valid],
-                collision_points[valid],
-                variables=variables_hit,
-                domain=domain,
-                default_color=color_valid,
-                category=CATEGORY_VALID_RAYS,
-            )
-        ]
-        if hits > 0
-        else []
-    )
-
-    # Render miss rays - rays absorbed because not colliding
-    rays_miss = (
-        render_rays_until(
-            P[~valid],
-            V[~valid],
-            target,
-            variables=variables_miss,
-            domain=domain,
-            default_color=color_blocked,
-            category=CATEGORY_BLOCKED_RAYS,
-        )
-        if misses > 0
-        else []
-    )
-
-    return rays_hit + rays_miss
-
-
 def render_joint(dfk: HomMatrix) -> list[tlmv.Points]:
     dim, dtype = (
         dfk.shape[0] - 1,

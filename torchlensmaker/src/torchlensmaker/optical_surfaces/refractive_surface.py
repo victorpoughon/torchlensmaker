@@ -76,9 +76,12 @@ class RefractiveSurface(OpticalSurfaceElement):
         assert n1.shape == n2.shape == (rays.batch_size)
         assert n1.device == n2.device
 
+        # TODO, we could check coherence between the index in the input ray bundle
+        # and the index computed from self.material_in. If they don't match it's an error.
+
         # Compute optical refraction -- Snell's law happens here
         # Note that some rays are invalid collisions here, we compute refraction anyway
-        # as they will be filtered by the combined mask below
+        # as they will be merged in the next bundle's valid mask
         refracted, valid_refraction = self.func.apply(rays.V, sout.normals, n1, n2)
 
         # The combined valid mask
@@ -87,9 +90,15 @@ class RefractiveSurface(OpticalSurfaceElement):
         else:
             valid = torch.logical_and(sout.valid, valid_refraction)
 
+        # avoid nan values propagating to preserve gradients
+        combined = rays.valid & valid
+        refracted = torch.where(combined.unsqueeze(-1), refracted, rays.V)
+
         # Filter the ray bundle for valid rays and apply new vector computed by refraction
         rays_refracted = rays.mask(valid).replace(
-            P=sout.points_global[valid], V=refracted[valid]
+            P=sout.points_global,
+            V=refracted,
+            n=n2,
         )
 
         return rays_refracted, sout

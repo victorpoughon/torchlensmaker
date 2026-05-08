@@ -48,10 +48,14 @@ class ReflectiveSurface(OpticalSurfaceElement):
         sout = self.surface(rays.P, rays.V, tf)
 
         # Compute optical reflection
-        reflected = self.func.apply(rays.V[sout.valid], sout.normals[sout.valid])
+        reflected = self.func.apply(rays.V, sout.normals)
+
+        # avoid nan values propagating to preserve gradients
+        combined = rays.valid & sout.valid
+        reflected = torch.where(combined.unsqueeze(-1), reflected, rays.V)
 
         # Filter the ray bundle for valid collisions
-        points = sout.points_global[sout.valid]
+        points = sout.points_global
         rays_reflected = rays.mask(sout.valid).replace(P=points, V=reflected)
 
         return rays_reflected, sout

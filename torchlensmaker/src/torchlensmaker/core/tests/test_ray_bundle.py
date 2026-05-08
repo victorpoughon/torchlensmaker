@@ -30,16 +30,23 @@ def _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2, source_idx=0):
 
     # meshgrid indices: all combinations of pupil x field x wavel
     pi, fi, wi = torch.meshgrid(
-        torch.arange(n_pupil), torch.arange(n_field), torch.arange(n_wavel),
+        torch.arange(n_pupil),
+        torch.arange(n_field),
+        torch.arange(n_wavel),
         indexing="ij",
     )
     pupil_idx = pi.reshape(-1).to(torch.int64)
     field_idx = fi.reshape(-1).to(torch.int64)
     wavel_idx = wi.reshape(-1).to(torch.int64)
 
+    valid = torch.full((N,), True)
+    n = torch.ones((N,))
+
     return RayBundle.create(
         P=torch.zeros((N, 2)),
         V=torch.ones((N, 2)),
+        valid=valid,
+        n=n,
         pupil=SampledVariable.create(
             values=pupil_domain[pupil_idx],
             idx=pupil_idx,
@@ -69,6 +76,7 @@ def _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2, source_idx=0):
 
 # --- empty ---
 
+
 def test_empty_2d():
     b = RayBundle.empty(dim=2)
     assert b.P.shape == (0, 2)
@@ -91,6 +99,7 @@ def test_empty_3d():
 
 # --- mask ---
 
+
 def test_mask_all_true_preserves_bundle():
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
     valid = torch.ones(b.P.shape[0], dtype=torch.bool)
@@ -104,25 +113,27 @@ def test_mask_all_true_preserves_bundle():
     assert torch.equal(result.source.domain_idx, b.source.domain_idx)
 
 
-def test_mask_preserves_domain_after_full_filter():
+def test_mask_updates_valid_not_rows():
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
     # Filter out all rays whose field_idx == 1
     valid = b.field.idx != 1
     result = b.mask(valid)
-    # field_idx=1 should be filtered from values/idx but domain preserved
-    assert 1 not in result.field.idx
+    assert result.batch_size == b.batch_size
     assert torch.equal(result.field.domain_idx, b.field.domain_idx)
     assert torch.allclose(result.field.domain_values, b.field.domain_values)
 
 
 # --- cat ---
 
+
 def test_cat_disjoint_sources():
     b0 = _make_bundle_2d(source_idx=0)
     b1 = _make_bundle_2d(source_idx=1)
     result = b0.cat(b1)
     assert result.P.shape[0] == b0.P.shape[0] + b1.P.shape[0]
-    assert torch.equal(result.source.domain_idx, torch.tensor([0, 1], dtype=torch.int64))
+    assert torch.equal(
+        result.source.domain_idx, torch.tensor([0, 1], dtype=torch.int64)
+    )
     assert result.source.domain_values.shape == (2,)
 
 
@@ -133,6 +144,8 @@ def test_cat_conflicting_wavel_raises():
     b1 = RayBundle.create(
         P=torch.zeros((N, 2)),
         V=torch.ones((N, 2)),
+        valid=torch.full((N,), True),
+        n=torch.ones((N,)),
         pupil=b0.pupil,
         field=b0.field,
         wavel=SampledVariable.create(
@@ -163,6 +176,7 @@ def test_cat_empty_right():
 
 
 # --- split_masks / split_by ---
+
 
 def test_split_masks():
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
@@ -202,7 +216,7 @@ def test_split_masks_chained_grid():
     sidecar = torch.arange(N, dtype=torch.float32)
     total = 0
     for ki, m1 in enumerate(b.split_masks("field")):
-        sub = b.mask(m1)
+        sub = b.filter(m1)
         sub_sidecar = sidecar[m1]
         for kj, m2 in enumerate(sub.split_masks("wavel")):
             assert (sub.field.idx[m2] == ki).all()
@@ -227,10 +241,9 @@ def test_split_by():
         assert torch.allclose(part.field.domain_values, b.field.domain_values)
 
 
-
 def test_split_by_empty_cell_domain_preserved():
     b = _make_bundle_2d(n_pupil=3, n_field=2, n_wavel=2)
-    parts = b.mask(b.field.idx != 1).split_by("field")
+    parts = b.filter(b.field.idx != 1).split_by("field")
     # Both domain positions still present
     assert len(parts) == 2
     # Second cell is empty but domain intact
@@ -245,6 +258,7 @@ def test_split_by_unknown_var_raises():
 
 
 # --- domain invariant ---
+
 
 def test_domain_invariant():
     """pupil.values[i] == pupil.domain_values[searchsorted(pupil.domain_idx, pupil.idx[i])]"""
