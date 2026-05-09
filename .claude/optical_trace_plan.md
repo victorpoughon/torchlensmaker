@@ -197,13 +197,14 @@ Two-tier shape, kept narrow:
 - **Kernel `forward`** (local, narrow, testable): returns *only what the
   element actually produces*. Different element kinds have different
   signatures — there is no shared "always returns bundle and tf" rule.
-- **`extend_optical_trace(trace, parents) -> trace`** (chain API): thin
-  per-element method that reads its input from `trace.bundle_at(...)` /
-  `trace.tf_at(...)` for each parent, calls its kernel, and appends a
-  node with `new_bundle` and `new_tf` set to exactly what the element
-  type produces. The caller (`Sequential`) is responsible for supplying
-  the correct `parents` set. No identity comparison, no implicit dedup
-  — each element knows its own semantics.
+- **`extend_optical_trace(trace, key, parents) -> trace`** (chain API):
+  thin per-element method that reads its input from
+  `trace.bundle_at(...)` / `trace.tf_at(...)` for each parent, calls
+  its kernel, and appends a node with `new_bundle` and `new_tf` set to
+  exactly what the element type produces. The caller (`Sequential`) is
+  responsible for supplying `key` (from `mod.trace_key or module_key`)
+  and the correct `parents` set. No identity comparison, no implicit
+  dedup — each element knows its own semantics.
 
 Per-element shapes:
 
@@ -214,14 +215,14 @@ class OpticalSurfaceElement(BaseModule):
         ...
 
     def extend_optical_trace(
-        self, trace: OpticalTrace, parents: set[str]
+        self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents  # sequential: exactly one parent
         rays_in = trace.bundle_at(parent_key)
         tf_in = trace.tf_at(parent_key)
         new_rays, record = self.forward(rays_in, tf_in)
         trace.append(
-            key=self.qualified_name,
+            key=key,
             record=record,
             parents=parents,
             new_bundle=new_rays,
@@ -236,14 +237,14 @@ class Aperture(BaseModule):
         ...
 
     def extend_optical_trace(
-        self, trace: OpticalTrace, parents: set[str]
+        self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
         rays_in = trace.bundle_at(parent_key)
         tf_in = trace.tf_at(parent_key)
         new_rays, record = self.forward(rays_in, tf_in)
         trace.append(
-            key=self.qualified_name,
+            key=key,
             record=record,
             parents=parents,
             new_bundle=new_rays,
@@ -258,13 +259,13 @@ class Gap(BaseModule):
         ...
 
     def extend_optical_trace(
-        self, trace: OpticalTrace, parents: set[str]
+        self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
         tf_in = trace.tf_at(parent_key)
         new_tf, record = self.forward(tf_in)
         trace.append(
-            key=self.qualified_name,
+            key=key,
             record=record,
             parents=parents,
             new_bundle=None,
@@ -280,14 +281,14 @@ class FocalPoint(BaseModule):
         ...
 
     def extend_optical_trace(
-        self, trace: OpticalTrace, parents: set[str]
+        self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
         rays_in = trace.bundle_at(parent_key)
         tf_in = trace.tf_at(parent_key)
         record = self.forward(rays_in, tf_in)
         trace.append(
-            key=self.qualified_name,
+            key=key,
             record=record,
             parents=parents,
             new_bundle=None,
@@ -302,7 +303,7 @@ class LightSourceBase(BaseModule):
         ...
 
     def extend_optical_trace(
-        self, trace: OpticalTrace, parents: set[str]
+        self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         # Source nodes are called with parents=set(). The source's tf is
         # its placement frame (a per-source attribute / external input).
@@ -421,9 +422,18 @@ Substeps:
 2. Add `OpticalTrace.empty(dim, dtype, device)` and a convention for
    the initial state (empty `nodes`, `bundles`, `tfs`). `Sequential`
    locally tracks the previous-step key as it iterates over its
-   children and passes it (as a single-element `set[str]`) into each
-   `extend_optical_trace` call. The first child of a chain is a light
-   source and receives `parents=set()`.
+   children:
+
+   ```python
+   prev_key: str | None = None
+   for module_key, mod in self._modules.items():
+       key = mod.trace_key or module_key
+       parents = {prev_key} if prev_key is not None else set()
+       trace = mod.extend_optical_trace(trace, key, parents)
+       prev_key = key
+   ```
+
+   The first child (a light source) receives `parents=set()`.
 3. Implement each element's `extend_optical_trace()` per its kind, following the
    per-element shapes in the Element protocol section. Each element
    passes `new_bundle` and `new_tf` to `trace.append(...)` as
