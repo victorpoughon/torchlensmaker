@@ -14,10 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Callable, TypeAlias
+from typing import Protocol
 
 import torch
-from jaxtyping import Bool, Float
+from jaxtyping import Float
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     transform_rays,
@@ -30,16 +30,14 @@ from torchlensmaker.types import (
     Tf,
 )
 
+
 # (P, V) -> t, local_normals, valid, rsm
-LocalSolver: TypeAlias = Callable[
-    [Float[torch.Tensor, "N D"], Float[torch.Tensor, "N D"]],
-    tuple[
-        BatchTensor,
-        BatchNDTensor,
-        MaskTensor,
-        BatchTensor,
-    ],
-]
+class LocalSolver(Protocol):
+    def __call__(
+        self,
+        P: Float[torch.Tensor, "N D"],
+        V: Float[torch.Tensor, "N D"],
+    ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]: ...
 
 
 def surface_raytrace(
