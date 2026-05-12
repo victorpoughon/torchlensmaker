@@ -2172,7 +2172,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.9" },
     { name = "tlmviewer", editable = "../tlmviewer-python" },
     { name = "torchimplicit", editable = "../torchimplicit" },
-    { name = "trama", specifier = ">=0.1.0" },
+    { name = "trama", specifier = ">=0.2.0" },
 ]
 provides-extras = ["test", "dev", "onnx"]
 
@@ -2206,14 +2206,14 @@ wheels = [
 
 [[package]]
 name = "trama"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/d2/4b5e43b0915a8f0906c00c89b236486a1b2ecb51e0a3a47058963d6884e4/trama-0.1.0.tar.gz", hash = "sha256:9bd0a3f8fb74e52e979d879dd41e56831286bffa4b364dc64df336b2a5b61ad9", size = 11898, upload-time = "2026-05-10T11:20:19.191Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cc/d2/17d96cd320f533699a86fd2d19ee63df8339235a1b9fcd4fef03c944c16d/trama-0.2.0.tar.gz", hash = "sha256:ce882fc3cb96b77d4c2e0c25adddc35b91ff5c237b042452b3cb73fa344de7cf", size = 15702, upload-time = "2026-05-12T08:00:28.922Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/95/1b/f63d9eddca109f18ea6162e84d52e4e72da2ac5e728724e2fa316196e0dd/trama-0.1.0-py3-none-any.whl", hash = "sha256:7db9810311660765b11e1ec6173652e3e2153a39d7550edbb9d71cab183b85f6", size = 17007, upload-time = "2026-05-10T11:20:17.958Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/83/4d9477cb6a63e1cc033e4e3ee4cfe9d2ca47f16c6956902cbca698efe5d7/trama-0.2.0-py3-none-any.whl", hash = "sha256:11b8e444a2a025a8c521167b5439bbb7ba078d861600c822b19104c9ebbac031", size = 21524, upload-time = "2026-05-12T08:00:30.244Z" },
 ]
 
 [[package]]
