@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trama Export Support Plan</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #111;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 2rem;
+  }
+
+  h1 { font-size: 20pt; margin: 0 0 1.2rem; border-bottom: 2px solid #333; padding-bottom: 0.4rem; }
+  h2 { font-size: 15pt; margin: 1.8rem 0 0.6rem; border-bottom: 1px solid #aaa; padding-bottom: 0.2rem; }
+  h3 { font-size: 12pt; margin: 1.4rem 0 0.4rem; }
+  h4 { font-size: 11pt; margin: 1rem 0 0.3rem; font-style: italic; }
+
+  p { margin: 0.5rem 0; }
+
+  ul, ol { margin: 0.4rem 0 0.4rem 1.6rem; }
+  li { margin: 0.2rem 0; }
+  li > ul, li > ol { margin-top: 0.2rem; }
+
+  code {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 9pt;
+    background: #f4f4f4;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    padding: 0 3px;
+  }
+
+  pre {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 8.5pt;
+    background: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    margin: 0.6rem 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+
+  pre code {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  strong { font-weight: bold; }
+  em { font-style: italic; }
+
+  blockquote {
+    border-left: 3px solid #aaa;
+    margin: 0.6rem 0 0.6rem 1rem;
+    padding-left: 0.8rem;
+    color: #555;
+  }
+
+  @media print {
+    body { padding: 0; font-size: 10pt; }
+    h1 { font-size: 18pt; }
+    h2 { font-size: 13pt; page-break-after: avoid; }
+    h3 { font-size: 11pt; page-break-after: avoid; }
+    pre { page-break-inside: avoid; font-size: 8pt; }
+    li { page-break-inside: avoid; }
+    @page { margin: 2cm 2.5cm; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Trama Export Support Plan</h1>
+
+<p>This document is a step-by-step plan for adding <code>trama</code> export (and round-trip
+import) support to the user-facing modules of <code>torchlensmaker</code>. It assumes
+<code>trama&gt;=0.2.0</code> is already declared as a dependency in
+<code>torchlensmaker/pyproject.toml</code>.</p>
+
+<h2>Why now / what to export</h2>
+
+<p>The user-facing primitives in <code>torchlensmaker.__init__</code> form a clean
+hierarchy that maps naturally onto trama:</p>
+
+<ul>
+  <li><strong>Composites</strong>: <code>Sequential</code>, <code>SubChain</code>, <code>Lens</code> (subclass of <code>Sequential</code>).</li>
+  <li><strong>Leaf optical ops</strong>: <code>RefractiveSurface</code>, <code>ReflectiveSurface</code>, <code>Aperture</code>,
+    <code>ImagePlane</code>, <code>FocalPoint</code>.</li>
+  <li><strong>Leaf source ops</strong>: <code>Object</code>, <code>ObjectAtInfinity</code>, <code>PointSource</code>,
+    <code>PointSourceAtInfinity</code>, <code>RaySource</code>, <code>GenericLightSource</code>.</li>
+  <li><strong>Leaf kinematic ops</strong>: <code>Gap</code>, <code>Translate</code>, <code>Translate2D</code>, <code>Translate3D</code>,
+    <code>Rotate2D</code>, <code>RotateMixed</code>, <code>RotateX</code>, <code>RotateY</code>, <code>RotateZ</code>,
+    <code>AbsolutePosition</code>, <code>AbsolutePosition2D</code>, <code>AbsolutePosition3D</code>.</li>
+  <li><strong>Sub-leaf parameterized objects</strong>: <code>SurfaceElement</code> subclasses
+    (<code>SphereByRadius</code>, <code>SphereByCurvature</code>, <code>Conic</code>, <code>Asphere</code>, <code>Parabola</code>,
+    <code>Plane</code>, <code>Disk</code>, <code>Square</code>, <code>XYPolynomial</code>, <code>PointSurface</code>, <code>Sphere</code>,
+    <code>ImplicitDisk</code>), <code>MaterialModel</code> subclasses (<code>NonDispersiveMaterial</code>,
+    <code>CauchyMaterial</code>, <code>SellmeierMaterial</code>, <code>LinearSegmentedMaterial</code>),
+    <code>SamplerElement</code> subclasses, and <code>PositionGap</code> family.</li>
+</ul>
+
+<p>Sub-modules such as surfaces, materials, and samplers are represented as child
+nodes of their enclosing composite from the start, enabling correct parameter
+sharing via the trama 0.2.0 parameter table.</p>
+
+<h2>Design decisions</h2>
+
+<h3>D1 — Ports match <code>forward()</code> signatures</h3>
+
+<p>Each module's trama input and output ports are derived directly from its
+<code>forward()</code> function arguments rather than from a unified wrapper type.
+Different module categories therefore have different port structures:</p>
+
+<ul>
+  <li><strong>Kinematic ops</strong> (<code>Gap</code>, <code>Translate</code>, <code>Rotate*</code>, etc.): ports map to their
+    kinematic transform arguments (e.g. <code>tf</code>).</li>
+  <li><strong>Optical ops</strong> (<code>RefractiveSurface</code>, <code>ReflectiveSurface</code>, etc.): ports map
+    to their ray bundle and transform arguments (e.g. <code>rays</code>, <code>tf</code>).</li>
+  <li><strong>Source ops</strong> (<code>Object</code>, <code>PointSource</code>, etc.): ports match their own
+    <code>forward()</code> signature, which differs from optical and kinematic ops.</li>
+  <li><strong>Composites</strong> (<code>Sequential</code>, <code>SubChain</code>, <code>Lens</code>): ports match the
+    <code>forward()</code> signature of the contained module chain; wiring between children
+    uses the actual argument names.</li>
+</ul>
+
+<p><code>SequentialData</code> is <strong>not</strong> used as a trama port type. The trama graph wires
+the actual data fields (<code>rays</code>, <code>tf</code>, etc.) directly, keeping the exported
+format self-describing and independent of internal wrapper conventions.</p>
+
+<h3>D2 — Parameters always live in the top-level table</h3>
+
+<p>Trama's parameter model has one mode: every parameter lives in
+<code>ExportedModel.parameters</code>, and every <code>Node.parameters</code> slot is a
+<code>ParameterRef</code>. Map torchlensmaker types as follows when building a
+<code>ParameterEntry</code>:</p>
+
+<ul>
+  <li><code>nn.Parameter</code> / <code>torch.Tensor</code> (any dimensionality, including 0-d scalars) →
+    <code>TensorValue</code> with dtype preserved and <code>learnable=requires_grad</code>. Tensors are
+    never coerced to bare Python scalars; dtype is always kept. Use
+    <code>tensor.numpy().tobytes()</code> + <code>trama.encode_bytes</code> for raw bytes; <code>dtype</code>
+    must come from <code>trama.tensor.KNOWN_DTYPES</code>.</li>
+  <li>Bare Python scalars (<code>float</code>, <code>int</code>, <code>bool</code>) held directly on the module
+    (not wrapped in <code>nn.Parameter</code>) → serialize as scalar values.</li>
+  <li>Enum-like strings (<code>tir_mode</code>, material names like <code>"air"</code>, <code>"water"</code>) →
+    plain Python <code>str</code>.</li>
+  <li>Sub-modules that are <em>configuration</em> (e.g. samplers stored on a light
+    source, or the inner <code>MaterialModel</code> of a <code>RefractiveSurface</code>) → child
+    nodes in the trama tree (see D7).</li>
+</ul>
+
+<p>The <code>to_node</code> pattern is uniform across every leaf:</p>
+
+<pre><code>def to_node(self, *, node_id, ctx):
+    x_ref, x_entry = pack_parameter(ctx, self.x, hint=f"{node_id}.x")
+    return NodeFragment(
+        root_id=node_id,
+        nodes=[Node(
+            id=node_id, parent=parent_of(node_id), op="Gap",
+            inputs={"tf": ctx.input_refs["tf"]},
+            outputs=["tf"],
+            parameters={"x": x_ref},
+            output_bindings=None,
+        )],
+        parameters=x_entry,
+    )</code></pre>
+
+<p>When two modules share <code>self.x</code>, both calls to
+<code>ctx.parameter_name(self.x, ...)</code> return the same name, both
+fragments register the same entry under that name, and
+<code>compose_fragment</code> merges them into one entry in the resulting
+table. There is no inline-vs-shared decision to make at the call site.</p>
+
+<h3>D3 — Sub-modules are deduplicated at export</h3>
+
+<p>Trama 0.2.0 supports identity sharing for parameters (via the top-level
+parameter table) but not for sub-module instances. tlm models that share a
+sub-module instance across multiple parents (e.g. one <code>SellmeierMaterial</code>
+reused by six <code>RefractiveSurface</code>s) are deduplicated at export time: the
+dedup pass makes a shallow copy of each reused module, producing structurally
+independent sub-trees while preserving shared <code>nn.Parameter</code> identity. The
+shared parameters then fall naturally into the top-level table via
+<code>ctx.parameter_name</code> keying on <code>id(param)</code>.</p>
+
+<p>The optimization-relevant invariants are preserved by construction:
+the shared <code>nn.Parameter</code>s end up in the <code>parameters</code> table once
+(because <code>id(param)</code> matches across the dedup'd copies), and every
+copy of the sub-module references the same entries.
+<code>optimizer.step()</code>, gradient flow, and <code>model.parameters()</code> behave
+identically to the non-exported model.</p>
+
+<p>The one user-visible change after round-trip: what was
+<code>a_module is b_module</code> becomes <code>a_module == b_module</code> structurally
+(same op, same parameter refs). Document this in the user guide; a
+grep across <code>src/torchlensmaker</code> did not find any <code>is</code>-checks on
+sub-modules.</p>
+
+<p>Implementation: a <code>dedup_shared_modules(module) -&gt; BaseModule</code> pass
+in <code>src/torchlensmaker/export/dedup.py</code> walks the module tree, keys
+sub-modules by <code>id()</code>, and makes shallow copies of any sub-module seen more
+than once. The copy shares the original's <code>nn.Parameter</code> objects exactly
+(same Python identity), so <code>ctx.parameter_name</code> keying on <code>id(param)</code> ensures
+they map to a single entry in the parameter table.</p>
+
+<h3>D4 — Registry keys mirror Python class names</h3>
+
+<p>Op names are simple <code>CamelCase</code> strings, identical to the Python class
+name (e.g. <code>"Sequential"</code>, <code>"RefractiveSurface"</code>, <code>"SphereByRadius"</code>).
+This keeps reading raw <code>.trama.json</code> files easy and matches what users
+already expect from <code>repr()</code>.</p>
+
+<h3>D5 — Single registry, populated at import-time</h3>
+
+<p>Add <code>torchlensmaker/export/registry.py</code> with a module-level
+<code>tlm_registry: trama.OpRegistry</code> populated by registration calls scattered
+across each user-facing module's file. Provide a public helper:</p>
+
+<pre><code>def tlm_op_registry() -&gt; trama.OpRegistry: ...</code></pre>
+
+<p>so users can call <code>trama.export_model(..., registry=tlm_op_registry())</code> and
+<code>tlm.export_to_trama(model, path)</code> without knowing internal details.</p>
+
+<h3>D6 — Mixin or protocol implementation?</h3>
+
+<p><code>BaseModule</code> already inherits from <code>torch.nn.Module</code>. Add <code>to_node</code> /
+<code>from_node</code> as <strong>methods on <code>BaseModule</code></strong> with default implementations
+that raise <code>NotImplementedError</code>, then override per class. This keeps the
+trama API discoverable on every module via dot-access without changing
+inheritance.</p>
+
+<h3>D7 — Output bindings for composites</h3>
+
+<p><code>Sequential.to_node</code> produces a composite node whose <code>output_bindings</code> wire
+each declared output port to the corresponding output of the last child, using
+the actual serialized field names derived from the <code>forward()</code> signature
+(e.g. <code>rays</code>, <code>tf</code>):</p>
+
+<pre><code>Node(
+    id="root",
+    op="Sequential",
+    inputs={"rays": ValueRef(node="%input", output="rays"),
+            "tf":   ValueRef(node="%input", output="tf")},
+    outputs=["rays", "tf"],
+    parameters={},
+    output_bindings={"rays": ValueRef(node="root.&lt;last_child&gt;", output="rays"),
+                     "tf":   ValueRef(node="root.&lt;last_child&gt;", output="tf")},
+    parent=None,
+)</code></pre>
+
+<p><code>SubChain</code> and <code>Lens</code> follow the same pattern (with <code>op="SubChain"</code> /
+<code>op="Lens"</code>). Optical elements that are trama composites for reconstruction
+purposes (e.g. <code>RefractiveSurface</code>) use <code>output_bindings</code> that reference
+<code>%input</code> directly, forwarding the actual port names through unchanged.</p>
+
+<h2>Step-by-step implementation plan</h2>
+
+<p>The work is broken into sequenced PRs. Each step is independently testable.</p>
+
+<h3>Step 0 — Scaffolding</h3>
+
+<ol>
+  <li>Create <code>src/torchlensmaker/export/</code> with:
+    <ul>
+      <li><code>__init__.py</code> — re-exports <code>tlm_op_registry</code>, <code>export_to_trama</code>, <code>import_from_trama</code>.</li>
+      <li><code>registry.py</code> — defines the <code>tlm_registry</code> singleton and a <code>register_op(...)</code> helper.</li>
+      <li><code>trama_helpers.py</code> — small utilities for tensor↔TensorValue conversion and dtype mapping. Includes a
+        <code>pack_parameter(ctx, value, *, hint) -&gt; tuple[ParameterRef, dict[str, ParameterEntry]]</code> helper that:
+        <ol>
+          <li>calls <code>ctx.parameter_name(value, hint=hint)</code> to get a stable name,</li>
+          <li>builds a <code>ParameterEntry</code> from <code>value</code> (handling tensors of any dimensionality with dtype preserved, bools, strings),</li>
+          <li>returns the ref plus a one-entry dict the caller merges into its <code>NodeFragment.parameters</code>.</li>
+        </ol>
+      </li>
+      <li><code>dedup.py</code> — sub-module dedup pass: a function <code>dedup_shared_modules(module) -&gt; BaseModule</code> that walks the tree,
+        keys sub-modules by <code>id()</code>, and makes shallow copies of any sub-module seen more than once while preserving
+        shared <code>nn.Parameter</code> identity.</li>
+    </ul>
+  </li>
+  <li>Add <code>to_node</code> and <code>from_node</code> stubs to <code>BaseModule</code>
+    (<code>src/torchlensmaker/core/base_module.py</code>) raising <code>NotImplementedError</code>.</li>
+  <li>Wire the public entry points in <code>src/torchlensmaker/__init__.py</code>:
+    <ul>
+      <li><code>export_to_trama(model, path, *, indent=2)</code> — runs <code>dedup_shared_modules</code> first, then <code>trama.export_model(...)</code>, then <code>trama.dump</code>.</li>
+      <li><code>import_from_trama(path) -&gt; BaseModule</code></li>
+      <li><code>tlm_op_registry</code></li>
+    </ul>
+  </li>
+  <li>Add a single passing smoke test that imports <code>tlm.tlm_op_registry()</code> and asserts the returned object is an <code>OpRegistry</code> (initially empty).</li>
+</ol>
+
+<h3>Step 1 — Composites: <code>Sequential</code>, <code>SubChain</code>, <code>Lens</code></h3>
+
+<ol>
+  <li>Implement <code>Sequential.to_node</code>: iterate over <code>self._modules</code>, recursively
+    call <code>to_node</code> on each child with <code>node_id=f"{node_id}.{name}"</code> and
+    <code>input_refs</code> wired to the previous child's outputs using the actual port
+    names. The first child reads from <code>%input</code>. Wrap the child fragments with
+    <code>compose_fragment</code> and emit the composite node with <code>output_bindings</code>.</li>
+  <li>Implement <code>Sequential.from_node</code>: receives <code>children</code> dict keyed by
+    submodule name; rebuild via <code>Sequential(*children.values())</code>.</li>
+  <li>Implement <code>SubChain.to_node</code> / <code>from_node</code> as a thin wrapper around the inner <code>_sequential</code>.</li>
+  <li>Implement <code>Lens.to_node</code> / <code>from_node</code> (use <code>cemented</code>-style reconstruction is unnecessary; just feed the children in order).</li>
+  <li>Register all three ops in the registry with <code>is_composite=True</code>.</li>
+  <li>Tests: round-trip an empty <code>Sequential</code>, then nested <code>Sequential(SubChain(Sequential(...)))</code>. At this point all leaf children in the test must be trivial dummies (a stub op registered just for tests) because no real leaves are wired yet.</li>
+</ol>
+
+<h3>Step 2 — Kinematic leaves</h3>
+
+<p>Lowest-risk leaves to wire next; they are pure parameters with no sub-modules.</p>
+
+<ol>
+  <li><code>Gap</code>: parameters <code>{x: TensorValue (learnable), reversed: bool}</code>. In
+    <code>to_node</code>, run <code>self.x</code> through <code>pack_parameter(ctx, self.x, hint=f"{node_id}.x")</code> to get a <code>ParameterRef</code> and the entry to merge into the fragment's parameters table. <code>reversed</code> is a plain <code>bool</code>, also packed into the table (every parameter slot uses a ref; bools and strings are entries with scalar values).</li>
+  <li><code>Translate</code>, <code>Translate2D</code>, <code>Translate3D</code>: parameters <code>{x, y, z?: TensorValue, reversed: bool}</code>. Each component goes through <code>pack_parameter</code> independently — crucial because users routinely share one component while leaving others independent.</li>
+  <li><code>Rotate2D</code>, <code>RotateMixed</code>, <code>RotateX/Y/Z</code>: parameter <code>{angle: TensorValue (learnable), reversed: bool}</code>.</li>
+  <li><code>AbsolutePosition*</code>: parameters <code>{x?, y?, z?: TensorValue}</code>.</li>
+  <li>Tests:
+    <ul>
+      <li>Round-trip a <code>Sequential(Gap(2.5, trainable=True), Translate(1, 2, 3))</code>, assert structural equality of the JSON and that <code>model.x.requires_grad == True</code> after import.</li>
+      <li><strong>Sharing test</strong>: build <code>g = tlm.parameter(85.0, trainable=True); model = Sequential(Gap(g), Gap(g))</code>, round-trip, assert that <code>imported[0].x is imported[1].x</code> and that the JSON contains a non-empty top-level <code>parameters</code> table with one entry referenced twice.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>Step 3 — Surfaces and parameter-only sub-modules</h3>
+
+<p>Treat each <code>SurfaceElement</code> subclass as a leaf op, parameters captured verbatim. Per surface:</p>
+
+<ol>
+  <li><code>SphereByRadius</code>: <code>{diameter: TensorValue, R: TensorValue (learnable), anchors: TensorValue[2], scale: TensorValue}</code>.</li>
+  <li><code>SphereByCurvature</code>, <code>Conic</code>, <code>Parabola</code>, <code>Plane</code>, <code>Disk</code>, <code>Square</code>: analogous, copy from each <code>__init__</code> signature.</li>
+  <li><code>Asphere</code>, <code>XYPolynomial</code>: include polynomial coefficient tensors as <code>TensorValue</code>.</li>
+  <li><code>PointSurface</code>, <code>Sphere</code> (implicit), <code>ImplicitDisk</code>: same treatment.</li>
+  <li>Add <code>PositionGap</code> family (<code>InnerGap</code>, <code>OuterGap</code>) — small leaf ops, just one <code>TensorValue</code> parameter.</li>
+  <li>Tests: import + export each surface in isolation, verify equality of stored tensor parameters.</li>
+</ol>
+
+<h3>Step 4 — Materials</h3>
+
+<p>Each <code>MaterialModel</code> subclass becomes a leaf op:</p>
+
+<ul>
+  <li><code>NonDispersiveMaterial</code>: <code>{n: TensorValue (learnable)}</code>.</li>
+  <li><code>CauchyMaterial</code>: <code>{A, B, C, D: TensorValue}</code>.</li>
+  <li><code>SellmeierMaterial</code>: six <code>TensorValue</code>s.</li>
+  <li><code>LinearSegmentedMaterial</code>: two <code>TensorValue</code> arrays.</li>
+</ul>
+
+<p>Special-case <code>material_from_indicio(name) -&gt; MaterialModel</code>: round-trip by
+storing the indicio key as a <code>string</code> parameter on a thin
+<code>IndicioMaterial</code> wrapper op so the import side can call
+<code>material_from_indicio(name)</code> to rehydrate.</p>
+
+<h3>Step 5 — Optical leaves with sub-module parameters</h3>
+
+<p>These hold child modules (surface, materials). After the Step 0 dedup
+pass, every <code>RefractiveSurface</code> instance owns a structurally independent
+<code>MaterialModel</code> instance — but their <code>nn.Parameter</code>s may be shared via
+the <code>parameters</code> table. The trama-side serialization is uniform: each
+optical element is a composite node with named children, and trama's
+parameter table handles parameter dedup.</p>
+
+<ol>
+  <li><code>RefractiveSurface</code>: composite node with three children — <code>surface</code>,
+    <code>material_in</code>, <code>material_out</code> — and parameters <code>{tir_mode: string}</code>.
+    The composite declares its <code>forward()</code> ports (<code>rays</code>, <code>tf</code>), with
+    <code>output_bindings</code> forwarding those ports from <code>%input</code> directly —
+    children are reconstruction artifacts, not part of the dataflow.
+    <code>from_node</code> reads <code>children["surface"]</code>, <code>children["material_in"]</code>,
+    <code>children["material_out"]</code> and constructs a fresh
+    <code>RefractiveSurface(surface, materials=(mat_in, mat_out), tir_mode=...)</code>.</li>
+  <li><code>ReflectiveSurface</code>: composite with one child <code>surface</code> and no materials.</li>
+  <li><code>Aperture</code>: composite with one child <code>surface</code> (a <code>Disk</code>) and no parameters.</li>
+  <li><code>ImagePlane</code>: composite with child <code>surface=Disk(diameter)</code> and parameter <code>{magnification: TensorValue | None}</code>.</li>
+  <li><code>FocalPoint</code>: leaf, no parameters, no children.</li>
+</ol>
+
+<p>Trama allows composites whose <code>output_bindings</code> reference <code>%input</code>
+directly — this is the correct encoding for nodes whose runtime behavior
+is opaque to trama and whose children are reconstruction artifacts rather
+than dataflow participants. Verify this passes <code>validate_structure</code> with a
+focused unit test before wiring all optical elements.</p>
+
+<h3>Step 6 — Samplers and light sources</h3>
+
+<p>Samplers are first-class child nodes (no string-key inlining). This is a
+revision of the earlier draft's "inline samplers as a config string"
+approach — making them proper child nodes is necessary because
+<code>ExactSampler*</code> carries a tensor that may be shared.</p>
+
+<ol>
+  <li>Implement <code>SamplerElement</code> subclasses
+    (<code>LinspaceSampler1D/2D</code>, <code>DiskSampler2D</code>, <code>ZeroSampler1D/2D</code>,
+    <code>ExactSampler1D/2D</code>) as leaf ops; parameters are the sampler counts
+    and (for <code>Exact*</code>) the sample tensors. Tensor parameters go through
+    <code>ctx.share_parameter</code> so shared sample tensors dedup correctly.</li>
+  <li>Implement <code>GenericLightSource</code> and its concrete subclasses as
+    composite ops with six sampler children plus the geometry parameters
+    (<code>beam_angular_size</code>, <code>object_diameter</code>, <code>wavelength</code>, <code>material</code>,
+    <code>reversed</code>, <code>source_idx</code>). Reuse the Step 5 composite pattern
+    (<code>output_bindings</code> forwarding <code>%input</code> ports).</li>
+  <li>The <code>Object</code> / <code>ObjectAtInfinity</code> / <code>PointSource</code> /
+    <code>PointSourceAtInfinity</code> / <code>RaySource</code> factories share most of their
+    parameters; centralize the <code>to_node</code> helper in
+    <code>light_sources/light_sources_elements.py</code>.</li>
+</ol>
+
+<h3>Step 7 — Public API and ergonomics</h3>
+
+<ol>
+  <li>Add <code>Sequential.to_trama(path)</code> and module-level
+    <code>tlm.export_to_trama(model, path)</code> that internally call
+    <code>trama.export_model(model, inputs=[...], outputs=[...], registry=tlm_op_registry())</code>
+    followed by <code>trama.dump</code>, using the actual port names from the top-level
+    module's <code>forward()</code> signature.</li>
+  <li>Add <code>tlm.import_from_trama(path)</code> which calls <code>trama.load</code> then <code>trama.import_model(loaded, registry=tlm_op_registry())</code>.</li>
+  <li>Update <code>src/torchlensmaker/__init__.py</code> to re-export the new symbols and add them to <code>__all__</code>.</li>
+</ol>
+
+<h3>Step 8 — End-to-end validation</h3>
+
+<ol>
+  <li>Add <code>tests/test_trama_roundtrip.py</code> covering each example in <code>examples/</code>:
+    <ul>
+      <li><code>rainbow.py</code></li>
+      <li><code>cooke_triplet.ipynb</code>'s optical block</li>
+      <li>a <code>Sequential(ObjectAtInfinity, Lens, Gap, ImagePlane)</code> with all parameter shapes exercised (including a <code>LinearSegmentedMaterial</code> and an <code>Asphere</code>).</li>
+    </ul>
+  </li>
+  <li>For each: build the model, call <code>export_to_trama → JSON → import_from_trama</code>, then compare:
+    <ul>
+      <li><code>repr(model) == repr(reloaded)</code></li>
+      <li>state-dict tensors element-wise close (<code>torch.allclose</code>)</li>
+      <li>one forward pass on a fixed input produces the same <code>RayBundle</code> outputs.</li>
+    </ul>
+  </li>
+  <li><strong>Sharing-specific tests</strong>:
+    <ul>
+      <li>One <code>SellmeierMaterial</code> with <code>trainable=True</code> shared across two lenses → after round-trip the six <code>nn.Parameter</code>s are still shared (<code>imported.L1.first_surface.material_in.B1 is imported.L2.first_surface.material_in.B1</code>), even though the <code>MaterialModel</code> <em>instances</em> are now distinct.</li>
+      <li>Run a 10-step optimization on the original and the round-tripped model with identical seeds; assert final parameter values are element-wise close.</li>
+      <li>Build a model with no shared anything; assert the JSON's top-level <code>parameters</code> table is empty.</li>
+    </ul>
+  </li>
+  <li>Add a CLI smoke test that pipes the JSON output through <code>tramaschema | jsonschema validate</code> (or skip if the dependency is too heavy; rely on <code>trama.load</code>'s own validation).</li>
+</ol>
+
+<h3>Step 9 — Documentation</h3>
+
+<ol>
+  <li>Add <code>docs/src/trama_export.md</code> (or notebook) walking a user through exporting and reloading the Cooke triplet.</li>
+  <li>Add a short note to <code>README.md</code> near the existing format-export discussion.</li>
+  <li>Mention the format version (<code>trama.FORMAT_VERSION</code>) and the torchlensmaker registry version (introduce a <code>tlm_registry_version</code> constant in <code>export/registry.py</code>, <code>"0.1"</code>, bumped on breaking registry changes).</li>
+</ol>
+
+<h2>Open questions / risks</h2>
+
+<ol>
+  <li><strong>Validator rejection for composites with no internal dataflow</strong>:
+    Step 5 hinges on <code>validate_structure</code> accepting composites whose
+    <code>output_bindings</code> reference <code>%input</code> directly. The validator code
+    (<code>trama/validation_structure.py:_validate_output_bindings</code>) calls
+    <code>_validate_ref</code> with <code>scope_parent=node.id</code>, which means
+    <code>%input.&lt;port&gt;</code> inside the composite resolves to <em>this composite's</em>
+    declared inputs. That should work. Confirm with a unit test before
+    proceeding.</li>
+  <li><strong>Tensor parameters with <code>requires_grad</code></strong>: ensure the <code>learnable</code>
+    flag is preserved across export/import and re-attached via
+    <code>nn.Parameter</code> on the import side. With shared parameters, the
+    table entry's <code>learnable</code> is canonical — the <code>parameters</code> table
+    pre-build must wrap <code>nn.Parameter</code> <em>before</em> any node references it
+    so that all references see the same <code>nn.Parameter</code> object.</li>
+  <li><strong>Sub-module dedup correctness</strong>: the export-time
+    <code>dedup_shared_modules</code> pass must handle deeply nested sharing
+    (e.g. a shared <code>MaterialModel</code> whose internal kernels are also
+    shared with another module's kernels). Recursive <code>id()</code>-keyed
+    walking is correct but needs a focused test that constructs such a case.</li>
+  <li><strong><code>is</code>-checks on sub-modules in tlm</strong>: the round-trip turns
+    <code>a is b</code> into <code>a == b</code> for shared sub-modules. A grep across
+    <code>src/torchlensmaker</code> did not find any <code>is</code>-comparisons on
+    sub-modules, but new code should not introduce any. Consider
+    adding a lint rule or doc note.</li>
+  <li><strong>Backward compatibility</strong>: trama format version is <code>"0.2"</code> after
+    the shared-parameters feature. Bump the torchlensmaker registry
+    version on every additive op change; refuse loads with a higher
+    version than what's installed. Add a <code>format_compat_check</code> in
+    <code>import_from_trama</code>.</li>
+</ol>
+
+<h2>Out of scope (for the first iteration)</h2>
+
+<ul>
+  <li>ONNX or <code>torch.export</code> integration.</li>
+  <li>Optimizer state, training history, or <code>OptimizationRecord</code> serialization.</li>
+  <li>Custom user-defined <code>BaseModule</code> subclasses outside the public <code>tlm.*</code> API. (Document the registry extension API in Step 9 as a follow-up.)</li>
+  <li>Streaming / chunked loading of huge models.</li>
+  <li>Sub-module identity preservation across round-trip (intentionally unsupported; see D3).</li>
+</ul>
+
+</body>
+</html>
