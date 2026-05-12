@@ -2135,6 +2135,7 @@ dependencies = [
     { name = "matplotlib" },
     { name = "tlmviewer" },
     { name = "torchimplicit" },
+    { name = "torchnodo" },
     { name = "trama" },
 ]
 
@@ -2172,9 +2173,19 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.9" },
     { name = "tlmviewer", editable = "../tlmviewer-python" },
     { name = "torchimplicit", editable = "../torchimplicit" },
+    { name = "torchnodo", specifier = ">=1.0.0" },
     { name = "trama", specifier = ">=0.2.0" },
 ]
 provides-extras = ["test", "dev", "onnx"]
+
+[[package]]
+name = "torchnodo"
+version = "1.0.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/52/2ca97cf44af127dda484b4d64a62e51704185d9762cd0f230ff1b637fa62/torchnodo-1.0.0.tar.gz", hash = "sha256:f819c7f8f3253523f7c8d55d32589f755273bc6c398a26bddc5f74a09a3aec17", size = 13501, upload-time = "2026-05-12T11:06:25.277Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/87/f11ac5803517d76a8cea682fab7e74c334efc26c9a83e27a777432af5586/torchnodo-1.0.0-py3-none-any.whl", hash = "sha256:1d27d69bd7ca1d379523de08ee9a254d7a47c59e28c1ba57ca38156fad4077b6", size = 20748, upload-time = "2026-05-12T11:06:23.723Z" },
+]
 
 [[package]]
 name = "tornado"

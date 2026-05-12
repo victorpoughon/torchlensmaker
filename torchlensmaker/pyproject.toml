@@ -16,6 +16,7 @@ dependencies = [
   "torchimplicit",
   "indicio>=1.1.0",
   "trama>=0.2.0",
+  "torchnodo>=1.0.0",
 ]
 
 [project.optional-dependencies]
