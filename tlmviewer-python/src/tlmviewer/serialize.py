@@ -52,6 +52,10 @@ def _element_to_dict(element: Any) -> dict[str, Any]:
         if old in d:
             d[new] = d.pop(old)
     d["type"] = _ELEMENT_TYPE_STRINGS[type(element)]
+
+    # Drop fields with value None from the serialized dict
+    d = {k: v for k, v in d.items() if v is not None}
+    
     return d
 
 

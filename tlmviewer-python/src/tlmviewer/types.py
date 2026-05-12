@@ -107,11 +107,11 @@ class SurfaceSag:
 @dataclass
 class SurfaceBSpline:
     points: list[list[list[float]]]
-    weights: list[list[float]]
     degree: tuple[int, int]
     knot_type: Literal["clamped", "unclamped"]
     samples: tuple[int, int]
     matrix: Matrix
+    weights: list[list[float]] | None = None
     clip_planes: list[ClipPlane] = field(default_factory=list)
 
 
