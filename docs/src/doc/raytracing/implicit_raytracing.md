@@ -1,5 +1,3 @@
-[⮜ Implicit Functions](./index.md)
-
 # Implicit Raytracing
 
 ## Variant: 'newton'

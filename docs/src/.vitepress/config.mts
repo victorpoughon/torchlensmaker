@@ -77,6 +77,19 @@ export default defineConfig({
                         { text: "Sampling", link: "/doc/modeling/sampling" },
                     ],
                 },
+                // {
+                //     text: "Raytracing",
+                //     items: [
+                //         {
+                //             text: "Implicit Raytracing",
+                //             link: "/doc/raytracing/implicit_raytracing",
+                //         },
+                //         {
+                //             text: "Parametric Raytracing",
+                //             link: "/doc/raytracing/parametric_raytracing",
+                //         },
+                //     ],
+                // },
             ],
 
             "/examples/": [
