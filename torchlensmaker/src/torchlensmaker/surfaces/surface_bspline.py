@@ -119,9 +119,11 @@ class BSplineSurfaceKernel(FunctionalKernel):
     def example_params(
         self, dtype: torch.dtype, device: torch.device
     ) -> tuple[torch.Tensor]:
-        # (N, 3) control points
-        g = torch.linspace(0, 1, 10, dtype=dtype, device=device)
-        control_points = torch.stack((g, g, g))
+        # (K, L, 3) control point grid, flat surface at z=0
+        g = torch.linspace(-1, 1, 4, dtype=dtype, device=device)
+        gu, gv = torch.meshgrid(g, g, indexing="ij")
+        gz = torch.zeros_like(gu)
+        control_points = torch.stack([gu, gv, gz], dim=-1)  # (4, 4, 3)
         return (control_points,)
 
 
