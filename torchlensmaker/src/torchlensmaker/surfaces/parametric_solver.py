@@ -74,6 +74,16 @@ def parametric_solver_newton_step(
     return delta
 
 
+def clamp_theta(theta: torch.Tensor, clamp_positive: bool) -> torch.Tensor:
+    # clamp t to positive if requested in the config
+    if clamp_positive:
+        theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
+
+    # Always clamp (u,v) to (0,1)
+    theta[..., 1:] = torch.clamp(theta[..., 1:], min=0.0, max=1.0)
+    return theta
+
+
 def parametric_solver_newton(
     P: BatchNDTensor,
     V: BatchNDTensor,
@@ -105,15 +115,11 @@ def parametric_solver_newton(
     with torch.no_grad():
         for _ in range(num_iter - 1):
             delta = parametric_solver_newton_step(theta, P, V, parametric_function)
-            theta = theta - damping * delta
-            if clamp_positive:
-                theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
+            theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     # One differentiable step
     delta = parametric_solver_newton_step(theta, P, V, parametric_function)
-    theta = theta - damping * delta
-    if clamp_positive:
-        theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
+    theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     return theta[..., 0], theta[..., 1:]
 

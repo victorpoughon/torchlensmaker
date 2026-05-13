@@ -139,7 +139,7 @@ class BSplineSurface(SurfaceElement):
         "parametric_solver": "newton",
         "num_iter": 10,
         "damping": 1.0,
-        "tol": 1e-6,
+        "tol": 1e-4,
         "init": "closest",
         "clamp_positive": False,
     }
