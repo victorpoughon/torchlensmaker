@@ -94,16 +94,14 @@ class BSplineSurfaceKernel(FunctionalKernel):
         BatchTensor,
     ]:
         def S(uv: torch.Tensor, *, order: int) -> torch.Tensor:
-            # TODO order
-            res = tnodo.bspline_surface(
+            return tnodo.bspline_surface(
                 uv,
                 control_points,
                 degree=self.degree,
-                order=(2, 2),
+                order=(order, order),
                 periodic=(False, False),
                 clamped=(True, True),
             )
-            return res
 
         local_solver = partial(
             parametric_surface_local_raytrace,
