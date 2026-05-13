@@ -21,6 +21,7 @@ import pytest
 import torch
 import torchimplicit as ti
 
+from torchlensmaker.surfaces.surface_bspline import BSplineSurfaceKernel
 from torchlensmaker.surfaces.surface_disk import DiskSurfaceKernel
 from torchlensmaker.surfaces.surface_implicit import ImplicitSurfaceKernel
 from torchlensmaker.surfaces.surface_plane import PlaneSurfaceKernel
@@ -36,6 +37,15 @@ from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_eval,
     check_kernels_example_inputs_and_params,
     check_kernels_export_onnx,
+)
+
+bspline_config = dict(
+    parametric_solver="newton",
+    num_iter=1,
+    damping=1.0,
+    tol=1e-4,
+    init="closest",
+    clamp_positive=False,
 )
 
 config1 = dict(
@@ -76,6 +86,7 @@ config_sphere = dict(
 
 kernels_cases = [
     # pytest.param(SphereByRadiusSurfaceKernel(...),          id="SphereR2D"),
+    pytest.param(BSplineSurfaceKernel((2, 2), bspline_config), id="BSpline3D"),
     pytest.param(DiskSurfaceKernel(2), id="Disk2D"),
     pytest.param(DiskSurfaceKernel(3), id="Disk3D"),
     pytest.param(PlaneSurfaceKernel(2), id="Plane2D"),
