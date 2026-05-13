@@ -24,19 +24,20 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 from torchlensmaker.surfaces import (
-    ImplicitDisk,
     Asphere,
     Conic,
     Disk,
-    SurfaceElementOutput,
+    ImplicitDisk,
     Parabola,
     Plane,
     PointSurface,
     Sphere,
     SphereByCurvature,
     SphereByRadius,
+    SurfaceElementOutput,
     XYPolynomial,
 )
+from torchlensmaker.surfaces.surface_bspline import BSplineSurface
 from torchlensmaker.types import BatchNDTensor, Tf
 
 # --- ray generators: (N, dtype, device) -> (P, V) ---
@@ -81,7 +82,32 @@ def _rays_3d_outside_r5(N: int, dtype: torch.dtype, device: torch.device):
     return P, V
 
 
+def _rays_3d_bspline(N: int, dtype: torch.dtype, device: torch.device):
+    # Rays from x=-5 in +x direction, spread in yz to hit a surface at x=0
+    P = torch.stack(
+        (
+            torch.full((N,), -5.0, dtype=dtype, device=device),
+            torch.linspace(-0.5, 0.5, N, dtype=dtype, device=device),
+            torch.linspace(-0.5, 0.5, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+def _make_bspline_flat():
+    g = torch.linspace(-1, 1, 4)
+    gu, gv = torch.meshgrid(g, g, indexing="ij")
+    control_points = torch.stack([torch.zeros_like(gu), gu, gv], dim=-1)
+    return BSplineSurface(control_points)
+
+
 # --- test case lists ---
+# Surface modules that hold tensor parameters are constructed
+# here at collection time without an explicit dtype. This works because conftest.py
+# calls torch.set_default_dtype() before collection, so the tensors pick up the
+# test-session dtype automatically.
 
 
 cases_2d = [
@@ -234,6 +260,11 @@ cases_3d = [
         ImplicitDisk(5.0),
         _rays_3d_at_origin,
         id="implicit_disk",
+    ),
+    pytest.param(
+        _make_bspline_flat(),
+        _rays_3d_bspline,
+        id="bspline_flat",
     ),
 ]
 
@@ -457,3 +488,28 @@ def test_point_surface_module(dtype: torch.dtype, device: torch.device) -> None:
 
     PointSurface().clone()
     PointSurface().reverse()
+
+
+def test_bspline_surface_module(dtype: torch.dtype, device: torch.device) -> None:
+    g = torch.linspace(-1, 1, 4, dtype=dtype, device=device)
+    gu, gv = torch.meshgrid(g, g, indexing="ij")
+    control_points = torch.stack([torch.zeros_like(gu), gu, gv], dim=-1)
+    surf = BSplineSurface(control_points)
+
+    N = 10
+    # Rays shooting in +x, hitting the flat surface at x=0 in the yz plane
+    P = torch.stack(
+        (
+            torch.full((N,), -5.0, dtype=dtype, device=device),
+            torch.linspace(-0.5, 0.5, N, dtype=dtype, device=device),
+            torch.linspace(-0.5, 0.5, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    tfid = hom_identity_3d(dtype, device)
+
+    check_surface_module_3d(surf, False, dtype, device, lambda N, dtype, device: (P, V))
+    check_surface_module_3d(
+        surf.reverse(), False, dtype, device, lambda N, dtype, device: (P, V)
+    )
