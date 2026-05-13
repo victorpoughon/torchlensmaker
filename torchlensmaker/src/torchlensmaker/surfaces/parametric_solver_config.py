@@ -24,6 +24,7 @@ from .parametric_solver import (
     ParametricSolver,
     parametric_residual_domain,
     parametric_solver_newton,
+    parametric_solver_newton2,
 )
 
 ParametricSolverConfig: TypeAlias = dict[str, Any]
@@ -31,7 +32,7 @@ ParametricSolverConfig: TypeAlias = dict[str, Any]
 Static configuration for raytracing parametric surfaces.
 
 Possible values:
-    * parametric_solver: solver algorithm, supported values: "newton"
+    * parametric_solver: solver algorithm, supported values: "newton", "newton2"
     * num_iter: number of Newton iterations
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
@@ -50,6 +51,14 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     if solver_name == "newton":
         return partial(
             parametric_solver_newton,
+            num_iter=num_iter,
+            damping=damping,
+            init=init,
+            clamp_positive=clamp_positive,
+        )
+    elif solver_name == "newton2":
+        return partial(
+            parametric_solver_newton2,
             num_iter=num_iter,
             damping=damping,
             init=init,

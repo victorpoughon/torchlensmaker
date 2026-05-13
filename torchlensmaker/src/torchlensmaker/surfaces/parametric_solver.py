@@ -125,6 +125,96 @@ def parametric_solver_newton(
     return theta[..., 0], theta[..., 1:]
 
 
+def parametric_solver_newton2_step(
+    theta: torch.Tensor,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: ParametricFunction,
+) -> torch.Tensor:
+    "One step of second order parametric newton solver"
+    t = theta[..., 0]
+    uv = theta[..., 1:]
+
+    Sout = parametric_function(uv, order=2)
+    S_val = Sout[0, 0]
+    S_u   = Sout[1, 0]
+    S_v   = Sout[0, 1]
+    S_uu  = Sout[2, 0]
+    S_uv  = Sout[1, 1]
+    S_vv  = Sout[0, 2]
+
+    # Q = P + tV - S(u, v)
+    Q = P + t.unsqueeze(-1) * V - S_val
+
+    # J = [V | -S_u | -S_v], columns stacked along last dim, shape (..., 3, 3)
+    J = torch.stack([V, -S_u, -S_v], dim=-1)
+
+    # Gradient: ∇D/2 = J^T Q, shape (..., 3)
+    grad = (J.mT @ Q.unsqueeze(-1)).squeeze(-1)
+
+    # Hessian/2 = J^T J - C
+    JtJ = J.mT @ J
+
+    # Second-derivative correction: Q dotted with each second partial of S
+    Quu = torch.sum(Q * S_uu, dim=-1)
+    Quv = torch.sum(Q * S_uv, dim=-1)
+    Qvv = torch.sum(Q * S_vv, dim=-1)
+
+    zeros = torch.zeros_like(Quu)
+    C = torch.stack([
+        torch.stack([zeros, zeros, zeros], dim=-1),
+        torch.stack([zeros,   Quu,   Quv], dim=-1),
+        torch.stack([zeros,   Quv,   Qvv], dim=-1),
+    ], dim=-2)
+
+    H_half = JtJ - C
+
+    # Solve (H/2) Δθ = -∇D/2; return delta such that θ ← θ - delta
+    delta = solve3x3(H_half, grad)
+    return delta
+
+
+def parametric_solver_newton2(
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: ParametricFunction,
+    num_iter: int,
+    damping: float,
+    init: float | str,
+    clamp_positive: bool,
+) -> tuple[BatchTensor, BatchTensor]:
+    """
+    Second order Newton's method for parametric surfaces.
+    Minimizes ||Q(θ)||² using the exact Hessian of the objective.
+    Differentiable over the last iteration.
+    """
+
+    # Initialize θ = (t, u, v); uv always starts at center of parameter domain
+    if init == "closest":
+        t0 = init_closest_origin(P, V)
+    else:
+        t0 = torch.full_like(P[..., -1], float(init))
+
+    # TODO better uv initialization options
+    uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
+    theta = torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+
+    if num_iter == 0:
+        return theta[..., 0], theta[..., 1:]
+
+    # Do N - 1 non differentiable steps
+    with torch.no_grad():
+        for _ in range(num_iter - 1):
+            delta = parametric_solver_newton2_step(theta, P, V, parametric_function)
+            theta = clamp_theta(theta - damping * delta, clamp_positive)
+
+    # One differentiable step
+    delta = parametric_solver_newton2_step(theta, P, V, parametric_function)
+    theta = clamp_theta(theta - damping * delta, clamp_positive)
+
+    return theta[..., 0], theta[..., 1:]
+
+
 def parametric_residual_domain(
     uv: BatchTensor,
     points: BatchNDTensor,
