@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from typing import Any
+from typing import Protocol
 
 import torch
 
@@ -26,14 +26,33 @@ from torchlensmaker.types import (
     MaskTensor,
 )
 
-# TODO introduce Protocol based type for parametric_function
+
+class ParametricFunction(Protocol):
+    def __call__(self, uv: BatchTensor, *, order: int) -> torch.Tensor:
+        # Returns shape (order+1, order+1, UV, C)
+        ...
+
+
+class ParametricDomainFunction(Protocol):
+    # uv: solved parameter values, shape (..., 2)
+    # points: ray intersection points P + tV, shape (..., 3)
+    def __call__(self, uv: BatchTensor, points: BatchNDTensor) -> MaskTensor: ...
+
+
+class ParametricSolver(Protocol):
+    def __call__(
+        self,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
+        parametric_function: ParametricFunction,
+    ) -> tuple[BatchTensor, BatchTensor]: ...
 
 
 def parametric_solver_newton_step(
     theta: torch.Tensor,
     P: BatchNDTensor,
     V: BatchNDTensor,
-    parametric_function: Any,
+    parametric_function: ParametricFunction,
 ) -> torch.Tensor:
     "One step of first order parametric newton solver"
     t = theta[..., 0]
@@ -58,17 +77,24 @@ def parametric_solver_newton_step(
 def parametric_solver_newton(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    parametric_function: Any,
+    parametric_function: ParametricFunction,
     num_iter: int,
     damping: float,
+    init: float | str,
+    clamp_positive: bool,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     First order Newton's method for parametric surfaces.
     Differentiable over the last iteration.
     """
 
-    # Initialize θ = (t, u, v)
-    t0 = init_closest_origin(P, V)
+    # Initialize θ = (t, u, v); uv always starts at center of parameter domain
+    if init == "closest":
+        t0 = init_closest_origin(P, V)
+    else:
+        t0 = torch.full_like(P[..., -1], float(init))
+
+    # TODO better uv initialization options
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
     theta = torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
 
@@ -80,31 +106,40 @@ def parametric_solver_newton(
         for _ in range(num_iter - 1):
             delta = parametric_solver_newton_step(theta, P, V, parametric_function)
             theta = theta - damping * delta
+            if clamp_positive:
+                theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
 
     # One differentiable step
     delta = parametric_solver_newton_step(theta, P, V, parametric_function)
     theta = theta - damping * delta
+    if clamp_positive:
+        theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
 
     return theta[..., 0], theta[..., 1:]
 
 
-def parametric_solver(
-    P: BatchNDTensor, V: BatchNDTensor, parametric_function: Any
-) -> tuple[torch.Tensor, torch.Tensor]:
-    # TODO use SolverConfig — hardcoded for now
-    return parametric_solver_newton(P, V, parametric_function, num_iter=5, damping=1.0)
+def parametric_residual_domain(
+    uv: BatchTensor,
+    points: BatchNDTensor,
+    parametric_function: ParametricFunction,
+    tol: float,
+) -> MaskTensor:
+    "Domain function based on residual ||P + tV - S(uv)|| < tol"
+    S_val = parametric_function(uv, order=1)[0, 0]
+    return torch.linalg.norm(points - S_val, dim=-1) < tol
 
 
 def parametric_surface_local_raytrace(
     P: BatchNDTensor,
     V: BatchNDTensor,
-    parametric_function: Any,
+    parametric_function: ParametricFunction,
+    solver: ParametricSolver,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]:
     """
     Raytracing for parametric surfaces in local frame
     """
 
-    t, uv = parametric_solver(P, V, parametric_function)
+    t, uv = solver(P, V, parametric_function)
 
     # Final evaluation after solver to compute normals, valid and rsm
     Sout = parametric_function(uv, order=1)

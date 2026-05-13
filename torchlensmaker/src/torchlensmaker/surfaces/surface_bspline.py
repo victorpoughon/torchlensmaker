@@ -29,6 +29,10 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 from torchlensmaker.surfaces.parametric_solver import parametric_surface_local_raytrace
+from torchlensmaker.surfaces.parametric_solver_config import (
+    ParametricSolverConfig,
+    make_parametric_solver,
+)
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -69,8 +73,9 @@ class BSplineSurfaceKernel(FunctionalKernel):
         "rsm": BatchTensor,
     }
 
-    def __init__(self, degree: tuple[int, int]):
+    def __init__(self, degree: tuple[int, int], solver_config: ParametricSolverConfig):
         self.degree = degree
+        self.solver = make_parametric_solver(solver_config)
 
     def apply(
         self,
@@ -98,7 +103,9 @@ class BSplineSurfaceKernel(FunctionalKernel):
             )
             return res
 
-        local_solver = partial(parametric_surface_local_raytrace, parametric_function=S)
+        local_solver = partial(
+            parametric_surface_local_raytrace, parametric_function=S, solver=self.solver
+        )
 
         return surface_raytrace(P, V, tf_in, local_solver)
 
@@ -123,6 +130,15 @@ class BSplineSurface(SurfaceElement):
     BSpline surface with 3D control points
     """
 
+    default_config: ParametricSolverConfig = {
+        "parametric_solver": "newton",
+        "num_iter": 10,
+        "damping": 1.0,
+        "tol": 1e-6,
+        "init": "closest",
+        "clamp_positive": False,
+    }
+
     def __init__(
         self,
         control_points: torch.Tensor | torch.nn.Parameter,
@@ -131,7 +147,10 @@ class BSplineSurface(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = {}  # TODO
+
+        self.solver_config = ParametricSolverConfig(
+            **self.default_config | solver_config
+        )
 
         # TODO degree hardcoded for now
         # it must be a static kernel parameter
@@ -140,7 +159,7 @@ class BSplineSurface(SurfaceElement):
         self.control_points = init_param(
             self, "control_points", control_points, trainable
         )
-        self.func3d = BSplineSurfaceKernel(self.degree)
+        self.func3d = BSplineSurfaceKernel(self.degree, self.solver_config)
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
