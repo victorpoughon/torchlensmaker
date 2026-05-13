@@ -130,6 +130,7 @@ from torchlensmaker.sequential.utils import (
 from torchlensmaker.surfaces import (
     Asphere,
     BoundSagFunction,
+    BSplineSurface,
     Conic,
     Disk,
     DomainFunction,
@@ -309,6 +310,7 @@ __all__ = [
     "trace_model",
     # Surfaces
     "Asphere",
+    "BSplineSurface",
     "Conic",
     "Disk",
     "ImplicitDisk",
