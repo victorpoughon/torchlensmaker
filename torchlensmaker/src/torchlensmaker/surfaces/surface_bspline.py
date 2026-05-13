@@ -31,6 +31,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.surfaces.parametric_solver import parametric_surface_local_raytrace
 from torchlensmaker.surfaces.parametric_solver_config import (
     ParametricSolverConfig,
+    make_domain_function,
     make_parametric_solver,
 )
 from torchlensmaker.types import (
@@ -75,6 +76,7 @@ class BSplineSurfaceKernel(FunctionalKernel):
 
     def __init__(self, degree: tuple[int, int], solver_config: ParametricSolverConfig):
         self.degree = degree
+        self.solver_config = solver_config
         self.solver = make_parametric_solver(solver_config)
 
     def apply(
@@ -104,7 +106,10 @@ class BSplineSurfaceKernel(FunctionalKernel):
             return res
 
         local_solver = partial(
-            parametric_surface_local_raytrace, parametric_function=S, solver=self.solver
+            parametric_surface_local_raytrace,
+            parametric_function=S,
+            solver=self.solver,
+            domain_function=make_domain_function(self.solver_config, S),
         )
 
         return surface_raytrace(P, V, tf_in, local_solver)

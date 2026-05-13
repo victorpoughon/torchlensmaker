@@ -134,6 +134,7 @@ def parametric_surface_local_raytrace(
     V: BatchNDTensor,
     parametric_function: ParametricFunction,
     solver: ParametricSolver,
+    domain_function: ParametricDomainFunction,
 ) -> tuple[BatchTensor, BatchNDTensor, MaskTensor, BatchTensor]:
     """
     Raytracing for parametric surfaces in local frame
@@ -143,6 +144,7 @@ def parametric_surface_local_raytrace(
 
     # Final evaluation after solver to compute normals, valid and rsm
     Sout = parametric_function(uv, order=1)
+    S_val = Sout[0, 0]
     S_u = Sout[1, 0]
     S_v = Sout[0, 1]
 
@@ -151,11 +153,10 @@ def parametric_surface_local_raytrace(
     cnormals = torch.linalg.cross(S_u, S_v)
     local_normals = torch.nn.functional.normalize(cnormals, dim=-1)
 
-    # TODO domain function equivalent here
-    # TODO compute rsm from Q = P + tV - S(uv)
+    points = P + t.unsqueeze(-1) * V
+    rsm = torch.linalg.norm(points - S_val, dim=-1)
 
-    # valid: for now, return all true while we are testing the solver
-    rsm = torch.zeros_like(t)
-    valid = torch.ones_like(t, dtype=torch.bool)
+    with torch.no_grad():
+        valid = domain_function(uv, points)
 
     return t, local_normals, valid, rsm
