@@ -39,23 +39,13 @@ _ELEMENT_TYPE_STRINGS: dict[type, str] = {
     SurfaceBSpline: "surface-bspline",
 }
 
-_FIELD_RENAMES: dict[str, str] = {
-    "clip_planes": "clipPlanes",
-    "knot_type": "knotType",
-    "sag_function": "sag-function",
-}
-
-
 def _element_to_dict(element: Any) -> dict[str, Any]:
     d = dataclasses.asdict(element)
-    for old, new in _FIELD_RENAMES.items():
-        if old in d:
-            d[new] = d.pop(old)
     d["type"] = _ELEMENT_TYPE_STRINGS[type(element)]
 
     # Drop fields with value None from the serialized dict
     d = {k: v for k, v in d.items() if v is not None}
-    
+
     return d
 
 

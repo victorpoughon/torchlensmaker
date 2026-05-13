@@ -18,7 +18,7 @@ function parse(raw: any, _dim: number): SurfaceSagData {
         ...parseSurfaceBaseData(raw),
         type: "surface-sag",
         diameter: getRequired<number>(raw, "diameter"),
-        sagFunctionData: getRequired<any>(raw, "sag-function"),
+        sagFunctionData: getRequired<any>(raw, "sag_function"),
     };
 }
 
@@ -86,7 +86,7 @@ const testData2D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "spherical", C: 0.1 },
+        sag_function: { "sag-type": "spherical", C: 0.1 },
         matrix: [
             [1, 0, 0],
             [0, 1, 0],
@@ -96,7 +96,7 @@ const testData2D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "parabolic", A: -0.05 },
+        sag_function: { "sag-type": "parabolic", A: -0.05 },
         matrix: [
             [1, 0, 15],
             [0, 1, 0],
@@ -106,7 +106,7 @@ const testData2D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "conical", C: 0.1, K: -1.5 },
+        sag_function: { "sag-type": "conical", C: 0.1, K: -1.5 },
         matrix: [
             [1, 0, 30],
             [0, 1, 0],
@@ -116,7 +116,7 @@ const testData2D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": {
+        sag_function: {
             "sag-type": "aspheric",
             C: 0.1,
             K: 0,
@@ -131,7 +131,7 @@ const testData2D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": {
+        sag_function: {
             "sag-type": "sum",
             terms: [
                 { "sag-type": "spherical", C: 0.08 },
@@ -150,7 +150,7 @@ const testData3D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "spherical", C: 0.1 },
+        sag_function: { "sag-type": "spherical", C: 0.1 },
         matrix: [
             [1, 0, 0, 0],
             [0, 1, 0, 0],
@@ -161,7 +161,7 @@ const testData3D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "parabolic", A: -0.05 },
+        sag_function: { "sag-type": "parabolic", A: -0.05 },
         matrix: [
             [1, 0, 0, 15],
             [0, 1, 0, 0],
@@ -172,7 +172,7 @@ const testData3D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": { "sag-type": "conical", C: 0.1, K: -1.5 },
+        sag_function: { "sag-type": "conical", C: 0.1, K: -1.5 },
         matrix: [
             [1, 0, 0, 30],
             [0, 1, 0, 0],
@@ -183,7 +183,7 @@ const testData3D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": {
+        sag_function: {
             "sag-type": "aspheric",
             C: 0.1,
             K: 0,
@@ -199,7 +199,7 @@ const testData3D = [
     {
         type: "surface-sag",
         diameter: 10,
-        "sag-function": {
+        sag_function: {
             "sag-type": "xypolynomial",
             coefficients: [
                 [0, 0.05, 0],
