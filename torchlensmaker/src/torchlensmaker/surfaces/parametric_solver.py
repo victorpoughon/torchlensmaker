@@ -19,6 +19,7 @@ from typing import Protocol
 
 import torch
 
+from torchlensmaker.core.solve3 import solve3x3
 from torchlensmaker.surfaces.implicit_solver import init_closest_origin
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -70,7 +71,7 @@ def parametric_solver_newton_step(
     J = torch.stack([V, -S_u, -S_v], dim=-1)
 
     # Solve J × Δθ = -Q; we return delta such that θ ← θ - delta
-    delta = torch.linalg.solve(J, Q.unsqueeze(-1)).squeeze(-1)
+    delta = solve3x3(J, Q)
     return delta
 
 
