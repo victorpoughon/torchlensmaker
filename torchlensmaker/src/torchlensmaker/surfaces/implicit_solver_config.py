@@ -42,7 +42,7 @@ from .implicit_solver import (
     implicit_solver_newton2,
 )
 
-SolverConfig: TypeAlias = dict[str, Any]
+ImplicitSolverConfig: TypeAlias = dict[str, Any]
 """
 Static configuration for raytracing sag surfaces using
 an implicit solver
@@ -58,7 +58,7 @@ Possible values:
 """
 
 
-def make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
+def make_implicit_solver(config: ImplicitSolverConfig) -> ImplicitSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
     init: float | str = config["init"]
@@ -84,7 +84,7 @@ def make_implicit_solver(config: SolverConfig) -> ImplicitSolver:
         raise ValueError(f"Unknown implicit solver: {solver_name!r}")
 
 
-def make_lift_function_2d(config: SolverConfig) -> ti.LiftFunction:
+def make_lift_function_2d(config: ImplicitSolverConfig) -> ti.LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_2d_raw,
@@ -98,7 +98,7 @@ def make_lift_function_2d(config: SolverConfig) -> ti.LiftFunction:
     return options[lift_name]
 
 
-def make_lift_function_3d(config: SolverConfig) -> ti.LiftFunction:
+def make_lift_function_3d(config: ImplicitSolverConfig) -> ti.LiftFunction:
     lift_name: str = config["lift_function"]
     options = {
         "raw": sag_to_implicit_3d_raw,
@@ -110,20 +110,20 @@ def make_lift_function_3d(config: SolverConfig) -> ti.LiftFunction:
 
 
 def make_domain_function_2d(
-    config: SolverConfig, diameter: ScalarTensor
+    config: ImplicitSolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_2d, diameter=diameter, tol=tol)
 
 
 def make_domain_function_3d(
-    config: SolverConfig, diameter: ScalarTensor
+    config: ImplicitSolverConfig, diameter: ScalarTensor
 ) -> DomainFunction:
     tol: float = config["tol"]
     return partial(lens_diameter_implicit_domain_3d, diameter=diameter, tol=tol)
 
 
-def implicit_solver_config(dim: int, config: SolverConfig) -> ImplicitSolver:
+def implicit_solver_config(dim: int, config: ImplicitSolverConfig) -> ImplicitSolver:
     """
     Configure implicit solver parameters from static parameters
     """

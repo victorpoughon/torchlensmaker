@@ -23,7 +23,7 @@ import torchimplicit as ti
 from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import init_param
-from torchlensmaker.surfaces.solver_config import SolverConfig
+from torchlensmaker.surfaces.implicit_solver_config import ImplicitSolverConfig
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.surfaces.surface_sag import (
     SagOuterExtentSurfaceKernel,
@@ -46,7 +46,7 @@ class Parabola(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SolverConfig(
+    default_config = ImplicitSolverConfig(
         implicit_solver="newton",
         num_iter=6,
         damping=0.95,
@@ -68,7 +68,7 @@ class Parabola(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SolverConfig(**self.default_config | solver_config)
+        self.solver_config = ImplicitSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.A = init_param(self, "A", A, trainable)
         self.anchors = init_param(self, "anchors", anchors, False)

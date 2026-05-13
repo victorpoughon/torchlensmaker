@@ -28,7 +28,10 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_3d,
 )
 from torchlensmaker.surfaces.implicit_solver import implicit_surface_local_raytrace
-from torchlensmaker.surfaces.solver_config import SolverConfig, implicit_solver_config
+from torchlensmaker.surfaces.implicit_solver_config import (
+    ImplicitSolverConfig,
+    implicit_solver_config,
+)
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
@@ -66,7 +69,7 @@ class ImplicitSurfaceKernel(FunctionalKernel):
         self,
         dim: int,
         func: ti.ImplicitFunction,
-        solver_config: SolverConfig,
+        solver_config: ImplicitSolverConfig,
     ):
         self.dim = dim
         self.func = func
@@ -123,7 +126,7 @@ class ImplicitDisk(SurfaceElement):
     Disk surface (2D or 3D) implemented as an implicit function
     """
 
-    default_config = SolverConfig(
+    default_config = ImplicitSolverConfig(
         implicit_solver="newton",
         num_iter=2,
         damping=0.95,
@@ -139,7 +142,7 @@ class ImplicitDisk(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SolverConfig(**self.default_config | solver_config)
+        self.solver_config = ImplicitSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, trainable)
         self.func2d = ImplicitSurfaceKernel(2, ti.disk_2d, self.solver_config)
         self.func3d = ImplicitSurfaceKernel(3, ti.disk_3d, self.solver_config)
@@ -177,7 +180,7 @@ class Sphere(SurfaceElement):
     Sphere surface (2D or 3D) centered at origin, parameterized by radius R.
     """
 
-    default_config = SolverConfig(
+    default_config = ImplicitSolverConfig(
         implicit_solver="newton",
         num_iter=6,
         damping=0.95,
@@ -194,7 +197,7 @@ class Sphere(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SolverConfig(**self.default_config | solver_config)
+        self.solver_config = ImplicitSolverConfig(**self.default_config | solver_config)
         self.R = init_param(self, "R", R, trainable)
         self.func2d = ImplicitSurfaceKernel(2, ti.sphere_2d, self.solver_config)
         self.func3d = ImplicitSurfaceKernel(3, ti.sphere_3d, self.solver_config)

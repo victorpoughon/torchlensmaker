@@ -39,8 +39,8 @@ from .implicit_solver import (
 )
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .raytrace import surface_raytrace
-from .solver_config import (
-    SolverConfig,
+from .implicit_solver_config import (
+    ImplicitSolverConfig,
     make_domain_function_2d,
     make_domain_function_3d,
     make_implicit_solver,
@@ -50,7 +50,7 @@ from .solver_config import (
 
 
 def sag_solver_config(
-    dim: int, config: SolverConfig, diameter: ScalarTensor
+    dim: int, config: ImplicitSolverConfig, diameter: ScalarTensor
 ) -> tuple[ti.LiftFunction, ti.DomainFunction, ImplicitSolver]:
     """
     Configure a sag function from static parameters
@@ -126,7 +126,9 @@ class SagSurfaceKernel(FunctionalKernel):
         "rsm": BatchTensor,
     }
 
-    def __init__(self, dim: int, sag: ti.SagFunction, solver_config: SolverConfig):
+    def __init__(
+        self, dim: int, sag: ti.SagFunction, solver_config: ImplicitSolverConfig
+    ):
         self.dim = dim
         self.sag = sag
         self.solver_config = solver_config
@@ -222,7 +224,7 @@ class SagSumSurfaceKernel(FunctionalKernel):
         dim: int,
         sag1: ti.SagFunction,
         sag2: ti.SagFunction,
-        solver_config: SolverConfig,
+        solver_config: ImplicitSolverConfig,
     ):
         self.dim = dim
         self.sag1 = sag1

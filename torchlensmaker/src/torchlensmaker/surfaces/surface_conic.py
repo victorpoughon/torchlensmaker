@@ -34,7 +34,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .solver_config import SolverConfig
+from .implicit_solver_config import ImplicitSolverConfig
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 
@@ -49,7 +49,7 @@ class Conic(SurfaceElement):
     Support for anchors and scale.
     """
 
-    default_config = SolverConfig(
+    default_config = ImplicitSolverConfig(
         implicit_solver="newton",
         num_iter=6,
         damping=0.95,
@@ -72,7 +72,7 @@ class Conic(SurfaceElement):
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
-        self.solver_config = SolverConfig(**self.default_config | solver_config)
+        self.solver_config = ImplicitSolverConfig(**self.default_config | solver_config)
         self.diameter = init_param(self, "diameter", diameter, False)
         self.C = init_param(self, "C", C, trainable)
         self.K = init_param(self, "K", K, trainable)
