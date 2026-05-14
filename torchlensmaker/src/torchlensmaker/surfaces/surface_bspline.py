@@ -15,7 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Self
+from typing import Any, Literal, Self
 
 import tlmviewer as tlmv
 import torch
@@ -74,9 +74,17 @@ class BSplineSurfaceKernel(FunctionalKernel):
         "rsm": BatchTensor,
     }
 
-    def __init__(self, degree: tuple[int, int], solver_config: ParametricSolverConfig):
+    def __init__(
+        self,
+        degree: tuple[int, int],
+        periodic: tuple[bool, bool],
+        clamped: tuple[bool, bool],
+        solver_config: ParametricSolverConfig,
+    ):
         self.degree = degree
         self.solver_config = solver_config
+        self.periodic = periodic
+        self.clamped = clamped
         self.solver = make_parametric_solver(solver_config)
 
     def apply(
@@ -99,8 +107,8 @@ class BSplineSurfaceKernel(FunctionalKernel):
                 control_points,
                 degree=self.degree,
                 order=(order, order),
-                periodic=(False, False),
-                clamped=(True, True),
+                periodic=self.periodic,
+                clamped=self.clamped,
             )
 
         local_solver = partial(
@@ -149,6 +157,8 @@ class BSplineSurface(SurfaceElement):
         control_points: torch.Tensor | torch.nn.Parameter,
         *,
         trainable: bool = False,
+        periodic: tuple[bool, bool] = (False, False),
+        clamped: tuple[bool, bool] = (True, True),
         solver_config: dict[str, Any] = {},
     ):
         super().__init__()
@@ -160,16 +170,25 @@ class BSplineSurface(SurfaceElement):
         # TODO degree hardcoded for now
         # it must be a static kernel parameter
         self.degree = (2, 2)
+        self.periodic = periodic
+        self.clamped = clamped
 
         self.control_points = init_param(
             self, "control_points", control_points, trainable
         )
-        self.func3d = BSplineSurfaceKernel(self.degree, self.solver_config)
+        self.func3d = BSplineSurfaceKernel(
+            self.degree,
+            self.periodic,
+            self.clamped,
+            self.solver_config,
+        )
 
     def clone(self, **overrides: Any) -> Self:
         kwargs: dict[str, Any] = dict(
             control_points=self.control_points,
             trainable=self.control_points.requires_grad,
+            periodic=self.periodic,
+            clamped=self.clamped,
             solver_config=self.solver_config,
         )
         return type(self)(**kwargs | overrides)
@@ -193,7 +212,8 @@ class BSplineSurface(SurfaceElement):
         return tlmv.SurfaceBSpline(
             points=self.control_points.tolist(),
             degree=self.degree,
-            knot_type="clamped",
+            periodic=self.periodic,
+            clamped=self.clamped,
             samples=(30, 30),  # TODO
             matrix=matrix.tolist(),
         )

@@ -101,7 +101,8 @@ export type SurfaceBSplineData = SurfaceBaseData & {
     points: number[][][];
     weights: number[][];
     degree: [number, number];
-    knotType: "clamped" | "unclamped";
+    periodic: [boolean, boolean];
+    clamped: [boolean, boolean];
     samples: [number, number];
 };
 

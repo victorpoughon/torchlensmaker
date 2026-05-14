@@ -27,17 +27,13 @@ function linspace(start: number, stop: number, num: number): number[] {
 //
 // Inner knots are K-p+1 values uniformly spaced in [0, 1] (includes 0 and 1).
 //
-// clamped:   p zeros prepended, p ones appended — surface interpolates endpoints
-// unclamped: p leading knots extending below 0, p trailing knots extending above 1
+// clamped=true:  p zeros prepended, p ones appended — surface interpolates endpoints
+// clamped=false: p leading knots extending below 0, p trailing knots extending above 1
 //
 // Matches the Python reference: all_knots(K, P, clamped=...) with M = K - P.
-export function uniformKnots(
-    K: number,
-    p: number,
-    knotType: "clamped" | "unclamped",
-): number[] {
+export function uniformKnots(K: number, p: number, clamped: boolean): number[] {
     const inner = linspace(0, 1, K - p + 1);
-    if (knotType === "clamped") {
+    if (clamped) {
         return [
             ...Array<number>(p).fill(0),
             ...inner,
@@ -64,7 +60,8 @@ function parse(raw: any, _dim: number): SurfaceBSplineData {
         points,
         weights,
         degree: getRequired(raw, "degree"),
-        knotType: getRequired(raw, "knot_type"),
+        periodic: getRequired(raw, "periodic"),
+        clamped: getRequired(raw, "clamped"),
         samples: raw.samples ?? [64, 64],
     };
 }
@@ -76,20 +73,53 @@ function makeGeometry2D(
     throw new Error("surface-bspline does not support 2D rendering");
 }
 
+// For periodic axes, repeat the first deg rows/cols at the end to make the
+// wrapping explicit. Works for any 2D grid (points or weights).
+function expandPeriodic<T>(
+    grid: T[][],
+    degU: number,
+    degV: number,
+    periodicU: boolean,
+    periodicV: boolean,
+): T[][] {
+    const withV = periodicV
+        ? grid.map((row) => [...row, ...row.slice(0, degV)])
+        : grid;
+    return periodicU ? [...withV, ...withV.slice(0, degU)] : withV;
+}
+
 function makeGeometry3D(
     data: SurfaceBSplineData,
     tf: THREE.Matrix4,
 ): [THREE.BufferGeometry, THREE.Matrix4, null] {
     const [degU, degV] = data.degree;
-    const nrows = data.points.length;
-    const ncols = data.points[0].length;
+    const [periodicU, periodicV] = data.periodic;
+    const [clampedU, clampedV] = data.clamped;
 
-    const knotsU = uniformKnots(nrows, degU, data.knotType);
-    const knotsV = uniformKnots(ncols, degV, data.knotType);
+    const expandedPoints = expandPeriodic(
+        data.points,
+        degU,
+        degV,
+        periodicU,
+        periodicV,
+    );
+    const expandedWeights = expandPeriodic(
+        data.weights,
+        degU,
+        degV,
+        periodicU,
+        periodicV,
+    );
 
-    const controlPoints: THREE.Vector4[][] = data.points.map((row, i) =>
+    const nrows = expandedPoints.length;
+    const ncols = expandedPoints[0].length;
+
+    const knotsU = uniformKnots(nrows, degU, periodicU ? false : clampedU);
+    const knotsV = uniformKnots(ncols, degV, periodicV ? false : clampedV);
+
+    const controlPoints: THREE.Vector4[][] = expandedPoints.map((row, i) =>
         row.map((pt, j) => {
-            const w = data.weights[i][j];
+            const w = expandedWeights[i][j];
             return new THREE.Vector4(pt[0] * w, pt[1] * w, pt[2] * w, w);
         }),
     );
@@ -122,7 +152,8 @@ const testData3D = [
     {
         type: "surface-bspline",
         degree: [2, 2],
-        knot_type: "unclamped",
+        periodic: [false, false],
+        clamped: [false, false],
         points: [
             [
                 [2.526900053024292, -2.052299976348877, -0.4562999904155731],
@@ -213,7 +244,8 @@ const testData3D = [
     {
         type: "surface-bspline",
         degree: [3, 3],
-        knot_type: "clamped",
+        periodic: [false, false],
+        clamped: [true, true],
         samples: [32, 32],
         points: [
             [

@@ -108,7 +108,8 @@ class SurfaceSag:
 class SurfaceBSpline:
     points: list[list[list[float]]]
     degree: tuple[int, int]
-    knot_type: Literal["clamped", "unclamped"]
+    periodic: tuple[bool, bool]
+    clamped: tuple[bool, bool]
     samples: tuple[int, int]
     matrix: Matrix
     weights: list[list[float]] | None = None

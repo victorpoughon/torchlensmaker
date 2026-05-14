@@ -15,41 +15,37 @@ def test_element_type_string(element, expected_type):
 
 # ── Field renames ──────────────────────────────────────────────────────────────
 
-def test_clip_planes_rename():
+def test_clip_planes_serialized():
     element = tlmv.SurfaceDisk(radius=5.0, matrix=ID_MATRIX, clip_planes=[(0, 1, 0, 0)])
     d = tlmv.scene_to_dict(tlmv.Scene(data=[element]))
     ed = d["data"][0]
-    assert "clipPlanes" in ed
-    assert "clip_planes" not in ed
-    assert list(ed["clipPlanes"][0]) == [0, 1, 0, 0]
+    assert list(ed["clip_planes"][0]) == [0, 1, 0, 0]
 
 
-def test_knot_type_rename():
+def test_bspline_periodic_clamped_serialized():
     element = tlmv.SurfaceBSpline(
         points=[[[0, 0, 0]]], weights=[[1.0]], degree=(2, 2),
-        knot_type="clamped", samples=(10, 10), matrix=ID_MATRIX,
+        periodic=(False, False), clamped=(True, True),
+        samples=(10, 10), matrix=ID_MATRIX,
     )
     d = tlmv.scene_to_dict(tlmv.Scene(data=[element]))
     ed = d["data"][0]
-    assert "knotType" in ed
-    assert "knot_type" not in ed
+    assert ed["periodic"] == (False, False)
+    assert ed["clamped"] == (True, True)
 
 
-def test_sag_function_rename():
+def test_sag_function_serialized():
     sag = {"sag-type": "spherical", "C": 0.1}
     element = tlmv.SurfaceSag(diameter=5.0, sag_function=sag, matrix=ID_MATRIX)
     d = tlmv.scene_to_dict(tlmv.Scene(data=[element]))
-    ed = d["data"][0]
-    assert "sag-function" in ed
-    assert "sag_function" not in ed
-    assert ed["sag-function"] == sag
+    assert d["data"][0]["sag_function"] == sag
 
 
 def test_sag_function_interior_keys_unchanged():
     sag = {"sag-type": "aspheric", "C": 0.1, "K": 0.0, "coefficients": [1, 2, 3]}
     element = tlmv.SurfaceSag(diameter=5.0, sag_function=sag, matrix=ID_MATRIX)
     d = tlmv.scene_to_dict(tlmv.Scene(data=[element]))
-    assert d["data"][0]["sag-function"] == sag
+    assert d["data"][0]["sag_function"] == sag
 
 
 # ── Scene optional fields ──────────────────────────────────────────────────────
@@ -99,4 +95,4 @@ def test_scene_to_json_all_element_types(element):
 def test_empty_clip_planes_serialized():
     element = tlmv.SurfaceDisk(radius=5.0, matrix=ID_MATRIX)
     d = tlmv.scene_to_dict(tlmv.Scene(data=[element]))
-    assert d["data"][0]["clipPlanes"] == []
+    assert d["data"][0]["clip_planes"] == []
