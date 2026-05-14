@@ -86,7 +86,7 @@ config_sphere = dict(
 
 kernels_cases = [
     # pytest.param(SphereByRadiusSurfaceKernel(...),          id="SphereR2D"),
-    pytest.param(BSplineSurfaceKernel((2, 2), bspline_config), id="BSpline3D"),
+    pytest.param(BSplineSurfaceKernel((2, 2), (False, False), (True, True), bspline_config), id="BSpline3D"),
     pytest.param(DiskSurfaceKernel(2), id="Disk2D"),
     pytest.param(DiskSurfaceKernel(3), id="Disk3D"),
     pytest.param(PlaneSurfaceKernel(2), id="Plane2D"),
