@@ -38,6 +38,7 @@ from torchlensmaker.surfaces import (
     XYPolynomial,
 )
 from torchlensmaker.surfaces.surface_bspline import BSplineSurface
+from torchlensmaker.surfaces.surface_polar_bspline import PolarBSplineSurface
 from torchlensmaker.types import BatchNDTensor, Tf
 
 # --- ray generators: (N, dtype, device) -> (P, V) ---
@@ -101,6 +102,37 @@ def _make_bspline_flat():
     gu, gv = torch.meshgrid(g, g, indexing="ij")
     control_points = torch.stack([torch.zeros_like(gu), gu, gv], dim=-1)
     return BSplineSurface(control_points)
+
+
+def _rays_3d_polar_bspline(N: int, dtype: torch.dtype, device: torch.device):
+    # Rays from x=-5 in +x direction hitting the equatorial belt of a unit sphere
+    # whose polar axis is along y, keeping Newton away from the degenerate poles.
+    P = torch.stack(
+        (
+            torch.full((N,), -5.0, dtype=dtype, device=device),
+            torch.linspace(-0.3, 0.3, N, dtype=dtype, device=device),
+            torch.linspace(-0.3, 0.3, N, dtype=dtype, device=device),
+        ),
+        dim=-1,
+    )
+    V = torch.tensor([[1.0, 0.0, 0.0]], dtype=dtype, device=device).expand_as(P)
+    return P, V
+
+
+def _make_polar_bspline_sphere():
+    import math
+    R = 1.0
+    K, L = 3, 6
+    angles = torch.linspace(0, 2 * math.pi * (1 - 1 / L), L)
+    ys = torch.tensor([-0.5, 0.0, 0.5])
+    ring_radii = torch.sqrt(torch.tensor(R**2) - ys**2)
+    body_points = torch.zeros(K, L, 3)
+    body_points[:, :, 0] = ring_radii[:, None] * torch.cos(angles)[None, :]
+    body_points[:, :, 1] = ys[:, None].expand(K, L)
+    body_points[:, :, 2] = ring_radii[:, None] * torch.sin(angles)[None, :]
+    north_pole = torch.tensor([0.0, -R, 0.0])
+    south_pole = torch.tensor([0.0, R, 0.0])
+    return PolarBSplineSurface(body_points, north_pole, south_pole)
 
 
 # --- test case lists ---
@@ -265,6 +297,11 @@ cases_3d = [
         _make_bspline_flat(),
         _rays_3d_bspline,
         id="bspline_flat",
+    ),
+    pytest.param(
+        _make_polar_bspline_sphere(),
+        _rays_3d_polar_bspline,
+        id="polar_bspline_sphere",
     ),
 ]
 

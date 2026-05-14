@@ -49,6 +49,7 @@ from .implicit_solver import (
 from .surface_anchor import KinematicSurface
 from .surface_asphere import Asphere
 from .surface_bspline import BSplineSurface
+from .surface_polar_bspline import PolarBSplineSurface
 from .surface_conic import Conic
 from .surface_disk import Disk
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -65,6 +66,7 @@ __all__ = [
     # Surface classes
     "Asphere",
     "BSplineSurface",
+    "PolarBSplineSurface",
     "Conic",
     "Disk",
     "ImplicitDisk",
