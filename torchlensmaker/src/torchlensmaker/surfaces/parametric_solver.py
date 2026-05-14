@@ -78,11 +78,14 @@ def parametric_solver_newton_step(
 def clamp_theta(theta: torch.Tensor, clamp_positive: bool) -> torch.Tensor:
     # clamp t to positive if requested in the config
     if clamp_positive:
-        theta[..., 0] = torch.clamp(theta[..., 0], min=0.0)
+        clamped_t = torch.clamp(theta[..., 0], min=0.0)
+    else:
+        clamped_t = theta[..., 0]
 
     # Always clamp (u,v) to (0,1)
-    theta[..., 1:] = torch.clamp(theta[..., 1:], min=0.0, max=1.0)
-    return theta
+    clamped_uv = torch.clamp(theta[..., 1:], min=0.0, max=1.0)
+
+    return torch.cat([clamped_t.unsqueeze(-1), clamped_uv], dim=-1)
 
 
 def parametric_solver_newton(
@@ -137,11 +140,11 @@ def parametric_solver_newton2_step(
 
     Sout = parametric_function(uv, order=2)
     S_val = Sout[0, 0]
-    S_u   = Sout[1, 0]
-    S_v   = Sout[0, 1]
-    S_uu  = Sout[2, 0]
-    S_uv  = Sout[1, 1]
-    S_vv  = Sout[0, 2]
+    S_u = Sout[1, 0]
+    S_v = Sout[0, 1]
+    S_uu = Sout[2, 0]
+    S_uv = Sout[1, 1]
+    S_vv = Sout[0, 2]
 
     # Q = P + tV - S(u, v)
     Q = P + t.unsqueeze(-1) * V - S_val
@@ -161,11 +164,14 @@ def parametric_solver_newton2_step(
     Qvv = torch.sum(Q * S_vv, dim=-1)
 
     zeros = torch.zeros_like(Quu)
-    C = torch.stack([
-        torch.stack([zeros, zeros, zeros], dim=-1),
-        torch.stack([zeros,   Quu,   Quv], dim=-1),
-        torch.stack([zeros,   Quv,   Qvv], dim=-1),
-    ], dim=-2)
+    C = torch.stack(
+        [
+            torch.stack([zeros, zeros, zeros], dim=-1),
+            torch.stack([zeros, Quu, Quv], dim=-1),
+            torch.stack([zeros, Quv, Qvv], dim=-1),
+        ],
+        dim=-2,
+    )
 
     H_half = JtJ - C
 
