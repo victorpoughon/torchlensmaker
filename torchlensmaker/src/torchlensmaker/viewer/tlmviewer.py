@@ -278,6 +278,31 @@ def render_rays_until(
     ]
 
 
+def render_rays_misses(
+    P: Tensor,
+    V: Tensor,
+    end: Tensor,
+    variables: dict[str, Tensor],
+    domain: dict[str, list[float]],
+    default_color: str,
+    category: str,
+) -> list[tlmv.Rays]:
+    "Render rays that miss a surface with a fixed length"
+    assert end.dim() == 0
+    t = end - P[:, 0].mean()
+    ends = P + t.expand_as(V) * V
+    return [
+        render_rays(
+            P,
+            ends,
+            variables=variables,
+            domain=domain,
+            default_color=default_color,
+            category=category,
+        )
+    ]
+
+
 def render_rays_length(
     P: Tensor,
     V: Tensor,

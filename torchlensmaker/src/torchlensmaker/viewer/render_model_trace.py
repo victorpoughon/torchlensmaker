@@ -127,7 +127,7 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
             miss_mask = input_rays.valid & ~collision_valid
             if miss_mask.sum() > 0:
                 ret.extend(
-                    tlmviewer.render_rays_until(
+                    tlmviewer.render_rays_misses(
                         input_rays.P[miss_mask],
                         input_rays.V[miss_mask],
                         hom_target(input_tf.direct)[0],
