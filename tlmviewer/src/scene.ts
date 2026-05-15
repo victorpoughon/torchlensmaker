@@ -112,6 +112,18 @@ export class TLMScene {
             bbox.max = new THREE.Vector3(10, 10, 10);
         }
 
+        const size = new THREE.Vector3();
+        bbox.getSize(size);
+        const maxExtent = Math.max(size.x, size.y, size.z);
+        if (maxExtent > 1e6) {
+            console.warn(
+                `tlmviewer: scene bounding box is very large (max extent: ${maxExtent.toExponential(2)}). ` +
+                `This usually means some scene elements contain degenerate (very large) coordinates. ` +
+                `Camera framing may be incorrect.`,
+                { min: bbox.min, max: bbox.max },
+            );
+        }
+
         return bbox;
     }
 }
