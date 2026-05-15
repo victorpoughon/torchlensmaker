@@ -17,7 +17,7 @@
 import torch
 
 
-def solve3x3(A: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
+def solve3x3(A: torch.Tensor, b: torch.Tensor, singular_check: bool = False) -> torch.Tensor:
     """
     Batched solve for Ax = b, where:
         A is (..., 3, 3).
@@ -45,6 +45,11 @@ def solve3x3(A: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
 
     # det(A) via expansion along the first row.
     det = a00 * c00 + a01 * c01 + a02 * c02  # shape (...)
+
+    if singular_check and torch.any(det == 0):
+        raise torch.linalg.LinAlgError(
+            "solve3x3: The solver failed because the input matrix is singular."
+        )
 
     # Adjugate = transpose of the cofactor matrix. Stack rows of adj directly:
     # adj[i, j] = cofactor[j, i]
