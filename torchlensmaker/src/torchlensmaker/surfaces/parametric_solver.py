@@ -62,12 +62,13 @@ def init_theta_closest(P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
     return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
 
 
-def init_theta_constant(P: BatchNDTensor, V: BatchNDTensor, *, t: float) -> torch.Tensor:
+def init_theta_constant(
+    P: BatchNDTensor, V: BatchNDTensor, *, t: float
+) -> torch.Tensor:
     "Initialize t to a constant value, u and v to 0.5"
     t0 = torch.full_like(P[..., -1], t)
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
     return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
-
 
 
 def parametric_solver_newton_step(
@@ -125,19 +126,24 @@ def parametric_solver_newton(
     Differentiable over the last iteration.
     """
 
-    theta = init_fn(P, V)
-
-    if num_iter == 0:
-        return theta[..., 0], theta[..., 1:]
-
-    # Do N - 1 non differentiable steps
     with torch.no_grad():
+        # Initialize theta = (t, u, v) with the init method
+        theta = init_fn(P, V)
+
+        if num_iter == 0:
+            return theta[..., 0], theta[..., 1:]
+
+        # Do N - 1 non differentiable steps
         for _ in range(num_iter - 1):
-            delta = parametric_solver_newton_step(theta, P, V, parametric_function, singular_check)
+            delta = parametric_solver_newton_step(
+                theta, P, V, parametric_function, singular_check
+            )
             theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     # One differentiable step
-    delta = parametric_solver_newton_step(theta, P, V, parametric_function, singular_check)
+    delta = parametric_solver_newton_step(
+        theta, P, V, parametric_function, singular_check
+    )
     theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     return theta[..., 0], theta[..., 1:]
@@ -212,19 +218,24 @@ def parametric_solver_newton2(
     Differentiable over the last iteration.
     """
 
-    theta = init_fn(P, V)
-
-    if num_iter == 0:
-        return theta[..., 0], theta[..., 1:]
-
-    # Do N - 1 non differentiable steps
     with torch.no_grad():
+        # Initialize theta = (t, u, v) with the init method
+        theta = init_fn(P, V)
+
+        if num_iter == 0:
+            return theta[..., 0], theta[..., 1:]
+
+        # Do N - 1 non differentiable steps
         for _ in range(num_iter - 1):
-            delta = parametric_solver_newton2_step(theta, P, V, parametric_function, singular_check)
+            delta = parametric_solver_newton2_step(
+                theta, P, V, parametric_function, singular_check
+            )
             theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     # One differentiable step
-    delta = parametric_solver_newton2_step(theta, P, V, parametric_function, singular_check)
+    delta = parametric_solver_newton2_step(
+        theta, P, V, parametric_function, singular_check
+    )
     theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     return theta[..., 0], theta[..., 1:]
