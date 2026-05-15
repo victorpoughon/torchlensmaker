@@ -82,6 +82,7 @@ def simple_optimize(
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
     dim: int = 2,
+    callback: Any = None,
 ):
 
     source, model, target = optics[0], optics[1:-1], optics[-1]
@@ -96,6 +97,7 @@ def simple_optimize(
         device,
         regularization,
         nshow,
+        callback,
     )
 
 
@@ -109,6 +111,7 @@ def optimize(
     device: torch.device | None = None,
     regularization: Optional[RegularizationFunction] = None,
     nshow: int = 20,
+    callback: Any = None,
 ) -> OptimizationRecord:
     if dtype is None:
         dtype = torch.get_default_dtype()
@@ -122,7 +125,6 @@ def optimize(
     }
     loss_record = torch.zeros(num_iter)
 
-    # We assume the last element is the loss element
     imaging_model = ImagingModel(model, target)
 
     show_every = math.ceil(num_iter / nshow)
@@ -161,6 +163,9 @@ def optimize(
             )
 
         optimizer.step()
+
+        if callback:
+            callback(model, input_rays, target, i)
 
         if i % show_every == 0 or i == num_iter - 1:
             iter_str = f"[{i + 1:>3}/{num_iter}]"
