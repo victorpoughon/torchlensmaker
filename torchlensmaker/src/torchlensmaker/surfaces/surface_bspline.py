@@ -150,6 +150,7 @@ class BSplineSurface(SurfaceElement):
         "tol": 1e-4,
         "init": "closest",
         "clamp_positive": False,
+        "singular_check": False,
     }
 
     def __init__(

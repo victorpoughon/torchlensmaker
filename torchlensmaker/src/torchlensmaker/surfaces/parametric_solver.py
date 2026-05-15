@@ -54,6 +54,7 @@ def parametric_solver_newton_step(
     P: BatchNDTensor,
     V: BatchNDTensor,
     parametric_function: ParametricFunction,
+    singular_check: bool,
 ) -> torch.Tensor:
     "One step of first order parametric newton solver"
     t = theta[..., 0]
@@ -71,7 +72,7 @@ def parametric_solver_newton_step(
     J = torch.stack([V, -S_u, -S_v], dim=-1)
 
     # Solve J × Δθ = -Q; we return delta such that θ ← θ - delta
-    delta = solve3x3(J, Q)
+    delta = solve3x3(J, Q, singular_check=singular_check)
     return delta
 
 
@@ -96,6 +97,7 @@ def parametric_solver_newton(
     damping: float,
     init: float | str,
     clamp_positive: bool,
+    singular_check: bool,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     First order Newton's method for parametric surfaces.
@@ -118,11 +120,11 @@ def parametric_solver_newton(
     # Do N - 1 non differentiable steps
     with torch.no_grad():
         for _ in range(num_iter - 1):
-            delta = parametric_solver_newton_step(theta, P, V, parametric_function)
+            delta = parametric_solver_newton_step(theta, P, V, parametric_function, singular_check)
             theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     # One differentiable step
-    delta = parametric_solver_newton_step(theta, P, V, parametric_function)
+    delta = parametric_solver_newton_step(theta, P, V, parametric_function, singular_check)
     theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     return theta[..., 0], theta[..., 1:]
@@ -133,6 +135,7 @@ def parametric_solver_newton2_step(
     P: BatchNDTensor,
     V: BatchNDTensor,
     parametric_function: ParametricFunction,
+    singular_check: bool,
 ) -> torch.Tensor:
     "One step of second order parametric newton solver"
     t = theta[..., 0]
@@ -176,7 +179,7 @@ def parametric_solver_newton2_step(
     H_half = JtJ - C
 
     # Solve (H/2) Δθ = -∇D/2; return delta such that θ ← θ - delta
-    delta = solve3x3(H_half, grad)
+    delta = solve3x3(H_half, grad, singular_check=singular_check)
     return delta
 
 
@@ -188,6 +191,7 @@ def parametric_solver_newton2(
     damping: float,
     init: float | str,
     clamp_positive: bool,
+    singular_check: bool,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     Second order Newton's method for parametric surfaces.
@@ -211,11 +215,11 @@ def parametric_solver_newton2(
     # Do N - 1 non differentiable steps
     with torch.no_grad():
         for _ in range(num_iter - 1):
-            delta = parametric_solver_newton2_step(theta, P, V, parametric_function)
+            delta = parametric_solver_newton2_step(theta, P, V, parametric_function, singular_check)
             theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     # One differentiable step
-    delta = parametric_solver_newton2_step(theta, P, V, parametric_function)
+    delta = parametric_solver_newton2_step(theta, P, V, parametric_function, singular_check)
     theta = clamp_theta(theta - damping * delta, clamp_positive)
 
     return theta[..., 0], theta[..., 1:]

@@ -38,6 +38,7 @@ Possible values:
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
     * init: how to initialize t before Newton iterations, float or "closest"
     * clamp_positive: if True, clamp t >= 0 after each Newton update step
+    * singular_check: if True, raise LinAlgError when the Jacobian is singular
 """
 
 
@@ -46,6 +47,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     damping: float = config["damping"]
     init: float | str = config["init"]
     clamp_positive: bool = config["clamp_positive"]
+    singular_check: bool = config["singular_check"]
     solver_name: str = config["parametric_solver"]
 
     if solver_name == "newton":
@@ -55,6 +57,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             damping=damping,
             init=init,
             clamp_positive=clamp_positive,
+            singular_check=singular_check,
         )
     elif solver_name == "newton2":
         return partial(
@@ -63,6 +66,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             damping=damping,
             init=init,
             clamp_positive=clamp_positive,
+            singular_check=singular_check,
         )
     else:
         raise ValueError(f"Unknown parametric solver: {solver_name!r}")

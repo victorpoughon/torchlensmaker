@@ -46,6 +46,7 @@ bspline_config = dict(
     tol=1e-4,
     init="closest",
     clamp_positive=False,
+    singular_check=False,
 )
 
 config1 = dict(
