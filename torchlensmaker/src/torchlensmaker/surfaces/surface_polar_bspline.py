@@ -72,6 +72,7 @@ class PolarBSplineSurface(SurfaceElement):
         "init": InitClosest(),
         "clamp_positive": False,
         "singular_check": False,
+        "periodic_uv": (False, True),
     }
 
     def __init__(
@@ -186,6 +187,6 @@ class PolarBSplineSurface(SurfaceElement):
             degree=self.degree,
             periodic=self.periodic,
             clamped=self.clamped,
-            samples=(30, 30),
+            samples=(100, 100),
             matrix=matrix.tolist(),
         )

@@ -152,6 +152,7 @@ class BSplineSurface(SurfaceElement):
         "init": InitClosest(),
         "clamp_positive": False,
         "singular_check": False,
+        "periodic_uv": (False, False),
     }
 
     def __init__(
@@ -216,6 +217,6 @@ class BSplineSurface(SurfaceElement):
             degree=self.degree,
             periodic=self.periodic,
             clamped=self.clamped,
-            samples=(30, 30),  # TODO
+            samples=(100, 100),  # TODO
             matrix=matrix.tolist(),
         )

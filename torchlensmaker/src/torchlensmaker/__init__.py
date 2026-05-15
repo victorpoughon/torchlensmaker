@@ -198,6 +198,7 @@ from torchlensmaker.viewer.tlmviewer import (
 )
 
 from . import lenses, paraxial
+from . import parametric_solver as ParametricSolver
 
 __all__ = [
     # Analysis
@@ -287,6 +288,8 @@ __all__ = [
     "optimize",
     "simple_optimize",
     "plot_optimization_record",
+    # Parametric solver
+    "ParametricSolver",
     # Paraxial
     "paraxial",
     # Physics

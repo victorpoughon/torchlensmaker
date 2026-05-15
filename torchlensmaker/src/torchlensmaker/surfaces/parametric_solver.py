@@ -50,12 +50,21 @@ class ParametricSolver(Protocol):
 
 
 class ThetaInitFunction(Protocol):
-    def __call__(self, P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
+    def __call__(
+        self,
+        P: BatchNDTensor,
+        V: BatchNDTensor,
+        parametric_function: "ParametricFunction",
+    ) -> torch.Tensor:
         # Returns theta of shape (..., 3) containing initial [t, u, v]
         ...
 
 
-def init_theta_closest(P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
+def init_theta_closest(
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: "ParametricFunction",
+) -> torch.Tensor:
     "Initialize t to the closest approach to the origin, u and v to 0.5"
     t0 = init_closest_origin(P, V)
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
@@ -63,12 +72,70 @@ def init_theta_closest(P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
 
 
 def init_theta_constant(
-    P: BatchNDTensor, V: BatchNDTensor, *, t: float
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: "ParametricFunction",
+    *,
+    t: float,
 ) -> torch.Tensor:
     "Initialize t to a constant value, u and v to 0.5"
     t0 = torch.full_like(P[..., -1], t)
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
     return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+
+
+def init_theta_grid_search(
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: "ParametricFunction",
+    *,
+    t_range: tuple[float, float],
+    t_samples: int,
+    u_range: tuple[float, float],
+    u_samples: int,
+    v_range: tuple[float, float],
+    v_samples: int,
+) -> torch.Tensor:
+    "Initialize theta by grid search: pick (t, u, v) minimizing ||P + tV - S(u,v)||²"
+    dtype, device = P.dtype, P.device
+    batch_shape = P.shape[:-1]
+
+    # Build 1-D grids for each parameter
+    t_grid = torch.linspace(t_range[0], t_range[1], t_samples, dtype=dtype, device=device)
+    u_grid = torch.linspace(u_range[0], u_range[1], u_samples, dtype=dtype, device=device)
+    v_grid = torch.linspace(v_range[0], v_range[1], v_samples, dtype=dtype, device=device)
+
+    n_uv = u_samples * v_samples
+
+    # Build uv grid: shape (n_uv, 2)
+    uu, vv = torch.meshgrid(u_grid, v_grid, indexing="ij")
+    uv_grid = torch.stack([uu.reshape(-1), vv.reshape(-1)], dim=-1)
+
+    # Evaluate surface at all uv points.
+    # parametric_function requires a rank-2 input (batch, 2), so flatten the
+    # ray batch and grid dims together, then reshape the result back.
+    uv_flat = uv_grid.expand(batch_shape + (n_uv, 2)).reshape(-1, 2)
+    S_pts = parametric_function(uv_flat, order=0)[0, 0].reshape(batch_shape + (n_uv, 3))
+
+    # Ray points for all t values: (*batch_shape, t_samples, 3)
+    # P[..., None, :] + t_grid * V[..., None, :]
+    ray_pts = P.unsqueeze(-2) + t_grid.view((1,) * len(batch_shape) + (t_samples, 1)) * V.unsqueeze(-2)
+
+    # Squared distances over all (t, uv) combinations: (*batch_shape, t_samples, n_uv)
+    # ray_pts: (*batch_shape, t_samples, 1, 3)
+    # S_pts:   (*batch_shape, 1,        n_uv, 3)
+    diff = ray_pts.unsqueeze(-2) - S_pts.unsqueeze(-3)
+    sq_dist = (diff * diff).sum(dim=-1)  # (*batch_shape, t_samples, n_uv)
+
+    # Find argmin over all (t, u, v) combinations per ray, then unravel to per-dim indices
+    flat_idx = sq_dist.reshape(batch_shape + (t_samples * n_uv,)).argmin(dim=-1)
+    t_idx, u_idx, v_idx = torch.unravel_index(flat_idx, (t_samples, u_samples, v_samples))
+
+    t0 = t_grid[t_idx]
+    u0 = u_grid[u_idx]
+    v0 = v_grid[v_idx]
+
+    return torch.stack([t0, u0, v0], dim=-1)
 
 
 def parametric_solver_newton_step(
@@ -98,17 +165,26 @@ def parametric_solver_newton_step(
     return delta
 
 
-def clamp_theta(theta: torch.Tensor, clamp_positive: bool) -> torch.Tensor:
-    # clamp t to positive if requested in the config
+def clamp_theta(
+    theta: torch.Tensor,
+    clamp_positive: bool,
+    periodic_uv: tuple[bool, bool],
+) -> torch.Tensor:
     if clamp_positive:
         clamped_t = torch.clamp(theta[..., 0], min=0.0)
     else:
         clamped_t = theta[..., 0]
 
-    # Always clamp (u,v) to (0,1)
-    clamped_uv = torch.clamp(theta[..., 1:], min=0.0, max=1.0)
+    # For periodic dims, wrap with remainder so the solver can cross the periodic
+    # boundary without getting pinned at the degenerate pole. For non-periodic
+    # dims, clamp to [0, 1] as before.
+    def _bound(x: torch.Tensor, periodic: bool) -> torch.Tensor:
+        return torch.remainder(x, 1.0) if periodic else torch.clamp(x, 0.0, 1.0)
 
-    return torch.cat([clamped_t.unsqueeze(-1), clamped_uv], dim=-1)
+    u = _bound(theta[..., 1], periodic_uv[0])
+    v = _bound(theta[..., 2], periodic_uv[1])
+
+    return torch.stack([clamped_t, u, v], dim=-1)
 
 
 def parametric_solver_newton(
@@ -120,6 +196,7 @@ def parametric_solver_newton(
     init_fn: ThetaInitFunction,
     clamp_positive: bool,
     singular_check: bool,
+    periodic_uv: tuple[bool, bool],
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     First order Newton's method for parametric surfaces.
@@ -128,7 +205,7 @@ def parametric_solver_newton(
 
     with torch.no_grad():
         # Initialize theta = (t, u, v) with the init method
-        theta = init_fn(P, V)
+        theta = init_fn(P, V, parametric_function)
 
         if num_iter == 0:
             return theta[..., 0], theta[..., 1:]
@@ -138,13 +215,13 @@ def parametric_solver_newton(
             delta = parametric_solver_newton_step(
                 theta, P, V, parametric_function, singular_check
             )
-            theta = clamp_theta(theta - damping * delta, clamp_positive)
+            theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv)
 
     # One differentiable step
     delta = parametric_solver_newton_step(
         theta, P, V, parametric_function, singular_check
     )
-    theta = clamp_theta(theta - damping * delta, clamp_positive)
+    theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv)
 
     return theta[..., 0], theta[..., 1:]
 
@@ -211,6 +288,7 @@ def parametric_solver_newton2(
     init_fn: ThetaInitFunction,
     clamp_positive: bool,
     singular_check: bool,
+    periodic_uv: tuple[bool, bool],
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     Second order Newton's method for parametric surfaces.
@@ -220,7 +298,7 @@ def parametric_solver_newton2(
 
     with torch.no_grad():
         # Initialize theta = (t, u, v) with the init method
-        theta = init_fn(P, V)
+        theta = init_fn(P, V, parametric_function)
 
         if num_iter == 0:
             return theta[..., 0], theta[..., 1:]
@@ -230,13 +308,13 @@ def parametric_solver_newton2(
             delta = parametric_solver_newton2_step(
                 theta, P, V, parametric_function, singular_check
             )
-            theta = clamp_theta(theta - damping * delta, clamp_positive)
+            theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv)
 
     # One differentiable step
     delta = parametric_solver_newton2_step(
         theta, P, V, parametric_function, singular_check
     )
-    theta = clamp_theta(theta - damping * delta, clamp_positive)
+    theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv)
 
     return theta[..., 0], theta[..., 1:]
 

@@ -26,6 +26,7 @@ from .parametric_solver import (
     ThetaInitFunction,
     init_theta_closest,
     init_theta_constant,
+    init_theta_grid_search,
     parametric_residual_domain,
     parametric_solver_newton,
     parametric_solver_newton2,
@@ -45,7 +46,19 @@ class InitConstant:
     method: Literal["constant"] = "constant"
 
 
-ThetaInit: TypeAlias = InitClosest | InitConstant
+@dataclass
+class InitGridSearch:
+    """Initialize by grid search: evaluate S on a (t, u, v) grid and pick the minimum-distance point"""
+    t_range: tuple[float, float]
+    t_samples: int
+    u_range: tuple[float, float] = (0.0, 1.0)
+    u_samples: int = 5
+    v_range: tuple[float, float] = (0.0, 1.0)
+    v_samples: int = 5
+    method: Literal["grid_search"] = "grid_search"
+
+
+ThetaInit: TypeAlias = InitClosest | InitConstant | InitGridSearch
 
 ParametricSolverConfig: TypeAlias = dict[str, Any]
 """
@@ -56,9 +69,10 @@ Possible values:
     * num_iter: number of Newton iterations
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
-    * init: ThetaInit instance describing how to initialize (t, u, v)
+    * init: ThetaInit instance (InitClosest, InitConstant, or InitGridSearch)
     * clamp_positive: if True, clamp t >= 0 after each Newton update step
     * singular_check: if True, raise LinAlgError when the Jacobian is singular
+    * periodic_uv: pair of bools; periodic dims are wrapped with remainder instead of clamped
 """
 
 
@@ -67,6 +81,16 @@ def make_init_function(init: ThetaInit) -> ThetaInitFunction:
         return init_theta_closest
     elif isinstance(init, InitConstant):
         return partial(init_theta_constant, t=init.t)
+    elif isinstance(init, InitGridSearch):
+        return partial(
+            init_theta_grid_search,
+            t_range=init.t_range,
+            t_samples=init.t_samples,
+            u_range=init.u_range,
+            u_samples=init.u_samples,
+            v_range=init.v_range,
+            v_samples=init.v_samples,
+        )
     else:
         raise ValueError(f"Unknown init: {init!r}")
 
@@ -77,6 +101,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     init_fn: ThetaInitFunction = make_init_function(config["init"])
     clamp_positive: bool = config["clamp_positive"]
     singular_check: bool = config["singular_check"]
+    periodic_uv: tuple[bool, bool] = config["periodic_uv"]
     solver_name: str = config["parametric_solver"]
 
     if solver_name == "newton":
@@ -87,6 +112,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             init_fn=init_fn,
             clamp_positive=clamp_positive,
             singular_check=singular_check,
+            periodic_uv=periodic_uv,
         )
     elif solver_name == "newton2":
         return partial(
@@ -96,6 +122,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             init_fn=init_fn,
             clamp_positive=clamp_positive,
             singular_check=singular_check,
+            periodic_uv=periodic_uv,
         )
     else:
         raise ValueError(f"Unknown parametric solver: {solver_name!r}")
