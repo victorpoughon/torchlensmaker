@@ -49,6 +49,8 @@ bspline_config = dict(
     clamp_positive=False,
     singular_check=False,
     periodic_uv=(False, False),
+    u_epsilon=0.0,
+    v_epsilon=0.0,
 )
 
 config1 = dict(

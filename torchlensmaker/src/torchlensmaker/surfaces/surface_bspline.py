@@ -153,6 +153,8 @@ class BSplineSurface(SurfaceElement):
         "clamp_positive": False,
         "singular_check": False,
         "periodic_uv": (False, False),
+        "u_epsilon": 0.0,
+        "v_epsilon": 0.0,
     }
 
     def __init__(

@@ -73,6 +73,8 @@ Possible values:
     * clamp_positive: if True, clamp t >= 0 after each Newton update step
     * singular_check: if True, raise LinAlgError when the Jacobian is singular
     * periodic_uv: pair of bools; periodic dims are wrapped with remainder instead of clamped
+    * u_epsilon: clamp u to [u_epsilon, 1 - u_epsilon] instead of [0, 1]
+    * v_epsilon: clamp v to [v_epsilon, 1 - v_epsilon] instead of [0, 1]
 """
 
 
@@ -102,6 +104,8 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     clamp_positive: bool = config["clamp_positive"]
     singular_check: bool = config["singular_check"]
     periodic_uv: tuple[bool, bool] = config["periodic_uv"]
+    u_epsilon: float = config["u_epsilon"]
+    v_epsilon: float = config["v_epsilon"]
     solver_name: str = config["parametric_solver"]
 
     if solver_name == "newton":
@@ -113,6 +117,8 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             clamp_positive=clamp_positive,
             singular_check=singular_check,
             periodic_uv=periodic_uv,
+            u_epsilon=u_epsilon,
+            v_epsilon=v_epsilon,
         )
     elif solver_name == "newton2":
         return partial(
@@ -123,6 +129,8 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             clamp_positive=clamp_positive,
             singular_check=singular_check,
             periodic_uv=periodic_uv,
+            u_epsilon=u_epsilon,
+            v_epsilon=v_epsilon,
         )
     else:
         raise ValueError(f"Unknown parametric solver: {solver_name!r}")

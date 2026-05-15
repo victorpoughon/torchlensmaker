@@ -73,6 +73,8 @@ class PolarBSplineSurface(SurfaceElement):
         "clamp_positive": False,
         "singular_check": False,
         "periodic_uv": (False, True),
+        "u_epsilon": 0.0,
+        "v_epsilon": 0.0,
     }
 
     def __init__(
