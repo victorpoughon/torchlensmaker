@@ -30,6 +30,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.surfaces.parametric_solver import parametric_surface_local_raytrace
 from torchlensmaker.surfaces.parametric_solver_config import (
+    InitClosest,
     ParametricSolverConfig,
     make_domain_function,
     make_parametric_solver,
@@ -148,7 +149,7 @@ class BSplineSurface(SurfaceElement):
         "num_iter": 10,
         "damping": 1.0,
         "tol": 1e-4,
-        "init": "closest",
+        "init": InitClosest(),
         "clamp_positive": False,
         "singular_check": False,
     }

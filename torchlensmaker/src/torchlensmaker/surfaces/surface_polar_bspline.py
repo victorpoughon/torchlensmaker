@@ -25,6 +25,7 @@ from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
 from torchlensmaker.surfaces.parametric_solver import parametric_surface_local_raytrace
 from torchlensmaker.surfaces.parametric_solver_config import (
+    InitClosest,
     ParametricSolverConfig,
     make_domain_function,
     make_parametric_solver,
@@ -68,7 +69,7 @@ class PolarBSplineSurface(SurfaceElement):
         "num_iter": 10,
         "damping": 1.0,
         "tol": 1e-4,
-        "init": "closest",
+        "init": InitClosest(),
         "clamp_positive": False,
         "singular_check": False,
     }

@@ -15,7 +15,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from functools import partial
 from typing import Protocol
 
 import torch
@@ -69,10 +68,6 @@ def init_theta_constant(P: BatchNDTensor, V: BatchNDTensor, *, t: float) -> torc
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
     return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
 
-
-THETA_INIT_FUNCTIONS: dict[str, ThetaInitFunction] = {
-    "closest": init_theta_closest,
-}
 
 
 def parametric_solver_newton_step(

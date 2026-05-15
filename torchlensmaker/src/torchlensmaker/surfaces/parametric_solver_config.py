@@ -15,20 +15,37 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from dataclasses import dataclass
 from functools import partial
-from typing import Any, TypeAlias
+from typing import Any, Literal, TypeAlias
 
 from .parametric_solver import (
-    THETA_INIT_FUNCTIONS,
     ParametricDomainFunction,
     ParametricFunction,
     ParametricSolver,
     ThetaInitFunction,
+    init_theta_closest,
     init_theta_constant,
     parametric_residual_domain,
     parametric_solver_newton,
     parametric_solver_newton2,
 )
+
+
+@dataclass
+class InitClosest:
+    """Initialize t to the closest approach to the origin, u and v to 0.5"""
+    method: Literal["closest"] = "closest"
+
+
+@dataclass
+class InitConstant:
+    """Initialize t to a constant value, u and v to 0.5"""
+    t: float
+    method: Literal["constant"] = "constant"
+
+
+ThetaInit: TypeAlias = InitClosest | InitConstant
 
 ParametricSolverConfig: TypeAlias = dict[str, Any]
 """
@@ -39,16 +56,19 @@ Possible values:
     * num_iter: number of Newton iterations
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
-    * init: how to initialize t before Newton iterations, float or "closest"
+    * init: ThetaInit instance describing how to initialize (t, u, v)
     * clamp_positive: if True, clamp t >= 0 after each Newton update step
     * singular_check: if True, raise LinAlgError when the Jacobian is singular
 """
 
 
-def make_init_function(init: float | str) -> ThetaInitFunction:
-    if isinstance(init, str) and init in THETA_INIT_FUNCTIONS:
-        return THETA_INIT_FUNCTIONS[init]
-    return partial(init_theta_constant, t=float(init))
+def make_init_function(init: ThetaInit) -> ThetaInitFunction:
+    if isinstance(init, InitClosest):
+        return init_theta_closest
+    elif isinstance(init, InitConstant):
+        return partial(init_theta_constant, t=init.t)
+    else:
+        raise ValueError(f"Unknown init: {init!r}")
 
 
 def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:

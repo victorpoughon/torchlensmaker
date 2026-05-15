@@ -21,6 +21,7 @@ import pytest
 import torch
 import torchimplicit as ti
 
+from torchlensmaker.surfaces.parametric_solver_config import InitClosest
 from torchlensmaker.surfaces.surface_bspline import BSplineSurfaceKernel
 from torchlensmaker.surfaces.surface_disk import DiskSurfaceKernel
 from torchlensmaker.surfaces.surface_implicit import ImplicitSurfaceKernel
@@ -44,7 +45,7 @@ bspline_config = dict(
     num_iter=1,
     damping=1.0,
     tol=1e-4,
-    init="closest",
+    init=InitClosest(),
     clamp_positive=False,
     singular_check=False,
 )
