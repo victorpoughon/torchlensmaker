@@ -36,6 +36,7 @@ class FocalPoint(LightTarget):
 
     def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
         dim = rays.P.shape[-1]
+        dtype, device = rays.dtype, rays.device
 
         X = hom_target(tf.direct)
         P = rays.P[rays.valid]
@@ -43,7 +44,21 @@ class FocalPoint(LightTarget):
         N = rays.valid.sum()
         Nint: int = int(N.item())
 
-        # TODO return if N == 0
+        # If there are no rays, return a constant (non differentiable) loss of zero
+        if Nint == 0:
+            return LightTargetOutput(
+                loss=torch.zeros((), dtype=dtype, device=device),
+                surface_outputs=SurfaceElementOutput(
+                    t=None,
+                    normals=None,
+                    valid=None,
+                    points_local=None,
+                    points_global=None,
+                    rsm=None,
+                    tf_surface=tf,
+                    tf_next=tf,
+                ),
+            )
 
         # Compute ray-point squared distance
 
