@@ -19,9 +19,12 @@ from functools import partial
 from typing import Any, TypeAlias
 
 from .parametric_solver import (
+    THETA_INIT_FUNCTIONS,
     ParametricDomainFunction,
     ParametricFunction,
     ParametricSolver,
+    ThetaInitFunction,
+    init_theta_constant,
     parametric_residual_domain,
     parametric_solver_newton,
     parametric_solver_newton2,
@@ -42,10 +45,16 @@ Possible values:
 """
 
 
+def make_init_function(init: float | str) -> ThetaInitFunction:
+    if isinstance(init, str) and init in THETA_INIT_FUNCTIONS:
+        return THETA_INIT_FUNCTIONS[init]
+    return partial(init_theta_constant, t=float(init))
+
+
 def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
-    init: float | str = config["init"]
+    init_fn: ThetaInitFunction = make_init_function(config["init"])
     clamp_positive: bool = config["clamp_positive"]
     singular_check: bool = config["singular_check"]
     solver_name: str = config["parametric_solver"]
@@ -55,7 +64,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             parametric_solver_newton,
             num_iter=num_iter,
             damping=damping,
-            init=init,
+            init_fn=init_fn,
             clamp_positive=clamp_positive,
             singular_check=singular_check,
         )
@@ -64,7 +73,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             parametric_solver_newton2,
             num_iter=num_iter,
             damping=damping,
-            init=init,
+            init_fn=init_fn,
             clamp_positive=clamp_positive,
             singular_check=singular_check,
         )

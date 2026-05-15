@@ -15,6 +15,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
+from functools import partial
 from typing import Protocol
 
 import torch
@@ -47,6 +48,31 @@ class ParametricSolver(Protocol):
         V: BatchNDTensor,
         parametric_function: ParametricFunction,
     ) -> tuple[BatchTensor, BatchTensor]: ...
+
+
+class ThetaInitFunction(Protocol):
+    def __call__(self, P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
+        # Returns theta of shape (..., 3) containing initial [t, u, v]
+        ...
+
+
+def init_theta_closest(P: BatchNDTensor, V: BatchNDTensor) -> torch.Tensor:
+    "Initialize t to the closest approach to the origin, u and v to 0.5"
+    t0 = init_closest_origin(P, V)
+    uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
+    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+
+
+def init_theta_constant(P: BatchNDTensor, V: BatchNDTensor, *, t: float) -> torch.Tensor:
+    "Initialize t to a constant value, u and v to 0.5"
+    t0 = torch.full_like(P[..., -1], t)
+    uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
+    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+
+
+THETA_INIT_FUNCTIONS: dict[str, ThetaInitFunction] = {
+    "closest": init_theta_closest,
+}
 
 
 def parametric_solver_newton_step(
@@ -95,7 +121,7 @@ def parametric_solver_newton(
     parametric_function: ParametricFunction,
     num_iter: int,
     damping: float,
-    init: float | str,
+    init_fn: ThetaInitFunction,
     clamp_positive: bool,
     singular_check: bool,
 ) -> tuple[BatchTensor, BatchTensor]:
@@ -104,15 +130,7 @@ def parametric_solver_newton(
     Differentiable over the last iteration.
     """
 
-    # Initialize θ = (t, u, v); uv always starts at center of parameter domain
-    if init == "closest":
-        t0 = init_closest_origin(P, V)
-    else:
-        t0 = torch.full_like(P[..., -1], float(init))
-
-    # TODO better uv initialization options
-    uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
-    theta = torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+    theta = init_fn(P, V)
 
     if num_iter == 0:
         return theta[..., 0], theta[..., 1:]
@@ -189,7 +207,7 @@ def parametric_solver_newton2(
     parametric_function: ParametricFunction,
     num_iter: int,
     damping: float,
-    init: float | str,
+    init_fn: ThetaInitFunction,
     clamp_positive: bool,
     singular_check: bool,
 ) -> tuple[BatchTensor, BatchTensor]:
@@ -199,15 +217,7 @@ def parametric_solver_newton2(
     Differentiable over the last iteration.
     """
 
-    # Initialize θ = (t, u, v); uv always starts at center of parameter domain
-    if init == "closest":
-        t0 = init_closest_origin(P, V)
-    else:
-        t0 = torch.full_like(P[..., -1], float(init))
-
-    # TODO better uv initialization options
-    uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
-    theta = torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+    theta = init_fn(P, V)
 
     if num_iter == 0:
         return theta[..., 0], theta[..., 1:]
