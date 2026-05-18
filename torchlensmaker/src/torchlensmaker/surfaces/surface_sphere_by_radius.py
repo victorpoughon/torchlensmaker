@@ -40,7 +40,7 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:
@@ -329,9 +329,9 @@ class SphereByRadius(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d.apply if P.shape[-1] == 2 else self.func3d.apply
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             *func(P, V, tf, self.diameter, self.R, self.anchors, self.scale)
         )
 

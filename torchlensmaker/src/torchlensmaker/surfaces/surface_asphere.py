@@ -34,7 +34,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 from .surface_sag import SagOuterExtentSurfaceKernel, SagSurfaceKernel
 
 
@@ -151,7 +151,7 @@ class Asphere(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone(anchors=self.anchors.flip(0))
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         kernel_surface = self.func2d if tf.pdim() == 2 else self.func3d
         kernel_anchor = self.kernel_anchor2d if tf.pdim() == 2 else self.kernel_anchor3d
 
@@ -171,7 +171,7 @@ class Asphere(SurfaceElement):
             params,
         )
 
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 

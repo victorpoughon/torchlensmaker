@@ -45,7 +45,7 @@ from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_geometry import (
     implicit_domain,
 )
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 class ImplicitSurfaceKernel(FunctionalKernel):
@@ -159,14 +159,10 @@ class ImplicitDisk(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> SurfaceElementOutput:
+    def forward(self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         params = (self.diameter / 2).unsqueeze(0)
-        return SurfaceElementOutput(
-            *func.apply(P, V, tf, params), tf.clone(), tf.clone()
-        )
+        return SurfaceRecord(*func.apply(P, V, tf, params), tf.clone(), tf.clone())
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)
@@ -219,12 +215,10 @@ class Sphere(SurfaceElement):
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
         params = self.R.unsqueeze(0)
-        return SurfaceElementOutput(
-            *func.apply(P, V, tf, params), tf.clone(), tf.clone()
-        )
+        return SurfaceRecord(*func.apply(P, V, tf, params), tf.clone(), tf.clone())
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceSphere:
         return tlmv.SurfaceSphere(

@@ -31,7 +31,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 class PolarBSplineSurface(SurfaceElement):
@@ -166,12 +166,12 @@ class PolarBSplineSurface(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         t, normal, valid, points_local, points_global, rsm = self.func3d.apply(
             P, V, tf, self._full_control_points()
         )
 
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             t, normal, valid, points_local, points_global, rsm, tf.clone(), tf.clone()
         )
 

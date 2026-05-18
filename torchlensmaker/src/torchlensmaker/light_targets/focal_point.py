@@ -20,10 +20,10 @@ import torch
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.light_targets.light_target import LightTarget, LightTargetRecord
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces import SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import Tf
 
 
@@ -34,7 +34,7 @@ class FocalPoint(LightTarget):
     def clone(self, **overrides: Any) -> Self:
         return type(self)()
 
-    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
+    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetRecord:
         dim = rays.P.shape[-1]
         dtype, device = rays.dtype, rays.device
 
@@ -46,9 +46,9 @@ class FocalPoint(LightTarget):
 
         # If there are no rays, return a constant (non differentiable) loss of zero
         if Nint == 0:
-            return LightTargetOutput(
+            return LightTargetRecord(
                 loss=torch.zeros((), dtype=dtype, device=device),
-                surface_outputs=SurfaceElementOutput(
+                surface_outputs=SurfaceRecord(
                     t=None,
                     normals=None,
                     valid=None,
@@ -75,9 +75,9 @@ class FocalPoint(LightTarget):
 
         loss = distance.sum() / N
 
-        return LightTargetOutput(
+        return LightTargetRecord(
             loss=loss,
-            surface_outputs=SurfaceElementOutput(
+            surface_outputs=SurfaceRecord(
                 t=None,
                 normals=None,
                 valid=None,

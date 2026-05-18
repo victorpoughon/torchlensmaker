@@ -26,10 +26,10 @@ from torchlensmaker.materials.get_material_model import (
 )
 from torchlensmaker.materials.material_elements import MaterialModel
 from torchlensmaker.physics.physics_kernels import RefractionKernel
-from torchlensmaker.surfaces import SurfaceElement, SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElement
 from torchlensmaker.types import Tf, TIRMode
 
-from .optical_surface import OpticalSurfaceElement
+from .optical_surface import OpticalSurfaceElement, OpticalSurfaceRecord
 
 
 class RefractiveSurface(OpticalSurfaceElement):
@@ -64,9 +64,7 @@ class RefractiveSurface(OpticalSurfaceElement):
             materials=(self.material_out, self.material_in),
         )
 
-    def forward(
-        self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, SurfaceElementOutput]:
+    def forward(self, rays: RayBundle, tf: Tf) -> OpticalSurfaceRecord:
         # Raytrace with the surface
         sout = self.surface(rays.P, rays.V, tf)
 
@@ -101,4 +99,4 @@ class RefractiveSurface(OpticalSurfaceElement):
             n=n2,
         )
 
-        return rays_refracted, sout
+        return OpticalSurfaceRecord(rays_refracted, sout)

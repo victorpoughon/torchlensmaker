@@ -26,7 +26,7 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.sequential.sequential import Sequential
 from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces.surface_element import SurfaceElementOutput
+from torchlensmaker.surfaces.surface_element import SurfaceRecord
 
 from .CET_I2 import isoluminant_cgo_80_c38
 
@@ -82,7 +82,7 @@ def spot_diagram(
         rays = data.rays
         output = target(rays, data.fk)
 
-    sout: SurfaceElementOutput = output.surface_outputs
+    sout: SurfaceRecord = output.surface_outputs
 
     # Image plane coordinates: columns 1 and 2 of points_local (YZ in plane frame)
     # Shape (N, 2) for valid rays, (N, 2) overall (invalid rays land outside the disk)

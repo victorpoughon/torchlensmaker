@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, NamedTuple
+from dataclasses import dataclass
+from typing import Any
 
 import torch
 
@@ -28,7 +29,8 @@ from torchlensmaker.types import (
 )
 
 
-class SurfaceElementOutput(NamedTuple):
+@dataclass
+class SurfaceRecord:
     """
     Return type of all surface elements
 
@@ -64,7 +66,7 @@ class SurfaceElement(BaseModule):
         """
         raise NotImplementedError
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         raise NotImplementedError
 
     def render(self, matrix: torch.Tensor) -> Any:

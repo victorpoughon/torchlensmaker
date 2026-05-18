@@ -38,7 +38,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 def intersection_square_3d(
@@ -141,14 +141,14 @@ class Square(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         assert P.shape[-1] == 3, (
             "Square surface can only be raytraced in 3D because it's not axially symmetric"
         )
         t, normal, valid, points_local, points_global, rsm = self.func3d.apply(
             P, V, tf, self.side_length
         )
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             t, normal, valid, points_local, points_global, rsm, tf.clone(), tf.clone()
         )
 

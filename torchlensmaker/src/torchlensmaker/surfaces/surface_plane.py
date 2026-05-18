@@ -37,7 +37,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 def intersection_plane_2d(
@@ -154,11 +154,9 @@ class Plane(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> SurfaceElementOutput:
+    def forward(self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
-        return SurfaceElementOutput(*func.apply(P, V, tf), tf.clone(), tf.clone())
+        return SurfaceRecord(*func.apply(P, V, tf), tf.clone(), tf.clone())
 
     def outer_extent(self, anchor: ScalarTensor) -> ScalarTensor:
         return torch.zeros_like(anchor)

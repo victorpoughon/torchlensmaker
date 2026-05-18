@@ -34,7 +34,7 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 class XYPolynomial(SurfaceElement):
@@ -104,7 +104,7 @@ class XYPolynomial(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceElementOutput:
+    def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         # TODO raise nice error if 2D
         kernel_surface = self.func3d
         kernel_anchor = self.kernel_anchor3d
@@ -124,7 +124,7 @@ class XYPolynomial(SurfaceElement):
             params2,
         )
 
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             t, normal, valid, points_local, points_global, rsm, tf_surface, tf_next
         )
 

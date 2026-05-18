@@ -33,7 +33,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 def closest_point(
@@ -116,7 +116,7 @@ class PointSurface(SurfaceElement):
     Point surface (2D or 3D)
 
     Represents a single point at the origin in local coordinates.
-    The rsm field of SurfaceElementOutput contains the squared distance
+    The rsm field of SurfaceRecord contains the squared distance
     from each ray to the point at its closest approach.
     """
 
@@ -134,11 +134,9 @@ class PointSurface(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> SurfaceElementOutput:
+    def forward(self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
-        return SurfaceElementOutput(*func.apply(P, V, tf), tf.clone(), tf.clone())
+        return SurfaceRecord(*func.apply(P, V, tf), tf.clone(), tf.clone())
 
     def outer_extent(self, anchor: BatchTensor) -> BatchTensor:
         return torch.zeros_like(anchor)

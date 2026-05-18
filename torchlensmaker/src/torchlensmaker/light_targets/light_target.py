@@ -19,15 +19,15 @@ from typing import NamedTuple
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces import SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import ScalarTensor, Tf
 
 
-class LightTargetOutput(NamedTuple):
+class LightTargetRecord(NamedTuple):
     loss: ScalarTensor
-    surface_outputs: SurfaceElementOutput
+    surface_outputs: SurfaceRecord
 
 
 class LightTarget(BaseModule):
-    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
+    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetRecord:
         raise NotImplementedError

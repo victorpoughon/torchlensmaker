@@ -40,7 +40,7 @@ from torchlensmaker.types import (
 
 from .kernels_utils import example_rays_2d, example_rays_3d
 from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 
 
 def intersection_disk_2d(
@@ -160,11 +160,9 @@ class Disk(SurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf
-    ) -> SurfaceElementOutput:
+    def forward(self, P: BatchNDTensor, V: BatchNDTensor, tf: Tf) -> SurfaceRecord:
         func = self.func2d if P.shape[-1] == 2 else self.func3d
-        return SurfaceElementOutput(
+        return SurfaceRecord(
             *func.apply(P, V, tf, self.diameter), tf.clone(), tf.clone()
         )
 

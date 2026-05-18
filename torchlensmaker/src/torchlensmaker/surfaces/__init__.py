@@ -45,7 +45,7 @@ from .surface_asphere import Asphere
 from .surface_bspline import BSplineSurface
 from .surface_conic import Conic
 from .surface_disk import Disk
-from .surface_element import SurfaceElement, SurfaceElementOutput
+from .surface_element import SurfaceElement, SurfaceRecord
 from .surface_implicit import ImplicitDisk, Sphere
 from .surface_parabola import Parabola
 from .surface_plane import Plane
@@ -73,7 +73,7 @@ __all__ = [
     "SphereByRadius",
     "Square",
     "SurfaceElement",
-    "SurfaceElementOutput",
+    "SurfaceRecord",
     "XYPolynomial",
     # Sag functions
     "aspheric_sag_2d",

@@ -153,7 +153,7 @@ class RayBundle:
 
         Returns masks that index into the original batch dimension, so they can
         be applied to any tensor that shares it: RayBundle,
-        SurfaceElementOutput, etc. For a 2D grid, call split_masks twice and
+        SurfaceRecord, etc. For a 2D grid, call split_masks twice and
         compose the results.
 
         Args:

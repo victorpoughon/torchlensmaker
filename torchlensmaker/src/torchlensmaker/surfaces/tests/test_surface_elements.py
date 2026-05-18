@@ -34,7 +34,7 @@ from torchlensmaker.surfaces import (
     Sphere,
     SphereByCurvature,
     SphereByRadius,
-    SurfaceElementOutput,
+    SurfaceRecord,
     XYPolynomial,
 )
 from torchlensmaker.surfaces.surface_bspline import BSplineSurface
@@ -312,7 +312,7 @@ cases_3d = [
 
 def check_model_eval(
     model: nn.Module, inputs: tuple[BatchNDTensor, BatchNDTensor, Tf]
-) -> SurfaceElementOutput:
+) -> SurfaceRecord:
     "Evaluate a model forwards and run sanity checks"
 
     # Check the forward pass
@@ -334,7 +334,7 @@ def check_model_eval_and_grad(
     model: nn.Module,
     inputs: tuple[BatchNDTensor, BatchNDTensor, Tf],
     allow_none_grad: bool = False,
-) -> SurfaceElementOutput:
+) -> SurfaceRecord:
     """
     Evaluate a model forwards and backwards and run sanity checks
     Expects at least one trainable parameter

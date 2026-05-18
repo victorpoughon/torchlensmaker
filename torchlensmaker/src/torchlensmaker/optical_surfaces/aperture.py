@@ -18,10 +18,10 @@
 from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces import Disk, SurfaceElementOutput
+from torchlensmaker.surfaces import Disk, SurfaceRecord
 from torchlensmaker.types import ScalarTensor, Tf
 
-from .optical_surface import OpticalSurfaceElement
+from .optical_surface import OpticalSurfaceElement, OpticalSurfaceRecord
 
 
 class Aperture(OpticalSurfaceElement):
@@ -39,10 +39,8 @@ class Aperture(OpticalSurfaceElement):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(
-        self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, SurfaceElementOutput]:
+    def forward(self, rays: RayBundle, tf: Tf) -> OpticalSurfaceRecord:
         sout = self.surface(rays.P, rays.V, tf)
         # TODO should probably propagate for consistency?
         new_rays = rays.mask(sout.valid)
-        return new_rays, sout
+        return OpticalSurfaceRecord(new_rays, sout)

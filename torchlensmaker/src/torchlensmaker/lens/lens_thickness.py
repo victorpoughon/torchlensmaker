@@ -48,11 +48,16 @@ def extract_surface_vertices(
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
     data = SequentialData.empty(2, dtype, device)
-    rays, first_surface_outputs = first_surface(data.rays, data.fk)
-    front_vertex_tf = first_surface_outputs.tf_surface
-    data = lens_core(data.replace(rays=rays, fk=first_surface_outputs.tf_next))
-    _, last_surface_outputs = last_surface(data.rays, data.fk)
-    rear_vertex_tf = last_surface_outputs.tf_surface
+    first_surface_record = first_surface(data.rays, data.fk)
+    front_vertex_tf = first_surface_record.surface_record.tf_surface
+    data = lens_core(
+        data.replace(
+            rays=first_surface_record.output_rays,
+            fk=first_surface_record.surface_record.tf_next,
+        )
+    )
+    last_surface_record = last_surface(data.rays, data.fk)
+    rear_vertex_tf = last_surface_record.surface_record.tf_surface
 
     return front_vertex_tf, rear_vertex_tf
 

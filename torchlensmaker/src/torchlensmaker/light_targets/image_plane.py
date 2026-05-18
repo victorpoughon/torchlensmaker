@@ -20,7 +20,7 @@ import torch
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
-from torchlensmaker.light_targets.light_target import LightTarget, LightTargetOutput
+from torchlensmaker.light_targets.light_target import LightTarget, LightTargetRecord
 from torchlensmaker.sequential.model_trace import ModelTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces import Disk, SurfaceElement
@@ -71,7 +71,7 @@ class ImagePlane(LightTarget):
     def reverse(self) -> Self:
         return self.clone()
 
-    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetOutput:
+    def forward(self, rays: RayBundle, tf: Tf) -> LightTargetRecord:
 
         # Perform collision detection with the surface
         sout = self.surface(rays.P, rays.V, tf)
@@ -81,12 +81,12 @@ class ImagePlane(LightTarget):
         # so we can still render the surface
         if combined.sum() == 0:
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(loss, sout)
+            return LightTargetRecord(loss, sout)
 
         # TODO 2D only for now
         if rays.V.shape[-1] == 3:
             loss = torch.zeros((), dtype=rays.dtype, device=rays.device)
-            return LightTargetOutput(loss, sout)
+            return LightTargetRecord(loss, sout)
 
         # Compute image surface coordinates here
         # To make this work with any surface, we would need a way to compute
@@ -109,7 +109,7 @@ class ImagePlane(LightTarget):
         else:
             loss = torch.sum(torch.pow(res, 2))
 
-        return LightTargetOutput(loss, sout)
+        return LightTargetRecord(loss, sout)
 
     def sequential(self, data: SequentialData) -> SequentialData:
         _ = self(data.rays, data.fk)

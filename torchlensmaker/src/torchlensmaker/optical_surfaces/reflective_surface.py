@@ -22,10 +22,10 @@ import torch.nn as nn
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.physics.physics_kernels import ReflectionKernel
-from torchlensmaker.surfaces import SurfaceElement, SurfaceElementOutput
+from torchlensmaker.surfaces import SurfaceElement, SurfaceRecord
 from torchlensmaker.types import Tf
 
-from .optical_surface import OpticalSurfaceElement
+from .optical_surface import OpticalSurfaceElement, OpticalSurfaceRecord
 
 
 class ReflectiveSurface(OpticalSurfaceElement):
@@ -41,9 +41,7 @@ class ReflectiveSurface(OpticalSurfaceElement):
     def reverse(self) -> Self:
         return self.clone(surface=self.surface.reverse())
 
-    def forward(
-        self, rays: RayBundle, tf: Tf
-    ) -> tuple[RayBundle, SurfaceElementOutput]:
+    def forward(self, rays: RayBundle, tf: Tf) -> OpticalSurfaceRecord:
         # Raytrace with the surface
         sout = self.surface(rays.P, rays.V, tf)
 
@@ -58,4 +56,4 @@ class ReflectiveSurface(OpticalSurfaceElement):
         points = sout.points_global
         rays_reflected = rays.mask(sout.valid).replace(P=points, V=reflected)
 
-        return rays_reflected, sout
+        return OpticalSurfaceRecord(rays_reflected, sout)
