@@ -121,6 +121,7 @@ def _rays_3d_polar_bspline(N: int, dtype: torch.dtype, device: torch.device):
 
 def _make_polar_bspline_sphere():
     import math
+
     R = 1.0
     K, L = 3, 6
     angles = torch.linspace(0, 2 * math.pi * (1 - 1 / L), L)

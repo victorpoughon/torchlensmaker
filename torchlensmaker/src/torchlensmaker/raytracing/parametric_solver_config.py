@@ -36,12 +36,14 @@ from .parametric_solver import (
 @dataclass
 class InitClosest:
     """Initialize t to the closest approach to the origin, u and v to 0.5"""
+
     method: Literal["closest"] = "closest"
 
 
 @dataclass
 class InitConstant:
     """Initialize t to a constant value, u and v to 0.5"""
+
     t: float
     method: Literal["constant"] = "constant"
 
@@ -49,6 +51,7 @@ class InitConstant:
 @dataclass
 class InitGridSearch:
     """Initialize by grid search: evaluate S on a (t, u, v) grid and pick the minimum-distance point"""
+
     t_range: tuple[float, float]
     t_samples: int
     u_range: tuple[float, float] = (0.0, 1.0)
@@ -140,4 +143,6 @@ def make_domain_function(
     config: ParametricSolverConfig, parametric_function: ParametricFunction
 ) -> ParametricDomainFunction:
     tol: float = config["tol"]
-    return partial(parametric_residual_domain, parametric_function=parametric_function, tol=tol)
+    return partial(
+        parametric_residual_domain, parametric_function=parametric_function, tol=tol
+    )

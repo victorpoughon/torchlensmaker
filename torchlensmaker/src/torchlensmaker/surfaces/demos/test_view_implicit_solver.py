@@ -6,11 +6,8 @@
 
 from functools import partial
 
-import matplotlib.colors as colors
-import matplotlib.pyplot as plt
 import tlmviewer as tlmv
 import torch
-from jaxtyping import Float
 
 import torchlensmaker as tlm
 

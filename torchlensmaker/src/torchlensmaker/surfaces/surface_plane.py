@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from functools import partial
 from typing import Any, Self
 
 import tlmviewer as tlmv
 import torch
-import torch.nn as nn
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import unit_vector
@@ -31,17 +29,14 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
     Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
-    HomMatrix,
     MaskTensor,
     ScalarTensor,
     Tf,
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 

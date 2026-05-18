@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import math
 from functools import partial
 from typing import Any, Self
 
@@ -32,7 +31,6 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
-    Batch2DTensor,
     BatchNDTensor,
     BatchTensor,
     MaskTensor,

@@ -16,7 +16,6 @@
 
 
 import torch
-from jaxtyping import Float
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_scale_2d,

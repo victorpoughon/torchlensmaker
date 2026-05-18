@@ -15,17 +15,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import partial
-from typing import Any, Literal, Self
+from typing import Any, Self
 
 import tlmviewer as tlmv
 import torch
 import torchnodo as tnodo
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
-from torchlensmaker.core.geometry import unit_vector
 from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import (
-    hom_identity_2d,
     hom_identity_3d,
 )
 from torchlensmaker.raytracing.parametric_solver import (
@@ -39,17 +37,13 @@ from torchlensmaker.raytracing.parametric_solver_config import (
 )
 from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
-    Batch2DTensor,
-    Batch3DTensor,
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
-    ScalarTensor,
     Tf,
 )
 
-from .kernels_utils import example_rays_2d, example_rays_3d
-from .sag_geometry import lens_diameter_domain_2d, lens_diameter_domain_3d
+from .kernels_utils import example_rays_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 

@@ -16,7 +16,6 @@
 
 from pathlib import Path
 
-import onnxruntime
 import pytest
 import torch
 import torchimplicit as ti
@@ -30,9 +29,6 @@ from torchlensmaker.surfaces.surface_point import PointSurfaceKernel
 from torchlensmaker.surfaces.surface_sag import (
     SagOuterExtentSurfaceKernel,
     SagSurfaceKernel,
-)
-from torchlensmaker.surfaces.surface_sphere_by_radius import (
-    SphereByRadiusSurfaceKernel,  # TODO
 )
 from torchlensmaker.testing.test_functional_kernels_testing import (
     check_kernels_eval,

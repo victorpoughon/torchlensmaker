@@ -4,7 +4,6 @@
 
 import tlmviewer as tlmv
 import torch
-import torch.nn as nn
 
 import torchlensmaker as tlm
 
