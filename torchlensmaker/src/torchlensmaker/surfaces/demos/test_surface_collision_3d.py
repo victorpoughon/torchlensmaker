@@ -171,8 +171,118 @@ def display_hit_miss_3d(title, source, surface, dist, pupil=50, field=10, wavel=
 #     10,
 # )
 
+# display_hit_miss_3d(
+#     "Rainbow - sphere by radius",
+#     tlm.Sequential(
+#         tlm.SubChain(
+#             tlm.Translate(y=5.001),
+#             tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+#         ),
+#         tlm.Gap(50),
+#     ),
+#     tlm.SphereByRadius(diameter=2 * 5, R=5),
+#     80,
+#     pupil=100,
+#     field=1,
+#     wavel=1,
+# )
+
+
+# display_hit_miss_3d(
+#     "Rainbow - sphere newton1",
+#     tlm.Sequential(
+#         tlm.SubChain(
+#             tlm.Translate(y=5.001),
+#             tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+#         ),
+#         tlm.Gap(50),
+#     ),
+#     tlm.Sphere(R=5),
+#     80,
+#     pupil=100,
+#     field=1,
+#     wavel=1,
+# )
+
+# display_hit_miss_3d(
+#     "Rainbow - sphere newton2",
+#     tlm.Sequential(
+#         tlm.SubChain(
+#             tlm.Translate(y=5.001),
+#             tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+#         ),
+#         tlm.Gap(50),
+#     ),
+#     tlm.Sphere(
+#         R=5,
+#         solver_config=dict(
+#             implicit_solver="newton2",
+#             num_iter=12,
+#             damping=0.95,
+#             tol=1e-4,
+#             init="0",
+#             clamp_positive=True,
+#         ),
+#     ),
+#     80,
+#     pupil=100,
+#     field=1,
+#     wavel=1,
+# )
+
+# lin = torch.linspace(-2, 2, 5)
+# yy, zz = torch.meshgrid(lin, lin, indexing="ij")
+# # xx = torch.zeros_like(yy)
+# xx = torch.randn(yy.shape) * 0.5
+# xx = torch.cumsum(xx, dim=0)
+# xx = torch.cumsum(xx, dim=1)
+
+# cps = torch.stack([xx, yy, zz], dim=-1)
+
+# display_hit_miss_3d(
+#     "BSpline - test 1",
+#     tlm.Sequential(
+#         tlm.SubChain(
+#             tlm.Translate(y=5.001),
+#             tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
+#         ),
+#         tlm.Gap(50),
+#     ),
+#     tlm.BSplineSurface(
+#         control_points=cps,
+#         solver_config=dict(parametric_solver="newton2", num_iter=12, damping=0.98),
+#     ),
+#     80,
+#     pupil=100,
+#     field=1,
+#     wavel=1,
+# )
+
+surface = tlm.PolarBSplineSurface.from_sphere(
+    250.0,
+    10,
+    10,
+    solver_config=dict(
+        parametric_solver="newton",
+        num_iter=8,
+        damping=0.99,
+        tol=1000,
+        init=tlm.ParametricSolver.InitGridSearch(
+            t_range=(100, 400),
+            t_samples=5,
+            u_samples=8,
+            v_samples=8,
+        ),
+        clamp_positive=True,
+    ),
+)
+
+surface.body_points = surface.body_points * torch.abs(
+    1 + torch.randn(surface.body_points.shape) / 15
+)
+
 display_hit_miss_3d(
-    "Rainbow - sphere by radius",
+    "BSpline - test 2",
     tlm.Sequential(
         tlm.SubChain(
             tlm.Translate(y=5.001),
@@ -180,7 +290,7 @@ display_hit_miss_3d(
         ),
         tlm.Gap(50),
     ),
-    tlm.SphereByRadius(diameter=2 * 5, R=5),
+    surface,
     80,
     pupil=100,
     field=1,
@@ -188,46 +298,4 @@ display_hit_miss_3d(
 )
 
 
-display_hit_miss_3d(
-    "Rainbow - sphere newton1",
-    tlm.Sequential(
-        tlm.SubChain(
-            tlm.Translate(y=5.001),
-            tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
-        ),
-        tlm.Gap(50),
-    ),
-    tlm.Sphere(R=5),
-    80,
-    pupil=100,
-    field=1,
-    wavel=1,
-)
-
-display_hit_miss_3d(
-    "Rainbow - sphere newton2",
-    tlm.Sequential(
-        tlm.SubChain(
-            tlm.Translate(y=5.001),
-            tlm.ObjectAtInfinity(10, 0.5, wavelength=(400, 660)),
-        ),
-        tlm.Gap(50),
-    ),
-    tlm.Sphere(
-        R=5,
-        solver_config=dict(
-            implicit_solver="newton2",
-            num_iter=12,
-            damping=0.95,
-            tol=1e-4,
-            init="0",
-            clamp_positive=True,
-        ),
-    ),
-    80,
-    pupil=100,
-    field=1,
-    wavel=1,
-)
-
-tlmv.push_source(__file__)
+# tlmv.push_source(__file__)
