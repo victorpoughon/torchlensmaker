@@ -110,6 +110,11 @@ from torchlensmaker.optimize import (
     simple_optimize,
 )
 from torchlensmaker.physics.physics import reflection, refraction
+from torchlensmaker.raytracing.parametric_solver_config import (
+    InitClosest,
+    InitConstant,
+    InitGridSearch,
+)
 from torchlensmaker.sampling.sampler_elements import (
     DiskSampler2D,
     ExactSampler1D,
@@ -198,7 +203,6 @@ from torchlensmaker.viewer.tlmviewer import (
 )
 
 from . import lenses, paraxial
-from . import parametric_solver as ParametricSolver
 
 __all__ = [
     # Analysis
@@ -288,8 +292,10 @@ __all__ = [
     "optimize",
     "simple_optimize",
     "plot_optimization_record",
-    # Parametric solver
-    "ParametricSolver",
+    # Solver Config
+    "InitGridSearch",
+    "InitClosest",
+    "InitConstant",
     # Paraxial
     "paraxial",
     # Physics

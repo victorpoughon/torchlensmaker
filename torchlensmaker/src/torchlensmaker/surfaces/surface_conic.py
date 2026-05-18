@@ -23,6 +23,7 @@ import torchimplicit as ti
 from jaxtyping import Float
 
 from torchlensmaker.core.tensor_manip import init_param
+from torchlensmaker.raytracing.implicit_solver_config import ImplicitSolverConfig
 from torchlensmaker.surfaces.surface_anchor import SurfaceScaleAnchorKernel
 from torchlensmaker.surfaces.surface_sag import (
     SagOuterExtentSurfaceKernel,
@@ -34,7 +35,6 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .implicit_solver_config import ImplicitSolverConfig
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 

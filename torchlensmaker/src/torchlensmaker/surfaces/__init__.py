@@ -40,16 +40,16 @@ from torchimplicit.sag_functions import (
     xypolynomial_sag_3d,
 )
 
-from .implicit_solver import (
+from torchlensmaker.raytracing.implicit_solver import (
     DomainFunction,
     ImplicitSolver,
     implicit_solver_newton,
     implicit_solver_newton2,
 )
+
 from .surface_anchor import KinematicSurface
 from .surface_asphere import Asphere
 from .surface_bspline import BSplineSurface
-from .surface_polar_bspline import PolarBSplineSurface
 from .surface_conic import Conic
 from .surface_disk import Disk
 from .surface_element import SurfaceElement, SurfaceElementOutput
@@ -57,6 +57,7 @@ from .surface_implicit import ImplicitDisk, Sphere
 from .surface_parabola import Parabola
 from .surface_plane import Plane
 from .surface_point import PointSurface
+from .surface_polar_bspline import PolarBSplineSurface
 from .surface_sphere_by_curvature import SphereByCurvature
 from .surface_sphere_by_radius import SphereByRadius
 from .surface_square import Square

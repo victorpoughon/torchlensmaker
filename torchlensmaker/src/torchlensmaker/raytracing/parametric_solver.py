@@ -20,7 +20,7 @@ from typing import Protocol
 import torch
 
 from torchlensmaker.core.solve3 import solve3x3
-from torchlensmaker.surfaces.implicit_solver import init_closest_origin
+from torchlensmaker.raytracing.implicit_solver import init_closest_origin
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
@@ -101,9 +101,15 @@ def init_theta_grid_search(
     batch_shape = P.shape[:-1]
 
     # Build 1-D grids for each parameter
-    t_grid = torch.linspace(t_range[0], t_range[1], t_samples, dtype=dtype, device=device)
-    u_grid = torch.linspace(u_range[0], u_range[1], u_samples, dtype=dtype, device=device)
-    v_grid = torch.linspace(v_range[0], v_range[1], v_samples, dtype=dtype, device=device)
+    t_grid = torch.linspace(
+        t_range[0], t_range[1], t_samples, dtype=dtype, device=device
+    )
+    u_grid = torch.linspace(
+        u_range[0], u_range[1], u_samples, dtype=dtype, device=device
+    )
+    v_grid = torch.linspace(
+        v_range[0], v_range[1], v_samples, dtype=dtype, device=device
+    )
 
     n_uv = u_samples * v_samples
 
@@ -119,7 +125,9 @@ def init_theta_grid_search(
 
     # Ray points for all t values: (*batch_shape, t_samples, 3)
     # P[..., None, :] + t_grid * V[..., None, :]
-    ray_pts = P.unsqueeze(-2) + t_grid.view((1,) * len(batch_shape) + (t_samples, 1)) * V.unsqueeze(-2)
+    ray_pts = P.unsqueeze(-2) + t_grid.view(
+        (1,) * len(batch_shape) + (t_samples, 1)
+    ) * V.unsqueeze(-2)
 
     # Squared distances over all (t, uv) combinations: (*batch_shape, t_samples, n_uv)
     # ray_pts: (*batch_shape, t_samples, 1, 3)
@@ -129,7 +137,9 @@ def init_theta_grid_search(
 
     # Find argmin over all (t, u, v) combinations per ray, then unravel to per-dim indices
     flat_idx = sq_dist.reshape(batch_shape + (t_samples * n_uv,)).argmin(dim=-1)
-    t_idx, u_idx, v_idx = torch.unravel_index(flat_idx, (t_samples, u_samples, v_samples))
+    t_idx, u_idx, v_idx = torch.unravel_index(
+        flat_idx, (t_samples, u_samples, v_samples)
+    )
 
     t0 = t_grid[t_idx]
     u0 = u_grid[u_idx]
@@ -219,13 +229,21 @@ def parametric_solver_newton(
             delta = parametric_solver_newton_step(
                 theta, P, V, parametric_function, singular_check
             )
-            theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
+            theta = clamp_theta(
+                theta - damping * delta,
+                clamp_positive,
+                periodic_uv,
+                u_epsilon,
+                v_epsilon,
+            )
 
     # One differentiable step
     delta = parametric_solver_newton_step(
         theta, P, V, parametric_function, singular_check
     )
-    theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
+    theta = clamp_theta(
+        theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon
+    )
 
     return theta[..., 0], theta[..., 1:]
 
@@ -314,13 +332,21 @@ def parametric_solver_newton2(
             delta = parametric_solver_newton2_step(
                 theta, P, V, parametric_function, singular_check
             )
-            theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
+            theta = clamp_theta(
+                theta - damping * delta,
+                clamp_positive,
+                periodic_uv,
+                u_epsilon,
+                v_epsilon,
+            )
 
     # One differentiable step
     delta = parametric_solver_newton2_step(
         theta, P, V, parametric_function, singular_check
     )
-    theta = clamp_theta(theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
+    theta = clamp_theta(
+        theta - damping * delta, clamp_positive, periodic_uv, u_epsilon, v_epsilon
+    )
 
     return theta[..., 0], theta[..., 1:]
 

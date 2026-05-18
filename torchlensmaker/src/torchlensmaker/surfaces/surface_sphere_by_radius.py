@@ -18,6 +18,7 @@ import math
 from functools import partial
 from typing import Any, Self
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 from jaxtyping import Float
@@ -29,6 +30,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
     Batch2DTensor,
     BatchNDTensor,
@@ -39,11 +41,8 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import surface_raytrace
 from .sag_geometry import anchor_transforms_2d, anchor_transforms_3d
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 def sphere_radius_center(dim: int, R: ScalarTensor) -> Float[torch.Tensor, " D"]:

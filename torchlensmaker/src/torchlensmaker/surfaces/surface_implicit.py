@@ -27,11 +27,12 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.surfaces.implicit_solver import implicit_surface_local_raytrace
-from torchlensmaker.surfaces.implicit_solver_config import (
+from torchlensmaker.raytracing.implicit_solver import implicit_surface_local_raytrace
+from torchlensmaker.raytracing.implicit_solver_config import (
     ImplicitSolverConfig,
     implicit_solver_config,
 )
+from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
@@ -41,7 +42,6 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import surface_raytrace
 from .sag_geometry import (
     implicit_domain,
 )

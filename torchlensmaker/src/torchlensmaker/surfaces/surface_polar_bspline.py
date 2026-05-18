@@ -23,13 +23,16 @@ import torch
 
 from torchlensmaker.core.tensor_manip import init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_3d
-from torchlensmaker.surfaces.parametric_solver import parametric_surface_local_raytrace
-from torchlensmaker.surfaces.parametric_solver_config import (
+from torchlensmaker.raytracing.parametric_solver import (
+    parametric_surface_local_raytrace,
+)
+from torchlensmaker.raytracing.parametric_solver_config import (
     InitClosest,
     ParametricSolverConfig,
     make_domain_function,
     make_parametric_solver,
 )
+from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.surfaces.surface_bspline import BSplineSurfaceKernel
 from torchlensmaker.types import (
     BatchNDTensor,
@@ -38,7 +41,6 @@ from torchlensmaker.types import (
     Tf,
 )
 
-from .raytrace import surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
 
 

@@ -18,6 +18,7 @@ import math
 from functools import partial
 from typing import Any, Self, cast
 
+import tlmviewer as tlmv
 import torch
 import torch.nn as nn
 
@@ -28,6 +29,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
+from torchlensmaker.raytracing.raytrace import surface_raytrace
 from torchlensmaker.types import (
     Batch2DTensor,
     Batch3DTensor,
@@ -40,10 +42,7 @@ from torchlensmaker.types import (
 )
 
 from .kernels_utils import example_rays_2d, example_rays_3d
-from .raytrace import surface_raytrace
 from .surface_element import SurfaceElement, SurfaceElementOutput
-
-import tlmviewer as tlmv
 
 
 def intersection_square_3d(
