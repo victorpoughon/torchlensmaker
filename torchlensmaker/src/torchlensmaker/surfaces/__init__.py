@@ -40,13 +40,6 @@ from torchimplicit.sag_functions import (
     xypolynomial_sag_3d,
 )
 
-from torchlensmaker.raytracing.implicit_solver import (
-    DomainFunction,
-    ImplicitSolver,
-    implicit_solver_newton,
-    implicit_solver_newton2,
-)
-
 from .surface_anchor import KinematicSurface
 from .surface_asphere import Asphere
 from .surface_bspline import BSplineSurface
@@ -105,10 +98,4 @@ __all__ = [
     # Sag type aliases
     "BoundSagFunction",
     "LiftFunction",
-    # Solver
-    "implicit_solver_newton",
-    "implicit_solver_newton2",
-    # Solver type aliases
-    "DomainFunction",
-    "ImplicitSolver",
 ]

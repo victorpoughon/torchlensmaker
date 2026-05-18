@@ -110,6 +110,12 @@ from torchlensmaker.optimize import (
     simple_optimize,
 )
 from torchlensmaker.physics.physics import reflection, refraction
+from torchlensmaker.raytracing.implicit_solver import (
+    DomainFunction,
+    ImplicitSolver,
+    implicit_solver_newton,
+    implicit_solver_newton2,
+)
 from torchlensmaker.raytracing.parametric_solver_config import (
     InitClosest,
     InitConstant,
@@ -138,9 +144,7 @@ from torchlensmaker.surfaces import (
     BSplineSurface,
     Conic,
     Disk,
-    DomainFunction,
     ImplicitDisk,
-    ImplicitSolver,
     KinematicSurface,
     LiftFunction,
     Parabola,
@@ -158,7 +162,6 @@ from torchlensmaker.surfaces import (
     aspheric_sag_3d,
     conical_sag_2d,
     conical_sag_3d,
-    implicit_solver_newton,
     parabolic_sag_2d,
     parabolic_sag_3d,
     sag_sum_2d,
