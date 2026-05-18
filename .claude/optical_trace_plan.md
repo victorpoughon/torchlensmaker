@@ -21,12 +21,11 @@ and adds first-class support for differentiable optical path length (OPL).
 - A new `OpticalTrace` data structure replaces both `SequentialData` and
   `ModelTrace`. Element-level `trace()` methods, `trace_model()`, and the
   forward-hook mechanism are removed.
-- `OpticalTrace` is a flat `OrderedDict[str, OpticalTraceNode]` plus
-  `bundles: dict[str, RayBundle]` and `tfs: dict[str, Tf]` storage
-  tables. Each node carries an `ElementRecord`, parent pointers, and
-  `bundle_id` / `tf_id` strings that index into the storage tables.
-  Inheritance is expressed by sharing IDs across nodes — there is no
-  `None`-as-inherit convention in the data layer.
+- `OpticalTrace` is a flat `OrderedDict[str, OpticalTraceNode]`. Each node
+  carries direct Python references to its input and output bundle and tf —
+  no separate storage dicts, no string IDs. Python reference semantics
+  ensure that nodes sharing an unchanged bundle or tf hold references to
+  the same object without any tensor copying.
 - Linear-chain composition stays. No new container modules
   (`Branch`/`Parallel`/`Merge`). `Sequential` and `SubChain` only.
 - Multi-parent nodes are allowed in two forms:
@@ -42,6 +41,16 @@ and adds first-class support for differentiable optical path length (OPL).
 - Optical path and kinematic chain are **derived views** over the trace,
   not stored fields. A `linear_path()` utility raises if the trace is not
   linear; a more general `paths()` returns a list.
+- Record types and module types are **decoupled**. `OpticalTraceNode` carries
+  both the `record` (what data the element produced) and `module` (the
+  instance that produced it). Consumers that care about the physical meaning
+  dispatch on `type(node.module)`; consumers that care only about the data
+  shape dispatch on `record.kind`.
+- **Standardized `forward()` signatures**: every optical element's `forward`
+  takes `(tf: Tf, rays: RayBundle)` (or just `tf` when rays are not
+  consumed) and returns a single `ElementRecord` subclass — no tuples.
+  The record carries all outputs of the call, including the output bundle
+  where applicable.
 
 ## Data structures
 
@@ -53,61 +62,89 @@ class ElementRecord:
 
 @dataclass
 class SourceRecord(ElementRecord):
+    """Produced by LightSourceBase.forward(tf). Carries the emitted bundle."""
+    output_rays: RayBundle
     kind: Literal["source"] = "source"
 
 @dataclass
-class CollisionRecord(ElementRecord):
-    t: BatchTensor
-    normals: BatchNDTensor
-    valid: MaskTensor
-    points_local: BatchNDTensor
-    points_global: BatchNDTensor
-    rsm: BatchTensor
-    tf_surface: Tf
-    kind: Literal["collision"] = "collision"
+class SurfaceRecord(ElementRecord):
+    """
+    Produced by SurfaceElement.forward() — the pure geometry layer.
+    Carries ray-surface collision data only; no output bundle.
+    """
+    t: BatchTensor           # P+tV are the collision points
+    normals: BatchNDTensor   # unit normals at the collision points (global frame)
+    valid: MaskTensor        # boolean mask for valid collisions
+    points_local: BatchNDTensor  # collision points (surface frame)
+    points_global: BatchNDTensor  # collision points (global frame)
+    rsm: BatchTensor         # ray-surface minimum
+    tf_surface: Tf           # surface transform
+    tf_out: Tf               # output transform of the kinematic chain
+    kind: Literal["surface"] = "surface"
 
 @dataclass
-class ApertureRecord(ElementRecord):
-    valid_update: MaskTensor
-    kind: Literal["aperture"] = "aperture"
+class OpticalSurfaceRecord(ElementRecord):
+    """
+    Produced by OpticalSurfaceElement.forward(tf, rays) — the optical element
+    layer. Wraps a SurfaceRecord from the child surface geometry and carries
+    the output ray bundle produced by refraction, reflection, or aperture
+    filtering.
+    """
+    output_rays: RayBundle
+    surface: SurfaceRecord
+    kind: Literal["optical_surface"] = "optical_surface"
 
 @dataclass
-class FocalRecord(ElementRecord):
+class LightTargetRecord(ElementRecord):
+    """Shared by focal points, image planes, and other light targets."""
     loss: ScalarTensor
     target_tf: Tf
-    kind: Literal["focal"] = "focal"
+    surface_outputs: SurfaceRecord  # temporary; removed in step 5
+    kind: Literal["light_target"] = "light_target"
 
-# Plus: ImagePlaneRecord (kind="image_plane"), GapRecord
-# (kind="gap", kinematic spacer), etc., as elements are migrated.
+@dataclass
+class KinematicRecord(ElementRecord):
+    """Shared by all KinematicElement subclasses (e.g. Gap)."""
+    tf_out: Tf
+    kind: Literal["kinematic"] = "kinematic"
 ```
 
-Records replace the parallel dicts on `ModelTrace`. They are the only
-polymorphic per-element data; consumers dispatch on `record.kind`
-(or on `isinstance` when richer pattern matching is needed). The
-`kind` field is placed last on each subclass so existing positional
-fields keep their definitionless-default property.
+Records are the complete output of their corresponding `forward()` call.
+Consumers dispatch on `record.kind` (or `isinstance`) for polymorphic
+access. The `kind` field is placed last so positional fields keep their
+default-free property.
+
+The two-level surface design keeps concerns separated:
+- `SurfaceRecord` is the geometry contract: "given rays and a transform,
+  here is what hit what and where." It knows nothing about bundles.
+- `OpticalSurfaceRecord` is the optical contract: "given an input bundle and
+  a transform, here is the output bundle and the underlying collision data."
 
 ### `OpticalTraceNode`
 
 ```python
 @dataclass
 class OpticalTraceNode:
-    key: str                      # this node's own key (== dict key in trace.nodes)
+    key: str              # this node's own key (== dict key in trace.nodes)
     record: ElementRecord
-    parents: set[str]             # set() for sources, {prev} for sequential
-    bundle_id: str                # key into trace.bundles
-    tf_id: str                    # key into trace.tfs
+    module: BaseModule    # the module instance that produced this node
+    parents: set[str]     # set() for sources, {prev} for sequential
+    bundle_in: RayBundle  # root_bundle for source nodes
+    bundle_out: RayBundle # same object as bundle_in if no new bundle
+    tf_in: Tf
+    tf_out: Tf            # same object as tf_in if no new tf
 ```
 
-- A node represents an *event* (an element fired). It always names a
-  resolved bundle and tf via string IDs into the trace-level storage
-  tables.
-- Inheritance is expressed by sharing IDs: if this node didn't change
-  the bundle, its `bundle_id` equals one of its parents' `bundle_id`.
-  Same for `tf_id`.
-- Invariant: `node.bundle_id == node.key` iff this node introduced a
-  new bundle (likewise for `tf_id`). So "did element K change the
-  bundle?" is one string comparison.
+- A node represents an *event* (an element fired). All four references are
+  fully resolved at `append` time — no dict lookups or parent traversal.
+- `module` is the live module instance. `type(node.module)` identifies which
+  class fired; `node.module` gives direct access to parameters and state.
+- `bundle_out is bundle_in` iff this node did not produce a new bundle.
+  `bundle_out is not bundle_in` iff it did. Same pattern for tf. "Did
+  element K change the bundle?" is one identity check.
+- Source nodes receive `bundle_in = trace.root_bundle` (an empty
+  `RayBundle`). All nodes receive either `trace.root_tf` or a preceding
+  element's `tf_out` as their `tf_in`. No `None` values anywhere.
 - `parents` is a `set[str]` so duplicate parents are impossible by
   construction. Order is not meaningful; row-layout ordering of a
   concatenating merge lives in the bundle itself.
@@ -122,41 +159,49 @@ class OpticalTrace:
     device: torch.device
 
     nodes: OrderedDict[str, OpticalTraceNode]
-    bundles: dict[str, RayBundle]
-    tfs: dict[str, Tf]
+    root_bundle: RayBundle   # empty bundle; bundle_in for source nodes
+    root_tf: Tf              # identity tf; tf_in for head-of-chain nodes
 
-    # Resolution
-    def bundle_at(self, key: str) -> RayBundle:
-        return self.bundles[self.nodes[key].bundle_id]
-    def tf_at(self, key: str) -> Tf:
-        return self.tfs[self.nodes[key].tf_id]
+    # Resolution — direct attribute access, no dict lookup
+    def bundle_in_at(self, key: str) -> RayBundle:
+        return self.nodes[key].bundle_in
+    def bundle_out_at(self, key: str) -> RayBundle:
+        return self.nodes[key].bundle_out
+    def tf_in_at(self, key: str) -> Tf:
+        return self.nodes[key].tf_in
+    def tf_out_at(self, key: str) -> Tf:
+        return self.nodes[key].tf_out
 
     # Build
     def append(
         self,
         key: str,
         record: ElementRecord,
+        module: BaseModule,
         parents: set[str],
-        new_bundle: RayBundle | None,   # None = inherit parent's bundle_id
-        new_tf: Tf | None,              # None = inherit parent's tf_id
+        bundle_in: RayBundle,
+        tf_in: Tf,
+        new_bundle: RayBundle | None = None,   # None = share bundle_in as bundle_out
+        new_tf: Tf | None = None,              # None = share tf_in as tf_out
     ) -> None: ...
-        # If new_bundle is not None: store it as bundles[key] and set
-        # node.bundle_id = key.
-        # If new_bundle is None: copy bundle_id from the (single) parent.
+        # bundle_out = new_bundle if new_bundle is not None else bundle_in
+        # tf_out     = new_tf     if new_tf     is not None else tf_in
         # When parents has more than one element, new_bundle MUST NOT be
-        # None — multi-parent inheritance is ambiguous. Same rules for tf.
+        # None — multi-parent bundle inheritance is ambiguous. Same for tf.
 
     # Queries
+    @classmethod
+    def empty(cls, dim: int, dtype: torch.dtype, device: torch.device) -> Self: ...
     def keys(self) -> list[str]: ...
     def is_linear(self) -> bool: ...
 ```
 
-Trace-level invariants (cheap to assert in `__post_init__` or in
-tests):
+Trace-level invariants (cheap to assert in `__post_init__` or in tests):
 
-- Every `node.bundle_id` is in `bundles`; every `node.tf_id` is in `tfs`.
-- `node.bundle_id == node.key` iff this node introduced a new bundle
-  (same for `tf_id`). No orphan entries in `bundles` / `tfs`.
+- Every `node.bundle_in`, `node.bundle_out`, `node.tf_in`, `node.tf_out`
+  is non-`None`. Source nodes use `trace.root_bundle` and `trace.root_tf`.
+- `node.bundle_out is not node.bundle_in` iff this node introduced a new
+  bundle (likewise for tf). No dangling references.
 - Node keys are unique across the trace.
 - Every key in `node.parents` exists in `nodes`.
 
@@ -194,131 +239,125 @@ def linear_kinematic_chain(trace: OpticalTrace, start: str, end: str) -> Kinemat
 
 Two-tier shape, kept narrow:
 
-- **Kernel `forward`** (local, narrow, testable): returns *only what the
-  element actually produces*. Different element kinds have different
-  signatures — there is no shared "always returns bundle and tf" rule.
+- **Kernel `forward`** (local, narrow, testable): uniform signature
+  `forward(tf: Tf, rays: RayBundle)` (or `forward(tf: Tf)` when rays are
+  not consumed), returns a **single `ElementRecord` subclass** carrying all
+  outputs. No tuples.
 - **`extend_optical_trace(trace, key, parents) -> trace`** (chain API):
   thin per-element method that reads its input from
-  `trace.bundle_at(...)` / `trace.tf_at(...)` for each parent, calls
-  its kernel, and appends a node with `new_bundle` and `new_tf` set to
-  exactly what the element type produces. The caller (`Sequential`) is
-  responsible for supplying `key` (from `mod.trace_key or module_key`)
-  and the correct `parents` set. No identity comparison, no implicit
-  dedup — each element knows its own semantics.
+  `trace.bundle_out_at(parent_key)` / `trace.tf_out_at(parent_key)`,
+  calls its kernel, and appends a node. The caller (`Sequential`) is
+  responsible for supplying `key` and the correct `parents` set.
 
 Per-element shapes:
 
 ```python
-# Refractive / reflective surface — produces both a new bundle and a new tf
+# Optical surface (refractive or reflective) — new bundle and new tf
 class OpticalSurfaceElement(BaseModule):
-    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, CollisionRecord]:
+    def forward(self, tf: Tf, rays: RayBundle) -> OpticalSurfaceRecord:
         ...
 
     def extend_optical_trace(
         self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
-        (parent_key,) = parents  # sequential: exactly one parent
-        rays_in = trace.bundle_at(parent_key)
-        tf_in = trace.tf_at(parent_key)
-        new_rays, record = self.forward(rays_in, tf_in)
+        (parent_key,) = parents
+        rays_in = trace.bundle_out_at(parent_key)
+        tf_in = trace.tf_out_at(parent_key)
+        record = self.forward(tf_in, rays_in)
         trace.append(
-            key=key,
-            record=record,
-            parents=parents,
-            new_bundle=new_rays,
-            new_tf=record.tf_next,
+            key=key, record=record, module=self, parents=parents,
+            bundle_in=rays_in, tf_in=tf_in,
+            new_bundle=record.output_rays, new_tf=record.surface.tf_out,
         )
         return trace
 
 
-# Aperture — produces a new bundle (updated valid) but no new tf
+# Aperture — new bundle (updated valid mask) but no new tf.
+# Uses OpticalSurfaceRecord: apertures intersect rays with a surface geometry.
 class Aperture(BaseModule):
-    def forward(self, rays: RayBundle, tf: Tf) -> tuple[RayBundle, ApertureRecord]:
+    def forward(self, tf: Tf, rays: RayBundle) -> OpticalSurfaceRecord:
         ...
 
     def extend_optical_trace(
         self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
-        rays_in = trace.bundle_at(parent_key)
-        tf_in = trace.tf_at(parent_key)
-        new_rays, record = self.forward(rays_in, tf_in)
+        rays_in = trace.bundle_out_at(parent_key)
+        tf_in = trace.tf_out_at(parent_key)
+        record = self.forward(tf_in, rays_in)
         trace.append(
-            key=key,
-            record=record,
-            parents=parents,
-            new_bundle=new_rays,
-            new_tf=None,
+            key=key, record=record, module=self, parents=parents,
+            bundle_in=rays_in, tf_in=tf_in,
+            new_bundle=record.output_rays, new_tf=None,
         )
         return trace
 
 
-# Kinematic spacer — produces a new tf but no new bundle
-class Gap(BaseModule):
-    def forward(self, tf: Tf) -> tuple[Tf, GapRecord]:
+# Kinematic spacer — new tf, no new bundle.
+class Gap(KinematicElement):
+    def forward(self, tf: Tf) -> KinematicRecord:
         ...
 
     def extend_optical_trace(
         self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
-        tf_in = trace.tf_at(parent_key)
-        new_tf, record = self.forward(tf_in)
+        tf_in = trace.tf_out_at(parent_key)
+        record = self.forward(tf_in)
         trace.append(
-            key=key,
-            record=record,
-            parents=parents,
-            new_bundle=None,
-            new_tf=new_tf,
+            key=key, record=record, module=self, parents=parents,
+            bundle_in=trace.bundle_out_at(parent_key), tf_in=tf_in,
+            new_bundle=None, new_tf=record.tf_out,
         )
         return trace
 
 
-# Light target (e.g. focal point) — produces neither a new bundle nor a new tf,
-# only a record carrying the loss
+# Light target — no new bundle, no new tf; only a loss record.
 class FocalPoint(BaseModule):
-    def forward(self, rays: RayBundle, tf: Tf) -> FocalRecord:
+    def forward(self, tf: Tf, rays: RayBundle) -> LightTargetRecord:
         ...
 
     def extend_optical_trace(
         self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
         (parent_key,) = parents
-        rays_in = trace.bundle_at(parent_key)
-        tf_in = trace.tf_at(parent_key)
-        record = self.forward(rays_in, tf_in)
+        rays_in = trace.bundle_out_at(parent_key)
+        tf_in = trace.tf_out_at(parent_key)
+        record = self.forward(tf_in, rays_in)
         trace.append(
-            key=key,
-            record=record,
-            parents=parents,
-            new_bundle=None,
-            new_tf=None,
+            key=key, record=record, module=self, parents=parents,
+            bundle_in=rays_in, tf_in=tf_in,
         )
         return trace
 
 
-# Light source — produces a fresh bundle, no parents
+# Light source — fresh bundle from tf input; no parent bundle.
 class LightSourceBase(BaseModule):
-    def forward(self, tf: Tf) -> tuple[RayBundle, SourceRecord]:
+    def forward(self, tf: Tf) -> SourceRecord:
         ...
 
     def extend_optical_trace(
         self, trace: OpticalTrace, key: str, parents: set[str]
     ) -> OpticalTrace:
-        # Source nodes are called with parents=set(). The source's tf is
-        # its placement frame (a per-source attribute / external input).
-        # The new bundle is fresh; bundle_id and tf_id both equal the
-        # source's own key. When more than one source exists in a model,
-        # downstream elements consume a concatenating merge of all live
-        # sources (see multi-source notes below).
-        ...
+        # Source nodes have parents=set(). tf_in is trace.root_tf or the
+        # preceding kinematic element's tf_out. bundle_in is always
+        # trace.root_bundle. When more than one source exists, downstream
+        # elements consume a concatenating merge (see multi-source notes).
+        tf_in = ...  # root_tf or preceding kinematic tf_out
+        record = self.forward(tf_in)
+        trace.append(
+            key=key, record=record, module=self, parents=set(),
+            bundle_in=trace.root_bundle, tf_in=tf_in,
+            new_bundle=record.output_rays,
+        )
+        return trace
 ```
 
-The kernel signatures are deliberately heterogeneous. A surface kernel
-returns `(RayBundle, CollisionRecord)`. An aperture kernel returns
-`(RayBundle, ApertureRecord)`. A spacer kernel returns
-`(Tf, GapRecord)`. A target kernel returns just a record. This is
-honest about what each kind of element actually does.
+The kernel signatures are uniform: every `forward` takes `(tf, rays)` or
+`(tf)` and returns a single record. `OpticalSurfaceRecord` wraps a
+`SurfaceRecord` so collision data remains accessible. Kinematic elements
+embed their output tf in `KinematicRecord.tf_out`. Sources embed their
+output rays in `SourceRecord.output_rays`.
 
 ## Migration plan
 
@@ -329,86 +368,135 @@ should pass tests.
 
 DONE.
 
-### Step 2 — Refactor `ModelTrace` to use `ElementRecord`
+### Step 2 — Introduce records and standardize `forward()` signatures
 
-Pure refactor of the existing trace mode: parallel dicts collapse into
-a single `OrderedDict[str, ElementRecord]`. No graph structure yet,
-no changes to forward semantics, no new files outside the records
-module. The hook mechanism and per-element `trace()` methods stay.
+#### Step 2a — Define record types and standardize `forward()` signatures
+
+This substep introduces the complete record vocabulary and standardizes
+every optical element's `forward()` to the new convention. No changes to
+`ModelTrace`, `SequentialData`, or the hook mechanism.
 
 Files:
 - `core/element_records.py` (new)
+- `surfaces/surface_element.py` (return type updated)
+- All concrete `SurfaceElement` subclasses (return type updated)
+- `optical_surfaces/optical_surface.py` (new signature + `OpticalSurfaceRecord`)
+- `optical_surfaces/refractive_surface.py`, `reflective_surface.py`,
+  `aperture.py` (new signature)
+- `kinematics/kinematics_elements.py` (new signature)
+- `light_sources/light_sources_elements.py` (new signature)
+- `light_targets/light_target.py`, `focal_point.py`, `image_plane.py`
+  (new signature)
+
+Record types to define:
+
+- `SourceRecord(output_rays)` — source emits a fresh bundle.
+- `SurfaceRecord(t, normals, valid, points_local, points_global, rsm,`
+  `tf_surface, tf_out)` — pure geometry output of `SurfaceElement.forward`.
+  Rename of the existing `tf_next` field to `tf_out`.
+- `OpticalSurfaceRecord(output_rays, surface: SurfaceRecord)` — optical
+  element output. Wraps the geometry record; carries the output bundle.
+  Shared by refractive surfaces, reflective surfaces, and apertures.
+- `LightTargetRecord(loss, target_tf, surface_outputs: SurfaceRecord)` —
+  light target output. `surface_outputs` is temporary (removed in step 5).
+- `KinematicRecord(tf_out)` — kinematic element output.
+
+Standardized `forward()` conventions:
+
+- `SurfaceElement.forward(tf, P, V) -> SurfaceRecord` — geometry layer,
+  arg order updated.
+- `OpticalSurfaceElement.forward(tf, rays) -> OpticalSurfaceRecord` — tf
+  first, rays second, single record returned.
+- `KinematicElement.forward(tf) -> KinematicRecord` — single record.
+- `LightSourceBase.forward(tf) -> SourceRecord` — tf replaces the old
+  `HomMatrix` arg; single record.
+- `LightTarget.forward(tf, rays) -> LightTargetRecord` — tf first.
+
+Tests:
+- All existing forward / integration tests pass unchanged.
+- `sequential()` methods updated internally to unpack fields from records.
+
+#### Step 2b — Refactor `ModelTrace` to use `ElementRecord`
+
+Pure refactor of the existing trace mode: parallel dicts collapse into a
+`ModelTraceNode`-keyed `OrderedDict`. The hook mechanism and per-element
+`trace()` methods stay; they call `add_node` instead of the old `add_*`
+methods.
+
+Files:
 - `sequential/model_trace.py` (modified)
 
-Guiding rule for record contents (so step 3 doesn't churn them):
+`ModelTrace` structure after this substep:
+
+```python
+@dataclass
+class ModelTraceNode:
+    record: ElementRecord
+    module: BaseModule
+    bundle_in: RayBundle
+    bundle_out: RayBundle
+    tf_in: Tf
+    tf_out: Tf
+
+@dataclass
+class ModelTrace:
+    dim: int
+    nodes: OrderedDict[str, ModelTraceNode]
+    root_bundle: RayBundle
+    root_tf: Tf
+```
+
+`add_node(key, record, module, new_bundle, new_tf)` updates the linear
+chain state (current bundle and tf) and appends a `ModelTraceNode`. All
+four lookups are direct attribute accesses — no walking, no loops.
+
+Guiding rule for record contents:
 
 > A record carries only the data that is *intrinsic to the event the
 > element produced*. It does not carry upstream context.
 
-In particular:
-- `CollisionRecord` carries `t`, `normals`, `valid`, `points_local`,
-  `points_global`, `rsm`, `tf_surface`, the produced bundle, the
-  produced `tf_next`, and a reference to the surface element. It does
-  **not** carry `input_rays` or `input_tf` — those live on the parent
-  node and are reached via lookup helpers.
-- The produced bundle and `tf_next` sit on the record in step 2 and
-  migrate to `trace.bundles` / `trace.tfs` in step 3 with no field
-  rename — same data, new home.
+The produced bundle and `tf_out` live **on the record** in step 2 (`SourceRecord.output_rays`,
+`OpticalSurfaceRecord.output_rays`, `KinematicRecord.tf_out`) and are
+additionally stored on the node (`node.bundle_out`, `node.tf_out`) so that
+`ModelTrace` helpers work without traversal.
 
 Substeps:
-1. Define `ElementRecord` base class with the `kind` discriminator,
-   plus the concrete subclasses: `SourceRecord`, `CollisionRecord`,
-   `ApertureRecord`, `FocalRecord`, `ImagePlaneRecord`, etc. (Add
-   `GapRecord` only when an actual `Gap` element is migrated.)
-2. Replace `ModelTrace`'s parallel dicts (`input_rays`, `output_rays`,
-   `collisions`, `input_joints`, `output_joints`, `surfaces`,
-   `focal_points`) with a single
-   `nodes: OrderedDict[str, ElementRecord]`. Keep `dim`.
-3. Add lookup helpers on `ModelTrace`: `bundle_in_at(k)`,
-   `bundle_out_at(k)`, `tf_in_at(k)`, `tf_out_at(k)`. They walk
-   `nodes` in insertion order to find the upstream context. These
-   helpers are the only API consumers should use; they become
-   parent-aware in step 3 with no signature change.
-4. Update each element's existing `trace()` method to construct one
-   record and append it via a single `add_node(key, record)` call.
-   Drop the per-field `add_*` methods.
-5. Migrate the viewer and analysis modules onto records via the
-   lookup helpers. No consumer should `isinstance`-dispatch records
-   in step 2 if a helper covers the access pattern; reserve `kind`
-   dispatch for genuinely polymorphic readers (e.g. the viewer's
-   per-element render switch).
+1. Add `ModelTraceNode` dataclass. Update `ModelTrace`: replace
+   `output_rays` with `bundles`, add `tfs`, `root_bundle`, `root_tf`.
+2. Replace `ModelTrace`'s parallel dicts with
+   `nodes: OrderedDict[str, ModelTraceNode]`.
+3. `add_node(key, record, module, new_bundle, new_tf)` resolves all four
+   references at call time using linear chain tracking.
+4. Update each element's `trace()` method to call `add_node`, passing
+   `new_bundle` and `new_tf` from the record.
+5. Migrate the viewer and analysis modules onto `node.record` and
+   `node.module`. All four lookup helpers become direct attribute reads.
 
 Tests:
 - Existing forward / trace integration tests pass unchanged.
-- New tests: round-trip of each record kind, `kind`-discriminator
-  invariants, lookup helpers behave correctly across the existing
-  fixtures.
+- New tests: `kind`-discriminator invariants, lookup helpers correct
+  across existing fixtures.
 
 ### Step 3 — Introduce `OpticalTrace` / `OpticalTraceNode` and derived views
 
-Additive step: define the graph structure and OPL machinery, but do
-not wire into `Sequential`. Records from step 2 are reused; the only
-change to records is that the produced bundle and `tf_next` move off
-the record into the trace-level storage tables.
+Additive step: define the graph structure and OPL machinery, but do not
+wire into `Sequential`.
 
 Files added:
-- `core/optical_trace.py` (or `sequential/optical_trace.py`)
+- `core/optical_trace.py`
 - `core/optical_path.py`
 
 Substeps:
-1. Move the produced bundle and `tf_next` fields off the records into
-   the trace's `bundles` / `tfs` storage tables. Records keep
-   everything else.
-2. Define `OpticalTraceNode` (`key`, `record`, `parents`, `bundle_id`,
-   `tf_id`) and `OpticalTrace` (`dim`, `dtype`, `device`, `nodes`,
-   `bundles`, `tfs`) with `append`, `bundle_at`, `tf_at`, `is_linear`.
-   Enforce the trace-level invariants in `__post_init__` or a
-   `validate()` method.
-3. Define `OpticalPath` and `KinematicChain` derived views, plus
+1. Define `OpticalTraceNode` (`key`, `record`, `module`, `parents`,
+   `bundle_in`, `bundle_out`, `tf_in`, `tf_out`) and `OpticalTrace`
+   (`dim`, `dtype`, `device`, `nodes`, `root_bundle`, `root_tf`) with
+   `append`, `bundle_in_at`, `bundle_out_at`, `tf_in_at`, `tf_out_at`,
+   `is_linear`, `empty`. Enforce the trace-level invariants.
+2. Define `OpticalPath` and `KinematicChain` derived views, plus
    `linear_path()`, `linear_kinematic_chain()`, and `paths()`.
-4. Implement `OpticalPath.opl()` and `OpticalPath.segment_*` methods.
+3. Implement `OpticalPath.opl()` and `OpticalPath.segment_*` methods.
    Verify differentiability with a small autograd test.
-5. Don't wire it to anything yet. Unit-test in isolation using
+4. Don't wire it to anything yet. Unit-test in isolation using
    hand-built traces (linear chain, branch without merge,
    concatenating merge, missing-parent error, key-collision error,
    OPL on a known paraxial geometry).
@@ -419,10 +507,7 @@ Substeps:
 1. Replace `SequentialData` with `OpticalTrace` as the token threaded
    through `Sequential.forward`. Keep `SequentialData` temporarily as a
    thin alias if helpful during transition; otherwise replace outright.
-2. Add `OpticalTrace.empty(dim, dtype, device)` and a convention for
-   the initial state (empty `nodes`, `bundles`, `tfs`). `Sequential`
-   locally tracks the previous-step key as it iterates over its
-   children:
+2. `Sequential` locally tracks the previous-step key as it iterates:
 
    ```python
    prev_key: str | None = None
@@ -434,36 +519,22 @@ Substeps:
    ```
 
    The first child (a light source) receives `parents=set()`.
-3. Implement each element's `extend_optical_trace()` per its kind, following the
-   per-element shapes in the Element protocol section. Each element
-   passes `new_bundle` and `new_tf` to `trace.append(...)` as
-   determined by its own semantics — surfaces pass both, apertures
-   pass only a new bundle, spacers pass only a new tf, targets pass
-   neither.
+3. Implement each element's `extend_optical_trace()` per the element
+   protocol. Each element reads `bundle_in` and `tf_in` from the parent
+   node and passes `new_bundle` / `new_tf` from its record.
 4. Element keying: use the `nn.Module._modules` key path
    (e.g. `"0.front"`) by default. Honor `trace_key` overrides exactly
-   as today. `SubChain` namespaces children under its own key
-   (`subchain.inner`).
-5. Light sources: source nodes have `parents=()`. Their
-   `OpticalTraceNode.tf` is the source placement frame. Their
-   `bundle.P`/`V` are in the global frame.
-6. Multi-source (concatenating merge): each source appends its own
-   node with `parents=()`. The first downstream element after the
-   second-or-later source sees a bundle that is the `cat` of all live
-   sources, and its node has `parents=(source_A_key, source_B_key, ...)`.
-   The cat'd bundle is fresh (introduced by that element), so the
-   element's `new_bundle` is set normally — multi-parent semantics live
-   entirely in the `parents` tuple, not in the bundle field.
-7. Apertures: append a node with `ApertureRecord`, `new_tf=None`,
-   `new_bundle=` the bundle with updated `valid`.
-8. Focal point / image plane: append a node with the loss record;
-   `new_bundle=None`, `new_tf=None`.
+   as today. `SubChain` namespaces children under its own key.
+5. Multi-source (concatenating merge): each source appends its own node
+   with `parents=set()`. The first downstream element after the
+   second-or-later source sees `bundle_in = RayBundle.cat(...)` of all
+   live source outputs, and has `parents={source_A_key, source_B_key, ...}`.
 
 Tests:
 - Existing forward-mode integration tests should pass (loss values
   unchanged within numerical tolerance).
-- New tests: trace structure (node count, parent pointers, identity
-  reuse for unchanged bundle/tf).
+- New tests: trace structure (node count, parent pointers, bundle/tf
+  identity sharing for unchanged elements).
 
 ### Step 5 — Replace `ModelTrace`
 
@@ -472,14 +543,12 @@ Substeps:
 2. Remove `trace_model()` and the hook mechanism in
    `sequential/model_trace.py`.
 3. Update the viewer / analysis modules to read from `OpticalTrace`
-   instead of `ModelTrace`. The lookup helpers from step 2 grow
-   parent-aware implementations on `OpticalTrace` so most call sites
-   migrate without code change. Provide a `model_trace_compat()`
-   shim only if a non-trivial external consumer needs it.
+   instead of `ModelTrace`. The lookup helpers have the same signature
+   in both so most call sites migrate without code change.
 4. Delete `sequential/model_trace.py`.
-5. Remove the `LightTargetOutput.surface_outputs` hack (the fake
-   `SurfaceElementOutput` constructed in `FocalPoint.forward`
-   previously needed for trace plumbing).
+5. Remove the `LightTargetRecord.surface_outputs` hack (the fake
+   `SurfaceRecord` constructed in `FocalPoint.forward` previously needed
+   for trace plumbing).
 
 ### Step 6 — OPL-based loss as a working example
 
@@ -495,16 +564,14 @@ Substeps:
 
 - **Aperture node and `new_bundle`**: an aperture produces a new bundle
   (because `valid` changed). It must therefore set `new_bundle` to the
-  updated bundle, not `None`. Confirm this is the convention in step 3.
+  updated bundle. Confirm this is the convention in step 3.
 - **Multi-source merging semantics**: each source is its own node with
   `parents=set()`. The first consuming element receives
   `parents={source_a_key, source_b_key, ...}` listing every live source.
-  The cat'd bundle is fresh — introduced by that element — so the
-  consuming element's `new_bundle` is the cat result, and its
-  `bundle_id` is its own key. Confirm during step 4 whether the cat
-  happens inside that element's `extend_optical_trace()` (reading
-  multiple parents from the trace) or via a helper called by
-  `Sequential` before the consuming element fires.
+  The cat'd bundle is fresh, so the consuming element's
+  `bundle_out is not bundle_in`. Confirm during step 4 whether the cat
+  happens inside that element's `extend_optical_trace()` or via a helper
+  called by `Sequential` before the consuming element fires.
 - **`SampledVariable.cat` and non-shrinking bundles**: `cat` is still
   used on multi-source merges. Confirm the merge logic (validity,
   domain union) remains correct when bundles carry `valid` and `n`.
