@@ -181,8 +181,14 @@ class OpticalTrace:
                 yield (key, node)
 
 
-def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> OpticalTrace:
-    trace = OpticalTrace.empty(dim=dim)
+def trace_model(
+    optics: BaseModule,
+    dim: int,
+    *inputs: Any,
+    dtype: torch.dtype | None = None,
+    device: torch.device | None = None,
+) -> OpticalTrace:
+    trace = OpticalTrace.empty(dim, dtype, device)
 
     # keep track of how many times we called each module type to produce unique default keys
     counts: DefaultDict[Any, int] = defaultdict(int)
