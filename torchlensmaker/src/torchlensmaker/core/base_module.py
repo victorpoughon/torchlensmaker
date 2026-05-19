@@ -48,7 +48,7 @@ class BaseModule(nn.Module):
             f"sequential() not implemented for {type(self).__qualname__}"
         )
 
-    def trace(self, trace: "OpticalTrace", key: str, parent_key: str) -> Any:
+    def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> Any:
         return
 
 

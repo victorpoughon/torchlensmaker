@@ -32,7 +32,7 @@ from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 class OpticalTraceNode:
     record: Any  # the output of the node's module
     module: BaseModule | None  # the model module that produced this node
-    parents: set[str]
+    upstream: set[str]  # set set of nodes where input rays come from for this node
     bundle_in: RayBundle
     bundle_out: RayBundle
     tf_in: Tf
@@ -69,7 +69,7 @@ class OpticalTrace:
         root = OpticalTraceNode(
             record=None,
             module=None,
-            parents=set(),
+            upstream=set(),
             bundle_in=root_bundle,
             bundle_out=root_bundle,
             tf_in=root_tf,
@@ -88,7 +88,7 @@ class OpticalTrace:
         key: str,
         record: Any,
         module: BaseModule,
-        parents: set[str],
+        upstream: set[str],
         bundle_in: RayBundle,
         tf_in: Tf,
         new_bundle: RayBundle | None = None,  # None = share bundle_in as bundle_out
@@ -103,7 +103,7 @@ class OpticalTrace:
         new_node = OpticalTraceNode(
             record=record,
             module=module,
-            parents=parents,
+            upstream=upstream,
             bundle_in=bundle_in,
             bundle_out=linear_next_bundle,
             tf_in=tf_in,
@@ -113,7 +113,7 @@ class OpticalTrace:
         self.nodes[key] = new_node
 
     def is_linear(self):
-        parents_list = [(key, list(node.parents)) for key, node in self.nodes.items()]
+        parents_list = [(key, list(node.upstream)) for key, node in self.nodes.items()]
 
         # Check every node has the previous as a parent
         for i in range(1, len(parents_list)):

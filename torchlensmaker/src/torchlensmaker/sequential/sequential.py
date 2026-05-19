@@ -52,9 +52,9 @@ class SubChain(BaseModule):
         new_data = self(data)
         return new_data
 
-    def trace(self, trace: "OpticalTrace", key: str, parent_key: str) -> None:
-        parent = trace.nodes[parent_key]
-        prev_key = parent_key
+    def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> None:
+        upstream = trace.nodes[upstream_key]
+        prev_key = upstream_key
 
         last_bundle: RayBundle | None = None
 
@@ -69,9 +69,9 @@ class SubChain(BaseModule):
             key=key,
             record=None,
             module=self,
-            parents={parent_key},
-            bundle_in=parent.bundle_out,
-            tf_in=parent.tf_out,
+            upstream={prev_key},
+            bundle_in=upstream.bundle_out,
+            tf_in=upstream.tf_out,
             new_bundle=last_bundle,
             new_tf=None,
         )
@@ -128,9 +128,9 @@ class Sequential(BaseModule):
         new_data = self(data)
         return new_data
 
-    def trace(self, trace: "OpticalTrace", key: str, parent_key: str) -> None:
-        parent = trace.nodes[parent_key]
-        prev_key = parent_key
+    def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> None:
+        upstream = trace.nodes[upstream_key]
+        prev_key = upstream_key
 
         last_bundle: RayBundle | None = None
         last_tf: Tf | None = None
@@ -147,9 +147,9 @@ class Sequential(BaseModule):
             key=key,
             record=None,
             module=self,
-            parents={parent_key},
-            bundle_in=parent.bundle_out,
-            tf_in=parent.tf_out,
+            upstream={prev_key},
+            bundle_in=upstream.bundle_out,
+            tf_in=upstream.tf_out,
             new_bundle=last_bundle,
             new_tf=last_tf,
         )
