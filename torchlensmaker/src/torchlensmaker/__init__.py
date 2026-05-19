@@ -131,7 +131,7 @@ from torchlensmaker.sampling.sampler_elements import (
     ZeroSampler2D,
 )
 from torchlensmaker.sampling.sampling import disk_sampling
-from torchlensmaker.sequential.model_trace import ModelTrace, trace_model
+from torchlensmaker.sequential.optical_trace import OpticalTrace, trace_model
 from torchlensmaker.sequential.sequential import Sequential, SubChain
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
@@ -314,7 +314,7 @@ __all__ = [
     "ZeroSampler2D",
     "disk_sampling",
     # Sequential
-    "ModelTrace",
+    "OpticalTrace",
     "Sequential",
     "SubChain",
     "SequentialData",

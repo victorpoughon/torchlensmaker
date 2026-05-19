@@ -37,7 +37,7 @@ from torchlensmaker.sampling.sampler_elements import (
     ZeroSampler1D,
     ZeroSampler2D,
 )
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import HomMatrix
 
@@ -54,7 +54,7 @@ class LightSourceBase(BaseModule):
         new_rays = data.rays.cat(self(data.fk.direct))
         return data.replace(rays=new_rays)
 
-    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
         new_bundle = outputs
         trace.add_node(key, new_bundle, self, new_bundle, None)
 

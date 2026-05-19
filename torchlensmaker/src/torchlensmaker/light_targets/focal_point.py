@@ -21,7 +21,7 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetRecord
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import Tf
@@ -95,7 +95,7 @@ class FocalPoint(LightTarget):
         # We evaluate the optical element outputs but forward the data unchanged
         return data
 
-    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
         input_rays, input_tf = inputs
         record = outputs
         trace.add_node(key, record, self, None, None)

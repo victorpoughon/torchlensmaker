@@ -23,7 +23,7 @@ from jaxtyping import Float
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import (
     HomMatrix,
@@ -56,7 +56,7 @@ class KinematicElement(BaseModule):
     def forward(self, fk: Tf) -> Tf:
         raise NotImplementedError
 
-    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
         new_tf = outputs
         trace.add_node(key, new_tf, self, None, new_tf)
 

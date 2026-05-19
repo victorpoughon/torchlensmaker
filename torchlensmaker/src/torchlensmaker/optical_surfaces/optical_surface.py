@@ -20,7 +20,7 @@ from typing import Any
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import Tf
@@ -40,7 +40,7 @@ class OpticalSurfaceElement(BaseModule):
         record = self(data.rays, data.fk)
         return data.replace(rays=record.output_rays, fk=record.surface_record.tf_next)
 
-    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
         record = outputs
         trace.add_node(
             key=key,

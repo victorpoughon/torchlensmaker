@@ -25,7 +25,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import hom_target
 from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_targets.light_target import LightTargetRecord
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceRecord
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.viewer import tlmviewer
 
@@ -83,7 +83,7 @@ def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
     return domain
 
 
-def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
+def trace_render_surfaces(trace: OpticalTrace) -> list[Any]:
     surfaces = []
     for key, node in trace.iter_nodes_by_record_type(OpticalSurfaceRecord):
         surface = node.module.surface
@@ -95,7 +95,7 @@ def trace_render_surfaces(trace: ModelTrace) -> list[Any]:
     return surfaces
 
 
-def trace_render_joints(trace: ModelTrace) -> list[Any]:
+def trace_render_joints(trace: OpticalTrace) -> list[Any]:
     ret = []
     for node in trace.nodes.values():
         tf = node.tf_out
@@ -103,7 +103,7 @@ def trace_render_joints(trace: ModelTrace) -> list[Any]:
     return ret
 
 
-def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list[Any]:
+def trace_render_rays(trace: OpticalTrace, domain: dict[str, list[float]]) -> list[Any]:
     ret = []
 
     for key, node in trace.iter_nodes_by_record_type(OpticalSurfaceRecord):
@@ -165,7 +165,7 @@ def trace_render_rays(trace: ModelTrace, domain: dict[str, list[float]]) -> list
 
 
 def trace_render_end_rays(
-    trace: ModelTrace, end: float | None, domain: dict[str, list[float]]
+    trace: OpticalTrace, end: float | None, domain: dict[str, list[float]]
 ) -> list[Any]:
     if end is None:
         return []
@@ -183,7 +183,7 @@ def trace_render_end_rays(
     )
 
 
-def trace_render_focal_points(trace: ModelTrace) -> list[Any]:
+def trace_render_focal_points(trace: OpticalTrace) -> list[Any]:
     ret = []
     for key, node in trace.iter_nodes_by_record_type(LightTargetRecord):
         target = hom_target(node.tf_out.direct).unsqueeze(0)
@@ -194,7 +194,7 @@ def trace_render_focal_points(trace: ModelTrace) -> list[Any]:
 
 def render_model_trace(
     model: BaseModule,
-    trace: ModelTrace,
+    trace: OpticalTrace,
     end: float | None = None,
 ) -> Any:
     "Render an OpticalScene to a tlmviewer scene"

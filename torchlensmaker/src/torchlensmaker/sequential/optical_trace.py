@@ -16,6 +16,7 @@
 
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
+from itertools import islice
 from typing import Any, DefaultDict, Iterator, Self
 
 import torch
@@ -28,9 +29,10 @@ from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 
 
 @dataclass
-class ModelTraceNode:
+class OpticalTraceNode:
     record: Any  # the output of the node's module
     module: BaseModule  # the model module that produced this node
+    parents: set[str]
     bundle_in: RayBundle
     bundle_out: RayBundle
     tf_in: Tf
@@ -38,17 +40,20 @@ class ModelTraceNode:
 
 
 @dataclass
-class ModelTrace:
+class OpticalTrace:
     """
     A concrete realization of a model after sampling and forward evaluation,
     including intermediate data in the model sequence
     """
 
     dim: int
+    dtype: torch.dtype
+    device: torch.device
+
     root_bundle: RayBundle
     root_tf: Tf
 
-    nodes: OrderedDict[str, ModelTraceNode] = field(default_factory=OrderedDict)
+    nodes: OrderedDict[str, OpticalTraceNode] = field(default_factory=OrderedDict)
     _linear_latest_bundle: RayBundle | None = None
     _linear_latest_tf: Tf | None = None
 
@@ -61,8 +66,16 @@ class ModelTrace:
     ) -> Self:
         root_bundle = RayBundle.empty(dim, dtype, device)
         root_tf = hom_identity(dim=dim)
+
+        if dtype is None:
+            dtype = torch.get_default_dtype()
+        if device is None:
+            device = torch.get_default_device()
+
         return cls(
             dim,
+            dtype,
+            device,
             root_bundle,
             root_tf,
             OrderedDict(),
@@ -79,11 +92,11 @@ class ModelTrace:
         new_tf: Tf | None = None,  # None = share tf_in as tf_out
     ) -> None:
         if key in self.nodes:
-            raise ValueError(f"ModelTrace already contains a node for key {key}")
+            raise ValueError(f"OpticalTrace already contains a node for key {key}")
 
         if self._linear_latest_bundle is None or self._linear_latest_tf is None:
             raise ValueError(
-                "ModelTrace internal error, linear latest tracking is None"
+                "OpticalTrace internal error, linear latest tracking is None"
             )
 
         linear_next_bundle = (
@@ -91,9 +104,10 @@ class ModelTrace:
         )
         linear_next_tf = new_tf if new_tf is not None else self._linear_latest_tf
 
-        new_node = ModelTraceNode(
+        new_node = OpticalTraceNode(
             record=record,
             module=module,
+            parents=set(),
             bundle_in=self._linear_latest_bundle,
             bundle_out=linear_next_bundle,
             tf_in=self._linear_latest_tf,
@@ -105,23 +119,69 @@ class ModelTrace:
         self._linear_latest_bundle = linear_next_bundle
         self._linear_latest_tf = linear_next_tf
 
+    def append(
+        self,
+        key: str,
+        record: Any,
+        module: BaseModule,
+        parents: set[str],
+        bundle_in: RayBundle,
+        tf_in: Tf,
+        new_bundle: RayBundle | None = None,  # None = share bundle_in as bundle_out
+        new_tf: Tf | None = None,  # None = share tf_in as tf_out
+    ) -> None:
+        if key in self.nodes:
+            raise ValueError(f"OpticalTrace already contains a node for key {key}")
+
+        linear_next_bundle = new_bundle if new_bundle is not None else bundle_in
+        linear_next_tf = new_tf if new_tf is not None else tf_in
+
+        new_node = OpticalTraceNode(
+            record=record,
+            module=module,
+            parents=parents,
+            bundle_in=bundle_in,
+            bundle_out=linear_next_bundle,
+            tf_in=tf_in,
+            tf_out=linear_next_tf,
+        )
+
+        self.nodes[key] = new_node
+
+    def is_linear(self):
+        parents_list = [(key, list(node.parents)) for key, node in self.nodes.items()]
+
+        # Check node list is not empty and first node has no parents
+        if len(parents_list) == 0 or len(parents_list[0][1]) != 0:
+            return False
+
+        # Check every node has the previous as a parent
+        for i in range(1, len(parents_list)):
+            prev_key = parents_list[i - 1][0]
+            curr_parents = parents_list[i][1]
+            linear = len(curr_parents) == 1 and curr_parents[0] == prev_key
+            if not linear:
+                return False
+
+        return True
+
     def iter_nodes_by_module_type(
         self, typ: type[BaseModule]
-    ) -> Iterator[tuple[str, ModelTraceNode]]:
+    ) -> Iterator[tuple[str, OpticalTraceNode]]:
         for key, node in self.nodes.items():
             if isinstance(node.module, typ):
                 yield (key, node)
 
     def iter_nodes_by_record_type(
         self, typ: Any
-    ) -> Iterator[tuple[str, ModelTraceNode]]:
+    ) -> Iterator[tuple[str, OpticalTraceNode]]:
         for key, node in self.nodes.items():
             if isinstance(node.record, typ):
                 yield (key, node)
 
 
-def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> ModelTrace:
-    trace = ModelTrace.empty(dim=dim)
+def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> OpticalTrace:
+    trace = OpticalTrace.empty(dim=dim)
 
     # keep track of how many times we called each module type to produce unique default keys
     counts: DefaultDict[Any, int] = defaultdict(int)

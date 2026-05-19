@@ -18,7 +18,7 @@ from collections import defaultdict
 from typing import Any, DefaultDict
 
 import torchlensmaker as tlm
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 
 
 def test_trace_model() -> None:
@@ -54,6 +54,6 @@ def test_trace_model() -> None:
 
     trace = tlm.trace_model(optics, 2, tlm.SequentialData.empty(dim=2))
 
-    assert isinstance(trace, ModelTrace)
+    assert isinstance(trace, OpticalTrace)
 
     assert len(trace.nodes) == 8

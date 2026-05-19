@@ -26,7 +26,7 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.sequential.model_trace import trace_model
+from torchlensmaker.sequential.optical_trace import trace_model
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.viewer import tlmviewer as tlmviewer
 from torchlensmaker.viewer.render_model_trace import render_model_trace

@@ -21,7 +21,7 @@ import torch
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetRecord
-from torchlensmaker.sequential.model_trace import ModelTrace
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.surfaces import Disk, SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
@@ -117,7 +117,7 @@ class ImagePlane(LightTarget):
         # We evaluate the optical element outputs but forward the data unchanged
         return data
 
-    def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
+    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
         input_rays, input_tf = inputs
         record = outputs
         trace.add_node(key, record, self, None, None)

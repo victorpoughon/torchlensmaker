@@ -103,7 +103,7 @@ class Sequential(BaseModule):
         return new_data
 
     def trace(
-        self, trace: "ModelTrace", key: str, inputs: Any, outputs: Any
+        self, trace: "OpticalTrace", key: str, inputs: Any, outputs: Any
     ) -> Any: ...
 
     def __call__(self, data: SequentialData) -> SequentialData:
