@@ -41,16 +41,11 @@ class OpticalSurfaceElement(BaseModule):
         return data.replace(rays=record.output_rays, fk=record.surface_record.tf_next)
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
-        input_rays, input_tf = inputs
         record = outputs
-        trace.add_input_joint(key, input_tf)
-        trace.add_output_joint(key, record.surface_record.tf_next)
-        trace.add_input_rays(key, input_rays)
-        trace.add_output_rays(key, record.output_rays)
-        trace.add_surface(key, (record.surface_record.tf_surface, self.surface))
-        trace.add_collision(
-            key,
-            record.surface_record.t,
-            record.surface_record.normals,
-            record.surface_record.valid,
+        trace.add_node(
+            key=key,
+            record=record,
+            module=self,
+            new_bundle=record.output_rays,
+            new_tf=record.surface_record.tf_next,
         )

@@ -57,8 +57,8 @@ class KinematicElement(BaseModule):
         raise NotImplementedError
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
-        trace.add_input_joint(key, inputs)
-        trace.add_output_joint(key, outputs)
+        new_tf = outputs
+        trace.add_node(key, new_tf, self, None, new_tf)
 
     def sequential(self, data: SequentialData) -> SequentialData:
         tf_out = self(data.fk)

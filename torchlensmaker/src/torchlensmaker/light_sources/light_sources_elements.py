@@ -55,7 +55,8 @@ class LightSourceBase(BaseModule):
         return data.replace(rays=new_rays)
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
-        trace.add_output_rays(key, outputs)
+        new_bundle = outputs
+        trace.add_node(key, new_bundle, self, new_bundle, None)
 
 
 class GenericLightSource(LightSourceBase):

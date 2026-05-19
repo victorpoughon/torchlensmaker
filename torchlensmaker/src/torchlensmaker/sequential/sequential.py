@@ -102,8 +102,9 @@ class Sequential(BaseModule):
         new_data = self(data)
         return new_data
 
-    def trace(self, trace: "ModelTrace", key: str, inputs: Any, outputs: Any) -> Any:
-        trace.add_output_rays(key, outputs.rays)
+    def trace(
+        self, trace: "ModelTrace", key: str, inputs: Any, outputs: Any
+    ) -> Any: ...
 
     def __call__(self, data: SequentialData) -> SequentialData:
         # this is there only so that type hints work

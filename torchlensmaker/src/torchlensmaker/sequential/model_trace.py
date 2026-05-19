@@ -14,15 +14,27 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-
 from collections import OrderedDict, defaultdict
 from dataclasses import dataclass, field
-from typing import Any, DefaultDict, Self
+from typing import Any, DefaultDict, Iterator, Self
+
+import torch
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 from torchlensmaker.surfaces import SurfaceElement
 from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
+
+
+@dataclass
+class ModelTraceNode:
+    record: Any  # the output of the node's module
+    module: BaseModule  # the model module that produced this node
+    bundle_in: RayBundle
+    bundle_out: RayBundle
+    tf_in: Tf
+    tf_out: Tf
 
 
 @dataclass
@@ -33,54 +45,79 @@ class ModelTrace:
     """
 
     dim: int
-    input_rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
-    output_rays: OrderedDict[str, RayBundle] = field(default_factory=OrderedDict)
-    collisions: OrderedDict[str, tuple[BatchTensor, BatchNDTensor, MaskTensor]] = field(
-        default_factory=OrderedDict
-    )
-    input_joints: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
-    output_joints: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
-    surfaces: OrderedDict[str, tuple[Tf, SurfaceElement]] = field(
-        default_factory=OrderedDict
-    )
-    focal_points: OrderedDict[str, Tf] = field(default_factory=OrderedDict)
+    root_bundle: RayBundle
+    root_tf: Tf
+
+    nodes: OrderedDict[str, ModelTraceNode] = field(default_factory=OrderedDict)
+    _linear_latest_bundle: RayBundle | None = None
+    _linear_latest_tf: Tf | None = None
 
     @classmethod
-    def empty(cls, dim: int) -> Self:
-        return cls(dim=dim)
+    def empty(
+        cls,
+        dim: int,
+        dtype: torch.dtype | None = None,
+        device: torch.device | None = None,
+    ) -> Self:
+        root_bundle = RayBundle.empty(dim, dtype, device)
+        root_tf = hom_identity(dim=dim)
+        return cls(
+            dim,
+            root_bundle,
+            root_tf,
+            OrderedDict(),
+            root_bundle,
+            root_tf,
+        )
 
-    def add_input_rays(self, key: str, rays: RayBundle) -> None:
-        self.input_rays[key] = rays
-
-    def add_output_rays(self, key: str, rays: RayBundle) -> None:
-        self.output_rays[key] = rays
-
-    def add_collision(
-        self, key: str, t: BatchTensor, normals: BatchNDTensor, valid: MaskTensor
+    def add_node(
+        self,
+        key: str,
+        record: Any,
+        module: BaseModule,
+        new_bundle: RayBundle | None = None,  # None = share bundle_in as bundle_out
+        new_tf: Tf | None = None,  # None = share tf_in as tf_out
     ) -> None:
-        self.collisions[key] = (t, normals, valid)
+        if key in self.nodes:
+            raise ValueError(f"ModelTrace already contains a node for key {key}")
 
-    def add_input_joint(self, key: str, tf: Tf) -> None:
-        self.input_joints[key] = tf
+        if self._linear_latest_bundle is None or self._linear_latest_tf is None:
+            raise ValueError(
+                "ModelTrace internal error, linear latest tracking is None"
+            )
 
-    def add_output_joint(self, key: str, tf: Tf) -> None:
-        self.output_joints[key] = tf
+        linear_next_bundle = (
+            new_bundle if new_bundle is not None else self._linear_latest_bundle
+        )
+        linear_next_tf = new_tf if new_tf is not None else self._linear_latest_tf
 
-    def add_surface(self, key: str, tf_and_surface: tuple[Tf, SurfaceElement]) -> None:
-        self.surfaces[key] = tf_and_surface
+        new_node = ModelTraceNode(
+            record=record,
+            module=module,
+            bundle_in=self._linear_latest_bundle,
+            bundle_out=linear_next_bundle,
+            tf_in=self._linear_latest_tf,
+            tf_out=linear_next_tf,
+        )
 
-    def add_focal_point(self, key: str, tf: Tf) -> None:
-        self.focal_points[key] = tf
+        self.nodes[key] = new_node
 
-    def add_scene(self, key: str, other: Self) -> None:
-        def merge(this: OrderedDict[str, Any], other: OrderedDict[str, Any]):
-            for k, v in other.items():
-                this[key + "." + k] = v
+        self._linear_latest_bundle = linear_next_bundle
+        self._linear_latest_tf = linear_next_tf
 
-        merge(self.output_rays, other.output_rays)
-        merge(self.input_joints, other.input_joints)
-        merge(self.output_joints, other.output_joints)
-        merge(self.surfaces, other.surfaces)
+    def iter_nodes_by_module_type(
+        self, typ: type[BaseModule]
+    ) -> Iterator[tuple[str, ModelTraceNode]]:
+        for key, node in self.nodes.items():
+            if isinstance(node.module, typ):
+                yield (key, node)
+
+    def iter_nodes_by_record_type(
+        self, typ: Any
+    ) -> Iterator[tuple[str, ModelTraceNode]]:
+        for key, node in self.nodes.items():
+            if isinstance(node.record, typ):
+                yield (key, node)
 
 
 def trace_model(optics: BaseModule, dim: int, *inputs: Any) -> ModelTrace:

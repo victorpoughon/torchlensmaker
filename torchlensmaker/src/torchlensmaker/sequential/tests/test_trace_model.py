@@ -56,8 +56,4 @@ def test_trace_model() -> None:
 
     assert isinstance(trace, ModelTrace)
 
-    assert len(trace.input_rays) == 3
-    assert len(trace.output_rays) == 8
-    assert len(trace.input_joints) == 7
-    assert len(trace.output_joints) == 7
-    assert len(trace.surfaces) == 3
+    assert len(trace.nodes) == 8

@@ -119,13 +119,5 @@ class ImagePlane(LightTarget):
 
     def trace(self, trace: ModelTrace, key: str, inputs: Any, outputs: Any) -> None:
         input_rays, input_tf = inputs
-        trace.add_input_joint(key, input_tf)
-        trace.add_output_joint(key, outputs.surface_outputs.tf_next)
-        trace.add_input_rays(key, input_rays)
-        trace.add_surface(key, (outputs.surface_outputs.tf_surface, self.surface))
-        trace.add_collision(
-            key,
-            outputs.surface_outputs.t,
-            outputs.surface_outputs.normals,
-            outputs.surface_outputs.valid,
-        )
+        record = outputs
+        trace.add_node(key, record, self, None, None)
