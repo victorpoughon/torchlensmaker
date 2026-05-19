@@ -31,7 +31,7 @@ from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
 @dataclass
 class OpticalTraceNode:
     record: Any  # the output of the node's module
-    module: BaseModule  # the model module that produced this node
+    module: BaseModule | None  # the model module that produced this node
     parents: set[str]
     bundle_in: RayBundle
     bundle_out: RayBundle
@@ -49,9 +49,6 @@ class OpticalTrace:
     dim: int
     dtype: torch.dtype
     device: torch.device
-
-    root_bundle: RayBundle
-    root_tf: Tf
 
     nodes: OrderedDict[str, OpticalTraceNode] = field(default_factory=OrderedDict)
     _linear_latest_bundle: RayBundle | None = None
@@ -72,13 +69,21 @@ class OpticalTrace:
         if device is None:
             device = torch.get_default_device()
 
+        root = OpticalTraceNode(
+            record=None,
+            module=None,
+            parents=set(),
+            bundle_in=root_bundle,
+            bundle_out=root_bundle,
+            tf_in=root_tf,
+            tf_out=root_tf,
+        )
+
         return cls(
             dim,
             dtype,
             device,
-            root_bundle,
-            root_tf,
-            OrderedDict(),
+            OrderedDict([("_root", root)]),
             root_bundle,
             root_tf,
         )
@@ -150,10 +155,6 @@ class OpticalTrace:
 
     def is_linear(self):
         parents_list = [(key, list(node.parents)) for key, node in self.nodes.items()]
-
-        # Check node list is not empty and first node has no parents
-        if len(parents_list) == 0 or len(parents_list[0][1]) != 0:
-            return False
 
         # Check every node has the previous as a parent
         for i in range(1, len(parents_list)):

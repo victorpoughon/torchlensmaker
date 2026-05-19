@@ -56,4 +56,4 @@ def test_trace_model() -> None:
 
     assert isinstance(trace, OpticalTrace)
 
-    assert len(trace.nodes) == 8
+    assert len(trace.nodes) == 9
