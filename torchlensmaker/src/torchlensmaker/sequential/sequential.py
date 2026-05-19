@@ -24,6 +24,7 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
@@ -32,6 +33,7 @@ from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
     get_elements_by_type,
 )
+from torchlensmaker.types import Tf
 
 
 class SubChain(BaseModule):
@@ -49,6 +51,30 @@ class SubChain(BaseModule):
     def sequential(self, data: SequentialData) -> SequentialData:
         new_data = self(data)
         return new_data
+
+    def trace(self, trace: "OpticalTrace", key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        prev_key = parent_key
+
+        last_bundle: RayBundle | None = None
+
+        for child_key, mod in self._modules.items():
+            mod = cast(BaseModule, mod)
+            full_key = f"{key}.{child_key}" if key else child_key
+            mod.trace(trace, full_key, prev_key)
+            last_bundle = trace.nodes[full_key].bundle_out
+            prev_key = full_key
+
+        trace.append(
+            key=key,
+            record=None,
+            module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
+            new_bundle=last_bundle,
+            new_tf=None,
+        )
 
 
 _V = TypeVar("_V")
@@ -102,9 +128,31 @@ class Sequential(BaseModule):
         new_data = self(data)
         return new_data
 
-    def trace(
-        self, trace: "OpticalTrace", key: str, inputs: Any, outputs: Any
-    ) -> Any: ...
+    def trace(self, trace: "OpticalTrace", key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        prev_key = parent_key
+
+        last_bundle: RayBundle | None = None
+        last_tf: Tf | None = None
+
+        for child_key, mod in self._modules.items():
+            mod = cast(BaseModule, mod)
+            full_key = f"{key}.{child_key}" if key else child_key
+            mod.trace(trace, full_key, prev_key)
+            last_bundle = trace.nodes[full_key].bundle_out
+            last_tf = trace.nodes[full_key].tf_out
+            prev_key = full_key
+
+        trace.append(
+            key=key,
+            record=None,
+            module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
+            new_bundle=last_bundle,
+            new_tf=last_tf,
+        )
 
     def __call__(self, data: SequentialData) -> SequentialData:
         # this is there only so that type hints work

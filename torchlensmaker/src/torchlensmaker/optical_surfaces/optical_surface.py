@@ -40,12 +40,16 @@ class OpticalSurfaceElement(BaseModule):
         record = self(data.rays, data.fk)
         return data.replace(rays=record.output_rays, fk=record.surface_record.tf_next)
 
-    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
-        record = outputs
-        trace.add_node(
+    def trace(self, trace: OpticalTrace, key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        record = self(parent.bundle_out, parent.tf_out)
+        trace.append(
             key=key,
             record=record,
             module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
             new_bundle=record.output_rays,
             new_tf=record.surface_record.tf_next,
         )

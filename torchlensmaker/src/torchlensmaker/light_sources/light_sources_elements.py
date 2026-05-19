@@ -54,9 +54,19 @@ class LightSourceBase(BaseModule):
         new_rays = data.rays.cat(self(data.fk.direct))
         return data.replace(rays=new_rays)
 
-    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
-        new_bundle = outputs
-        trace.add_node(key, new_bundle, self, new_bundle, None)
+    def trace(self, trace: OpticalTrace, key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        new_bundle = self(parent.tf_out.direct)
+        trace.append(
+            key=key,
+            record=new_bundle,
+            module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
+            new_bundle=new_bundle,
+            new_tf=None,
+        )
 
 
 class GenericLightSource(LightSourceBase):

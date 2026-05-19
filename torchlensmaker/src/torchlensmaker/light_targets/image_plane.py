@@ -117,7 +117,16 @@ class ImagePlane(LightTarget):
         # We evaluate the optical element outputs but forward the data unchanged
         return data
 
-    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
-        input_rays, input_tf = inputs
-        record = outputs
-        trace.add_node(key, record, self, None, None)
+    def trace(self, trace: OpticalTrace, key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        record = self(parent.bundle_out, parent.tf_out)
+        trace.append(
+            key=key,
+            record=record,
+            module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
+            new_bundle=None,
+            new_tf=None,
+        )

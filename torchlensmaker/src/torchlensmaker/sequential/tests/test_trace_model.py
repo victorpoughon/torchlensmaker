@@ -52,8 +52,8 @@ def test_trace_model() -> None:
         ),
     )
 
-    trace = tlm.trace_model(optics, 2, tlm.SequentialData.empty(dim=2))
+    trace = tlm.trace_model(optics, 2, key="")
 
     assert isinstance(trace, OpticalTrace)
 
-    assert len(trace.nodes) == 9
+    assert len(trace.nodes) == 16

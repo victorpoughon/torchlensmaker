@@ -62,8 +62,7 @@ def render_model(
     if device is None:
         device = torch.get_default_device()
 
-    inputs = SequentialData.empty(dim=dim, dtype=dtype, device=device)
-    trace = trace_model(optics, dim, inputs)
+    trace = trace_model(optics, dim, dtype, device)
     scene = render_model_trace(optics, trace, end)
 
     if controls is not None:

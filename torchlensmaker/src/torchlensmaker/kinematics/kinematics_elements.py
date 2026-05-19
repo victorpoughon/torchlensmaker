@@ -56,9 +56,19 @@ class KinematicElement(BaseModule):
     def forward(self, fk: Tf) -> Tf:
         raise NotImplementedError
 
-    def trace(self, trace: OpticalTrace, key: str, inputs: Any, outputs: Any) -> None:
-        new_tf = outputs
-        trace.add_node(key, new_tf, self, None, new_tf)
+    def trace(self, trace: OpticalTrace, key: str, parent_key: str) -> None:
+        parent = trace.nodes[parent_key]
+        new_tf = self(parent.tf_out)
+        trace.append(
+            key=key,
+            record=new_tf,
+            module=self,
+            parents={parent_key},
+            bundle_in=parent.bundle_out,
+            tf_in=parent.tf_out,
+            new_bundle=None,
+            new_tf=new_tf,
+        )
 
     def sequential(self, data: SequentialData) -> SequentialData:
         tf_out = self(data.fk)
