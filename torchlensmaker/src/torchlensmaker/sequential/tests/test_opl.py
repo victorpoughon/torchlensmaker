@@ -115,3 +115,49 @@ def test_linear_path_key_errors():
 
     with pytest.raises(KeyError):
         linear_path(trace, "0", "missing_key")
+
+
+def test_opl_nested_subchain_matches_flat():
+    # A surface wrapped in a SubChain should produce the same OPL as the
+    # same surface placed directly in Sequential. Also verifies is_linear()
+    # returns True for both topologies.
+
+    def make_slab(first_surface):
+        return tlm.Sequential(
+            tlm.ObjectAtInfinity(10, 0.5),
+            tlm.Gap(50),
+            first_surface,
+            tlm.Gap(5),
+            tlm.RefractiveSurface(
+                tlm.Plane(display_diameter=2.0),
+                materials=(NonDispersiveMaterial(1.5), NonDispersiveMaterial(1.0)),
+            ),
+        )
+
+    flat_surface = tlm.RefractiveSurface(
+        tlm.Plane(display_diameter=2.0),
+        materials=(NonDispersiveMaterial(1.0), NonDispersiveMaterial(1.5)),
+    )
+    nested_surface = tlm.SubChain(
+        tlm.RefractiveSurface(
+            tlm.Plane(display_diameter=2.0),
+            materials=(NonDispersiveMaterial(1.0), NonDispersiveMaterial(1.5)),
+        )
+    )
+
+    flat_model = make_slab(flat_surface)
+    nested_model = make_slab(nested_surface)
+
+    flat_model.set_sampling2d(pupil=11, field=1, wavel=1)
+    nested_model.set_sampling2d(pupil=11, field=1, wavel=1)
+
+    flat_trace = trace_model(flat_model, 2, key="")
+    nested_trace = trace_model(nested_model, 2, key="")
+
+    assert flat_trace.is_linear()
+    assert nested_trace.is_linear()
+
+    flat_opl = linear_path(flat_trace, "0", "4").opl()
+    nested_opl = linear_path(nested_trace, "0", "4").opl()
+
+    assert torch.allclose(flat_opl, nested_opl, atol=1e-5)
