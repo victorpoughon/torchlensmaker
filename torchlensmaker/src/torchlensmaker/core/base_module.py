@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Any, Callable, Self
 
 import torch
 import torch.nn as nn
-
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.types import Tf
 
@@ -45,8 +44,10 @@ class BaseModule(nn.Module):
             f"reverse() not implemented for {type(self).__qualname__}"
         )
 
-    def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> Any:
-        return
+    def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> None:
+        raise NotImplementedError(
+            f"trace() not implemented for {type(self).__qualname__}"
+        )
 
 
 class MultiForwardModule(BaseModule):
