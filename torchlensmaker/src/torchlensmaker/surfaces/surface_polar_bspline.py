@@ -139,7 +139,7 @@ class PolarBSplineSurface(SurfaceElement):
             solver_config=solver_config,
         )
 
-    def _full_control_points(self) -> torch.Tensor:
+    def full_control_points(self) -> torch.Tensor:
         _K, L, _ = self.body_points.shape
         north = self.north_pole.expand(1, L, 3)
         south = self.south_pole.expand(1, L, 3)
@@ -168,7 +168,7 @@ class PolarBSplineSurface(SurfaceElement):
 
     def forward(self, P: BatchTensor, V: BatchTensor, tf: Tf) -> SurfaceRecord:
         t, normal, valid, points_local, points_global, rsm = self.func3d.apply(
-            P, V, tf, self._full_control_points()
+            P, V, tf, self.full_control_points()
         )
 
         return SurfaceRecord(
@@ -177,7 +177,7 @@ class PolarBSplineSurface(SurfaceElement):
 
     def render(self, matrix: torch.Tensor) -> tlmv.SurfaceBSpline:
         return tlmv.SurfaceBSpline(
-            points=self._full_control_points().tolist(),
+            points=self.full_control_points().tolist(),
             degree=self.degree,
             periodic=self.periodic,
             clamped=self.clamped,
