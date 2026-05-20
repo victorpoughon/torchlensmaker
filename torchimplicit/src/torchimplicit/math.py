@@ -9,11 +9,14 @@ def safe_sign(x: torch.Tensor) -> torch.Tensor:
 
 def safe_sqrt(radicand: torch.Tensor) -> torch.Tensor:
     """
-    Gradient safe version of torch.sqrt() that returns 0 where radicand <= 0
+    Gradient safe version of torch.sqrt() that returns 0 where radicand <= 0.
+    Uses the double-where trick: substitute 1 (not 0) so sqrt always sees a
+    positive value and its gradient stays finite, then zero out the output
+    for non-positive inputs. This avoids 0*inf=NaN in backward.
     """
     ok = radicand > 0
-    safe = torch.zeros_like(radicand)
-    return torch.sqrt(torch.where(ok, radicand, safe))
+    safe = torch.sqrt(torch.where(ok, radicand, torch.ones_like(radicand)))
+    return torch.where(ok, safe, torch.zeros_like(radicand))
 
 
 def safe_div(dividend: torch.Tensor, divisor: torch.Tensor) -> torch.Tensor:

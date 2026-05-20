@@ -1,7 +1,7 @@
 import torch
 
 from torchimplicit.domain import total_domain
-from torchimplicit.math import safe_div, safe_sign
+from torchimplicit.math import safe_div, safe_sign, safe_sqrt
 from torchimplicit.registry import example_scalar, register_implicit_function
 from torchimplicit.types import ImplicitFunction, ImplicitResult
 
@@ -52,7 +52,7 @@ def implicit_cube_3d(
     qyc = qy.clamp(min=0)
     qzc = qz.clamp(min=0)
 
-    outer = (qxc**2 + qyc**2 + qzc**2).sqrt()
+    outer = safe_sqrt((qxc**2 + qyc**2 + qzc**2))
     inner = torch.maximum(torch.maximum(qx, qy), qz).clamp(max=0)
 
     F = outer + inner
@@ -78,7 +78,9 @@ def implicit_cube_3d(
 
         grad_x = torch.where(outside, gxc * inv_outer, torch.where(x_dom, sx, zeros))
         grad_y = torch.where(outside, gyc * inv_outer, torch.where(y_dom, sy, zeros))
-        grad_z = torch.where(outside, gzc * inv_outer, torch.where(x_dom | y_dom, zeros, sz))
+        grad_z = torch.where(
+            outside, gzc * inv_outer, torch.where(x_dom | y_dom, zeros, sz)
+        )
 
         grad = torch.stack([grad_x, grad_y, grad_z], dim=-1)
 
