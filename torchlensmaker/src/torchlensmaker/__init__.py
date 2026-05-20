@@ -186,6 +186,7 @@ from torchlensmaker.types import (
     BatchTensor,
     HomMatrix,
     ScalarTensor,
+    Tf,
 )
 from torchlensmaker.viewer.render_model_trace import render_model_trace
 from torchlensmaker.viewer.show import (
@@ -373,6 +374,7 @@ __all__ = [
     "BatchTensor",
     "HomMatrix",
     "ScalarTensor",
+    "Tf",
     # Viewer
     "export_json",
     "render_model",
