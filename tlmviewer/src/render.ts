@@ -1,6 +1,7 @@
 import { TLMScene } from "./scene.ts";
 import { TLMViewerApp } from "./app.ts";
 import { get_default } from "./core/utility.ts";
+import { axialFactories } from "./cameras/AxialCamera.ts";
 import type { CameraState } from "./cameras/CameraRig.ts";
 import viewerTemplate from "./viewer.html?raw";
 
@@ -23,6 +24,7 @@ export function renderScene(
             "orthographic",
             "perspective",
             "2D",
+            ...Object.keys(axialFactories),
         ]);
 
         const scene = new TLMScene(d, mode === "3D" ? 3 : 2, container);

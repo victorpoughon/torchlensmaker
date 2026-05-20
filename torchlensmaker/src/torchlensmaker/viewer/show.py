@@ -17,10 +17,8 @@
 import json
 from typing import Any, Optional
 
-import tlmviewer as tlmv
 import torch
 import torch.nn as nn
-
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
@@ -29,6 +27,8 @@ from torchlensmaker.light_sources.light_sources_query import (
 from torchlensmaker.sequential.raytrace import raytrace
 from torchlensmaker.viewer import tlmviewer as tlmviewer
 from torchlensmaker.viewer.render_model_trace import render_model_trace
+
+import tlmviewer as tlmv
 
 
 def inspect_stack(execute_list: list[tuple[nn.Module, Any, Any]]) -> None:
@@ -52,7 +52,7 @@ def render_model(
     end: Optional[float] = None,
     title: str = "",
     controls: object | None = None,
-) -> Any:
+) -> tlmv.Scene:
     "Render a model to tlmviewer scene"
 
     if dtype is None:

@@ -30,6 +30,7 @@ export class TLMGui {
             thickness: Controller;
             background: Controller;
             surfaces: Controller;
+            surfacesOpacity: Controller;
         };
         visible: {
             validRays: Controller;
@@ -84,6 +85,7 @@ export class TLMGui {
             outputColor: this.colorOptions.default,
             raysOpacity: 1.0,
             raysThickness: 1.0,
+            surfacesOpacity: 1.0,
             camera: app.cameraType,
             resetView() {
                 app.resetView();
@@ -216,6 +218,13 @@ export class TLMGui {
                 this.scene.dispatch({ type: "setSurfacesColor", value: color });
             });
 
+        const controllerColorsSurfacesOpacity = folderColors
+            .add(this.controller, "surfacesOpacity", 0, 1)
+            .name("Surfaces opacity")
+            .onFinishChange((value: number) => {
+                this.scene.dispatch({ type: "setSurfacesOpacity", value });
+            });
+
         const folderShow = this.gui.addFolder("Visible");
         const controllerVisibleValidRays = folderShow
             .add(this.controller, "showValidRays")
@@ -325,6 +334,7 @@ export class TLMGui {
                 thickness: controllerColorsThickness,
                 background: controllerColorsBackground,
                 surfaces: controllerColorsSurfaces,
+                surfacesOpacity: controllerColorsSurfacesOpacity,
             },
             visible: {
                 validRays: controllerVisibleValidRays,
@@ -404,6 +414,11 @@ export class TLMGui {
             visible: false,
         });
 
+        this.scene.dispatch({
+            type: "setSurfacesOpacity",
+            value: this.controller.surfacesOpacity,
+        });
+
         this.gui.open(false);
         this.folders.colors.open(true);
         this.folders.show.open(true);
@@ -463,6 +478,9 @@ export class TLMGui {
         });
         set("show_bounding_cylinders", (v: boolean) => {
             self.controllers.visible.bcyl.load(v);
+        });
+        set("surfaces_opacity", (v: number) => {
+            self.controllers.colors.surfacesOpacity.load(v);
         });
 
         // Finish with visibility of the gui itself

@@ -111,8 +111,8 @@ function renderSurface3D<T extends SurfaceBaseData>(
         side: THREE.DoubleSide,
         clippingPlanes: clipPlanes,
         clipIntersection: false,
-        transparent: false,
-        opacity: 0.8,
+        transparent: true,
+        opacity: 1.0,
         // shininess: 50,
         // specular: 0x5e5e5e,
         // wireframe: true,
@@ -138,6 +138,9 @@ export function defaultSurfaceEvents<
         setSurfacesColor: (_, object, event) => {
             setColor(object, event.value);
         },
+        setSurfacesOpacity: (_, object, event) => {
+            setOpacity(object, event.value);
+        },
     };
 }
 
@@ -150,6 +153,15 @@ function setColor(object: THREE.Object3D, color: THREE.Color): void {
         ) {
             (child.material as THREE.Material & { color: THREE.Color }).color =
                 color;
+        }
+    });
+}
+
+function setOpacity(object: THREE.Object3D, opacity: number): void {
+    object.traverse((child) => {
+        if (child instanceof THREE.Mesh && child.material instanceof THREE.Material) {
+            child.material.opacity = opacity;
+            child.material.needsUpdate = true;
         }
     });
 }
