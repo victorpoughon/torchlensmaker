@@ -135,7 +135,6 @@ from torchlensmaker.sequential.optical_path import OpticalPath, linear_path
 from torchlensmaker.sequential.optical_trace import OpticalTrace, trace_model
 from torchlensmaker.sequential.raytrace import raytrace, raytrace_with_inputs
 from torchlensmaker.sequential.sequential import Sequential, SubChain
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
     Debug,
     get_elements_by_type,
@@ -321,7 +320,6 @@ __all__ = [
     "linear_path",
     "Sequential",
     "SubChain",
-    "SequentialData",
     "Debug",
     "get_elements_by_type",
     "trace_model",

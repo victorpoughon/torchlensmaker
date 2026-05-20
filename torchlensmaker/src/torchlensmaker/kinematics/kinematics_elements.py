@@ -24,7 +24,6 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 from torchlensmaker.sequential.optical_trace import OpticalTrace
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import (
     HomMatrix,
     ScalarTensor,
@@ -69,10 +68,6 @@ class KinematicElement(BaseModule):
             new_bundle=None,
             new_tf=new_tf,
         )
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        tf_out = self(data.fk)
-        return data.replace(fk=tf_out)
 
 
 class Gap(KinematicElement):

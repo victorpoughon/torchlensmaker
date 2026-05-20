@@ -29,7 +29,6 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.sequential.utils import (
     get_elements_by_type,
 )
@@ -43,14 +42,6 @@ class SubChain(BaseModule):
 
     def clone(self, **overrides: Any) -> Self:
         return type(self)(*self._sequential)
-
-    def forward(self, data: SequentialData) -> SequentialData:
-        output: SequentialData = self._sequential(data)
-        return output.replace(fk=data.fk)
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        new_data = self(data)
-        return new_data
 
     def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> None:
         upstream = trace.nodes[upstream_key]
@@ -118,16 +109,6 @@ class Sequential(BaseModule):
     def __iter__(self) -> Iterator[BaseModule]:
         return iter(self._modules.values())
 
-    def forward(self, data: SequentialData) -> SequentialData:
-        for key, mod in self._modules.items():
-            mod = cast(BaseModule, mod)
-            data = mod.sequential(data)
-        return data
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        new_data = self(data)
-        return new_data
-
     def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> None:
         upstream = trace.nodes[upstream_key]
         prev_key = upstream_key
@@ -153,10 +134,6 @@ class Sequential(BaseModule):
             new_bundle=last_bundle,
             new_tf=last_tf,
         )
-
-    def __call__(self, data: SequentialData) -> SequentialData:
-        # this is there only so that type hints work
-        return cast(SequentialData, super().__call__(data))
 
     def get_elements_by_type(self, typ: Type[nn.Module]) -> nn.ModuleList:
         return get_elements_by_type(self, typ)

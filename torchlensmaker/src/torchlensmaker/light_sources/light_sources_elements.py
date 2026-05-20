@@ -38,7 +38,6 @@ from torchlensmaker.sampling.sampler_elements import (
     ZeroSampler2D,
 )
 from torchlensmaker.sequential.optical_trace import OpticalTrace
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import HomMatrix
 
 
@@ -48,11 +47,6 @@ class LightSourceBase(BaseModule):
 
     def forward(self, tf: HomMatrix) -> RayBundle:
         raise NotImplementedError
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        # Merge this light source rays with any previous rays
-        new_rays = data.rays.cat(self(data.fk.direct))
-        return data.replace(rays=new_rays)
 
     def trace(self, trace: OpticalTrace, key: str, upstream_key: str) -> None:
         upstream = trace.nodes[upstream_key]

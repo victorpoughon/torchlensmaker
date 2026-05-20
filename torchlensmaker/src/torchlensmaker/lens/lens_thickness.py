@@ -27,9 +27,11 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     kinematic_chain_append,
     transform_points,
 )
+from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceRecord
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
-from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.sequential.raytrace import raytrace, raytrace_with_inputs
 from torchlensmaker.sequential.utils import get_elements_by_type
+from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
@@ -47,16 +49,15 @@ def extract_surface_vertices(
     )
 
     # Evaluate the lens with zero rays, so we can extract surface transforms
-    data = SequentialData.empty(2, dtype, device)
-    first_surface_record = first_surface(data.rays, data.fk)
+
+    first_surface_trace = raytrace(first_surface, dim=2)
+    first_surface_record: OpticalSurfaceRecord = first_surface_trace.output_record()
     front_vertex_tf = first_surface_record.surface_record.tf_surface
-    data = lens_core(
-        data.replace(
-            rays=first_surface_record.output_rays,
-            fk=first_surface_record.surface_record.tf_next,
-        )
+
+    last_surface_trace = raytrace_with_inputs(
+        lens_core, first_surface_trace.output_rays(), first_surface_trace.output_tf()
     )
-    last_surface_record = last_surface(data.rays, data.fk)
+    last_surface_record = last_surface_trace.output_record()
     rear_vertex_tf = last_surface_record.surface_record.tf_surface
 
     return front_vertex_tf, rear_vertex_tf

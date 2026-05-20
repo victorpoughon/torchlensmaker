@@ -26,7 +26,6 @@ from torchlensmaker.analysis.colors import (
     default_colormap,
 )
 from torchlensmaker.light_targets.image_plane import linear_magnification
-from torchlensmaker.sequential.sequential_data import SequentialData
 
 color_valid = "#ffa724"
 color_blocked = "red"

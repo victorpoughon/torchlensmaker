@@ -24,7 +24,7 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
     hom_identity_2d,
     hom_identity_3d,
 )
-from torchlensmaker.raytracing.raytrace import surface_raytrace
+from torchlensmaker.raytracing.surface_raytrace import surface_raytrace
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

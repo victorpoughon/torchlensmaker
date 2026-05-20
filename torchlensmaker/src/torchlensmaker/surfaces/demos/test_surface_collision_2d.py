@@ -15,10 +15,11 @@ def display_hit_miss_2d(title: str, source, surface, dist):
 
     # Sample the light source
     source.set_sampling2d(pupil=50)
-    data = source(tlm.SequentialData.empty(dim=2))
+    trace_ls = tlm.raytrace(source, dim=2)
+    ls_rays, ls_tf = trace_ls.output_rays(), trace_ls.output_tf()
 
     # Raytrace the surface
-    outs = surface(data.rays.P, data.rays.V, data.fk)
+    outs = surface(ls_rays.P, ls_rays.V, ls_tf)
     t, normals, valid, stf, ntf = (
         outs.t,
         outs.normals,
@@ -37,10 +38,10 @@ def display_hit_miss_2d(title: str, source, surface, dist):
     print("rsm: ", outs.rsm.min(), outs.rsm.mean(), outs.rsm.max())
 
     # Compute end points for colliding and non colliding rays
-    hit_start = data.rays.P[valid]
-    hit_end = (data.rays.P + t.unsqueeze(-1) * data.rays.V)[valid]
-    miss_start = data.rays.P[~valid]
-    miss_end = (data.rays.P + dist * data.rays.V)[~valid]
+    hit_start = ls_rays.P[valid]
+    hit_end = (ls_rays.P + t.unsqueeze(-1) * ls_rays.V)[valid]
+    miss_start = ls_rays.P[~valid]
+    miss_end = (ls_rays.P + dist * ls_rays.V)[~valid]
 
     # Render both ray groups
     hit = tlm.render_rays(hit_start, hit_end, "rays-valid", default_color="lightgreen")

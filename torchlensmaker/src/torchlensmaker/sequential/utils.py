@@ -19,8 +19,6 @@ from typing import Type
 import torch
 import torch.nn as nn
 
-from torchlensmaker.sequential.sequential_data import SequentialData
-
 
 class Marker(nn.Module):
     "WIP"
@@ -29,8 +27,8 @@ class Marker(nn.Module):
         super().__init__()
         self.text = text
 
-    def forward(self, inputs: SequentialData) -> SequentialData:
-        return inputs
+    # def forward(self, inputs: SequentialData) -> SequentialData:
+    #     return inputs
 
 
 class Debug(nn.Module):

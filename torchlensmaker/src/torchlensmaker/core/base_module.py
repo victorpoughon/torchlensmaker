@@ -20,7 +20,6 @@ import torch
 import torch.nn as nn
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential_data import SequentialData
 from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
@@ -44,11 +43,6 @@ class BaseModule(nn.Module):
     def reverse(self) -> Self:
         raise NotImplementedError(
             f"reverse() not implemented for {type(self).__qualname__}"
-        )
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        raise NotImplementedError(
-            f"sequential() not implemented for {type(self).__qualname__}"
         )
 
     def trace(self, trace: "OpticalTrace", key: str, upstream_key: str) -> Any:

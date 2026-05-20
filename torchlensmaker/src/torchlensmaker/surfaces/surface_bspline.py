@@ -35,7 +35,7 @@ from torchlensmaker.raytracing.parametric_solver_config import (
     make_domain_function,
     make_parametric_solver,
 )
-from torchlensmaker.raytracing.raytrace import surface_raytrace
+from torchlensmaker.raytracing.surface_raytrace import surface_raytrace
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

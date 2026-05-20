@@ -142,6 +142,9 @@ class OpticalTrace:
     def output_tf(self) -> Tf:
         return next(reversed(self.nodes.values())).tf_out
 
+    def output_record(self) -> Any:
+        return next(reversed(self.nodes.values())).record
+
 
 def trace_model(
     optics: BaseModule,

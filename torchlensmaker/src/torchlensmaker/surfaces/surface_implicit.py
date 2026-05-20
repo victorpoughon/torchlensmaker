@@ -32,7 +32,7 @@ from torchlensmaker.raytracing.implicit_solver_config import (
     ImplicitSolverConfig,
     implicit_solver_config,
 )
-from torchlensmaker.raytracing.raytrace import surface_raytrace
+from torchlensmaker.raytracing.surface_raytrace import surface_raytrace
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

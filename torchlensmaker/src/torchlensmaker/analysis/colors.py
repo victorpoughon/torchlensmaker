@@ -14,12 +14,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import TypeAlias
+from typing import Any, TypeAlias
 
 import matplotlib as mpl
 import torch
-
-from torchlensmaker.sequential.sequential_data import SequentialData
 
 from .CET_I2 import isoluminant_cgo_80_c38
 
@@ -34,7 +32,7 @@ Tensor: TypeAlias = torch.Tensor
 
 
 def color_rays(
-    data: SequentialData,
+    data: Any,  # TODO: was SequentialData
     color_dim: str,
     colormap: LinearSegmentedColormap = default_colormap,
 ) -> Tensor:

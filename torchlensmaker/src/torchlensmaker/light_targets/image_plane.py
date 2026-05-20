@@ -22,9 +22,8 @@ from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.core.tensor_manip import to_tensor
 from torchlensmaker.light_targets.light_target import LightTarget, LightTargetRecord
 from torchlensmaker.sequential.optical_trace import OpticalTrace
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.surfaces import Disk, SurfaceElement
-from torchlensmaker.types import BatchNDTensor, BatchTensor, ScalarTensor, Tf
+from torchlensmaker.surfaces import Disk
+from torchlensmaker.types import BatchTensor, ScalarTensor, Tf
 
 
 def linear_magnification(
@@ -110,12 +109,6 @@ class ImagePlane(LightTarget):
             loss = torch.sum(torch.pow(res, 2))
 
         return LightTargetRecord(loss, sout)
-
-    def sequential(self, data: SequentialData) -> SequentialData:
-        _ = self(data.rays, data.fk)
-        # In sequential mode, light targets are transparent to rays
-        # We evaluate the optical element outputs but forward the data unchanged
-        return data
 
     def trace(self, trace: OpticalTrace, key: str, upstream_key: str) -> None:
         upstream = trace.nodes[upstream_key]
