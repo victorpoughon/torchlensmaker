@@ -221,6 +221,11 @@ def parametric_solver_newton(
         # Initialize theta = (t, u, v) with the init method
         theta = init_fn(P, V, parametric_function)
 
+        # Clamp the initial theta
+        theta = clamp_theta(
+            theta, clamp_positive, periodic_uv, u_epsilon, v_epsilon
+        )
+
         if num_iter == 0:
             return theta[..., 0], theta[..., 1:]
 
@@ -323,6 +328,11 @@ def parametric_solver_newton2(
     with torch.no_grad():
         # Initialize theta = (t, u, v) with the init method
         theta = init_fn(P, V, parametric_function)
+
+        # Clamp the initial theta
+        theta = clamp_theta(
+            theta, clamp_positive, periodic_uv, u_epsilon, v_epsilon
+        )
 
         if num_iter == 0:
             return theta[..., 0], theta[..., 1:]
