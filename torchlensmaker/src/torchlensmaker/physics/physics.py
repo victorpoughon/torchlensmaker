@@ -19,7 +19,7 @@ from typing import Literal
 import torch
 from torch.nn.functional import normalize
 
-from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, ScalarTensor
+from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor
 
 RefractionCriticalAngleMode = Literal["drop", "nan", "clamp", "reflect"]
 

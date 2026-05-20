@@ -18,7 +18,7 @@
 from typing import Any, Self
 
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.surfaces import Disk, SurfaceRecord
+from torchlensmaker.surfaces import Disk
 from torchlensmaker.types import ScalarTensor, Tf
 
 from .optical_surface import OpticalSurfaceElement, OpticalSurfaceRecord

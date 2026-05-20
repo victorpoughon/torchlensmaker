@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Self, cast
+from typing import cast
 
 import torch
-import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface

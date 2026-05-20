@@ -17,7 +17,6 @@
 from pathlib import Path
 from typing import Dict
 
-import pytest
 import torch
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel

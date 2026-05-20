@@ -14,15 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from itertools import chain
 from pathlib import Path
 from typing import Dict
 
-import onnxruntime
-import pytest
 import torch
 
-from torchlensmaker.core.functional_kernel import FunctionalKernel, export_onnx
+from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.kinematics.kinematics_kernels import (
     Gap2DKernel,
     Gap3DKernel,

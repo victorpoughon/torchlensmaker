@@ -21,11 +21,10 @@ import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule
-from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param, to_tensor
+from torchlensmaker.core.tensor_manip import expand_bool_tuple, init_param
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.types import (
-    HomMatrix,
     ScalarTensor,
     Tf,
 )

@@ -18,7 +18,6 @@
 from typing import Any, Self
 
 import torch
-import torch.nn as nn
 
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.materials.get_material_model import (

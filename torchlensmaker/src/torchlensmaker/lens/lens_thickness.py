@@ -15,11 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from itertools import islice
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import torch
-import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.kinematics.homogeneous_geometry import (
@@ -29,9 +27,8 @@ from torchlensmaker.kinematics.homogeneous_geometry import (
 )
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceRecord
 from torchlensmaker.optical_surfaces.refractive_surface import RefractiveSurface
-from torchlensmaker.sequential.raytrace import raytrace, raytrace_with_inputs
+from torchlensmaker.sequential.raytrace import raytrace
 from torchlensmaker.sequential.utils import get_elements_by_type
-from torchlensmaker.surfaces import SurfaceRecord
 from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:

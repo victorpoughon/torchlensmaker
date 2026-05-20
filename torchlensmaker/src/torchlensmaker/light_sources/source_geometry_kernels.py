@@ -14,10 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Sequence, TypeAlias
 
 import torch
-from jaxtyping import Float, Int
+from jaxtyping import Float
 
 from torchlensmaker.core.functional_kernel import FunctionalKernel
 from torchlensmaker.core.geometry import rotate_x_zy
@@ -36,7 +35,6 @@ from torchlensmaker.types import (
     Batch3DTensor,
     BatchTensor,
     HomMatrix,
-    IndexTensor,
     ScalarTensor,
 )
 

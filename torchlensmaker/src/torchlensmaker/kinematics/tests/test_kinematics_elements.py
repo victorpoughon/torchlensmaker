@@ -17,7 +17,6 @@
 
 from typing import Any, cast
 
-import pytest
 import torch
 import torch.nn as nn
 
@@ -42,7 +41,7 @@ from torchlensmaker.kinematics.kinematics_elements import (
     TranslateVec2D,
     TranslateVec3D,
 )
-from torchlensmaker.types import HomMatrix, Tf
+from torchlensmaker.types import Tf
 
 
 def check_model_eval(model: nn.Module, tf: Tf) -> Any:

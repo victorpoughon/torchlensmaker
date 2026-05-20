@@ -16,7 +16,7 @@
 
 from collections import OrderedDict
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Iterator, Self
+from typing import Any, Iterator, Self
 
 import torch
 

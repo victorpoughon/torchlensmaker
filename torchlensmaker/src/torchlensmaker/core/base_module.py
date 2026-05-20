@@ -16,10 +16,7 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Self
 
-import torch
 import torch.nn as nn
-from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
     from torchlensmaker.sequential.optical_trace import OpticalTrace

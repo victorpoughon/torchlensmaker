@@ -16,7 +16,7 @@
 
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import TypeAlias
 
 
 @dataclass

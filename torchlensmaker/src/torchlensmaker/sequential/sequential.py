@@ -20,7 +20,6 @@ from collections.abc import Iterable, Iterator
 from itertools import islice
 from typing import Any, Self, Sequence, Type, TypeVar, cast
 
-import torch
 import torch.nn as nn
 
 from torchlensmaker.core.base_module import BaseModule

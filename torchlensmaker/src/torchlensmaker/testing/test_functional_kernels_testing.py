@@ -14,15 +14,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import itertools
 import warnings
 from dataclasses import astuple, is_dataclass
 from itertools import chain
 from pathlib import Path
-from typing import Type, TypeAlias
+from typing import Type
 
 import onnxruntime
-import pytest
 import torch
 
 from torchlensmaker.core.functional_kernel import (
@@ -33,7 +31,6 @@ from torchlensmaker.core.functional_kernel import (
     kernel_flat_names,
     kernel_names,
 )
-from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.types import IndexTensor, MaskTensor
 
 

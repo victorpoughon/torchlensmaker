@@ -14,7 +14,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import Any, Optional, Sequence
+from typing import Optional, Sequence
 
 import torch
 import torch.nn as nn

@@ -15,12 +15,10 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import functools
-from typing import TypeAlias
 
 import torch
 from jaxtyping import Float
 
-from torchlensmaker.core.rot3d import euler_angles_to_matrix
 from torchlensmaker.types import (
     BatchNDTensor,
     HomMatrix,

@@ -21,7 +21,6 @@ from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
     MaskTensor,
-    ScalarTensor,
 )
 
 from .physics import reflection, refraction

@@ -17,7 +17,6 @@
 from typing import Any, Self
 
 import torch
-import torch.nn as nn
 from jaxtyping import Float
 
 from torchlensmaker.core.base_module import BaseModule

@@ -15,12 +15,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-import pytest
 import torch
 
 from torchlensmaker.core.functional_kernel import (
-    FunctionalKernel,
-    export_onnx,
     kernel_flat_io,
     kernel_flat_names,
 )

@@ -16,7 +16,6 @@
 
 from typing import Type
 
-import torch
 import torch.nn as nn
 
 

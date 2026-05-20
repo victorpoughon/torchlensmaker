@@ -28,7 +28,7 @@ from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
 from torchlensmaker.light_targets.light_target import LightTargetRecord
 from torchlensmaker.sequential.optical_trace import OpticalTrace
-from torchlensmaker.types import ScalarTensor, Tf
+from torchlensmaker.types import Tf
 
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]
