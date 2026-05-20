@@ -53,7 +53,9 @@ def raytrace(
     if input_trace is None:
         trace = OpticalTrace.empty(dim, dtype, device)
     else:
-        trace = OpticalTrace.from_inputs(input_trace.output_rays(), input_trace.output_tf())
+        trace = OpticalTrace.from_inputs(
+            input_trace.output_rays(), input_trace.output_tf()
+        )
 
     model.trace(trace, "", "_root")
     return trace

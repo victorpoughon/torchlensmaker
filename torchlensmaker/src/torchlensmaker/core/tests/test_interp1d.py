@@ -22,11 +22,13 @@ from torchlensmaker.core.interp1d import interp1d
 
 def test_interp1d_matches_numpy():
     X = torch.linspace(0.0, 10.0, 11)
-    Y = X ** 2
+    Y = X**2
     newX = torch.tensor([0.0, 0.5, 2.5, 7.3, 10.0])
 
     result = interp1d(X, Y, newX)
-    expected = torch.tensor(np.interp(newX.numpy(), X.numpy(), Y.numpy()), dtype=torch.float32)
+    expected = torch.tensor(
+        np.interp(newX.numpy(), X.numpy(), Y.numpy()), dtype=torch.float32
+    )
 
     torch.testing.assert_close(result, expected)
 

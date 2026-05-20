@@ -179,24 +179,22 @@ def check_kinematic_element_3d(
 def test_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
     T = nn.Parameter(torch.tensor([5.0, 2.0]))
 
-    elements_2d = nn.ModuleList(
-        [
-            Translate2D(),
-            Translate2D(x=torch.tensor(0.1)),
-            Translate2D(y=torch.tensor(0.2)),
-            Translate2D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
-            ),
-            TranslateVec2D(T),
-            Rotate2D(0.5),
-            Rotate2D(torch.tensor(0.5)),
-            AbsolutePosition2D(x=0.5),
-            AbsolutePosition2D(y=-0.5),
-            Gap(x=5.0),
-            Gap(5.0),
-        ]
-    )
+    elements_2d = nn.ModuleList([
+        Translate2D(),
+        Translate2D(x=torch.tensor(0.1)),
+        Translate2D(y=torch.tensor(0.2)),
+        Translate2D(
+            x=torch.tensor(0.1),
+            y=torch.tensor(0.2),
+        ),
+        TranslateVec2D(T),
+        Rotate2D(0.5),
+        Rotate2D(torch.tensor(0.5)),
+        AbsolutePosition2D(x=0.5),
+        AbsolutePosition2D(y=-0.5),
+        Gap(x=5.0),
+        Gap(5.0),
+    ])
 
     for element in elements_2d:
         element = cast(KinematicElement, element)
@@ -220,20 +218,18 @@ def test_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
 def test_trainable_elements_2d(dtype: torch.dtype, device: torch.device) -> None:
     T = nn.Parameter(torch.tensor([5.0, 2.0]))
 
-    elements_2d = nn.ModuleList(
-        [
-            Translate2D(x=torch.tensor(0.1), trainable=True),
-            Translate2D(y=torch.tensor(0.2), trainable=True),
-            Translate2D(x=torch.tensor(0.1), y=torch.tensor(0.2), trainable=True),
-            TranslateVec2D(T, trainable=True),
-            Rotate2D(0.5, trainable=True),
-            Rotate2D(torch.tensor(0.5), trainable=True),
-            AbsolutePosition2D(x=0.5, trainable=True),
-            AbsolutePosition2D(y=-0.5, trainable=True),
-            Gap(x=5.0, trainable=True),
-            Gap(5.0, trainable=True),
-        ]
-    )
+    elements_2d = nn.ModuleList([
+        Translate2D(x=torch.tensor(0.1), trainable=True),
+        Translate2D(y=torch.tensor(0.2), trainable=True),
+        Translate2D(x=torch.tensor(0.1), y=torch.tensor(0.2), trainable=True),
+        TranslateVec2D(T, trainable=True),
+        Rotate2D(0.5, trainable=True),
+        Rotate2D(torch.tensor(0.5), trainable=True),
+        AbsolutePosition2D(x=0.5, trainable=True),
+        AbsolutePosition2D(y=-0.5, trainable=True),
+        Gap(x=5.0, trainable=True),
+        Gap(5.0, trainable=True),
+    ])
 
     for element in elements_2d:
         element = cast(KinematicElement, element)
@@ -257,60 +253,58 @@ def test_trainable_elements_2d(dtype: torch.dtype, device: torch.device) -> None
 def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
     T3d = torch.tensor([5.0, 2.0, -15.0])
 
-    elements_3d = nn.ModuleList(
-        [
-            AbsolutePosition3D(
-                torch.tensor(1.1),
-                torch.tensor(1.2),
-                torch.tensor(1.3),
-            ),
-            AbsolutePosition3D(
-                x=torch.tensor(1.1),
-            ),
-            AbsolutePosition3D(
-                y=torch.tensor(1.1),
-            ),
-            AbsolutePosition3D(
-                z=torch.tensor(1.1),
-            ),
-            Translate3D(),
-            Translate3D(x=torch.tensor(0.1)),
-            Translate3D(y=torch.tensor(0.2)),
-            Translate3D(z=torch.tensor(0.2)),
-            Translate3D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
-            ),
-            Translate3D(
-                x=torch.tensor(0.1),
-                z=torch.tensor(0.2),
-            ),
-            Translate3D(
-                y=torch.tensor(0.2),
-                z=torch.tensor(0.2),
-            ),
-            Translate3D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
-                z=torch.tensor(0.2),
-            ),
-            TranslateVec3D(T3d),
-            RotateX(0.0),
-            RotateX(angle=0.0),
-            RotateX(torch.tensor(0.1)),
-            RotateX(angle=torch.tensor(0.1)),
-            RotateY(0.0),
-            RotateY(angle=0.0),
-            RotateY(torch.tensor(0.1)),
-            RotateY(angle=torch.tensor(0.1)),
-            RotateZ(0.0),
-            RotateZ(angle=0.0),
-            RotateZ(torch.tensor(0.1)),
-            RotateZ(angle=torch.tensor(0.1)),
-            Gap(x=5.0),
-            Gap(5.0),
-        ]
-    )
+    elements_3d = nn.ModuleList([
+        AbsolutePosition3D(
+            torch.tensor(1.1),
+            torch.tensor(1.2),
+            torch.tensor(1.3),
+        ),
+        AbsolutePosition3D(
+            x=torch.tensor(1.1),
+        ),
+        AbsolutePosition3D(
+            y=torch.tensor(1.1),
+        ),
+        AbsolutePosition3D(
+            z=torch.tensor(1.1),
+        ),
+        Translate3D(),
+        Translate3D(x=torch.tensor(0.1)),
+        Translate3D(y=torch.tensor(0.2)),
+        Translate3D(z=torch.tensor(0.2)),
+        Translate3D(
+            x=torch.tensor(0.1),
+            y=torch.tensor(0.2),
+        ),
+        Translate3D(
+            x=torch.tensor(0.1),
+            z=torch.tensor(0.2),
+        ),
+        Translate3D(
+            y=torch.tensor(0.2),
+            z=torch.tensor(0.2),
+        ),
+        Translate3D(
+            x=torch.tensor(0.1),
+            y=torch.tensor(0.2),
+            z=torch.tensor(0.2),
+        ),
+        TranslateVec3D(T3d),
+        RotateX(0.0),
+        RotateX(angle=0.0),
+        RotateX(torch.tensor(0.1)),
+        RotateX(angle=torch.tensor(0.1)),
+        RotateY(0.0),
+        RotateY(angle=0.0),
+        RotateY(torch.tensor(0.1)),
+        RotateY(angle=torch.tensor(0.1)),
+        RotateZ(0.0),
+        RotateZ(angle=0.0),
+        RotateZ(torch.tensor(0.1)),
+        RotateZ(angle=torch.tensor(0.1)),
+        Gap(x=5.0),
+        Gap(5.0),
+    ])
 
     for element in elements_3d:
         element = cast(KinematicElement, element)
@@ -334,74 +328,72 @@ def test_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
 def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None:
     T3d = torch.tensor([5.0, 2.0, -15.0])
 
-    elements_3d = nn.ModuleList(
-        [
-            AbsolutePosition3D(
-                torch.tensor(1.1),
-                torch.tensor(1.2),
-                torch.tensor(1.3),
-                trainable=True,
-            ),
-            AbsolutePosition3D(
-                x=torch.tensor(1.1),
-                trainable=(True, False, False),
-            ),
-            AbsolutePosition3D(
-                y=torch.tensor(1.1),
-                trainable=(False, True, False),
-            ),
-            AbsolutePosition3D(
-                z=torch.tensor(1.1),
-                trainable=(False, False, True),
-            ),
-            Translate3D(
-                x=torch.tensor(0.1),
-                trainable=(True, False, False),
-            ),
-            Translate3D(
-                y=torch.tensor(0.2),
-                trainable=(False, True, False),
-            ),
-            Translate3D(
-                z=torch.tensor(0.2),
-                trainable=(False, False, True),
-            ),
-            Translate3D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
-                trainable=True,
-            ),
-            Translate3D(
-                x=torch.tensor(0.1), z=torch.tensor(0.2), trainable=(True, False, True)
-            ),
-            Translate3D(
-                y=torch.tensor(0.2),
-                z=torch.tensor(0.2),
-                trainable=(False, True, True),
-            ),
-            Translate3D(
-                x=torch.tensor(0.1),
-                y=torch.tensor(0.2),
-                z=torch.tensor(0.2),
-                trainable=True,
-            ),
-            TranslateVec3D(T3d, trainable=True),
-            RotateX(0.0, trainable=True),
-            RotateX(angle=0.0, trainable=True),
-            RotateX(torch.tensor(0.1), trainable=True),
-            RotateX(angle=torch.tensor(0.1), trainable=True),
-            RotateY(0.0, trainable=True),
-            RotateY(angle=0.0, trainable=True),
-            RotateY(torch.tensor(0.1), trainable=True),
-            RotateY(angle=torch.tensor(0.1), trainable=True),
-            RotateZ(0.0, trainable=True),
-            RotateZ(angle=0.0, trainable=True),
-            RotateZ(torch.tensor(0.1), trainable=True),
-            RotateZ(angle=torch.tensor(0.1), trainable=True),
-            Gap(x=5.0, trainable=True),
-            Gap(5.0, trainable=True),
-        ]
-    )
+    elements_3d = nn.ModuleList([
+        AbsolutePosition3D(
+            torch.tensor(1.1),
+            torch.tensor(1.2),
+            torch.tensor(1.3),
+            trainable=True,
+        ),
+        AbsolutePosition3D(
+            x=torch.tensor(1.1),
+            trainable=(True, False, False),
+        ),
+        AbsolutePosition3D(
+            y=torch.tensor(1.1),
+            trainable=(False, True, False),
+        ),
+        AbsolutePosition3D(
+            z=torch.tensor(1.1),
+            trainable=(False, False, True),
+        ),
+        Translate3D(
+            x=torch.tensor(0.1),
+            trainable=(True, False, False),
+        ),
+        Translate3D(
+            y=torch.tensor(0.2),
+            trainable=(False, True, False),
+        ),
+        Translate3D(
+            z=torch.tensor(0.2),
+            trainable=(False, False, True),
+        ),
+        Translate3D(
+            x=torch.tensor(0.1),
+            y=torch.tensor(0.2),
+            trainable=True,
+        ),
+        Translate3D(
+            x=torch.tensor(0.1), z=torch.tensor(0.2), trainable=(True, False, True)
+        ),
+        Translate3D(
+            y=torch.tensor(0.2),
+            z=torch.tensor(0.2),
+            trainable=(False, True, True),
+        ),
+        Translate3D(
+            x=torch.tensor(0.1),
+            y=torch.tensor(0.2),
+            z=torch.tensor(0.2),
+            trainable=True,
+        ),
+        TranslateVec3D(T3d, trainable=True),
+        RotateX(0.0, trainable=True),
+        RotateX(angle=0.0, trainable=True),
+        RotateX(torch.tensor(0.1), trainable=True),
+        RotateX(angle=torch.tensor(0.1), trainable=True),
+        RotateY(0.0, trainable=True),
+        RotateY(angle=0.0, trainable=True),
+        RotateY(torch.tensor(0.1), trainable=True),
+        RotateY(angle=torch.tensor(0.1), trainable=True),
+        RotateZ(0.0, trainable=True),
+        RotateZ(angle=0.0, trainable=True),
+        RotateZ(torch.tensor(0.1), trainable=True),
+        RotateZ(angle=torch.tensor(0.1), trainable=True),
+        Gap(x=5.0, trainable=True),
+        Gap(5.0, trainable=True),
+    ])
 
     for element in elements_3d:
         element = cast(KinematicElement, element)
@@ -423,19 +415,17 @@ def test_trainable_elements_3d(dtype: torch.dtype, device: torch.device) -> None
 
 
 def test_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
-    elements_mixed = nn.ModuleList(
-        [
-            Gap(5.0),
-            Gap(torch.tensor(5.0)),
-            Gap(x=5.0),
-            Gap(x=torch.tensor(5.0)),
-            RotateMixed(0.1),
-            Translate(),
-            Translate(x=0.1),
-            Translate(y=0.2),
-            Translate(z=0.3),
-        ]
-    )
+    elements_mixed = nn.ModuleList([
+        Gap(5.0),
+        Gap(torch.tensor(5.0)),
+        Gap(x=5.0),
+        Gap(x=torch.tensor(5.0)),
+        RotateMixed(0.1),
+        Translate(),
+        Translate(x=0.1),
+        Translate(y=0.2),
+        Translate(z=0.3),
+    ])
 
     for element in elements_mixed:
         element = cast(KinematicElement, element)
@@ -470,18 +460,16 @@ def test_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
 
 
 def test_trainable_elements_mixed(dtype: torch.dtype, device: torch.device) -> None:
-    elements_mixed = nn.ModuleList(
-        [
-            Gap(5.0, trainable=True),
-            Gap(torch.tensor(5.0), trainable=True),
-            Gap(x=5.0, trainable=True),
-            Gap(x=torch.tensor(5.0), trainable=True),
-            RotateMixed(0.1, trainable=True),
-            Translate(x=0.1, trainable=True),
-            Translate(y=0.2, trainable=True),
-            Translate(z=0.3, trainable=True),
-        ]
-    )
+    elements_mixed = nn.ModuleList([
+        Gap(5.0, trainable=True),
+        Gap(torch.tensor(5.0), trainable=True),
+        Gap(x=5.0, trainable=True),
+        Gap(x=torch.tensor(5.0), trainable=True),
+        RotateMixed(0.1, trainable=True),
+        Translate(x=0.1, trainable=True),
+        Translate(y=0.2, trainable=True),
+        Translate(z=0.3, trainable=True),
+    ])
 
     for element in elements_mixed:
         element = cast(KinematicElement, element)

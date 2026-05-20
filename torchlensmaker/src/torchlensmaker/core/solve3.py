@@ -17,7 +17,9 @@
 import torch
 
 
-def solve3x3(A: torch.Tensor, b: torch.Tensor, singular_check: bool = False) -> torch.Tensor:
+def solve3x3(
+    A: torch.Tensor, b: torch.Tensor, singular_check: bool = False
+) -> torch.Tensor:
     """
     Batched solve for Ax = b, where:
         A is (..., 3, 3).

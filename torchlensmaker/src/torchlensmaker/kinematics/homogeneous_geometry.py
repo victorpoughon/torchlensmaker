@@ -127,13 +127,11 @@ def hom_rotate_x_3d(theta: Float[torch.Tensor, ""]) -> Tf:
     sin = torch.sin(theta)
     zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
     one = torch.ones((), dtype=theta.dtype, device=theta.device)
-    M = torch.stack(
-        (
-            torch.stack((one, zero, zero)),
-            torch.stack((zero, cos, -sin)),
-            torch.stack((zero, sin, cos)),
-        )
-    )
+    M = torch.stack((
+        torch.stack((one, zero, zero)),
+        torch.stack((zero, cos, -sin)),
+        torch.stack((zero, sin, cos)),
+    ))
 
     return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
 
@@ -144,13 +142,11 @@ def hom_rotate_y_3d(theta: Float[torch.Tensor, ""]) -> Tf:
     sin = torch.sin(theta)
     zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
     one = torch.ones((), dtype=theta.dtype, device=theta.device)
-    M = torch.stack(
-        (
-            torch.stack((cos, zero, sin)),
-            torch.stack((zero, one, zero)),
-            torch.stack((-sin, zero, cos)),
-        )
-    )
+    M = torch.stack((
+        torch.stack((cos, zero, sin)),
+        torch.stack((zero, one, zero)),
+        torch.stack((-sin, zero, cos)),
+    ))
     return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
 
 
@@ -160,13 +156,11 @@ def hom_rotate_z_3d(theta: Float[torch.Tensor, ""]) -> Tf:
     sin = torch.sin(theta)
     zero = torch.zeros((), dtype=theta.dtype, device=theta.device)
     one = torch.ones((), dtype=theta.dtype, device=theta.device)
-    M = torch.stack(
-        (
-            torch.stack((cos, -sin, zero)),
-            torch.stack((sin, cos, zero)),
-            torch.stack((zero, zero, one)),
-        )
-    )
+    M = torch.stack((
+        torch.stack((cos, -sin, zero)),
+        torch.stack((sin, cos, zero)),
+        torch.stack((zero, zero, one)),
+    ))
     return Tf(hom_matrix_3d(M), hom_matrix_3d(M.T))
 
 

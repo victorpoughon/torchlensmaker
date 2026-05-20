@@ -134,4 +134,3 @@ def test_flatten_kernel_io_sampled_variable() -> None:
     assert torch.equal(flat[1], sv.idx)
     assert torch.equal(flat[2], sv.domain_values)
     assert torch.equal(flat[3], sv.domain_idx)
-

@@ -32,12 +32,10 @@ def unit_vector(
         dtype = torch.get_default_dtype()
     if device is None:
         device = torch.get_default_device()
-    return torch.cat(
-        (
-            torch.ones(1, dtype=dtype, device=device),
-            torch.zeros(dim - 1, dtype=dtype, device=device),
-        )
-    )
+    return torch.cat((
+        torch.ones(1, dtype=dtype, device=device),
+        torch.zeros(dim - 1, dtype=dtype, device=device),
+    ))
 
 
 def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
@@ -53,12 +51,10 @@ def rotated_unit_vector(angles: Tensor, dim: int) -> Tensor:
         return rot2d(unit, angles)
     else:
         unit = torch.tensor([1.0, 0.0, 0.0], dtype=dtype)
-        thetas = torch.column_stack(
-            (
-                torch.zeros(N, dtype=dtype),
-                angles,
-            )
-        )
+        thetas = torch.column_stack((
+            torch.zeros(N, dtype=dtype),
+            angles,
+        ))
         M = euler_angles_to_matrix(thetas, "XZY").to(
             dtype=dtype
         )  # TODO need to support dtype in euler_angles_to_matrix
