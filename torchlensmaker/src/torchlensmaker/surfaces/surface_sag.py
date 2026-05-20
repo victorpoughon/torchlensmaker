@@ -37,7 +37,7 @@ from torchlensmaker.raytracing.implicit_solver_config import (
     make_lift_function_2d,
     make_lift_function_3d,
 )
-from torchlensmaker.raytracing.raytrace import surface_raytrace
+from torchlensmaker.raytracing.surface_raytrace import surface_raytrace
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,

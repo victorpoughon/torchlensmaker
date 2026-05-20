@@ -14,14 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from typing import cast
-
 import torch
 from jaxtyping import Float
 
 import torchlensmaker as tlm
-from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
 from torchlensmaker.core.tensor_manip import default_dtype_device
+from torchlensmaker.kinematics.homogeneous_geometry import hom_identity_2d
+from torchlensmaker.sequential.optical_trace import OpticalTrace
+from torchlensmaker.sequential.raytrace import raytrace, raytrace_with_inputs
+
 
 def equivalent_locus_2d(
     Pa: Float[torch.Tensor, "N 2"],
@@ -89,14 +90,13 @@ def principal_point_with_light_source(
     # Evaluate the light source and the model to get output rays
     input_tf = hom_identity_2d(dtype, device)
     input_rays = light_source(input_tf.direct)
-    inputs = tlm.SequentialData(rays=input_rays, fk=input_tf)
-    outputs = lens(inputs)
+    trace = OpticalTrace.from_inputs(input_rays, input_tf)
+    lens.trace(trace, "", "_root")
+    outputs_rays = trace.output_rays()
 
     # Compute intersection locus of input and output ray bundles
-    t = equivalent_locus_2d(
-        inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V
-    )
-    collision_points = inputs.rays.points_at(t[:, 0])
+    t = equivalent_locus_2d(input_rays.P, input_rays.V, outputs_rays.P, outputs_rays.V)
+    collision_points = input_rays.points_at(t[:, 0])
 
     # Fit a parabola to the locus surface to obtain vertex
     return fit_parabola_vertex_2d(collision_points[:, 0], collision_points[:, 1])
@@ -195,14 +195,19 @@ def focal_point_with_light_source(
     dtype, device = default_dtype_device(dtype, device)
 
     # Evaluate the light source and the model to get output ray
-    inputs = light_source(tlm.SequentialData.empty(dim=2, dtype=dtype, device=device))
-    outputs = lens(inputs)
 
-    assert inputs.rays.P.shape == outputs.rays.P.shape == (1, 2)
+    trace_light_source = raytrace(light_source, dim=2)
+    input_rays = trace_light_source.output_rays()
+
+    root_tf = tlm.hom_identity(dim=2)
+    trace_lens = raytrace_with_inputs(lens, input_rays, root_tf)
+    output_rays = trace_lens.output_rays()
+
+    assert input_rays.P.shape == output_rays.P.shape == (1, 2)
 
     # Compute output ray intersection with the optical axis
-    t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
-    return outputs.rays.P[:, 0] + t * outputs.rays.V[:, 0]
+    t = -output_rays.P[:, 1] / output_rays.V[:, 1]
+    return output_rays.P[:, 0] + t * output_rays.V[:, 0]
 
 
 def rear_focal_point(

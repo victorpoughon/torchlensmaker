@@ -96,6 +96,10 @@ class RayBundle:
         )
 
     @property
+    def dim(self) -> int:
+        return self.P.shape[-1]
+
+    @property
     def dtype(self) -> torch.dtype:
         return self.P.dtype
 

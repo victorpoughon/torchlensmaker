@@ -24,8 +24,8 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
-from torchlensmaker.sequential.sequential import Sequential
-from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.light_targets.light_target import LightTargetRecord
+from torchlensmaker.sequential.optical_trace import trace_model
 from torchlensmaker.surfaces.surface_element import SurfaceRecord
 
 from .CET_I2 import isoluminant_cgo_80_c38
@@ -73,16 +73,17 @@ def spot_diagram(
         tensor = next(itertools.chain(model.parameters(), model.buffers()), None)
         dtype = tensor.dtype if tensor is not None else torch.get_default_dtype()
 
-    head = model[:-1]
-    target = model[-1]
-
-    # Run the head to get rays arriving at the image plane
+    # Run the full model to get rays arriving at the image plane
     with torch.no_grad():
-        data = head(SequentialData.empty(dim=3, dtype=dtype))
-        rays = data.rays
-        output = target(rays, data.fk)
+        trace = trace_model(model, 3, dtype=dtype)
 
-    sout: SurfaceRecord = output.surface_outputs
+    light_targets = list(trace.iter_nodes_by_record_type(LightTargetRecord))
+    if len(light_targets) != 1:
+        raise ValueError(f"Expected exactly one light target, found {len(light_targets)}")
+    _, node = light_targets[0]
+
+    rays = node.bundle_in
+    sout: SurfaceRecord = node.record.surface_outputs
 
     # Image plane coordinates: columns 1 and 2 of points_local (YZ in plane frame)
     # Shape (N, 2) for valid rays, (N, 2) overall (invalid rays land outside the disk)

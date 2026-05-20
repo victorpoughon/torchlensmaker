@@ -16,12 +16,15 @@
 
 from typing import TYPE_CHECKING, Any, Callable, Self
 
+import torch
 import torch.nn as nn
 
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.sequential.sequential_data import SequentialData
+from torchlensmaker.types import Tf
 
 if TYPE_CHECKING:
-    from torchlensmaker.sequential.model_trace import ModelTrace
+    from torchlensmaker.sequential.optical_trace import OpticalTrace
 
 
 class BaseModule(nn.Module):

@@ -14,18 +14,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from collections import OrderedDict, defaultdict
-from dataclasses import dataclass, field
-from itertools import islice
-from typing import Any, DefaultDict, Iterator, Self
+from collections import OrderedDict
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Iterator, Self
 
 import torch
 
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
-from torchlensmaker.surfaces import SurfaceElement
-from torchlensmaker.types import BatchNDTensor, BatchTensor, MaskTensor, Tf
+from torchlensmaker.types import Tf
 
 
 @dataclass
@@ -52,36 +50,35 @@ class OpticalTrace:
     nodes: OrderedDict[str, OpticalTraceNode]
 
     @classmethod
+    def from_inputs(
+        cls,
+        rays: RayBundle,
+        tf: Tf,
+    ) -> Self:
+        root = OpticalTraceNode(
+            record=None,
+            module=None,
+            upstream=set(),
+            bundle_in=rays,
+            bundle_out=rays,
+            tf_in=tf,
+            tf_out=tf,
+        )
+
+        return cls(rays.dim, rays.dtype, rays.device, OrderedDict([("_root", root)]))
+
+    @classmethod
     def empty(
         cls,
         dim: int,
         dtype: torch.dtype | None = None,
         device: torch.device | None = None,
     ) -> Self:
+
         root_bundle = RayBundle.empty(dim, dtype, device)
         root_tf = hom_identity(dim=dim)
 
-        if dtype is None:
-            dtype = torch.get_default_dtype()
-        if device is None:
-            device = torch.get_default_device()
-
-        root = OpticalTraceNode(
-            record=None,
-            module=None,
-            upstream=set(),
-            bundle_in=root_bundle,
-            bundle_out=root_bundle,
-            tf_in=root_tf,
-            tf_out=root_tf,
-        )
-
-        return cls(
-            dim,
-            dtype,
-            device,
-            OrderedDict([("_root", root)]),
-        )
+        return cls.from_inputs(root_bundle, root_tf)
 
     def append(
         self,
@@ -138,6 +135,12 @@ class OpticalTrace:
         for key, node in self.nodes.items():
             if isinstance(node.record, typ):
                 yield (key, node)
+
+    def output_rays(self) -> RayBundle:
+        return next(reversed(self.nodes.values())).bundle_out
+
+    def output_tf(self) -> Tf:
+        return next(reversed(self.nodes.values())).tf_out
 
 
 def trace_model(

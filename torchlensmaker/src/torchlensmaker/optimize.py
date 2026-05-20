@@ -23,9 +23,12 @@ import torch
 import torch.nn as nn
 import torch.optim
 
+from torchlensmaker.core.base_module import BaseModule
+from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_identity
-from torchlensmaker.sequential.sequential_data import SequentialData
-from torchlensmaker.types import ScalarTensor
+from torchlensmaker.light_targets.light_target import LightTargetRecord
+from torchlensmaker.sequential.optical_trace import OpticalTrace
+from torchlensmaker.types import ScalarTensor, Tf
 
 Tensor = torch.Tensor
 RegularizationFunction = Callable[[nn.Module], Tensor]
@@ -61,20 +64,24 @@ class OptimizationRecord:
         print()
 
 
-class ImagingModel(nn.Module):
-    def __init__(self, optics, target):
-        super().__init__()
-        self.optics = optics
-        self.target = target
+def focal_loss(model: BaseModule, trace: OpticalTrace) -> torch.Tensor:
+    """
+    Loss function for a model with a single focal point element
+    """
 
-    def forward(self, data: SequentialData) -> ScalarTensor:
-        outputs = self.optics(data)
-        out = self.target(outputs.rays, outputs.fk)
-        return out.loss
+    light_targets = list(trace.iter_nodes_by_record_type(LightTargetRecord))
+
+    if not len(light_targets) == 1:
+        raise RuntimeError(
+            f"Expected exactly one optical trace node for light target, found {len(light_targets)}"
+        )
+
+    key, node = light_targets[0]
+    return node.record.loss
 
 
 def simple_optimize(
-    optics: nn.Module,
+    model: BaseModule,
     optimizer: optim.Optimizer,
     num_iter: int,
     dtype: torch.dtype | None = None,
@@ -84,13 +91,14 @@ def simple_optimize(
     dim: int = 2,
     callback: Any = None,
 ):
-
-    source, model, target = optics[0], optics[1:-1], optics[-1]
-    input_rays = source.sequential(SequentialData.empty(dim=dim))
+    source, tail = model[0], model[1:]
+    root_tf = hom_identity(dim)
+    input_rays = source(root_tf.direct)
     return optimize(
-        model,
+        tail,
         input_rays,
-        target,
+        root_tf,
+        focal_loss,
         optimizer,
         num_iter,
         dtype,
@@ -102,9 +110,10 @@ def simple_optimize(
 
 
 def optimize(
-    model: nn.Module,
-    input_rays: SequentialData,
-    target: nn.Module,
+    model: BaseModule,
+    input_rays: RayBundle,
+    input_tf: Tf,
+    loss_function: Any,
     optimizer: optim.Optimizer,
     num_iter: int,
     dtype: torch.dtype | None = None,
@@ -124,16 +133,16 @@ def optimize(
         n: [] for n, _ in model.named_parameters()
     }
     loss_record = torch.zeros(num_iter)
-
-    imaging_model = ImagingModel(model, target)
-
     show_every = math.ceil(num_iter / nshow)
 
     for i in range(num_iter):
         optimizer.zero_grad()
 
         # Evaluate the model
-        loss = imaging_model(input_rays)
+        trace = OpticalTrace.from_inputs(input_rays, input_tf)
+        model.trace(trace, "", "_root")
+
+        loss = loss_function(model, trace)
 
         # Add regularization function term
         if regularization is not None:
@@ -165,7 +174,7 @@ def optimize(
         optimizer.step()
 
         if callback:
-            callback(model, input_rays, target, i)
+            callback(model, input_rays, i)
 
         if i % show_every == 0 or i == num_iter - 1:
             iter_str = f"[{i + 1:>3}/{num_iter}]"
