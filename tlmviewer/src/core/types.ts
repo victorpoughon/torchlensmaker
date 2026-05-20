@@ -28,15 +28,18 @@ export type ElementDescriptor<T extends BaseElementData> = {
 
 // This object type is used as the user data of the three js object
 export class SceneEntry {
+    public id: number;
     public object: THREE.Object3D;
     readonly data: BaseElementData;
     readonly descriptor: ElementDescriptor<BaseElementData>;
 
     constructor(
+        id: number,
         object: THREE.Object3D,
         data: BaseElementData,
         descriptor: ElementDescriptor<BaseElementData>,
     ) {
+        this.id = id;
         this.object = object;
         this.data = data;
         this.descriptor = descriptor;
@@ -55,3 +58,10 @@ export class SceneEntry {
         }
     }
 }
+
+export type SceneElementInfo = {
+    id: number;
+    type: string;
+    category: string | undefined;
+    visible: boolean;
+};

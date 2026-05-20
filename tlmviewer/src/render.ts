@@ -2,11 +2,14 @@ import { TLMScene } from "./scene.ts";
 import { TLMViewerApp } from "./app.ts";
 import { get_default } from "./core/utility.ts";
 import { axialFactories } from "./cameras/AxialCamera.ts";
+import { SceneEntry, SceneElementInfo } from "./core/types.ts";
 import type { CameraState } from "./cameras/CameraRig.ts";
 import viewerTemplate from "./viewer.html?raw";
 
 export type RenderHandle = {
     getCameraState(): CameraState;
+    getElements(): SceneElementInfo[];
+    setElementVisibility(id: number, visible: boolean): void;
     dispose(): void;
 };
 
@@ -40,6 +43,15 @@ export function renderScene(
 
         return {
             getCameraState: () => app.rig.getState(),
+            getElements: () => scene.getElements(),
+            setElementVisibility: (id: number, visible: boolean) => {
+                for (const child of scene.sceneGraph.children) {
+                    if (child.userData instanceof SceneEntry && child.userData.id === id) {
+                        child.visible = visible;
+                        break;
+                    }
+                }
+            },
             dispose: () => {
                 cancelAnimation();
                 window.removeEventListener("resize", onResize);

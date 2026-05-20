@@ -9,12 +9,13 @@ import type { LogEntry } from './panels/LogPanel.vue'
 import ViewportPanel from './panels/ViewportPanel.vue'
 import SceneManagerPanel from './panels/SceneManagerPanel.vue'
 import SourcePanel from './panels/SourcePanel.vue'
+import VisibilityPanel from './panels/VisibilityPanel.vue'
 import type { SceneEntry, SourceEntry } from './types.ts'
 import { getSceneName } from './utils.ts'
 
 // Explicit registration so dockview-vue can find components by name and
 // so the bundler doesn't tree-shake them away (they're not in the template).
-defineOptions({ components: { ViewportPanel, LogPanel, SceneManagerPanel, SourcePanel } })
+defineOptions({ components: { ViewportPanel, LogPanel, SceneManagerPanel, SourcePanel, VisibilityPanel } })
 
 const logEntries = ref<LogEntry[]>([])
 const scenes = ref<SceneEntry[]>([])

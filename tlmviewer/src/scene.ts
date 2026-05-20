@@ -4,7 +4,7 @@ import { getRequired } from "./core/utility.ts";
 
 import { defaultSceneElementsData } from "./defaultSceneElements.ts";
 import { getMaybeDescriptor } from "./elements_registry/registry.ts";
-import { BaseElementData, SceneEntry } from "./core/types.ts";
+import { BaseElementData, SceneEntry, SceneElementInfo } from "./core/types.ts";
 import { SceneEvent, SceneEventType } from "./core/events.ts";
 
 // Extract available variables from the scene
@@ -25,6 +25,7 @@ function extractVariables(root: any): string[] {
 export class TLMScene {
     private root: any;
     private container: HTMLElement;
+    private nextElementId: number = 0;
 
     // Model
     public sceneGraph: THREE.Group;
@@ -63,7 +64,12 @@ export class TLMScene {
 
         const data: BaseElementData = descriptor.parse(elementData, dim);
         const object3d: THREE.Object3D = descriptor.render(data, dim);
-        const entry = new SceneEntry(object3d, data, descriptor);
+        const entry = new SceneEntry(
+            this.nextElementId++,
+            object3d,
+            data,
+            descriptor,
+        );
         object3d.userData = entry;
         this.sceneGraph.add(object3d);
 
@@ -93,6 +99,24 @@ export class TLMScene {
         });
     }
 
+    public getElements(): SceneElementInfo[] {
+        const result = [];
+        for (const child of this.sceneGraph.children) {
+            if (child.userData instanceof SceneEntry) {
+                const entry = child.userData as SceneEntry;
+                result.push({
+                    id: entry.id,
+                    type: entry.data.type,
+                    category: (entry.data as any).category as
+                        | string
+                        | undefined,
+                    visible: child.visible,
+                });
+            }
+        }
+        return result;
+    }
+
     // Get bounding box of the scene for the default camera view
     public getBB(): THREE.Box3 {
         const bbox = new THREE.Box3();
@@ -118,8 +142,8 @@ export class TLMScene {
         if (maxExtent > 1e6) {
             console.warn(
                 `tlmviewer: scene bounding box is very large (max extent: ${maxExtent.toExponential(2)}). ` +
-                `This usually means some scene elements contain degenerate (very large) coordinates. ` +
-                `Camera framing may be incorrect.`,
+                    `This usually means some scene elements contain degenerate (very large) coordinates. ` +
+                    `Camera framing may be incorrect.`,
                 { min: bbox.min, max: bbox.max },
             );
         }

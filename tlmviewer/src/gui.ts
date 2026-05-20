@@ -32,23 +32,11 @@ export class TLMGui {
             surfaces: Controller;
             surfacesOpacity: Controller;
         };
-        visible: {
-            validRays: Controller;
-            blockedRays: Controller;
-            outputRays: Controller;
-            surfaces: Controller;
-            axisX: Controller;
-            axisY: Controller;
-            axisZ: Controller;
-            kinematicJoints: Controller;
-            bcyl: Controller;
-        };
     };
 
     // GUI folders
     private folders: {
         colors: GUI;
-        show: GUI;
     };
 
     constructor(app: TLMViewerApp, container: HTMLElement, scene: TLMScene) {
@@ -92,17 +80,6 @@ export class TLMGui {
             },
             backgroundColor: { r: 0, g: 0, b: 0 },
             surfacesColor: { r: 0, g: 1, b: 1 },
-            
-            showAxisX: false,
-            showAxisY: false,
-            showAxisZ: false,
-            
-            showValidRays: true,
-            showBlockedRays: false,
-            showOutputRays: true,
-            showSurfaces: true,
-            showKinematicJoints: false,
-            showBcyl: false,
             showFps: false,
         };
 
@@ -225,98 +202,6 @@ export class TLMGui {
                 this.scene.dispatch({ type: "setSurfacesOpacity", value });
             });
 
-        const folderShow = this.gui.addFolder("Visible");
-        const controllerVisibleValidRays = folderShow
-            .add(this.controller, "showValidRays")
-            .name("Valid rays")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "rays-valid",
-                    visible: value,
-                });
-            });
-        const controllerVisibleBlockedRays = folderShow
-            .add(this.controller, "showBlockedRays")
-            .name("Blocked rays")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "rays-blocked",
-                    visible: value,
-                });
-            });
-        const controllerVisibleOutputRays = folderShow
-            .add(this.controller, "showOutputRays")
-            .name("Output rays")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "rays-output",
-                    visible: value,
-                });
-            });
-        const controllerVisibleSurfaces = folderShow
-            .add(this.controller, "showSurfaces")
-            .name("Surfaces")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "surface",
-                    visible: value,
-                });
-            });
-        const controllerVisibleAxisX = folderShow
-            .add(this.controller, "showAxisX")
-            .name("Axis X")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "axis-x",
-                    visible: value,
-                });
-            });
-        const controllerVisibleAxisY = folderShow
-            .add(this.controller, "showAxisY")
-            .name("Axis Y")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "axis-y",
-                    visible: value,
-                });
-            });
-        const controllerVisibleAxisZ = folderShow
-            .add(this.controller, "showAxisZ")
-            .name("Axis Z")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "axis-z",
-                    visible: value,
-                });
-            });
-        const controllerVisibleKinematicJoints = folderShow
-            .add(this.controller, "showKinematicJoints")
-            .name("Kinematic joints")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "kinematic-joint",
-                    visible: value,
-                });
-            });
-        const controllerVisibleBcyl = folderShow
-            .add(this.controller, "showBcyl")
-            .name("Bounding Cylinders")
-            .onChange((value: boolean) => {
-                this.scene.dispatch({
-                    type: "setCategoryVisibility",
-                    category: "bcyl",
-                    visible: value,
-                });
-            });
-
         this.gui
             .add(this.controller, "showFps")
             .name("Show FPS")
@@ -336,23 +221,11 @@ export class TLMGui {
                 surfaces: controllerColorsSurfaces,
                 surfacesOpacity: controllerColorsSurfacesOpacity,
             },
-            visible: {
-                validRays: controllerVisibleValidRays,
-                blockedRays: controllerVisibleBlockedRays,
-                outputRays: controllerVisibleOutputRays,
-                surfaces: controllerVisibleSurfaces,
-                axisX: controllerVisibleAxisX,
-                axisY: controllerVisibleAxisY,
-                axisZ: controllerVisibleAxisZ,
-                kinematicJoints: controllerVisibleKinematicJoints,
-                bcyl: controllerVisibleBcyl,
-            },
         };
 
-        // Initialize this.folder
+        // Initialize this.folders
         this.folders = {
             colors: folderColors,
-            show: folderShow,
         };
 
         this.setDefaultGUIState();
@@ -421,7 +294,6 @@ export class TLMGui {
 
         this.gui.open(false);
         this.folders.colors.open(true);
-        this.folders.show.open(true);
     }
 
     // Set controls state from a JSON object
@@ -453,31 +325,31 @@ export class TLMGui {
             self.controllers.colors.thickness.load(v);
         });
         set("show_valid_rays", (v: boolean) => {
-            self.controllers.visible.validRays.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "rays-valid", visible: v });
         });
         set("show_blocked_rays", (v: boolean) => {
-            self.controllers.visible.blockedRays.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "rays-blocked", visible: v });
         });
         set("show_output_rays", (v: boolean) => {
-            self.controllers.visible.outputRays.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "rays-output", visible: v });
         });
         set("show_surfaces", (v: boolean) => {
-            self.controllers.visible.surfaces.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "surface", visible: v });
         });
         set("show_axis_x", (v: boolean) => {
-            self.controllers.visible.axisX.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "axis-x", visible: v });
         });
         set("show_axis_y", (v: boolean) => {
-            self.controllers.visible.axisY.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "axis-y", visible: v });
         });
         set("show_axis_z", (v: boolean) => {
-            self.controllers.visible.axisZ.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "axis-z", visible: v });
         });
         set("show_kinematic_joints", (v: boolean) => {
-            self.controllers.visible.kinematicJoints.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "kinematic-joint", visible: v });
         });
         set("show_bounding_cylinders", (v: boolean) => {
-            self.controllers.visible.bcyl.load(v);
+            self.scene.dispatch({ type: "setCategoryVisibility", category: "bcyl", visible: v });
         });
         set("surfaces_opacity", (v: number) => {
             self.controllers.colors.surfacesOpacity.load(v);
