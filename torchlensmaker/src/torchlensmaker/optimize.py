@@ -69,14 +69,7 @@ def focal_loss(model: BaseModule, trace: OpticalTrace) -> torch.Tensor:
     Loss function for a model with a single focal point element
     """
 
-    light_targets = list(trace.iter_nodes_by_record_type(LightTargetRecord))
-
-    if not len(light_targets) == 1:
-        raise RuntimeError(
-            f"Expected exactly one optical trace node for light target, found {len(light_targets)}"
-        )
-
-    key, node = light_targets[0]
+    _, node = trace.first_node_by_record_type(LightTargetRecord)
     return node.record.loss
 
 

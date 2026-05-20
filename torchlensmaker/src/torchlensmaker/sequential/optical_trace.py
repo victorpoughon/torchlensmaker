@@ -122,6 +122,12 @@ class OpticalTrace:
 
         return True
 
+    def iter_real_nodes(self) -> Iterator[tuple[str, OpticalTraceNode]]:
+        """Yield (key, node) for all nodes with a non-None record, skipping containers."""
+        for key, node in self.nodes.items():
+            if node.record is not None:
+                yield (key, node)
+
     def iter_nodes_by_module_type(
         self, typ: type[BaseModule]
     ) -> Iterator[tuple[str, OpticalTraceNode]]:
@@ -135,6 +141,22 @@ class OpticalTrace:
         for key, node in self.nodes.items():
             if isinstance(node.record, typ):
                 yield (key, node)
+
+    def first_node_by_module_type(
+        self, typ: type[BaseModule]
+    ) -> tuple[str, OpticalTraceNode]:
+        """Return the first node whose module is an instance of typ. Raises KeyError if none."""
+        try:
+            return next(self.iter_nodes_by_module_type(typ))
+        except StopIteration:
+            raise KeyError(f"No node with module type {typ.__qualname__} in trace")
+
+    def first_node_by_record_type(self, typ: Any) -> tuple[str, OpticalTraceNode]:
+        """Return the first node whose record is an instance of typ. Raises KeyError if none."""
+        try:
+            return next(self.iter_nodes_by_record_type(typ))
+        except StopIteration:
+            raise KeyError(f"No node with record type {typ.__qualname__} in trace")
 
     def output_rays(self) -> RayBundle:
         return next(reversed(self.nodes.values())).bundle_out

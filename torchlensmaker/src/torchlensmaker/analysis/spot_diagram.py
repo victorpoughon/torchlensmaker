@@ -77,12 +77,7 @@ def spot_diagram(
     with torch.no_grad():
         trace = raytrace(model, 3, dtype=dtype)
 
-    light_targets = list(trace.iter_nodes_by_record_type(LightTargetRecord))
-    if len(light_targets) != 1:
-        raise ValueError(
-            f"Expected exactly one light target, found {len(light_targets)}"
-        )
-    _, node = light_targets[0]
+    _, node = trace.first_node_by_record_type(LightTargetRecord)
 
     rays = node.bundle_in
     sout: SurfaceRecord = node.record.surface_outputs
