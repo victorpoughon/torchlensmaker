@@ -15,6 +15,7 @@ from torchimplicit.implicit_plane import (
     implicit_yaxis_2d,
     implicit_yzplane_3d,
 )
+from torchimplicit.implicit_cube import implicit_cube_3d
 from torchimplicit.implicit_sphere import (
     implicit_sphere_2d,
     implicit_sphere_3d,
@@ -69,6 +70,15 @@ def _make_2d_avoid_disk_boundary(R=1.5, margin=0.1):
     return pts
 
 
+def _make_3d_avoid_cube_seams(margin=0.5):
+    # Cube SDF is non-smooth where two abs-coords are equal (surface edges, interior medial axis)
+    pts = _uniform(10000, 3)
+    ax, ay, az = pts[:, 0].abs(), pts[:, 1].abs(), pts[:, 2].abs()
+    mask = ((ax - ay).abs() < margin) | ((ax - az).abs() < margin) | ((ay - az).abs() < margin)
+    pts[mask] = torch.tensor([10.0, 3.0, 1.0])
+    return pts
+
+
 def _make_3d_avoid_disk_boundary(R=1.5, margin=0.1):
     # Disk Hessian is discontinuous at sqrt(y^2+z^2) = R; exclude points near the boundary
     pts = _uniform(10000, 3)
@@ -99,6 +109,9 @@ cases_implicit_functions_2d = [
 ]
 
 cases_implicit_functions_3d = [
+    pytest.param(
+        partial(implicit_cube_3d, params=_R), _make_3d_avoid_cube_seams, id="cube"
+    ),
     pytest.param(
         partial(implicit_yzcircle_3d, params=_R), _make_3d_avoid_yz0, id="circle"
     ),

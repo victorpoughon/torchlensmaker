@@ -21,6 +21,9 @@ from .implicit_circle import (
     yzcircle_2d,
     yzcircle_3d,
 )
+from .implicit_cube import (
+    cube_3d,
+)
 from .implicit_disk import (
     disk_2d,
     disk_3d,
@@ -65,6 +68,7 @@ __all__ = [
     "aspheric_sag_3d",
     "conical_sag_2d",
     "conical_sag_3d",
+    "cube_3d",
     "disk_2d",
     "disk_3d",
     "example_empty",
