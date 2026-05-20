@@ -54,12 +54,12 @@ def check_sample_and_render_2d(
 ) -> None:
     # Sample and render in 2D
     optics.set_sampling2d(pupil=10, field=5, wavel=2)
-    outputs_2d = optics(tlm.SequentialData.empty(dim=2))
+    trace_2d = tlm.raytrace(optics, dim=2)
     _ = tlm.render_model(optics, dim=2)
 
     # Check dtype, device
-    assert_ray_bundle_dtype(outputs_2d.rays, expected_dtype)
-    assert_ray_bundle_device(outputs_2d.rays, expected_device)
+    assert_ray_bundle_dtype(trace_2d.output_rays(), expected_dtype)
+    assert_ray_bundle_device(trace_2d.output_rays(), expected_device)
 
 
 def check_sample_and_render_3d(
@@ -67,12 +67,12 @@ def check_sample_and_render_3d(
 ) -> None:
     # Sample and render in 3D
     optics.set_sampling3d(pupil=10, field=5, wavel=2)
-    outputs_3d = optics(tlm.SequentialData.empty(dim=3))
+    trace_3d = tlm.raytrace(optics, dim=3)
     _ = tlm.render_model(optics, dim=3)
 
     # Check dtype, device
-    assert_ray_bundle_dtype(outputs_3d.rays, expected_dtype)
-    assert_ray_bundle_device(outputs_3d.rays, expected_device)
+    assert_ray_bundle_dtype(trace_3d.output_rays(), expected_dtype)
+    assert_ray_bundle_device(trace_3d.output_rays(), expected_device)
 
 
 def test_basic_sequential_models(dtype: torch.dtype, device: torch.device):
@@ -309,11 +309,12 @@ def test_multiple_light_sources() -> None:
     tlm.set_sampling2d(optics[0], pupil=3, field=3, wavel=3)
     tlm.set_sampling2d(optics[1], pupil=3, field=3, wavel=3)
 
-    output = optics(tlm.SequentialData.empty(dim=2))
+    trace = tlm.raytrace(optics, dim=2)
+    rays = trace.output_rays()
 
     # We expect both light sources to merge
-    assert output.rays.batch_size == (54,)
+    assert rays.batch_size == (54,)
 
     # We expect 2 light source ids
-    assert torch.sum(output.rays.source.idx == 0) == 27
-    assert torch.sum(output.rays.source.idx == 1) == 27
+    assert torch.sum(rays.source.idx == 0) == 27
+    assert torch.sum(rays.source.idx == 1) == 27

@@ -28,7 +28,7 @@ def check_lens(lens: tlm.Lens) -> None:
         lens,
     )
 
-    outputs = optics(tlm.SequentialData.empty(dim=2))
+    _ = tlm.raytrace(optics, dim=2)
     scene = tlm.render_model(optics, dim=2)
 
 

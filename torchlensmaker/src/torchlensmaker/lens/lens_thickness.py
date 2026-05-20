@@ -54,10 +54,9 @@ def extract_surface_vertices(
     first_surface_record: OpticalSurfaceRecord = first_surface_trace.output_record()
     front_vertex_tf = first_surface_record.surface_record.tf_surface
 
-    last_surface_trace = raytrace_with_inputs(
-        lens_core, first_surface_trace.output_rays(), first_surface_trace.output_tf()
-    )
-    last_surface_record = last_surface_trace.output_record()
+    lens_core_trace = raytrace(lens_core, dim=2, input_trace=first_surface_trace)
+    last_surface_trace = raytrace(last_surface, dim=2, input_trace=lens_core_trace)
+    last_surface_record: OpticalSurfaceRecord = last_surface_trace.output_record()
     rear_vertex_tf = last_surface_record.surface_record.tf_surface
 
     return front_vertex_tf, rear_vertex_tf

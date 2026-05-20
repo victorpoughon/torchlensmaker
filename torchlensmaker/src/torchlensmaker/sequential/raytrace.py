@@ -26,25 +26,35 @@ def raytrace(
     model: BaseModule,
     dim: int,
     *,
+    input_trace: OpticalTrace | None = None,
     dtype: torch.dtype | None = None,
     device: torch.device | None = None,
 ) -> OpticalTrace:
     """
-    Evaluate model starting from an empty root state (identity tf, no rays).
+    Evaluate an optical model into an optical trace
 
     The model's light sources emit the initial ray bundles. Use this for
     self-contained models that include their own light source.
 
+    An input_trace can also be provided, in which case the output rays and
+    output tf are used as input. If not provided start from an empty bundle
+    and an identity root transform.
+
     Args:
         model: the optical model to evaluate
         dim: spatial dimension (2 or 3)
+        input_trace: optional input optical trace
         dtype: floating-point dtype; defaults to torch default
         device: compute device; defaults to torch default
 
     Returns:
         OpticalTrace containing all intermediate and final ray data
     """
-    trace = OpticalTrace.empty(dim, dtype, device)
+    if input_trace is None:
+        trace = OpticalTrace.empty(dim, dtype, device)
+    else:
+        trace = OpticalTrace.from_inputs(input_trace.output_rays(), input_trace.output_tf())
+
     model.trace(trace, "", "_root")
     return trace
 
@@ -58,7 +68,7 @@ def raytrace_with_inputs(
     device: torch.device | None = None,
 ) -> OpticalTrace:
     """
-    Evaluate model starting from a pre-existing ray bundle and kinematic transform.
+    Evaluate an optical model into an optical trace
 
     Use this when the source rays are computed externally and the model is a
     sub-chain that does not include its own light source (e.g. just optics and
