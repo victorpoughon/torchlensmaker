@@ -26,7 +26,7 @@ from torchlensmaker.light_sources.light_sources_query import (
     set_sampling2d,
     set_sampling3d,
 )
-from torchlensmaker.sequential.optical_trace import trace_model
+from torchlensmaker.sequential.raytrace import raytrace
 from torchlensmaker.viewer import tlmviewer as tlmviewer
 from torchlensmaker.viewer.render_model_trace import render_model_trace
 
@@ -61,7 +61,7 @@ def render_model(
     if device is None:
         device = torch.get_default_device()
 
-    trace = trace_model(optics, dim, dtype, device)
+    trace = raytrace(optics, dim, dtype=dtype, device=device)
     scene = render_model_trace(optics, trace, end)
 
     if controls is not None:

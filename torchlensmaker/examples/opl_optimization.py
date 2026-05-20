@@ -8,8 +8,6 @@ Optimizes the curvature of a plano-convex lens to minimize OPL variance
 import torch
 
 import torchlensmaker as tlm
-from torchlensmaker.sequential.optical_path import linear_path
-from torchlensmaker.sequential.optical_trace import trace_model
 
 
 def build_lens(C):
@@ -31,9 +29,9 @@ def build_lens(C):
 
 
 def opl_loss(model):
-    trace = trace_model(model, 2, key="")
+    trace = tlm.raytrace(model, 2)
     # Path from source ("0") to rear surface ("4")
-    path = linear_path(trace, "0", "4")
+    path = tlm.linear_path(trace, "0", "4")
     opl = path.opl()
     valid = trace.nodes["4"].bundle_out.valid
     # OPL variance over valid rays measures wavefront error

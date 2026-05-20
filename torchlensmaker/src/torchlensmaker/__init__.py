@@ -132,7 +132,7 @@ from torchlensmaker.sampling.sampler_elements import (
 )
 from torchlensmaker.sampling.sampling import disk_sampling
 from torchlensmaker.sequential.optical_path import OpticalPath, linear_path
-from torchlensmaker.sequential.optical_trace import OpticalTrace, trace_model
+from torchlensmaker.sequential.optical_trace import OpticalTrace
 from torchlensmaker.sequential.raytrace import raytrace, raytrace_with_inputs
 from torchlensmaker.sequential.sequential import Sequential, SubChain
 from torchlensmaker.sequential.utils import (
@@ -322,7 +322,6 @@ __all__ = [
     "SubChain",
     "Debug",
     "get_elements_by_type",
-    "trace_model",
     "raytrace",
     "raytrace_with_inputs",
     # Surfaces

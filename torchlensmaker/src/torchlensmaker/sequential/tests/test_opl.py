@@ -14,13 +14,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import torch
 import pytest
+import torch
 
 import torchlensmaker as tlm
 from torchlensmaker.materials.material_elements import NonDispersiveMaterial
-from torchlensmaker.sequential.optical_path import OpticalPath, linear_path
-from torchlensmaker.sequential.optical_trace import trace_model
+from torchlensmaker.sequential.optical_path import linear_path
 
 
 def _flat_slab_model(n_in: float, n_glass: float, gap1: float, thickness: float):
@@ -43,7 +42,7 @@ def _flat_slab_model(n_in: float, n_glass: float, gap1: float, thickness: float)
 def test_opl_shape():
     model = _flat_slab_model(1.0, 1.5, 50.0, 5.0)
     model.set_sampling2d(pupil=7, field=1, wavel=1)
-    trace = trace_model(model, 2, key="")
+    trace = tlm.raytrace(model, 2)
 
     path = linear_path(trace, "0", "4")
     opl = path.opl()
@@ -58,7 +57,7 @@ def test_opl_flat_slab_no_aberration():
     n_in, n_glass = 1.0, 1.5
     model = _flat_slab_model(n_in, n_glass, 50.0, 5.0)
     model.set_sampling2d(pupil=11, field=1, wavel=1)
-    trace = trace_model(model, 2, key="")
+    trace = tlm.raytrace(model, 2)
 
     path = linear_path(trace, "0", "4")
     opl = path.opl()
@@ -90,7 +89,7 @@ def test_opl_gradients_flow():
     )
 
     model.set_sampling2d(pupil=11, field=1, wavel=1)
-    trace = trace_model(model, 2, key="")
+    trace = tlm.raytrace(model, 2)
 
     path = linear_path(trace, "0", "4")
     opl = path.opl()
@@ -108,7 +107,7 @@ def test_linear_path_key_errors():
         tlm.Gap(50),
     )
     model.set_sampling2d(pupil=3, field=1, wavel=1)
-    trace = trace_model(model, 2, key="")
+    trace = tlm.raytrace(model, 2)
 
     with pytest.raises(KeyError):
         linear_path(trace, "missing_key", "1")
@@ -151,8 +150,8 @@ def test_opl_nested_subchain_matches_flat():
     flat_model.set_sampling2d(pupil=11, field=1, wavel=1)
     nested_model.set_sampling2d(pupil=11, field=1, wavel=1)
 
-    flat_trace = trace_model(flat_model, 2, key="")
-    nested_trace = trace_model(nested_model, 2, key="")
+    flat_trace = tlm.raytrace(flat_model, 2)
+    nested_trace = tlm.raytrace(nested_model, 2)
 
     assert flat_trace.is_linear()
     assert nested_trace.is_linear()

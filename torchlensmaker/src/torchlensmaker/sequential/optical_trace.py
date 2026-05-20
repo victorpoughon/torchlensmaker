@@ -144,16 +144,3 @@ class OpticalTrace:
 
     def output_record(self) -> Any:
         return next(reversed(self.nodes.values())).record
-
-
-def trace_model(
-    optics: BaseModule,
-    dim: int,
-    dtype: torch.dtype | None = None,
-    device: torch.device | None = None,
-    *,
-    key: str = "",
-) -> OpticalTrace:
-    trace = OpticalTrace.empty(dim, dtype, device)
-    optics.trace(trace, key, "_root")
-    return trace

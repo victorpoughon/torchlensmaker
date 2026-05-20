@@ -25,7 +25,7 @@ from matplotlib.colors import Colormap, LinearSegmentedColormap
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.light_targets.light_target import LightTargetRecord
-from torchlensmaker.sequential.optical_trace import trace_model
+from torchlensmaker.sequential.raytrace import raytrace
 from torchlensmaker.surfaces.surface_element import SurfaceRecord
 
 from .CET_I2 import isoluminant_cgo_80_c38
@@ -75,11 +75,13 @@ def spot_diagram(
 
     # Run the full model to get rays arriving at the image plane
     with torch.no_grad():
-        trace = trace_model(model, 3, dtype=dtype)
+        trace = raytrace(model, 3, dtype=dtype)
 
     light_targets = list(trace.iter_nodes_by_record_type(LightTargetRecord))
     if len(light_targets) != 1:
-        raise ValueError(f"Expected exactly one light target, found {len(light_targets)}")
+        raise ValueError(
+            f"Expected exactly one light target, found {len(light_targets)}"
+        )
     _, node = light_targets[0]
 
     rays = node.bundle_in
