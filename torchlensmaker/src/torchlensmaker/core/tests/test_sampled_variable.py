@@ -158,7 +158,7 @@ def test_empty_2d():
 def test_mask_filters_values_and_idx():
     sv = make_sv([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
     mask = torch.tensor([True, False, True])
-    result = sv.mask(mask)
+    result = sv.filter(mask)
     assert torch.allclose(result.values, torch.tensor([1.0, 3.0]))
     assert torch.equal(result.idx, torch.tensor([0, 2], dtype=torch.int64))
 
@@ -166,7 +166,7 @@ def test_mask_filters_values_and_idx():
 def test_mask_preserves_domain():
     sv = make_sv([1.0, 2.0, 3.0], [0, 1, 2], [1.0, 2.0, 3.0], [0, 1, 2])
     mask = torch.tensor([True, False, False])
-    result = sv.mask(mask)
+    result = sv.filter(mask)
     # Domain unchanged even though indices 1 and 2 are filtered
     assert torch.equal(result.domain_idx, sv.domain_idx)
     assert torch.allclose(result.domain_values, sv.domain_values)
@@ -175,7 +175,7 @@ def test_mask_preserves_domain():
 def test_mask_all_false_preserves_domain():
     sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
     mask = torch.tensor([False, False])
-    result = sv.mask(mask)
+    result = sv.filter(mask)
     assert result.values.shape == (0,)
     assert torch.equal(result.domain_idx, sv.domain_idx)
     assert torch.allclose(result.domain_values, sv.domain_values)

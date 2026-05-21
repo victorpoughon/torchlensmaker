@@ -92,7 +92,7 @@ class SampledVariable:
     def device(self) -> torch.device:
         return self.values.device
 
-    def mask(self, valid: MaskTensor) -> Self:
+    def filter(self, valid: MaskTensor) -> Self:
         return type(self)(
             values=self.values[valid],
             idx=self.idx[valid],

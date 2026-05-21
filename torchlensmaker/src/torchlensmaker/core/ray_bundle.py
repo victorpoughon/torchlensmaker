@@ -123,10 +123,10 @@ class RayBundle:
             V=self.V[valid],
             valid=self.valid[valid],
             n=self.n[valid],
-            pupil=self.pupil.mask(valid),
-            field=self.field.mask(valid),
-            wavel=self.wavel.mask(valid),
-            source=self.source.mask(valid),
+            pupil=self.pupil.filter(valid),
+            field=self.field.filter(valid),
+            wavel=self.wavel.filter(valid),
+            source=self.source.filter(valid),
         )
 
     def cat(self, other: Self) -> Self:
