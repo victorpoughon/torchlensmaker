@@ -138,6 +138,20 @@ class ExactSampling2DKernel(FunctionalKernel):
         )
 
 
+def _linspace_centered(
+    N: Int[torch.Tensor, ""], dtype: torch.dtype, device: torch.device
+) -> Float[torch.Tensor, " N"]:
+    "linspace from -1 to 1 with N samples; returns [0.0] when N==1 instead of [-1.0]"
+    # note: this is not quite mergeable in main
+    # due to onnx export issues with if N == 1
+    if N == 1:
+        return torch.zeros(1, dtype=dtype, device=device)
+    one = torch.ones((), dtype=dtype, device=device)
+    # note: extra .to(dtype=) seems required for onnx export dtype correctness
+    # seems like there is some dependence on torch default dtype inside linspace even when dtype argument is provided
+    return torch.linspace(-one, one, N, dtype=dtype, device=device).to(dtype=dtype)
+
+
 class LinspaceSampling1DKernel(FunctionalKernel):
     inputs = {}
     params = {"N": Int[torch.Tensor, ""]}
@@ -148,14 +162,7 @@ class LinspaceSampling1DKernel(FunctionalKernel):
     def apply(
         self, N: Int[torch.Tensor, ""], dtype: torch.dtype, device: torch.device
     ) -> Float[torch.Tensor, " N"]:
-        one = torch.ones((), dtype=dtype, device=device)
-        # note: extra .to(dtype=) seems required for onnx export dtype correctness
-        # seems like there is some dependence on torch default dtype inside linspace even when dtype argument is provided
-
-        samples = torch.linspace(-one, one, N, dtype=dtype, device=device).to(
-            dtype=dtype
-        )
-        return samples
+        return _linspace_centered(N, dtype, device)
 
     def example_inputs(
         self, dtype: torch.dtype, device: torch.device
@@ -182,11 +189,8 @@ class LinspaceSampling2DKernel(FunctionalKernel):
         dtype: torch.dtype,
         device: torch.device,
     ) -> Float[torch.Tensor, "N 2"]:
-        # note: extra .to(dtype=) seems required for onnx export dtype correctness
-        # seems like there is some dependence on torch default dtype inside linspace even when dtype argument is provided
-
-        X = torch.linspace(-1.0, 1.0, Nx, dtype=dtype, device=device).to(dtype=dtype)
-        Y = torch.linspace(-1.0, 1.0, Ny, dtype=dtype, device=device).to(dtype=dtype)
+        X = _linspace_centered(Nx, dtype, device)
+        Y = _linspace_centered(Ny, dtype, device)
         Xgrid, Ygrid = torch.meshgrid(X, Y, indexing="xy")
         return torch.stack((Xgrid.reshape(-1), Ygrid.reshape(-1)), dim=-1)
 
