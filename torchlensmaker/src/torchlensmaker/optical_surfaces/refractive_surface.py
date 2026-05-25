@@ -91,7 +91,7 @@ class RefractiveSurface(OpticalSurfaceElement):
         combined = rays.valid & valid
         refracted = torch.where(combined.unsqueeze(-1), refracted, rays.V)
 
-        # Filter the ray bundle for valid rays and apply new vector computed by refraction
+        # Mask the ray bundle for valid rays and apply new vector computed by refraction
         rays_refracted = rays.mask(valid).replace(
             P=sout.points_global,
             V=refracted,

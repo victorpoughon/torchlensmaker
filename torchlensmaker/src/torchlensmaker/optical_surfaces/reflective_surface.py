@@ -51,7 +51,11 @@ class ReflectiveSurface(OpticalSurfaceElement):
         combined = rays.valid & sout.valid
         reflected = torch.where(combined.unsqueeze(-1), reflected, rays.V)
 
-        # Filter the ray bundle for valid collisions
+        # TODO should we do
+        # new_points = torch.where(combined.unsqueeze(-1), sout.points_global, rays.P)
+        # to avoid propagating garbage t value from missed collisions?
+
+        # Mask the ray bundle for valid collisions
         points = sout.points_global
         rays_reflected = rays.mask(sout.valid).replace(P=points, V=reflected)
 
