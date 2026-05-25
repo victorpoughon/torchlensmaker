@@ -22,11 +22,9 @@ import torch.nn as nn
 from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.kinematics.homogeneous_geometry import hom_target
-from torchlensmaker.light_sources.light_sources_elements import LightSourceBase
 from torchlensmaker.light_targets.light_target import LightTargetRecord
 from torchlensmaker.optical_surfaces.optical_surface import OpticalSurfaceRecord
 from torchlensmaker.sequential.optical_trace import OpticalTrace
-from torchlensmaker.sequential.utils import get_elements_by_type
 from torchlensmaker.viewer import tlmviewer
 
 
@@ -53,36 +51,6 @@ def raybundle_var_dict(rays: RayBundle) -> dict[str, torch.Tensor]:
     return d
 
 
-def domain_union(a: dict[str, list[float]], b: dict[str, list[float]]):
-    U = dict(a)
-    # merge b into a
-    for key, val in b.items():
-        if key not in a:
-            U[key] = val
-        else:
-            amin, amax = U[key]
-            bmin, bmax = val
-            U[key] = [min(amin, bmin), max(amax, bmax)]
-    return U
-
-
-def get_domain(optics: nn.Module, dim: int) -> dict[str, list[float]]:
-    light_sources = get_elements_by_type(optics, LightSourceBase)
-
-    if len(light_sources) == 0:
-        return {}
-
-    domain = {}
-
-    # Compute union of all light sources domains
-    for ls in light_sources:
-        ls = cast(LightSourceBase, ls)
-        d = ls.domain(dim)
-        domain = domain_union(domain, d)
-
-    return domain
-
-
 def trace_render_surfaces(trace: OpticalTrace) -> list[Any]:
     surfaces = []
     for key, node in trace.iter_nodes_by_record_type(OpticalSurfaceRecord):
@@ -103,7 +71,7 @@ def trace_render_joints(trace: OpticalTrace) -> list[Any]:
     return ret
 
 
-def trace_render_rays(trace: OpticalTrace, domain: dict[str, list[float]]) -> list[Any]:
+def trace_render_rays(trace: OpticalTrace) -> list[Any]:
     ret = []
 
     for key, node in trace.iter_nodes_by_record_type(OpticalSurfaceRecord):
@@ -114,6 +82,8 @@ def trace_render_rays(trace: OpticalTrace, domain: dict[str, list[float]]) -> li
         t, normals, collision_valid = sr.t, sr.normals, sr.valid
 
         rays_valid_coll = input_rays.filter(input_rays.valid & collision_valid)
+
+        domain = bundle_domain(node.bundle_in)
 
         # Render hit rays
         ret.append(
@@ -164,13 +134,38 @@ def trace_render_rays(trace: OpticalTrace, domain: dict[str, list[float]]) -> li
     return ret
 
 
-def trace_render_end_rays(
-    trace: OpticalTrace, end: float | None, domain: dict[str, list[float]]
-) -> list[Any]:
+def bundle_domain(rays: RayBundle) -> dict[str, list[float]]:
+    """
+    Compute domain dict from a ray bundle variables
+    """
+    dim = rays.P.shape[-1]
+    d = {}
+
+    def add(name: str, t: torch.Tensor) -> None:
+        if t.numel() > 0:
+            d[name] = [t.min().item(), t.max().item()]
+
+    if dim == 2:
+        add("pupil", rays.pupil.domain_values)
+        add("field", rays.field.domain_values)
+    if dim == 3:
+        add("pupil0", rays.pupil.domain_values[:, 0])
+        add("pupil1", rays.pupil.domain_values[:, 1])
+        add("field0", rays.field.domain_values[:, 0])
+        add("field1", rays.field.domain_values[:, 1])
+
+    add("wavelength", rays.wavel.domain_values)
+    add("source", rays.source.domain_values)
+
+    return d
+
+
+def trace_render_end_rays(trace: OpticalTrace, end: float | None) -> list[Any]:
     if end is None:
         return []
 
     _, node = next(reversed(trace.nodes.items()))
+    domain = bundle_domain(node.bundle_in)
     rays = node.bundle_out.filter(node.bundle_out.valid)
     return tlmviewer.render_rays_length(
         rays.P,
@@ -202,17 +197,13 @@ def render_model_trace(
     dim = trace.dim
     viewer_scene = tlmviewer.new_scene("2D" if dim == 2 else "3D")
 
-    # Figure out available ray variables and their range,
-    # this will be used for rays coloring info by tlmviewer
-    ray_variables_domains = get_domain(model, dim)
-
     # Render parts of the scene: surfaces, joints, rays
     viewer_scene.data.extend(trace_render_surfaces(trace))
     viewer_scene.data.extend(trace_render_joints(trace))
-    viewer_scene.data.extend(trace_render_rays(trace, ray_variables_domains))
+    viewer_scene.data.extend(trace_render_rays(trace))
 
     # Render end rays
-    viewer_scene.data.extend(trace_render_end_rays(trace, end, ray_variables_domains))
+    viewer_scene.data.extend(trace_render_end_rays(trace, end))
 
     # Render focal point
     viewer_scene.data.extend(trace_render_focal_points(trace))
