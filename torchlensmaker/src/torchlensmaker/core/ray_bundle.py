@@ -129,18 +129,6 @@ class RayBundle:
             source=self.source.filter(valid),
         )
 
-    def cat(self, other: Self) -> Self:
-        return type(self)(
-            P=torch.cat((self.P, other.P)),
-            V=torch.cat((self.V, other.V)),
-            valid=torch.cat((self.valid, other.valid)),
-            n=torch.cat((self.n, other.n)),
-            pupil=self.pupil.cat(other.pupil),
-            field=self.field.cat(other.field),
-            wavel=self.wavel.cat(other.wavel),
-            source=self.source.cat(other.source),
-        )
-
     def points_at(self, t: BatchTensor) -> BatchNDTensor:
         "Points on rays at parametric distance t"
         return self.P + t.unsqueeze(-1) * self.V

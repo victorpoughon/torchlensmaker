@@ -51,7 +51,6 @@ class LightSourceBase(BaseModule):
     def trace(self, trace: OpticalTrace, key: str, upstream_key: str) -> None:
         upstream = trace.nodes[upstream_key]
         source_bundle = self(upstream.tf_out.direct)
-        merged_bundle = upstream.bundle_out.cat(source_bundle)
         trace.append(
             key=key,
             record=source_bundle,
@@ -59,7 +58,7 @@ class LightSourceBase(BaseModule):
             upstream={upstream_key},
             bundle_in=upstream.bundle_out,
             tf_in=upstream.tf_out,
-            new_bundle=merged_bundle,
+            new_bundle=source_bundle,
             new_tf=None,
         )
 

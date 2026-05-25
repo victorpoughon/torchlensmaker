@@ -181,59 +181,6 @@ def test_mask_all_false_preserves_domain():
     assert torch.allclose(result.domain_values, sv.domain_values)
 
 
-# --- cat ---
-
-
-def test_cat_disjoint_domains():
-    sv_a = make_sv([1.0], [0], [1.0], [0])
-    sv_b = make_sv([5.0], [5], [5.0], [5])
-    result = sv_a.cat(sv_b)
-    assert torch.equal(result.domain_idx, torch.tensor([0, 5], dtype=torch.int64))
-    assert torch.allclose(result.domain_values, torch.tensor([1.0, 5.0]))
-    assert torch.allclose(result.values, torch.tensor([1.0, 5.0]))
-    assert torch.equal(result.idx, torch.tensor([0, 5], dtype=torch.int64))
-
-
-def test_cat_overlapping_matching_domain():
-    sv_a = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
-    sv_b = make_sv([1.0, 3.0], [0, 2], [1.0, 3.0], [0, 2])
-    result = sv_a.cat(sv_b)
-    # Domain should be union {0, 1, 2}
-    assert torch.equal(result.domain_idx, torch.tensor([0, 1, 2], dtype=torch.int64))
-    assert torch.allclose(result.domain_values, torch.tensor([1.0, 2.0, 3.0]))
-    assert result.values.shape == (4,)
-
-
-def test_cat_overlapping_mismatched_domain_raises():
-    sv_a = make_sv([1.0], [0], [1.0], [0])
-    sv_b = make_sv([9.0], [0], [9.0], [0])  # same idx=0 but different value
-    with pytest.raises(AssertionError):
-        sv_a.cat(sv_b)
-
-
-def test_cat_empty_left():
-    empty = SampledVariable.empty((), torch.float32, torch.device("cpu"))
-    sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
-    result = empty.cat(sv)
-    assert result is sv
-
-
-def test_cat_empty_right():
-    sv = make_sv([1.0, 2.0], [0, 1], [1.0, 2.0], [0, 1])
-    empty = SampledVariable.empty((), torch.float32, torch.device("cpu"))
-    result = sv.cat(empty)
-    assert result is sv
-
-
-def test_cat_2d_disjoint_domains():
-    sv_a = make_sv([[1.0, 0.0]], [0], [[1.0, 0.0]], [0])
-    sv_b = make_sv([[0.0, 1.0]], [5], [[0.0, 1.0]], [5])
-    result = sv_a.cat(sv_b)
-    assert torch.equal(result.domain_idx, torch.tensor([0, 5], dtype=torch.int64))
-    assert result.domain_values.shape == (2, 2)
-    assert result.values.shape == (2, 2)
-
-
 # --- public API smoke test ---
 
 
