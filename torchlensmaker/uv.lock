@@ -2173,18 +2173,18 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.9" },
     { name = "tlmviewer", editable = "../tlmviewer-python" },
     { name = "torchimplicit", editable = "../torchimplicit" },
-    { name = "torchnodo", specifier = ">=1.2.0" },
+    { name = "torchnodo", specifier = ">=1.3.0" },
     { name = "trama", specifier = ">=0.2.0" },
 ]
 provides-extras = ["test", "dev", "onnx"]
 
 [[package]]
 name = "torchnodo"
-version = "1.2.0"
+version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c2/13/3d91af94e55816d3c0fda79dc61c7801de9c01e222fd2c813cab321d8419/torchnodo-1.2.0.tar.gz", hash = "sha256:6a734b4fdd497aff449f5a6ac24a872b02659681e2123886565c197f8ef411f6", size = 14570, upload-time = "2026-05-22T11:47:37.127Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/89/83/8fb34720737df538cd8e72f70673e493866433f6d7951e5f1f94a36d36cc/torchnodo-1.3.0.tar.gz", hash = "sha256:068de65167c3a4b390b29070a2418ec333af23c0682efa7497e70961e71703a2", size = 16497, upload-time = "2026-05-22T19:24:51.082Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/45/08ec7cb21e5bc0a5e64ed5f45bfd8d97be7f7e8b65e6d2d65698c6dbaf3e/torchnodo-1.2.0-py3-none-any.whl", hash = "sha256:4a6b63ed6ca7417d5f8b94bc2ddcd4da446cae0b66af069647bef0d9a87f115b", size = 22307, upload-time = "2026-05-22T11:47:35.537Z" },
+    { url = "https://files.pythonhosted.org/packages/72/42/a3118e8ceeeb0ac1a8cf8a3d311a3fdccf6ae8c4700689190b7dd790ed97/torchnodo-1.3.0-py3-none-any.whl", hash = "sha256:71c301aac279e8f1472667f43f65a3983202dae399bc64f5c753666d778b784c", size = 24610, upload-time = "2026-05-22T19:24:49.744Z" },
 ]
 
 [[package]]
