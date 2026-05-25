@@ -168,7 +168,12 @@ def parametric_solver_newton_step(
     J = torch.stack([V, -S_u, -S_v], dim=-1)
 
     # Solve J × Δθ = -Q; we return delta such that θ ← θ - delta
+    assert J.shape == (P.shape[0], 3, 3)
+    assert Q.shape == (P.shape[0], 3)
     delta = solve3x3(J, Q, singular_check=singular_check)
+    # result, info = torch.linalg.solve_ex(J, Q)
+    # delta = result
+    # print(info)
     return delta
 
 

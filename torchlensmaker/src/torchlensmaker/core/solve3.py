@@ -18,7 +18,10 @@ import torch
 
 
 def solve3x3(
-    A: torch.Tensor, b: torch.Tensor, singular_check: bool = False
+    A: torch.Tensor,
+    b: torch.Tensor,
+    singular_check: bool = False,
+    det_threshold: float = 1e-6,
 ) -> torch.Tensor:
     """
     Batched solve for Ax = b, where:
@@ -53,9 +56,13 @@ def solve3x3(
             "solve3x3: The solver failed because the input matrix is singular."
         )
 
+    # Safe inverse determinant
+    mask = det.abs() > det_threshold
+    safe_det = torch.where(mask, det, torch.ones_like(det))
+    inv_det = torch.where(mask, 1.0 / safe_det, torch.zeros_like(det))
+
     # Adjugate = transpose of the cofactor matrix. Stack rows of adj directly:
     # adj[i, j] = cofactor[j, i]
-    inv_det = 1.0 / det
     row0 = torch.stack((c00, c10, c20), dim=-1) * inv_det.unsqueeze(-1)
     row1 = torch.stack((c01, c11, c21), dim=-1) * inv_det.unsqueeze(-1)
     row2 = torch.stack((c02, c12, c22), dim=-1) * inv_det.unsqueeze(-1)
