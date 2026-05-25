@@ -117,11 +117,8 @@ def init_theta_grid_search(
     uu, vv = torch.meshgrid(u_grid, v_grid, indexing="ij")
     uv_grid = torch.stack([uu.reshape(-1), vv.reshape(-1)], dim=-1)
 
-    # Evaluate surface at all uv points.
-    # parametric_function requires a rank-2 input (batch, 2), so flatten the
-    # ray batch and grid dims together, then reshape the result back.
-    uv_flat = uv_grid.expand(batch_shape + (n_uv, 2)).reshape(-1, 2)
-    S_pts = parametric_function(uv_flat, order=0)[0, 0].reshape(batch_shape + (n_uv, 3))
+    # Evaluate surface at all uv points once — surface geometry is independent of rays.
+    S_pts = parametric_function(uv_grid, order=0)[0, 0]  # (n_uv, 3)
 
     # Ray points for all t values: (*batch_shape, t_samples, 3)
     # P[..., None, :] + t_grid * V[..., None, :]
@@ -131,7 +128,7 @@ def init_theta_grid_search(
 
     # Squared distances over all (t, uv) combinations: (*batch_shape, t_samples, n_uv)
     # ray_pts: (*batch_shape, t_samples, 1, 3)
-    # S_pts:   (*batch_shape, 1,        n_uv, 3)
+    # S_pts:   (             1,        n_uv, 3) — broadcasts over batch and t dims
     diff = ray_pts.unsqueeze(-2) - S_pts.unsqueeze(-3)
     sq_dist = (diff * diff).sum(dim=-1)  # (*batch_shape, t_samples, n_uv)
 
