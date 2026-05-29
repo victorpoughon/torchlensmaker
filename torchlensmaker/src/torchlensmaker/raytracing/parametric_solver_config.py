@@ -80,6 +80,7 @@ Possible values:
     * v_domain: (lo, hi) bounds for v, e.g. (0.0, 1.0)
     * singular_check: if True, raise LinAlgError when the Jacobian is singular
     * periodic_uv: pair of bools; periodic dims are wrapped with remainder instead of clamped to their domain
+    * max_delta_t: if set, clamp the t component of each Newton delta to [-max_delta_t, max_delta_t]
 """
 
 
@@ -111,6 +112,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     v_domain: tuple[float, float] = config["v_domain"]
     singular_check: bool = config["singular_check"]
     periodic_uv: tuple[bool, bool] = config["periodic_uv"]
+    max_delta_t: float | None = config.get("max_delta_t", None)
     solver_name: str = config["parametric_solver"]
 
     shared = dict(
@@ -122,6 +124,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
         v_domain=v_domain,
         singular_check=singular_check,
         periodic_uv=periodic_uv,
+        max_delta_t=max_delta_t,
     )
 
     if solver_name == "newton":

@@ -214,6 +214,19 @@ def clamp_theta(
     return torch.stack([t, u, v], dim=-1)
 
 
+def clamp_delta_t(
+    delta: torch.Tensor,
+    max_delta_t: float | None,
+) -> torch.Tensor:
+    "Clamp the t component of a delta step to [-max_delta_t, max_delta_t]; no-op if None."
+    if max_delta_t is None:
+        return delta
+    return torch.cat([
+        delta[..., :1].clamp(-max_delta_t, max_delta_t),
+        delta[..., 1:],
+    ], dim=-1)
+
+
 def parametric_solver_newton(
     P: BatchNDTensor,
     V: BatchNDTensor,
@@ -226,6 +239,7 @@ def parametric_solver_newton(
     v_domain: tuple[float, float],
     singular_check: bool,
     periodic_uv: tuple[bool, bool],
+    max_delta_t: float | None,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     First order Newton's method for parametric surfaces.
@@ -248,6 +262,7 @@ def parametric_solver_newton(
             delta = parametric_solver_newton_step(
                 theta, P, V, parametric_function, singular_check
             )
+            delta = clamp_delta_t(delta, max_delta_t)
             theta = clamp_theta(
                 theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
             )
@@ -256,6 +271,7 @@ def parametric_solver_newton(
     delta = parametric_solver_newton_step(
         theta, P, V, parametric_function, singular_check
     )
+    delta = clamp_delta_t(delta, max_delta_t)
     theta = clamp_theta(
         theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
     )
@@ -276,6 +292,7 @@ def parametric_solver_newton_beam(
     v_domain: tuple[float, float],
     singular_check: bool,
     periodic_uv: tuple[bool, bool],
+    max_delta_t: float | None,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     Multi-beam first order Newton's method for parametric surfaces.
@@ -306,6 +323,7 @@ def parametric_solver_newton_beam(
             delta = parametric_solver_newton_step(
                 thetas, P_beam, V_beam, parametric_function, singular_check
             )
+            delta = clamp_delta_t(delta, max_delta_t)
             thetas = clamp_theta(
                 thetas - damping * delta, t_domain, u_domain, v_domain, periodic_uv
             )
@@ -322,6 +340,7 @@ def parametric_solver_newton_beam(
             delta = parametric_solver_newton_step(
                 theta, P, V, parametric_function, singular_check
             )
+            delta = clamp_delta_t(delta, max_delta_t)
             theta = clamp_theta(
                 theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
             )
@@ -330,6 +349,7 @@ def parametric_solver_newton_beam(
     delta = parametric_solver_newton_step(
         theta, P, V, parametric_function, singular_check
     )
+    delta = clamp_delta_t(delta, max_delta_t)
     theta = clamp_theta(
         theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
     )
@@ -402,6 +422,7 @@ def parametric_solver_newton2(
     v_domain: tuple[float, float],
     singular_check: bool,
     periodic_uv: tuple[bool, bool],
+    max_delta_t: float | None,
 ) -> tuple[BatchTensor, BatchTensor]:
     """
     Second order Newton's method for parametric surfaces.
@@ -425,6 +446,7 @@ def parametric_solver_newton2(
             delta = parametric_solver_newton2_step(
                 theta, P, V, parametric_function, singular_check
             )
+            delta = clamp_delta_t(delta, max_delta_t)
             theta = clamp_theta(
                 theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
             )
@@ -433,6 +455,7 @@ def parametric_solver_newton2(
     delta = parametric_solver_newton2_step(
         theta, P, V, parametric_function, singular_check
     )
+    delta = clamp_delta_t(delta, max_delta_t)
     theta = clamp_theta(
         theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
     )
