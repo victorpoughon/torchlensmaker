@@ -56,7 +56,7 @@ class ThetaInitFunction(Protocol):
         V: BatchNDTensor,
         parametric_function: "ParametricFunction",
     ) -> torch.Tensor:
-        # Returns theta of shape (..., 3) containing initial [t, u, v]
+        # Returns theta candidates of shape (*batch, K, 3) containing initial [t, u, v]
         ...
 
 
@@ -68,7 +68,7 @@ def init_theta_closest(
     "Initialize t to the closest approach to the origin, u and v to 0.5"
     t0 = init_closest_origin(P, V)
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
-    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1).unsqueeze(-2)
 
 
 def init_theta_constant(
@@ -81,7 +81,7 @@ def init_theta_constant(
     "Initialize t to a constant value, u and v to 0.5"
     t0 = torch.full_like(P[..., -1], t)
     uv0 = torch.full(P.shape[:-1] + (2,), 0.5, dtype=P.dtype, device=P.device)
-    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1)
+    return torch.cat([t0.unsqueeze(-1), uv0], dim=-1).unsqueeze(-2)
 
 
 def init_theta_grid_search(
@@ -96,53 +96,45 @@ def init_theta_grid_search(
     v_range: tuple[float, float],
     v_samples: int,
 ) -> torch.Tensor:
-    "Initialize theta by grid search: pick (t, u, v) minimizing ||P + tV - S(u,v)||²"
+    "Return all (t, u, v) grid candidates, shape (*batch, K, 3) where K = t_samples * u_samples * v_samples"
     dtype, device = P.dtype, P.device
     batch_shape = P.shape[:-1]
 
-    # Build 1-D grids for each parameter
-    t_grid = torch.linspace(
-        t_range[0], t_range[1], t_samples, dtype=dtype, device=device
-    )
-    u_grid = torch.linspace(
-        u_range[0], u_range[1], u_samples, dtype=dtype, device=device
-    )
-    v_grid = torch.linspace(
-        v_range[0], v_range[1], v_samples, dtype=dtype, device=device
-    )
+    t_grid = torch.linspace(t_range[0], t_range[1], t_samples, dtype=dtype, device=device)
+    u_grid = torch.linspace(u_range[0], u_range[1], u_samples, dtype=dtype, device=device)
+    v_grid = torch.linspace(v_range[0], v_range[1], v_samples, dtype=dtype, device=device)
 
-    n_uv = u_samples * v_samples
+    K = t_samples * u_samples * v_samples
+    tt, uu, vv = torch.meshgrid(t_grid, u_grid, v_grid, indexing="ij")
+    all_thetas = torch.stack([tt.reshape(-1), uu.reshape(-1), vv.reshape(-1)], dim=-1)  # (K, 3)
 
-    # Build uv grid: shape (n_uv, 2)
-    uu, vv = torch.meshgrid(u_grid, v_grid, indexing="ij")
-    uv_grid = torch.stack([uu.reshape(-1), vv.reshape(-1)], dim=-1)
+    extra_dims = (1,) * len(batch_shape)
+    return all_thetas.view(extra_dims + (K, 3)).expand(batch_shape + (K, 3))
 
-    # Evaluate surface at all uv points once — surface geometry is independent of rays.
-    S_pts = parametric_function(uv_grid, order=0)[0, 0]  # (n_uv, 3)
 
-    # Ray points for all t values: (*batch_shape, t_samples, 3)
-    # P[..., None, :] + t_grid * V[..., None, :]
-    ray_pts = P.unsqueeze(-2) + t_grid.view(
-        (1,) * len(batch_shape) + (t_samples, 1)
-    ) * V.unsqueeze(-2)
+def reduce_theta_min_distance(
+    thetas: torch.Tensor,
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: "ParametricFunction",
+) -> torch.Tensor:
+    "Pick the theta minimizing ||P + t*V - S(u,v)||² per batch element. Returns (*batch, 3)."
+    batch_shape = P.shape[:-1]
+    K = thetas.shape[-2]
 
-    # Squared distances over all (t, uv) combinations: (*batch_shape, t_samples, n_uv)
-    # ray_pts: (*batch_shape, t_samples, 1, 3)
-    # S_pts:   (             1,        n_uv, 3) — broadcasts over batch and t dims
-    diff = ray_pts.unsqueeze(-2) - S_pts.unsqueeze(-3)
-    sq_dist = (diff * diff).sum(dim=-1)  # (*batch_shape, t_samples, n_uv)
+    t = thetas[..., 0]    # (*batch, K)
+    uv = thetas[..., 1:]  # (*batch, K, 2)
 
-    # Find argmin over all (t, u, v) combinations per ray, then unravel to per-dim indices
-    flat_idx = sq_dist.reshape(batch_shape + (t_samples * n_uv,)).argmin(dim=-1)
-    t_idx, u_idx, v_idx = torch.unravel_index(
-        flat_idx, (t_samples, u_samples, v_samples)
-    )
+    uv_flat = uv.reshape(-1, 2)
+    S_flat = parametric_function(uv_flat, order=0)[0, 0]  # (batch*K, 3)
+    S = S_flat.reshape(batch_shape + (K, 3))
 
-    t0 = t_grid[t_idx]
-    u0 = u_grid[u_idx]
-    v0 = v_grid[v_idx]
+    ray_pts = P.unsqueeze(-2) + t.unsqueeze(-1) * V.unsqueeze(-2)  # (*batch, K, 3)
+    sq_dist = ((ray_pts - S) ** 2).sum(dim=-1)  # (*batch, K)
 
-    return torch.stack([t0, u0, v0], dim=-1)
+    best_idx = sq_dist.argmin(dim=-1)  # (*batch,)
+    best_idx_expanded = best_idx.unsqueeze(-1).unsqueeze(-1).expand(*batch_shape, 1, 3)
+    return thetas.gather(-2, best_idx_expanded).squeeze(-2)  # (*batch, 3)
 
 
 def parametric_solver_newton_step(
@@ -220,8 +212,9 @@ def parametric_solver_newton(
     """
 
     with torch.no_grad():
-        # Initialize theta = (t, u, v) with the init method
-        theta = init_fn(P, V, parametric_function)
+        # Initialize theta = (t, u, v) with the init method, then reduce to best candidate
+        thetas = init_fn(P, V, parametric_function)
+        theta = reduce_theta_min_distance(thetas, P, V, parametric_function)
 
         # Clamp the initial theta
         theta = clamp_theta(theta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
@@ -326,8 +319,9 @@ def parametric_solver_newton2(
     """
 
     with torch.no_grad():
-        # Initialize theta = (t, u, v) with the init method
-        theta = init_fn(P, V, parametric_function)
+        # Initialize theta = (t, u, v) with the init method, then reduce to best candidate
+        thetas = init_fn(P, V, parametric_function)
+        theta = reduce_theta_min_distance(thetas, P, V, parametric_function)
 
         # Clamp the initial theta
         theta = clamp_theta(theta, clamp_positive, periodic_uv, u_epsilon, v_epsilon)
