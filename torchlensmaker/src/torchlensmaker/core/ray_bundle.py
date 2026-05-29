@@ -23,6 +23,7 @@ from torchlensmaker.core.sampled_variable import SampledVariable
 from torchlensmaker.types import (
     BatchNDTensor,
     BatchTensor,
+    IndexTensor,
     MaskTensor,
 )
 
@@ -127,6 +128,18 @@ class RayBundle:
             field=self.field.filter(valid),
             wavel=self.wavel.filter(valid),
             source=self.source.filter(valid),
+        )
+
+    def sample(self, idx: IndexTensor) -> Self:
+        return type(self)(
+            P=self.P[idx],
+            V=self.V[idx],
+            valid=self.valid[idx],
+            n=self.n[idx],
+            pupil=self.pupil.sample(idx),
+            field=self.field.sample(idx),
+            wavel=self.wavel.sample(idx),
+            source=self.source.sample(idx),
         )
 
     def points_at(self, t: BatchTensor) -> BatchNDTensor:

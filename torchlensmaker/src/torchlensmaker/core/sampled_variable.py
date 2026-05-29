@@ -100,6 +100,14 @@ class SampledVariable:
             domain_idx=self.domain_idx,
         )
 
+    def sample(self, idx: IndexTensor) -> Self:
+        return type(self)(
+            values=self.values[idx],
+            idx=self.idx[idx],
+            domain_values=self.domain_values,
+            domain_idx=self.domain_idx,
+        )
+
     def map(self, fn: Callable[[torch.Tensor], torch.Tensor]) -> Self:
         "Apply a unary function to both values and domain_values, leaving idx tensors unchanged."
         return type(self)(
