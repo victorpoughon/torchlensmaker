@@ -73,11 +73,11 @@ Possible values:
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
     * init: ThetaInit instance (InitClosest, InitConstant, or InitGridSearch)
-    * clamp_positive: if True, clamp t >= 0 after each Newton update step
+    * t_domain: (lo, hi) bounds for t; None on either side means unbounded. e.g. (0.0, None) clamps t >= 0
+    * u_domain: (lo, hi) bounds for u, e.g. (0.0, 1.0)
+    * v_domain: (lo, hi) bounds for v, e.g. (0.0, 1.0)
     * singular_check: if True, raise LinAlgError when the Jacobian is singular
-    * periodic_uv: pair of bools; periodic dims are wrapped with remainder instead of clamped
-    * u_epsilon: clamp u to [u_epsilon, 1 - u_epsilon] instead of [0, 1]
-    * v_epsilon: clamp v to [v_epsilon, 1 - v_epsilon] instead of [0, 1]
+    * periodic_uv: pair of bools; periodic dims are wrapped with remainder instead of clamped to their domain
 """
 
 
@@ -104,11 +104,11 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
     init_fn: ThetaInitFunction = make_init_function(config["init"])
-    clamp_positive: bool = config["clamp_positive"]
+    t_domain: tuple[float | None, float | None] = config["t_domain"]
+    u_domain: tuple[float, float] = config["u_domain"]
+    v_domain: tuple[float, float] = config["v_domain"]
     singular_check: bool = config["singular_check"]
     periodic_uv: tuple[bool, bool] = config["periodic_uv"]
-    u_epsilon: float = config["u_epsilon"]
-    v_epsilon: float = config["v_epsilon"]
     solver_name: str = config["parametric_solver"]
 
     if solver_name == "newton":
@@ -117,11 +117,11 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             num_iter=num_iter,
             damping=damping,
             init_fn=init_fn,
-            clamp_positive=clamp_positive,
+            t_domain=t_domain,
+            u_domain=u_domain,
+            v_domain=v_domain,
             singular_check=singular_check,
             periodic_uv=periodic_uv,
-            u_epsilon=u_epsilon,
-            v_epsilon=v_epsilon,
         )
     elif solver_name == "newton2":
         return partial(
@@ -129,11 +129,11 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
             num_iter=num_iter,
             damping=damping,
             init_fn=init_fn,
-            clamp_positive=clamp_positive,
+            t_domain=t_domain,
+            u_domain=u_domain,
+            v_domain=v_domain,
             singular_check=singular_check,
             periodic_uv=periodic_uv,
-            u_epsilon=u_epsilon,
-            v_epsilon=v_epsilon,
         )
     else:
         raise ValueError(f"Unknown parametric solver: {solver_name!r}")

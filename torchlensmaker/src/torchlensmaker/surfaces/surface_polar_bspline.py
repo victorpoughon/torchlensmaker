@@ -62,11 +62,11 @@ class PolarBSplineSurface(SurfaceElement):
         "damping": 1.0,
         "tol": 1e-4,
         "init": InitClosest(),
-        "clamp_positive": False,
+        "t_domain": (None, None),
+        "u_domain": (0.0, 1.0),
+        "v_domain": (0.0, 1.0),
         "singular_check": False,
         "periodic_uv": (False, True),
-        "u_epsilon": 0.0,
-        "v_epsilon": 0.0,
     }
 
     def __init__(
