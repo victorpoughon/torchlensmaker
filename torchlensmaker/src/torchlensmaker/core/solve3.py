@@ -21,7 +21,7 @@ def solve3x3(
     A: torch.Tensor,
     b: torch.Tensor,
     singular_check: bool = False,
-    det_threshold: float = 1e-6,
+    det_threshold: float = 1e-3,
 ) -> torch.Tensor:
     """
     Batched solve for Ax = b, where:
@@ -29,7 +29,11 @@ def solve3x3(
         b is (..., 3)
 
     matching torch.linalg.solve's broadcasting.
-    Returns x with the same shape as b.
+    Returns x with the same shape as b, or zero for degenerate systems.
+
+    Uses a Tikhonov smooth inverse determinant: det / (det^2 + eps^2).
+    This avoids the hard-threshold gradient cliff and keeps gradients smooth
+    and bounded everywhere. The maximum effective inverse is 1/(2*det_threshold).
     """
 
     # Unpack the 9 entries. Indexing with ints keeps the leading batch dims intact.
@@ -56,10 +60,10 @@ def solve3x3(
             "solve3x3: The solver failed because the input matrix is singular."
         )
 
-    # Safe inverse determinant
-    mask = det.abs() > det_threshold
-    safe_det = torch.where(mask, det, torch.ones_like(det))
-    inv_det = torch.where(mask, 1.0 / safe_det, torch.zeros_like(det))
+    # Tikhonov smooth inverse: det / (det^2 + eps^2).
+    # Approximates 1/det when |det| >> eps, smoothly approaches 0 when det -> 0.
+    # No hard threshold, no gradient cliff. Maximum value: 1 / (2 * det_threshold).
+    inv_det = det / (det.pow(2) + det_threshold**2)
 
     # Adjugate = transpose of the cofactor matrix. Stack rows of adj directly:
     # adj[i, j] = cofactor[j, i]
