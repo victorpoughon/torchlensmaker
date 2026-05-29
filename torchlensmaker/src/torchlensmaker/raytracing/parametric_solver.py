@@ -163,14 +163,22 @@ def parametric_solver_newton_step(
     parametric_function: ParametricFunction,
     singular_check: bool,
 ) -> torch.Tensor:
-    "One step of first order Newton solver. theta/P/V are (*rays, 3) — one value per ray."
-    t = theta[..., 0]
-    uv = theta[..., 1:]
+    """One step of first order Newton solver.
 
-    Sout = parametric_function(uv, order=1)
-    S_val = Sout[0, 0]
-    S_u = Sout[1, 0]
-    S_v = Sout[0, 1]
+    theta/P/V may have any leading batch dims (*batch, 3), e.g. (*rays, 3) for
+    single-beam or (*rays, K, 3) for multi-beam with K candidates per ray.
+    uv is flattened to (-1, 2) before calling parametric_function (which requires
+    exactly 2D input), then outputs are reshaped back to (*batch, 3).
+    """
+    batch_shape = theta.shape[:-1]
+    t = theta[..., 0]
+
+    # parametric_function requires uv of shape (N, 2); flatten and reshape back
+    uv_flat = theta[..., 1:].reshape(-1, 2)
+    Sout = parametric_function(uv_flat, order=1)
+    S_val = Sout[0, 0].reshape(batch_shape + (3,))
+    S_u = Sout[1, 0].reshape(batch_shape + (3,))
+    S_v = Sout[0, 1].reshape(batch_shape + (3,))
 
     # Q = P + tV - S(u, v)
     Q = P + t.unsqueeze(-1) * V - S_val
@@ -179,13 +187,9 @@ def parametric_solver_newton_step(
     J = torch.stack([V, -S_u, -S_v], dim=-1)
 
     # Solve J × Δθ = -Q; we return delta such that θ ← θ - delta
-    assert J.shape == (P.shape[0], 3, 3)
-    assert Q.shape == (P.shape[0], 3)
-    delta = solve3x3(J, Q, singular_check=singular_check)
-    # result, info = torch.linalg.solve_ex(J, Q)
-    # delta = result
-    # print(info)
-    return delta
+    assert J.shape[-2:] == (3, 3)
+    assert Q.shape[-1:] == (3,)
+    return solve3x3(J, Q, singular_check=singular_check)
 
 
 def clamp_theta(
@@ -249,6 +253,80 @@ def parametric_solver_newton(
             )
 
     # One differentiable step
+    delta = parametric_solver_newton_step(
+        theta, P, V, parametric_function, singular_check
+    )
+    theta = clamp_theta(
+        theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
+    )
+
+    return theta[..., 0], theta[..., 1:]
+
+
+def parametric_solver_newton_beam(
+    P: BatchNDTensor,
+    V: BatchNDTensor,
+    parametric_function: ParametricFunction,
+    num_iter_beam: int,
+    num_iter: int,
+    damping: float,
+    init_fn: ThetaInitFunction,
+    t_domain: tuple[float | None, float | None],
+    u_domain: tuple[float, float],
+    v_domain: tuple[float, float],
+    singular_check: bool,
+    periodic_uv: tuple[bool, bool],
+) -> tuple[BatchTensor, BatchTensor]:
+    """
+    Multi-beam first order Newton's method for parametric surfaces.
+    Runs Newton iterations over all K init candidates simultaneously before
+    reducing to the best one, then refines with single-beam iterations.
+    Differentiable over the last iteration.
+    P, V: (*rays, 3). Returns t (*rays,) and uv (*rays, 2).
+
+    Step 0: init_fn returns (*rays, K, 3) — all candidates, no reduction yet
+    Step 1: num_iter_beam Newton iterations over all candidates (*rays, K, 3)
+    Step 2: reduce to best candidate per ray -> (*rays, 3)
+    Step 3: num_iter - 1 single-beam Newton iterations (non-differentiable)
+    Step 4: one final differentiable Newton step
+    """
+    rays_shape = P.shape[:-1]  # (*rays,)
+
+    with torch.no_grad():
+        # Step 0: get all K candidates per ray, shape (*rays, K, 3)
+        thetas = init_fn(P, V, parametric_function)
+        K = thetas.shape[-2]
+        thetas = clamp_theta(thetas, t_domain, u_domain, v_domain, periodic_uv)
+
+        # Step 1: multi-beam Newton iterations over (*rays, K, 3)
+        # Expand P, V from (*rays, 3) to (*rays, K, 3) to match thetas
+        P_beam = P.unsqueeze(-2).expand(rays_shape + (K, 3))
+        V_beam = V.unsqueeze(-2).expand(rays_shape + (K, 3))
+        for _ in range(num_iter_beam):
+            delta = parametric_solver_newton_step(
+                thetas, P_beam, V_beam, parametric_function, singular_check
+            )
+            thetas = clamp_theta(
+                thetas - damping * delta, t_domain, u_domain, v_domain, periodic_uv
+            )
+
+        # Step 2: reduce to one candidate per ray, shape (*rays, 3)
+        theta = reduce_theta_min_distance(thetas, P, V, parametric_function)
+        theta = clamp_theta(theta, t_domain, u_domain, v_domain, periodic_uv)
+
+        if num_iter == 0:
+            return theta[..., 0], theta[..., 1:]
+
+        # Step 3: num_iter - 1 non-differentiable single-beam refinement steps
+        for _ in range(num_iter - 1):
+            delta = parametric_solver_newton_step(
+                theta, P, V, parametric_function, singular_check
+            )
+            theta = clamp_theta(
+                theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
+            )
+
+    # Step 4: one differentiable step
     delta = parametric_solver_newton_step(
         theta, P, V, parametric_function, singular_check
     )

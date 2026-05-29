@@ -29,6 +29,7 @@ from .parametric_solver import (
     init_theta_grid_search,
     parametric_residual_domain,
     parametric_solver_newton,
+    parametric_solver_newton_beam,
     parametric_solver_newton2,
 )
 
@@ -68,8 +69,9 @@ ParametricSolverConfig: TypeAlias = dict[str, Any]
 Static configuration for raytracing parametric surfaces.
 
 Possible values:
-    * parametric_solver: solver algorithm, supported values: "newton", "newton2"
-    * num_iter: number of Newton iterations
+    * parametric_solver: solver algorithm, supported values: "newton", "newton_beam", "newton2"
+    * num_iter_beam: number of multi-beam Newton iterations before reduction (newton_beam only)
+    * num_iter: number of Newton iterations (single-beam refinement phase)
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
     * init: ThetaInit instance (InitClosest, InitConstant, or InitGridSearch)
@@ -111,30 +113,24 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     periodic_uv: tuple[bool, bool] = config["periodic_uv"]
     solver_name: str = config["parametric_solver"]
 
+    shared = dict(
+        num_iter=num_iter,
+        damping=damping,
+        init_fn=init_fn,
+        t_domain=t_domain,
+        u_domain=u_domain,
+        v_domain=v_domain,
+        singular_check=singular_check,
+        periodic_uv=periodic_uv,
+    )
+
     if solver_name == "newton":
-        return partial(
-            parametric_solver_newton,
-            num_iter=num_iter,
-            damping=damping,
-            init_fn=init_fn,
-            t_domain=t_domain,
-            u_domain=u_domain,
-            v_domain=v_domain,
-            singular_check=singular_check,
-            periodic_uv=periodic_uv,
-        )
+        return partial(parametric_solver_newton, **shared)
+    elif solver_name == "newton_beam":
+        num_iter_beam: int = config["num_iter_beam"]
+        return partial(parametric_solver_newton_beam, num_iter_beam=num_iter_beam, **shared)
     elif solver_name == "newton2":
-        return partial(
-            parametric_solver_newton2,
-            num_iter=num_iter,
-            damping=damping,
-            init_fn=init_fn,
-            t_domain=t_domain,
-            u_domain=u_domain,
-            v_domain=v_domain,
-            singular_check=singular_check,
-            periodic_uv=periodic_uv,
-        )
+        return partial(parametric_solver_newton2, **shared)
     else:
         raise ValueError(f"Unknown parametric solver: {solver_name!r}")
 
