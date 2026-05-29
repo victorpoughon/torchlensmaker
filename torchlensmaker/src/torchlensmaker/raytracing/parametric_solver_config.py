@@ -52,11 +52,11 @@ class InitConstant:
 class InitGridSearch:
     """Initialize by grid search: evaluate S on a (t, u, v) grid and pick the minimum-distance point"""
 
-    t_range: tuple[float, float]
+    t_domain: tuple[float, float]
     t_samples: int
-    u_range: tuple[float, float] = (0.0, 1.0)
+    u_domain: tuple[float, float] = (0.0, 1.0)
     u_samples: int = 5
-    v_range: tuple[float, float] = (0.0, 1.0)
+    v_domain: tuple[float, float] = (0.0, 1.0)
     v_samples: int = 5
     method: Literal["grid_search"] = "grid_search"
 
@@ -89,11 +89,11 @@ def make_init_function(init: ThetaInit) -> ThetaInitFunction:
     elif isinstance(init, InitGridSearch):
         return partial(
             init_theta_grid_search,
-            t_range=init.t_range,
+            t_domain=init.t_domain,
             t_samples=init.t_samples,
-            u_range=init.u_range,
+            u_domain=init.u_domain,
             u_samples=init.u_samples,
-            v_range=init.v_range,
+            v_domain=init.v_domain,
             v_samples=init.v_samples,
         )
     else:

@@ -96,11 +96,11 @@ def init_theta_grid_search(
     V: BatchNDTensor,
     parametric_function: "ParametricFunction",
     *,
-    t_range: tuple[float, float],
+    t_domain: tuple[float, float],
     t_samples: int,
-    u_range: tuple[float, float],
+    u_domain: tuple[float, float],
     u_samples: int,
-    v_range: tuple[float, float],
+    v_domain: tuple[float, float],
     v_samples: int,
 ) -> torch.Tensor:
     """Return the full Cartesian product of (t, u, v) grid values as candidates.
@@ -113,9 +113,9 @@ def init_theta_grid_search(
     dtype, device = P.dtype, P.device
     batch_shape = P.shape[:-1]
 
-    t_grid = torch.linspace(t_range[0], t_range[1], t_samples, dtype=dtype, device=device)
-    u_grid = torch.linspace(u_range[0], u_range[1], u_samples, dtype=dtype, device=device)
-    v_grid = torch.linspace(v_range[0], v_range[1], v_samples, dtype=dtype, device=device)
+    t_grid = torch.linspace(t_domain[0], t_domain[1], t_samples, dtype=dtype, device=device)
+    u_grid = torch.linspace(u_domain[0], u_domain[1], u_samples, dtype=dtype, device=device)
+    v_grid = torch.linspace(v_domain[0], v_domain[1], v_samples, dtype=dtype, device=device)
 
     K = t_samples * u_samples * v_samples
     tt, uu, vv = torch.meshgrid(t_grid, u_grid, v_grid, indexing="ij")
