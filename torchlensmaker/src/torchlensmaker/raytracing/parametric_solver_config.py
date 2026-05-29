@@ -29,7 +29,6 @@ from .parametric_solver import (
     init_theta_grid_search,
     parametric_residual_domain,
     parametric_solver_newton,
-    parametric_solver_newton_beam,
     parametric_solver_newton2,
 )
 
@@ -69,8 +68,8 @@ ParametricSolverConfig: TypeAlias = dict[str, Any]
 Static configuration for raytracing parametric surfaces.
 
 Possible values:
-    * parametric_solver: solver algorithm, supported values: "newton", "newton_beam", "newton2"
-    * num_iter_beam: number of multi-beam Newton iterations before reduction (newton_beam only)
+    * parametric_solver: solver algorithm, supported values: "newton", "newton2"
+    * num_iter_beam: number of multi-beam Newton iterations before reduction (0 for single beam newton)
     * num_iter: number of Newton iterations (single-beam refinement phase)
     * damping: damping factor in ]0, 1]
     * tol: absolute tolerance on residual ||P + tV - S(uv)|| for the domain function
@@ -104,6 +103,7 @@ def make_init_function(init: ThetaInit) -> ThetaInitFunction:
 
 
 def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
+    num_iter_beam: int = config.get("num_iter_beam", 0)
     num_iter: int = config["num_iter"]
     damping: float = config["damping"]
     init_fn: ThetaInitFunction = make_init_function(config["init"])
@@ -116,6 +116,7 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
     solver_name: str = config["parametric_solver"]
 
     shared = dict(
+        num_iter_beam=num_iter_beam,
         num_iter=num_iter,
         damping=damping,
         init_fn=init_fn,
@@ -129,9 +130,6 @@ def make_parametric_solver(config: ParametricSolverConfig) -> ParametricSolver:
 
     if solver_name == "newton":
         return partial(parametric_solver_newton, **shared)
-    elif solver_name == "newton_beam":
-        num_iter_beam: int = config["num_iter_beam"]
-        return partial(parametric_solver_newton_beam, num_iter_beam=num_iter_beam, **shared)
     elif solver_name == "newton2":
         return partial(parametric_solver_newton2, **shared)
     else:

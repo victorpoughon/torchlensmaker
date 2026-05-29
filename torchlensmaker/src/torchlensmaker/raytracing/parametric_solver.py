@@ -113,13 +113,21 @@ def init_theta_grid_search(
     dtype, device = P.dtype, P.device
     batch_shape = P.shape[:-1]
 
-    t_grid = torch.linspace(t_domain[0], t_domain[1], t_samples, dtype=dtype, device=device)
-    u_grid = torch.linspace(u_domain[0], u_domain[1], u_samples, dtype=dtype, device=device)
-    v_grid = torch.linspace(v_domain[0], v_domain[1], v_samples, dtype=dtype, device=device)
+    t_grid = torch.linspace(
+        t_domain[0], t_domain[1], t_samples, dtype=dtype, device=device
+    )
+    u_grid = torch.linspace(
+        u_domain[0], u_domain[1], u_samples, dtype=dtype, device=device
+    )
+    v_grid = torch.linspace(
+        v_domain[0], v_domain[1], v_samples, dtype=dtype, device=device
+    )
 
     K = t_samples * u_samples * v_samples
     tt, uu, vv = torch.meshgrid(t_grid, u_grid, v_grid, indexing="ij")
-    all_thetas = torch.stack([tt.reshape(-1), uu.reshape(-1), vv.reshape(-1)], dim=-1)  # (K, 3)
+    all_thetas = torch.stack(
+        [tt.reshape(-1), uu.reshape(-1), vv.reshape(-1)], dim=-1
+    )  # (K, 3)
 
     # Broadcast (K, 3) to (*rays, K, 3) without copying
     extra_dims = (1,) * len(batch_shape)
@@ -141,19 +149,19 @@ def reduce_theta_min_distance(
     batch_shape = P.shape[:-1]
     K = thetas.shape[-2]
 
-    t = thetas[..., 0]    # (*rays, K)
+    t = thetas[..., 0]  # (*rays, K)
     uv = thetas[..., 1:]  # (*rays, K, 2)
 
     # Evaluate surface at all K*rays uv points, then reshape back
     S_flat = parametric_function(uv.reshape(-1, 2), order=0)[0, 0]  # (*rays * K, 3)
-    S = S_flat.reshape(batch_shape + (K, 3))                          # (*rays, K, 3)
+    S = S_flat.reshape(batch_shape + (K, 3))  # (*rays, K, 3)
 
     ray_pts = P.unsqueeze(-2) + t.unsqueeze(-1) * V.unsqueeze(-2)  # (*rays, K, 3)
-    sq_dist = ((ray_pts - S) ** 2).sum(dim=-1)                     # (*rays, K)
+    sq_dist = ((ray_pts - S) ** 2).sum(dim=-1)  # (*rays, K)
 
-    best_idx = sq_dist.argmin(dim=-1)                                          # (*rays,)
+    best_idx = sq_dist.argmin(dim=-1)  # (*rays,)
     best_idx_expanded = best_idx.unsqueeze(-1).unsqueeze(-1).expand(*batch_shape, 1, 3)
-    return thetas.gather(-2, best_idx_expanded).squeeze(-2)                    # (*rays, 3)
+    return thetas.gather(-2, best_idx_expanded).squeeze(-2)  # (*rays, 3)
 
 
 def parametric_solver_newton_step(
@@ -221,65 +229,16 @@ def clamp_delta_t(
     "Clamp the t component of a delta step to [-max_delta_t, max_delta_t]; no-op if None."
     if max_delta_t is None:
         return delta
-    return torch.cat([
-        delta[..., :1].clamp(-max_delta_t, max_delta_t),
-        delta[..., 1:],
-    ], dim=-1)
+    return torch.cat(
+        [
+            delta[..., :1].clamp(-max_delta_t, max_delta_t),
+            delta[..., 1:],
+        ],
+        dim=-1,
+    )
 
 
 def parametric_solver_newton(
-    P: BatchNDTensor,
-    V: BatchNDTensor,
-    parametric_function: ParametricFunction,
-    num_iter: int,
-    damping: float,
-    init_fn: ThetaInitFunction,
-    t_domain: tuple[float | None, float | None],
-    u_domain: tuple[float, float],
-    v_domain: tuple[float, float],
-    singular_check: bool,
-    periodic_uv: tuple[bool, bool],
-    max_delta_t: float | None,
-) -> tuple[BatchTensor, BatchTensor]:
-    """
-    First order Newton's method for parametric surfaces.
-    Differentiable over the last iteration.
-    P, V: (*rays, 3). Returns t (*rays,) and uv (*rays, 2).
-    """
-
-    with torch.no_grad():
-        # init_fn returns (*rays, K, 3); reduce picks the best candidate per ray -> (*rays, 3)
-        thetas = init_fn(P, V, parametric_function)
-        theta = reduce_theta_min_distance(thetas, P, V, parametric_function)
-
-        theta = clamp_theta(theta, t_domain, u_domain, v_domain, periodic_uv)
-
-        if num_iter == 0:
-            return theta[..., 0], theta[..., 1:]
-
-        # Do N - 1 non differentiable steps
-        for _ in range(num_iter - 1):
-            delta = parametric_solver_newton_step(
-                theta, P, V, parametric_function, singular_check
-            )
-            delta = clamp_delta_t(delta, max_delta_t)
-            theta = clamp_theta(
-                theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
-            )
-
-    # One differentiable step
-    delta = parametric_solver_newton_step(
-        theta, P, V, parametric_function, singular_check
-    )
-    delta = clamp_delta_t(delta, max_delta_t)
-    theta = clamp_theta(
-        theta - damping * delta, t_domain, u_domain, v_domain, periodic_uv
-    )
-
-    return theta[..., 0], theta[..., 1:]
-
-
-def parametric_solver_newton_beam(
     P: BatchNDTensor,
     V: BatchNDTensor,
     parametric_function: ParametricFunction,
@@ -306,8 +265,9 @@ def parametric_solver_newton_beam(
     Step 2: reduce to best candidate per ray -> (*rays, 3)
     Step 3: num_iter - 1 single-beam Newton iterations (non-differentiable)
     Step 4: one final differentiable Newton step
+
+    num_iter_beam=0 reduces to a single beam newton variant
     """
-    rays_shape = P.shape[:-1]  # (*rays,)
 
     with torch.no_grad():
         # Step 0: get all K candidates per ray, shape (*rays, K, 3)
@@ -317,16 +277,18 @@ def parametric_solver_newton_beam(
 
         # Step 1: multi-beam Newton iterations over (*rays, K, 3)
         # Expand P, V from (*rays, 3) to (*rays, K, 3) to match thetas
-        P_beam = P.unsqueeze(-2).expand(rays_shape + (K, 3))
-        V_beam = V.unsqueeze(-2).expand(rays_shape + (K, 3))
-        for _ in range(num_iter_beam):
-            delta = parametric_solver_newton_step(
-                thetas, P_beam, V_beam, parametric_function, singular_check
-            )
-            delta = clamp_delta_t(delta, max_delta_t)
-            thetas = clamp_theta(
-                thetas - damping * delta, t_domain, u_domain, v_domain, periodic_uv
-            )
+        if num_iter_beam != 0:
+            rays_shape = P.shape[:-1]  # (*rays,)
+            P_beam = P.unsqueeze(-2).expand(rays_shape + (K, 3))
+            V_beam = V.unsqueeze(-2).expand(rays_shape + (K, 3))
+            for _ in range(num_iter_beam):
+                delta = parametric_solver_newton_step(
+                    thetas, P_beam, V_beam, parametric_function, singular_check
+                )
+                delta = clamp_delta_t(delta, max_delta_t)
+                thetas = clamp_theta(
+                    thetas - damping * delta, t_domain, u_domain, v_domain, periodic_uv
+                )
 
         # Step 2: reduce to one candidate per ray, shape (*rays, 3)
         theta = reduce_theta_min_distance(thetas, P, V, parametric_function)
@@ -414,6 +376,7 @@ def parametric_solver_newton2(
     P: BatchNDTensor,
     V: BatchNDTensor,
     parametric_function: ParametricFunction,
+    num_iter_beam: int,
     num_iter: int,
     damping: float,
     init_fn: ThetaInitFunction,
