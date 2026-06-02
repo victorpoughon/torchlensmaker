@@ -92,6 +92,7 @@ from torchlensmaker.light_sources.light_sources_query import (
 )
 from torchlensmaker.light_targets.focal_point import FocalPoint
 from torchlensmaker.light_targets.image_plane import ImagePlane, linear_magnification
+from torchlensmaker.light_targets.light_target import LightTargetRecord
 from torchlensmaker.materials.from_indicio import material_from_indicio
 from torchlensmaker.materials.material_elements import (
     CauchyMaterial,
@@ -281,6 +282,7 @@ __all__ = [
     "FocalPoint",
     "ImagePlane",
     "linear_magnification",
+    "LightTargetRecord",
     # Materials
     "material_from_indicio",
     "CauchyMaterial",

@@ -26,6 +26,7 @@ from torchlensmaker.core.base_module import BaseModule
 from torchlensmaker.core.ray_bundle import RayBundle
 from torchlensmaker.light_targets.light_target import LightTargetRecord
 from torchlensmaker.sequential.raytrace import raytrace
+from torchlensmaker.sequential.sequential import Sequential
 from torchlensmaker.surfaces.surface_element import SurfaceRecord
 
 from .CET_I2 import isoluminant_cgo_80_c38
@@ -128,7 +129,7 @@ def spot_diagram(
     for ir, m_row in enumerate(row_masks):
         for ic, m_col in enumerate(col_masks):
             m = m_row & m_col & valid
-            cell_rays = rays.mask(m)
+            cell_rays = rays.filter(m)
             coords = image_coords[m]
 
             ax: Axes = axes[ir][ic]
