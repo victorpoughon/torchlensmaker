@@ -53,29 +53,33 @@ function makeRays(data: RaysData, colorOption: ColorOption): THREE.Group {
     const colors = [];
     let use_default_color: boolean = true;
 
-    if (colorOption.colorDim == null) {
+    if (colorOption.colorDim == null || !variables.hasOwnProperty(colorOption.colorDim)) {
         use_default_color = true;
     } else {
         use_default_color = false;
+
+        // Compute [min, max] for normalization: prefer the precomputed domain,
+        // fall back to computing it from the per-ray variable values when the
+        // domain entry is absent (e.g. scenes serialised by an older Python version).
+        let min: number, max: number;
+        if (!colorOption.trueColor) {
+            if (domain.hasOwnProperty(colorOption.colorDim)) {
+                [min, max] = domain[colorOption.colorDim];
+            } else {
+                const vals = variables[colorOption.colorDim] as number[];
+                min = vals.reduce((a, b) => Math.min(a, b), Infinity);
+                max = vals.reduce((a, b) => Math.max(a, b), -Infinity);
+            }
+        }
+
         for (const [index] of points.entries()) {
             let color: Array<number>;
 
             if (colorOption.trueColor == false) {
-                if (!domain.hasOwnProperty(colorOption.colorDim)) {
-                    throw new Error(
-                        `${colorOption.colorDim} missing from ray domain object`,
-                    );
-                }
-                const [min, max] = domain[colorOption.colorDim];
-                const normalizedX = (() => {
-                    if (max - min >= 0.001) {
-                        return (
-                            (variables[colorOption.colorDim][index] - min) /
-                            (max - min)
-                        );
-                    }
-                    return 0.5;
-                })();
+                const normalizedX =
+                    max! - min! >= 0.001
+                        ? (variables[colorOption.colorDim][index] - min!) / (max! - min!)
+                        : 0.5;
                 color = colormap(normalizedX, CET_I2);
             } else {
                 const wavelength = variables[colorOption.colorDim][index];
