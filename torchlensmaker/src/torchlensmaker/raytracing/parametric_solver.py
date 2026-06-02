@@ -208,7 +208,10 @@ def clamp_theta(
     periodic_uv: tuple[bool, bool],
 ) -> torch.Tensor:
     # Clamp t to [lo, hi]; None on either side means unbounded in that direction
-    t = torch.clamp(theta[..., 0], min=t_domain[0], max=t_domain[1])
+    if not (t_domain[0] is None and t_domain[1] is None):
+        t = torch.clamp(theta[..., 0], min=t_domain[0], max=t_domain[1])
+    else:
+        t = theta[..., 0]
 
     # For periodic dims, wrap with remainder so the solver can cross the periodic
     # boundary without getting pinned at the degenerate pole. For non-periodic

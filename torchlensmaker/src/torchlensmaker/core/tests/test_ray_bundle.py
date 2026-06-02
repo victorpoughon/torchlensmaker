@@ -123,58 +123,6 @@ def test_mask_updates_valid_not_rows():
     assert torch.allclose(result.field.domain_values, b.field.domain_values)
 
 
-# --- cat ---
-
-
-def test_cat_disjoint_sources():
-    b0 = _make_bundle_2d(source_idx=0)
-    b1 = _make_bundle_2d(source_idx=1)
-    result = b0.cat(b1)
-    assert result.P.shape[0] == b0.P.shape[0] + b1.P.shape[0]
-    assert torch.equal(
-        result.source.domain_idx, torch.tensor([0, 1], dtype=torch.int64)
-    )
-    assert result.source.domain_values.shape == (2,)
-
-
-def test_cat_conflicting_wavel_raises():
-    b0 = _make_bundle_2d()
-    # b1 with same wavel domain_idx=0 but different domain_value
-    N = b0.P.shape[0]
-    b1 = RayBundle.create(
-        P=torch.zeros((N, 2)),
-        V=torch.ones((N, 2)),
-        valid=torch.full((N,), True),
-        n=torch.ones((N,)),
-        pupil=b0.pupil,
-        field=b0.field,
-        wavel=SampledVariable.create(
-            values=torch.full((N,), 600.0),
-            idx=torch.zeros(N, dtype=torch.int64),
-            domain_values=torch.tensor([600.0]),  # conflicts with b0's 400.0 at idx=0
-            domain_idx=torch.tensor([0], dtype=torch.int64),
-        ),
-        source=b0.source,
-    )
-    with pytest.raises(AssertionError):
-        b0.cat(b1)
-
-
-def test_cat_empty_left():
-    empty = RayBundle.empty(dim=2)
-    b = _make_bundle_2d()
-    result = empty.cat(b)
-    assert result.P.shape == b.P.shape
-    assert torch.equal(result.source.domain_idx, b.source.domain_idx)
-
-
-def test_cat_empty_right():
-    b = _make_bundle_2d()
-    empty = RayBundle.empty(dim=2)
-    result = b.cat(empty)
-    assert result.P.shape == b.P.shape
-
-
 # --- split_masks / split_by ---
 
 

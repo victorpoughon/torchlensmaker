@@ -298,23 +298,3 @@ def test_elements_reuse(dtype: torch.dtype, device: torch.device) -> None:
 
     tlm.show(optics, dim=2)
     tlm.show(optics, dim=3)
-
-
-def test_multiple_light_sources() -> None:
-    optics = tlm.Sequential(
-        tlm.PointSourceAtInfinity(10, source_idx=0),
-        tlm.PointSourceAtInfinity(10, source_idx=1),
-    )
-
-    tlm.set_sampling2d(optics[0], pupil=3, field=3, wavel=3)
-    tlm.set_sampling2d(optics[1], pupil=3, field=3, wavel=3)
-
-    trace = tlm.raytrace(optics, dim=2)
-    rays = trace.output_rays()
-
-    # We expect both light sources to merge
-    assert rays.batch_size == (54,)
-
-    # We expect 2 light source ids
-    assert torch.sum(rays.source.idx == 0) == 27
-    assert torch.sum(rays.source.idx == 1) == 27

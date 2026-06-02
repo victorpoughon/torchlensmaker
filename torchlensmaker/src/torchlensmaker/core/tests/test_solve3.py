@@ -34,7 +34,9 @@ def test_solve3x3():
     x_actual = solve3x3(A, b)
     x_ref = torch.linalg.solve(A, b)
 
-    torch.testing.assert_close(x_actual, x_ref, rtol=1e-10, atol=1e-10)
+    # Tikhonov regularization introduces O(det_threshold^2 / det^2) bias;
+    # for this matrix det=43, threshold=1e-3 gives ~5e-10 relative error.
+    torch.testing.assert_close(x_actual, x_ref, rtol=1e-6, atol=1e-6)
 
 
 def test_solve3x3_singular():
@@ -48,9 +50,11 @@ def test_solve3x3_singular():
     )
     b = torch.tensor([1.0, 2.0, 3.0], dtype=torch.float64)
 
-    # Without the flag, no error is raised (NaN propagates silently)
+    # Without the flag, Tikhonov regularization returns zeros for singular matrices
+    # (det=0 => inv_det=0/(0+eps^2)=0) rather than propagating NaN.
     result = solve3x3(A, b)
-    assert torch.any(torch.isnan(result))
+    assert not torch.any(torch.isnan(result))
+    assert torch.allclose(result, torch.zeros_like(result))
 
     # With singular_check=True, raises the same error type as torch.linalg.solve
     with pytest.raises(torch.linalg.LinAlgError):
