@@ -165,8 +165,8 @@ def trace_render_end_rays(trace: OpticalTrace, end: float | None) -> list[Any]:
         return []
 
     _, node = next(reversed(trace.nodes.items()))
-    domain = bundle_domain(node.bundle_in)
     rays = node.bundle_out.filter(node.bundle_out.valid)
+    domain = bundle_domain(rays)
     return tlmviewer.render_rays_length(
         rays.P,
         rays.V,
