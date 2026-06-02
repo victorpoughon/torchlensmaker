@@ -93,12 +93,12 @@ tlm.display_scene(scene_front)
     Lens minimal diameter: 3.799999952316284
     Lens inner thickness: 1.4499999284744263
     Lens outer thickness: 1.0899138450622559
-    Lens rear principal point: 0.7356008887290955
-    Lens rear focal point: 12.746492385864258
-    Lens rear focal length: 12.010891914367676
-    Lens front principal point: -1.2109190225601196
+    Lens rear principal point: 0.7356005907058716
+    Lens rear focal point: 12.746495246887207
+    Lens rear focal length: 12.010894775390625
+    Lens front principal point: -1.2109185457229614
     Lens front focal point: -13.221537590026855
-    Lens front focal length: -12.010618209838867
+    Lens front focal length: -12.010619163513184
 
 
 
@@ -123,10 +123,14 @@ source = tlm.PointSourceAtInfinity(
         sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=500,
 )
-inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
-outputs = lens(inputs)
-t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
-CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
+
+source_trace = tlm.raytrace(source, dim=2)
+inputs = source_trace.output_rays()
+lens_trace = tlm.raytrace(lens, input_trace=source_trace, dim=2)
+outputs = lens_trace.output_rays()
+
+t = tlm.paraxial.equivalent_locus_2d(inputs.P, inputs.V, outputs.P, outputs.V)
+CP = inputs.P + t[:, 0].unsqueeze(-1) * inputs.V
 
 scene = tlm.render_model(optics_rear, 2, end=4)
 scene.data.append(tlm.render_points(CP, radius=0.01))
@@ -162,10 +166,13 @@ source = tlm.PointSourceAtInfinity(
         wavelength=500,
 ).reverse()
 
-inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
-outputs = lens(inputs)
-t = tlm.paraxial.equivalent_locus_2d(inputs.rays.P, inputs.rays.V, outputs.rays.P, outputs.rays.V)
-CP = inputs.rays.P + t[:, 0].unsqueeze(-1) * inputs.rays.V
+source_trace = tlm.raytrace(source, dim=2)
+inputs = source_trace.output_rays()
+lens_trace = tlm.raytrace(lens, input_trace=source_trace, dim=2)
+outputs = lens_trace.output_rays()
+
+t = tlm.paraxial.equivalent_locus_2d(inputs.P, inputs.V, outputs.P, outputs.V)
+CP = inputs.P + t[:, 0].unsqueeze(-1) * inputs.V
 
 scene = tlm.render_model(optics_front, 2, end=4)
 scene.data.append(tlm.render_points(CP, radius=0.01))
@@ -200,17 +207,21 @@ source = tlm.PointSourceAtInfinity(
         sampler_wavel_2d=tlm.ZeroSampler1D(),
         wavelength=500,
 )
-inputs = tlm.Sequential(source)(tlm.SequentialData.empty(dim=2))
-outputs = lens(inputs)
-t = -outputs.rays.P[:, 1] / outputs.rays.V[:, 1]
-CP = outputs.rays.points_at(t)
+
+source_trace = tlm.raytrace(source, dim=2)
+inputs = source_trace.output_rays()
+lens_trace = tlm.raytrace(lens, input_trace=source_trace, dim=2)
+outputs = lens_trace.output_rays()
+
+t = -outputs.P[:, 1] / outputs.V[:, 1]
+CP = outputs.points_at(t)
 
 scene = tlm.render_model(optics_rear, 2, end=12)
 scene.data.append(tlm.render_points(CP, radius=0.001))
 tlm.display_scene(scene)
 
 f, ax = plt.subplots(1, 1, figsize=(10, 5))
-ax.plot(CP[:, 0].tolist(), (inputs.rays.P[:, 1] / (0.5*mdiam)).tolist(), linestyle="none", marker="o", markersize=1)
+ax.plot(CP[:, 0].tolist(), (inputs.P[:, 1] / (0.5*mdiam)).tolist(), linestyle="none", marker="o", markersize=1)
 ax.axhline()
 ax.set_xlabel("Focal Point")
 ax.set_ylabel("Paraxial ray height (normalized to lens diameter)")

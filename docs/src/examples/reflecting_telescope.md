@@ -29,11 +29,10 @@ model = tlm.Sequential(
     tlm.ReflectiveSurface(secondary),
 
     tlm.Gap(100),
+    tlm.FocalPoint(),
 )
 
-target = tlm.FocalPoint()
-
-optics = tlm.Sequential(source, model, target)
+optics = tlm.Sequential(source, model)
 
 tlm.show2d(optics)
 tlm.show3d(optics)
@@ -55,15 +54,20 @@ Now, as you can see light isn't being focused at all. We have wrapped both surfa
 
 import torch.optim as optim
 
+
+def focal_loss(model, trace):
+    _, node = trace.first_node_by_record_type(tlm.LightTargetRecord)
+    return node.record.loss
+
 optics.set_sampling3d(pupil=60)
 
-root = tlm.SequentialData.empty(dim=3)
-inputs = source.sequential(root)
+source_trace = tlm.raytrace(source, dim=3)
 
 tlm.optimize(
     model,
-    inputs,
-    target,
+    source_trace.output_rays(),
+    source_trace.output_tf(),
+    focal_loss,
     optimizer = optim.Adam(optics.parameters(), lr=3e-5),
     num_iter = 150
 ).plot()
@@ -74,21 +78,21 @@ tlm.optimize(
     [ 17/150] L= 1.36351 | grad norm= 5454.4297
     [ 25/150] L= 0.16155 | grad norm= 5279.1870
     [ 33/150] L= 0.36405 | grad norm= 5252.1646
-    [ 41/150] L= 0.20423 | grad norm= 5314.7461
+    [ 41/150] L= 0.20422 | grad norm= 5314.7456
     [ 49/150] L= 0.11227 | grad norm= 5276.8345
     [ 57/150] L= 0.08746 | grad norm= 5299.0830
-    [ 65/150] L= 0.00774 | grad norm= 5289.3267
+    [ 65/150] L= 0.00774 | grad norm= 5289.3257
     [ 73/150] L= 0.03391 | grad norm= 5292.0522
-    [ 81/150] L= 0.01360 | grad norm= 5289.4688
-    [ 89/150] L= 0.02353 | grad norm= 5285.0127
+    [ 81/150] L= 0.01360 | grad norm= 5289.4692
+    [ 89/150] L= 0.02353 | grad norm= 5285.0137
     [ 97/150] L= 0.00521 | grad norm= 5288.2783
     [105/150] L= 0.01189 | grad norm= 5288.9897
     [113/150] L= 0.01476 | grad norm= 5289.2764
     [121/150] L= 0.00564 | grad norm= 5288.1670
     [129/150] L= 0.00787 | grad norm= 5286.5474
     [137/150] L= 0.02941 | grad norm= 5290.8628
-    [145/150] L= 0.00410 | grad norm= 3212.4607
-    [150/150] L= 0.04207 | grad norm= 5282.2925
+    [145/150] L= 0.00410 | grad norm= 3212.4604
+    [150/150] L= 0.04208 | grad norm= 5282.2930
 
 
 
@@ -105,13 +109,13 @@ import torch.optim as optim
 
 optics.set_sampling2d(pupil=10)
 
-root = tlm.SequentialData.empty(dim=2)
-inputs = source.sequential(root)
+source_trace = tlm.raytrace(source, dim=2)
 
 tlm.optimize(
     model,
-    inputs,
-    target,
+    source_trace.output_rays(),
+    source_trace.output_tf(),
+    focal_loss,
     optimizer = optim.Adam(optics.parameters(), lr=3e-6),
     num_iter = 150
 ).plot()
@@ -130,8 +134,8 @@ tlm.optimize(
     [ 81/150] L= 0.00371 | grad norm= 1293.1667
     [ 89/150] L= 0.00422 | grad norm= 1293.2322
     [ 97/150] L= 0.00332 | grad norm= 1290.3610
-    [105/150] L= 0.00393 | grad norm= 1293.2131
-    [113/150] L= 0.00350 | grad norm= 1293.1718
+    [105/150] L= 0.00393 | grad norm= 1293.2130
+    [113/150] L= 0.00350 | grad norm= 1293.1716
     [121/150] L= 0.00399 | grad norm= 1290.3020
     [129/150] L= 0.00365 | grad norm= 1290.3499
     [137/150] L= 0.00395 | grad norm= 1290.3221

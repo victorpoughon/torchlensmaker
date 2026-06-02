@@ -53,7 +53,7 @@ tlm.show(optics, dim=2)
 tlm.show(optics, dim=3, pupil=100)
 ```
 
-    [  1/60] L= 1.56896 | grad norm= 161.1410
+    [  1/60] L= 1.56896 | grad norm= 161.1411
     [  4/60] L= 1.09283 | grad norm= 156.9115
     [  7/60] L= 0.62931 | grad norm= 153.1707
     [ 10/60] L= 0.18310 | grad norm= 133.4958
@@ -65,7 +65,7 @@ tlm.show(optics, dim=3, pupil=100)
     [ 28/60] L= 0.19185 | grad norm= 133.5657
     [ 31/60] L= 0.16637 | grad norm= 82.6451
     [ 34/60] L= 0.10851 | grad norm= 8.3014
-    [ 37/60] L= 0.11468 | grad norm= 8.7089
+    [ 37/60] L= 0.11468 | grad norm= 8.7088
     [ 40/60] L= 0.12953 | grad norm= 147.7560
     [ 43/60] L= 0.11523 | grad norm= 8.7440
     [ 46/60] L= 0.11271 | grad norm= 8.5829
@@ -73,7 +73,7 @@ tlm.show(optics, dim=3, pupil=100)
     [ 52/60] L= 0.10804 | grad norm= 8.2687
     [ 55/60] L= 0.10787 | grad norm= 8.2565
     [ 58/60] L= 0.10900 | grad norm= 8.3353
-    [ 60/60] L= 0.10928 | grad norm= 8.3545
+    [ 60/60] L= 0.10929 | grad norm= 8.3545
 
 
 

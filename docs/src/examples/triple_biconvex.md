@@ -51,25 +51,25 @@ tlm.simple_optimize(
 ).plot()
 ```
 
-    [  1/100] L= 1.31674 | grad norm= 953.3937
-    [  6/100] L= 0.83680 | grad norm= 966.7119
+    [  1/100] L= 1.31674 | grad norm= 953.3938
+    [  6/100] L= 0.83680 | grad norm= 966.7118
     [ 11/100] L= 0.34966 | grad norm= 979.5735
     [ 16/100] L= 0.11953 | grad norm= 991.3751
-    [ 21/100] L= 0.22137 | grad norm= 993.8640
-    [ 26/100] L= 0.05014 | grad norm= 989.6646
-    [ 31/100] L= 0.10048 | grad norm= 985.9102
+    [ 21/100] L= 0.22137 | grad norm= 993.8638
+    [ 26/100] L= 0.05014 | grad norm= 989.6642
+    [ 31/100] L= 0.10048 | grad norm= 985.9100
     [ 36/100] L= 0.02030 | grad norm= 268.8477
     [ 41/100] L= 0.04759 | grad norm= 989.6014
-    [ 46/100] L= 0.05139 | grad norm= 987.1399
+    [ 46/100] L= 0.05139 | grad norm= 987.1401
     [ 51/100] L= 0.03561 | grad norm= 989.3049
-    [ 56/100] L= 0.03201 | grad norm= 909.9579
+    [ 56/100] L= 0.03201 | grad norm= 909.9578
     [ 61/100] L= 0.01978 | grad norm= 268.8308
-    [ 66/100] L= 0.01666 | grad norm= 284.7693
+    [ 66/100] L= 0.01666 | grad norm= 284.7692
     [ 71/100] L= 0.01566 | grad norm= 284.7873
     [ 76/100] L= 0.01862 | grad norm= 268.7931
-    [ 81/100] L= 0.01868 | grad norm= 284.7331
+    [ 81/100] L= 0.01868 | grad norm= 284.7330
     [ 86/100] L= 0.01701 | grad norm= 268.7413
-    [ 91/100] L= 0.01731 | grad norm= 268.7511
+    [ 91/100] L= 0.01732 | grad norm= 268.7511
     [ 96/100] L= 0.01585 | grad norm= 284.7838
     [100/100] L= 0.01680 | grad norm= 284.7667
 
@@ -87,7 +87,7 @@ print("Outer thickness:", lens1.outer_thickness().item())
 print("Inner thickness:", lens1.inner_thickness().item())
 ```
 
-    Final parabola parameter: 0.0036443897988647223
+    Final parabola parameter: 0.0036443895660340786
     Outer thickness: 0.5
     Inner thickness: 0.9099938869476318
 
