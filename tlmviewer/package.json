@@ -35,7 +35,7 @@
     "three-custom-shader-material": "^6.3.1",
     "tsx": "^4.19.3",
     "typescript": "~5.8.3",
-    "vite": "^6.0.3",
+    "vite": "^8.0.16",
     "vite-plugin-css-injected-by-js": "^3.5.2",
     "vite-plugin-package-version": "^1.1.0"
   }
